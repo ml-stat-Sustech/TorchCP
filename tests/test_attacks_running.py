@@ -18,54 +18,54 @@ import itertools
 import torch
 import torch.nn as nn
 
-from advertorch.attacks import GradientSignAttack
-from advertorch.attacks import GradientAttack
-from advertorch.attacks import L2BasicIterativeAttack
-from advertorch.attacks import LinfBasicIterativeAttack
-from advertorch.attacks import L1PGDAttack
-from advertorch.attacks import L2PGDAttack
-from advertorch.attacks import LinfPGDAttack
-from advertorch.attacks import SparseL1DescentAttack
-from advertorch.attacks import MomentumIterativeAttack
-from advertorch.attacks import FastFeatureAttack
-from advertorch.attacks import CarliniWagnerL2Attack
-from advertorch.attacks import DDNL2Attack
-from advertorch.attacks import ElasticNetL1Attack
-from advertorch.attacks import LBFGSAttack
-from advertorch.attacks import JacobianSaliencyMapAttack
-from advertorch.attacks import SpatialTransformAttack
-from advertorch.attacks import LinfSPSAAttack
-from advertorch.attacks import LinfFABAttack
-from advertorch.attacks import L2FABAttack
-from advertorch.attacks import L1FABAttack
-from advertorch.attacks import DeepfoolLinfAttack
-from advertorch.utils import CarliniWagnerLoss
-from advertorch.utils import torch_allclose
+from deepcp.attacks import GradientSignAttack
+from deepcp.attacks import GradientAttack
+from deepcp.attacks import L2BasicIterativeAttack
+from deepcp.attacks import LinfBasicIterativeAttack
+from deepcp.attacks import L1PGDAttack
+from deepcp.attacks import L2PGDAttack
+from deepcp.attacks import LinfPGDAttack
+from deepcp.attacks import SparseL1DescentAttack
+from deepcp.attacks import MomentumIterativeAttack
+from deepcp.attacks import FastFeatureAttack
+from deepcp.attacks import CarliniWagnerL2Attack
+from deepcp.attacks import DDNL2Attack
+from deepcp.attacks import ElasticNetL1Attack
+from deepcp.attacks import LBFGSAttack
+from deepcp.attacks import JacobianSaliencyMapAttack
+from deepcp.attacks import SpatialTransformAttack
+from deepcp.attacks import LinfSPSAAttack
+from deepcp.attacks import LinfFABAttack
+from deepcp.attacks import L2FABAttack
+from deepcp.attacks import L1FABAttack
+from deepcp.attacks import DeepfoolLinfAttack
+from deepcp.utils import CarliniWagnerLoss
+from deepcp.utils import torch_allclose
 
 # blackbox
-from advertorch.attacks import LinfGenAttack
-from advertorch.attacks import L2GenAttack
-from advertorch.attacks import LinfNAttack
-from advertorch.attacks import L2NAttack
-from advertorch.attacks import BanditAttack
-from advertorch.attacks import NESAttack
+from deepcp.attacks import LinfGenAttack
+from deepcp.attacks import L2GenAttack
+from deepcp.attacks import LinfNAttack
+from deepcp.attacks import L2NAttack
+from deepcp.attacks import BanditAttack
+from deepcp.attacks import NESAttack
 
-from advertorch.test_utils import NUM_CLASS
-from advertorch.test_utils import BATCH_SIZE
-from advertorch.test_utils import batch_consistent_attacks
-from advertorch.test_utils import general_input_attacks
-from advertorch.test_utils import image_only_attacks
-from advertorch.test_utils import label_attacks
-from advertorch.test_utils import feature_attacks
-from advertorch.test_utils import targeted_only_attacks
-from advertorch.test_utils import vec_eps_attacks
+from deepcp.test_utils import NUM_CLASS
+from deepcp.test_utils import BATCH_SIZE
+from deepcp.test_utils import batch_consistent_attacks
+from deepcp.test_utils import general_input_attacks
+from deepcp.test_utils import image_only_attacks
+from deepcp.test_utils import label_attacks
+from deepcp.test_utils import feature_attacks
+from deepcp.test_utils import targeted_only_attacks
+from deepcp.test_utils import vec_eps_attacks
 
-from advertorch.test_utils import vecdata
-from advertorch.test_utils import veclabel
-from advertorch.test_utils import vecmodel
-from advertorch.test_utils import imgdata
-from advertorch.test_utils import imglabel
-from advertorch.test_utils import imgmodel
+from deepcp.test_utils import vecdata
+from deepcp.test_utils import veclabel
+from deepcp.test_utils import vecmodel
+from deepcp.test_utils import imgdata
+from deepcp.test_utils import imglabel
+from deepcp.test_utils import imgmodel
 
 
 xent_loss = nn.CrossEntropyLoss(reduction="sum")

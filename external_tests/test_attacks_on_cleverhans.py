@@ -32,20 +32,20 @@ from cleverhans.attacks import LBFGS
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.model import Model as ClModel
 
-from advertorch.attacks import CarliniWagnerL2Attack
-from advertorch.attacks import ElasticNetL1Attack
-from advertorch.attacks import GradientAttack
-from advertorch.attacks import GradientSignAttack
-from advertorch.attacks import L2MomentumIterativeAttack
-from advertorch.attacks import LinfMomentumIterativeAttack
-from advertorch.attacks import LinfPGDAttack
-from advertorch.attacks import FastFeatureAttack
-from advertorch.attacks import LinfBasicIterativeAttack
-from advertorch.attacks import L2BasicIterativeAttack
-from advertorch.attacks import LBFGSAttack
-from advertorch.attacks import JacobianSaliencyMapAttack
-from advertorch.test_utils import SimpleModel
-from advertorch.test_utils import merge2dicts
+from deepcp.attacks import CarliniWagnerL2Attack
+from deepcp.attacks import ElasticNetL1Attack
+from deepcp.attacks import GradientAttack
+from deepcp.attacks import GradientSignAttack
+from deepcp.attacks import L2MomentumIterativeAttack
+from deepcp.attacks import LinfMomentumIterativeAttack
+from deepcp.attacks import LinfPGDAttack
+from deepcp.attacks import FastFeatureAttack
+from deepcp.attacks import LinfBasicIterativeAttack
+from deepcp.attacks import L2BasicIterativeAttack
+from deepcp.attacks import LBFGSAttack
+from deepcp.attacks import JacobianSaliencyMapAttack
+from deepcp.test_utils import SimpleModel
+from deepcp.test_utils import merge2dicts
 
 
 BATCH_SIZE = 9

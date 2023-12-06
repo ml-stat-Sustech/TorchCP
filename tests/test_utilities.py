@@ -11,17 +11,17 @@ import numpy as np
 import torch
 import torchvision.transforms.functional as F
 
-from advertorch.utils import torch_allclose
-from advertorch.utils import clamp
-from advertorch.utils import CIFAR10_MEAN
-from advertorch.utils import CIFAR10_STD
-from advertorch.utils import MNIST_MEAN
-from advertorch.utils import MNIST_STD
-from advertorch.utils import NormalizeByChannelMeanStd
-from advertorch.utils import PerImageStandardize
-from advertorch.utils import torch_flip
-from advertorch_examples.utils import bchw2bhwc
-from advertorch_examples.utils import bhwc2bchw
+from deepcp.utils import torch_allclose
+from deepcp.utils import clamp
+from deepcp.utils import CIFAR10_MEAN
+from deepcp.utils import CIFAR10_STD
+from deepcp.utils import MNIST_MEAN
+from deepcp.utils import MNIST_STD
+from deepcp.utils import NormalizeByChannelMeanStd
+from deepcp.utils import PerImageStandardize
+from deepcp.utils import torch_flip
+from deepcp_examples.utils import bchw2bhwc
+from deepcp_examples.utils import bhwc2bchw
 
 
 def test_mnist_normalize():

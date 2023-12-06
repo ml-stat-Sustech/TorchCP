@@ -15,14 +15,14 @@ import warnings
 import numpy as np
 import torch
 
-from advertorch.attacks import SinglePixelAttack
-from advertorch.attacks import LocalSearchAttack
-from advertorch.utils import predict_from_logits
-from advertorch.test_utils import merge2dicts
-from advertorch.test_utils import MLP
+from deepcp.attacks import SinglePixelAttack
+from deepcp.attacks import LocalSearchAttack
+from deepcp.utils import predict_from_logits
+from deepcp.test_utils import merge2dicts
+from deepcp.test_utils import MLP
 
-from advertorch_examples.utils import TRAINED_MODEL_PATH
-from advertorch_examples.utils import get_mnist_test_loader
+from deepcp_examples.utils import TRAINED_MODEL_PATH
+from deepcp_examples.utils import get_mnist_test_loader
 
 import foolbox
 from foolbox.attacks.localsearch import SinglePixelAttack as SPAfb

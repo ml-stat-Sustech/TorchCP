@@ -12,13 +12,13 @@ import pytest
 import torch
 import torch.nn as nn
 
-from advertorch.bpda import BPDAWrapper
-from advertorch.utils import torch_allclose
-from advertorch.test_utils import withgrad_defenses
-from advertorch.test_utils import nograd_defenses
-from advertorch.test_utils import defense_kwargs
-from advertorch.test_utils import defense_data
-from advertorch.test_utils import vecdata
+from deepcp.bpda import BPDAWrapper
+from deepcp.utils import torch_allclose
+from deepcp.test_utils import withgrad_defenses
+from deepcp.test_utils import nograd_defenses
+from deepcp.test_utils import defense_kwargs
+from deepcp.test_utils import defense_data
+from deepcp.test_utils import vecdata
 
 
 cuda = "cuda"
@@ -135,5 +135,5 @@ def test_bpda_nograd_on_multi_input(device, func):
 
 
 if __name__ == '__main__':
-    from advertorch.defenses import AverageSmoothing2D
+    from deepcp.defenses import AverageSmoothing2D
     test_bpda_on_withgrad_defense(cpu, AverageSmoothing2D)

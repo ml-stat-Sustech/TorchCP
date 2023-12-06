@@ -8,10 +8,10 @@
 import numpy as np
 from scipy import ndimage
 
-from advertorch.test_utils import generate_data_model_on_img
-from advertorch.utils import torch_allclose
-from advertorch.defenses import BinaryFilter
-from advertorch.defenses import MedianSmoothing2D
+from deepcp.test_utils import generate_data_model_on_img
+from deepcp.utils import torch_allclose
+from deepcp.defenses import BinaryFilter
+from deepcp.defenses import MedianSmoothing2D
 
 data, label, model = generate_data_model_on_img()
 

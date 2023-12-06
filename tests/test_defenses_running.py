@@ -11,16 +11,16 @@ import pytest
 import torch
 import torch.nn as nn
 
-from advertorch.test_utils import vecdata
-from advertorch.test_utils import vecmodel
-from advertorch.test_utils import imgdata
-from advertorch.test_utils import imgmodel
-from advertorch.test_utils import general_input_defenses
-from advertorch.test_utils import image_only_defenses
-from advertorch.test_utils import withgrad_defenses
-from advertorch.test_utils import nograd_defenses
-from advertorch.test_utils import defense_kwargs
-from advertorch.test_utils import defense_data
+from deepcp.test_utils import vecdata
+from deepcp.test_utils import vecmodel
+from deepcp.test_utils import imgdata
+from deepcp.test_utils import imgmodel
+from deepcp.test_utils import general_input_defenses
+from deepcp.test_utils import image_only_defenses
+from deepcp.test_utils import withgrad_defenses
+from deepcp.test_utils import nograd_defenses
+from deepcp.test_utils import defense_kwargs
+from deepcp.test_utils import defense_data
 
 cuda = "cuda"
 cpu = "cpu"

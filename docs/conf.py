@@ -85,7 +85,7 @@ sys.modules['randomstate'] = Mock()
 sys.modules['scipy._lib'] = Mock()
 
 # XXX: This import has to be after mock
-import advertorch  # noqa: F401, E402
+import deepcp  # noqa: F401, E402
 
 
 # -- Project information -----------------------------------------------------
@@ -162,7 +162,7 @@ def linkcode_resolve(domain, info):
         import inspect
         import os
         fn = inspect.getsourcefile(obj)
-        fn = os.path.relpath(fn, start=os.path.dirname(advertorch.__file__))
+        fn = os.path.relpath(fn, start=os.path.dirname(deepcp.__file__))
         source, lineno = inspect.getsourcelines(obj)
         return fn, lineno, lineno + len(source) - 1
 

@@ -7,15 +7,15 @@
 
 import pytest
 
-from advertorch.context import ctx_eval
-from advertorch.context import ctx_noparamgrad
-from advertorch.context import ctx_noparamgrad_and_eval
-from advertorch.context import get_param_grad_state
-from advertorch.context import get_module_training_state
-from advertorch.context import set_param_grad_off
-from advertorch.utils import torch_allclose
-from advertorch.test_utils import SimpleModel
-from advertorch.test_utils import vecdata
+from deepcp.context import ctx_eval
+from deepcp.context import ctx_noparamgrad
+from deepcp.context import ctx_noparamgrad_and_eval
+from deepcp.context import get_param_grad_state
+from deepcp.context import get_module_training_state
+from deepcp.context import set_param_grad_off
+from deepcp.utils import torch_allclose
+from deepcp.test_utils import SimpleModel
+from deepcp.test_utils import vecdata
 
 
 def _generate_models():
