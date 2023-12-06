@@ -23,3 +23,4 @@ _build/
 _tutorials/
 .coverage
 *.xml
+.history

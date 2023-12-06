@@ -1,21 +1,23 @@
-<a href="https://github.com/borealisai/advertorch" target="_blank"><img src="https://raw.githubusercontent.com/borealisai/advertorch/master/assets/logo.png?raw=true" alt="advertorch logo" width="200"></a>
+<!-- <a href="https://github.com/borealisai/advertorch" target="_blank"><img src="https://raw.githubusercontent.com/borealisai/advertorch/master/assets/logo.png?raw=true" alt="advertorch logo" width="200"></a>
 
 [![Build Status](https://travis-ci.org/BorealisAI/advertorch.svg?branch=master)](https://travis-ci.org/BorealisAI/advertorch)
 
 
-<a href="https://github.com/borealisai/advertorch" target="_blank"><img src="https://raw.githubusercontent.com/borealisai/advertorch/master/assets/advertorch.png?raw=true" alt="advertorch text" width="100"></a> is a Python toolbox for adversarial robustness research. The primary functionalities are implemented in PyTorch. Specifically, AdverTorch contains modules for generating adversarial perturbations and defending against adversarial examples, also scripts for adversarial training.
+<a href="https://github.com/borealisai/advertorch" target="_blank"><img src="https://raw.githubusercontent.com/borealisai/advertorch/master/assets/advertorch.png?raw=true" alt="advertorch text" width="100"></a>  -->
+
+DeepCP is a Python toolbox for conformal prediction research. The primary functionalities are implemented in PyTorch. Specifically, DeepCP contains modules of post-hoc methods and training methods for classification problems and regression problems.
 
 
-#### Latest version (v0.2)
+#### Latest version (v0.1)
 
 ## Installation
 
 ### Installing AdverTorch itself
 
-We developed AdverTorch under Python 3.6 and PyTorch 1.0.0 & 0.4.1. To install AdverTorch, simply run
+We developed DeepCP under Python 3.8 and PyTorch 1.0.0 & 0.4.1. To install DeepCP, simply run
 
 ```
-pip install advertorch
+pip install deeptorch
 ```
 
 or clone the repo and run
@@ -57,6 +59,25 @@ adv_untargeted = adversary.perturb(cln_data, true_label)
 target = torch.ones_like(true_label) * 3
 adversary.targeted = True
 adv_targeted = adversary.perturb(cln_data, target)
+```
+
+```python
+
+logits_cal = ...
+Y_cal = ...
+
+# init a conformal prediction predictor
+predictor = APS()
+ 
+# run a calibration process
+predictor.fit(logits_cal,Y_cal,alpha)
+
+# test examples (logits_test,Y_test)
+Y_Sets = predictor.predict(logits_test)
+
+# evaluate the prediction sets
+metrics = utils.coverage_rate(Y_sets,Y_test)
+
 ```
 
 For runnable examples see [`advertorch_examples/tutorial_attack_defense_bpda_mnist.ipynb`](https://github.com/BorealisAI/advertorch/blob/master/advertorch_examples/tutorial_attack_defense_bpda_mnist.ipynb) for how to attack and defend; see [`advertorch_examples/tutorial_train_mnist.py`](https://github.com/BorealisAI/advertorch/blob/master/advertorch_examples/tutorial_train_mnist.py) for how to adversarially train a robust model on MNIST.
@@ -102,12 +123,8 @@ If you use AdverTorch in your research, we kindly ask that you cite the followin
 
 ## Contributors
 
-* [Gavin Weiguang Ding](https://gwding.github.io/)
-* Luyu Wang
-* Xiaomeng Jin
-* Laurent Meunier
-* Alexandre Araujo
-* Jérôme Rony
-* Ben Feinstein
-* Francesco Croce
-* Taro Kiritani
+* [Hongxin Wei](https://hongxin001.github.io/)
+* [Jianguo Huang](https://github.com/Jianguo99)
+* [Huajun Xi]
+* [Xuanning Zhou]
+
