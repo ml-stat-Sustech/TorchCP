@@ -57,7 +57,7 @@ This project is licensed under the LGPL. The terms and conditions can be found i
 ## Contributors
 
 * [Hongxin Wei](https://hongxin001.github.io/)
-* [Jianguo Huang](https://github.com/Jianguo99)
+* [Jianguo Huang](https://jianguo99.github.io/)
 * [Huajun Xi]
 * [Xuanning Zhou]
 
