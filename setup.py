@@ -11,14 +11,14 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-with open(os.path.join(os.path.dirname(__file__), 'advertorch/VERSION')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'deepcp/VERSION')) as f:
     version = f.read().strip()
 
 
-setup(name='advertorch',
+setup(name='deepcp',
       version=version,
-      url='https://github.com/BorealisAI/advertorch',
-      package_data={'advertorch_examples': ['*.ipynb', 'trained_models/*.pt']},
+      url='https://github.com/ml-stat-Sustech/DeepCP',
+      package_data={'deepcp_examples': ['*.ipynb']},
       install_requires=[],
       include_package_data=True,
       packages=find_packages())

@@ -1,6 +1,6 @@
-# Contributing to AdverTorch
+# Contributing to deepcp
 
-Thank you considering contributing to AdverTorch!
+Thank you considering contributing to deepcp!
 
 This document provide brief guidelines for potential contributors.
 
@@ -10,19 +10,7 @@ We ask that you follow the `PEP8` coding style in your pull requests, [`flake8`]
 
 ---
 ### Detailed guidelines for contributing new attacks
-- *(mandatory)* The implementation file should be added to the folder `advertorch/attacks`, and the class should be imported in `advertorch/attacks/__init__.py`.
-- *(mandatory)* The attack should be included in different unit tests, this can be done by adding the attack class to different lists in `advertorch/test_utils.py`
-    + add to `general_input_attacks` if it can perturb input tensor of any shape (not limited to images),
-    + add to `image_only_attacks` if it only works on images,
-    + add to `label_attacks` if the attack manipulates labels,
-    + add to `feature_attacks` if the attack manipulates features,
-    + add to `batch_consistent_attacks` if the attack's behavior should be the same when it is applied to a single example or a batch,
-    + add to `targeted_only_attacks` if the attack is a label attack and does not work for the untargeted case,
-    + add entry to `attack_kwargs` in `advertorch/tests/test_attacks_running.py`, for setting the hyperparameters used for test.
-- *(mandatory)* Benchmark the attack with at least one performance measure, by adding a script to `advertorch_examples/attack_benchmarks`.
-- *(mandatory)* If the contributor has a GPU computer, run `pytest` locally to make sure all the tests pass. (This is because travis-ci currently do not provide GPU machines for continuous integration.) If the contributor does not have a GPU computer, please let us know in the pull request. 
-- *(optional)* When an attack can be compared against other implementations, a comparison test could be added to `advertorch/external_tests`.
-- *(optional)* Add an ipython notebook example.
+
 
 ---
 ### Copyright notice at the beginning of files

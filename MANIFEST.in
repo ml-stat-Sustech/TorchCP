@@ -1,8 +1,7 @@
 include tests/*.py
 include external_tests/*.py
-include advertorch/VERSION
+include deepcp/VERSION
 include pytest.ini
 include LICENSE
 include LICENSE.GPL
-include advertorch_examples/trained_models/*.pt
-include advertorch_examples/*.ipynb
+include deepcp_examples/*.ipynb

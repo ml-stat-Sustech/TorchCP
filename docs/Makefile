@@ -20,5 +20,5 @@ help:
 	rm -rf $(BUILDDIR)/*
 	rm -rf _tutorials/
 	mkdir _tutorials
-	ln -s ../../advertorch_examples/tutorial_attack_defense_bpda_mnist.ipynb _tutorials/tutorial_attack_defense_bpda_mnist.ipynb
+	ln -s ../../deepcp_examples/tutorial_attack_defense_bpda_mnist.ipynb _tutorials/tutorial_attack_defense_bpda_mnist.ipynb
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
