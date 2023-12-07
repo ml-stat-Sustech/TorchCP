@@ -1,5 +1,6 @@
 
 import torch
+import numpy as np
 
 from .base import BasePredictor
 
@@ -15,7 +16,9 @@ class StandardPredictor(BasePredictor):
         for index,(x,y) in enumerate(zip(x_cal,y_cal)):
             scores.append(self.score_function(x,y))
         scores = torch.tensor(scores)
-        self.q_hat = torch.quantile(scores,1-alpha)
+         
+        self.q_hat = torch.quantile( scores , np.ceil((scores.shape[0]+1) * (1-alpha)) / scores.shape[0] )
+
 
 
         

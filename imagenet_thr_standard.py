@@ -10,8 +10,8 @@ from torch.nn.functional import softmax
 
 from deepcp.classification.scores import THR  
 from deepcp.classification.predictor import StandardPredictor  
-from deepcp.classification.utils.metircs import Metrics  
-from deepcp.common import fix_randomness
+from deepcp.classification.utils.metircs import Metrics
+from deepcp.utils import fix_randomness
 
 
 fix_randomness(seed = 0)
@@ -77,6 +77,6 @@ for index,ele in enumerate(test_probailities):
     prediction_set  = predictor.predict(ele)
     prediction_sets.append(prediction_set)
 
-print("computing metrics...")
-metrics = Metrics(["coverage_rate"])
+print("Evaluating prediction sets...")
+metrics = Metrics(["coverage_rate","average_size"])
 print(metrics.compute(prediction_sets,test_labels))
