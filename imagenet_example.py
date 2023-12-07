@@ -11,7 +11,7 @@ from torch.nn.functional import softmax
 from deepcp.classification.scores import THR  
 from deepcp.classification.predictor import StandardPredictor  
 from deepcp.classification.utils.metircs import Metrics  
-from deepcp.common import fix_randomness  
+from deepcp.common import fix_randomness
 
 
 fix_randomness(seed = 0)

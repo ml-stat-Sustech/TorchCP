@@ -23,20 +23,32 @@ pip install -e .
 
 ## Examples
 ```python
-logits_cal = ...
-Y_cal = ...
+cal_labels = ...
+cal_probailities =  ...
 
-# init a conformal prediction predictor
-predictor = APS()
- 
-# run a calibration process
-predictor.fit(logits_cal,Y_cal,alpha)
+test_labels = ...
+test_probailities =  ...
 
-# test examples (logits_test,Y_test)
-Y_Sets = predictor.predict(logits_test)
+# define a score function
+thr_score_function = THR()
 
-# evaluate the prediction sets
-metrics = utils.coverage_rate(Y_sets,Y_test)
+# set significance level
+alpha = 0.1
+
+predictor = StandardPredictor(thr_score_function)
+predictor.fit(cal_probailities, cal_labels, alpha)
+
+# test examples
+print("testing examples...")
+prediction_sets = []
+for index,ele in enumerate(test_probailities):
+    prediction_set  = predictor.predict(ele)
+    prediction_sets.append(prediction_set)
+
+print("computing metrics...")
+metrics = Metrics(["coverage_rate"])
+print(metrics.compute(prediction_sets,test_labels))
+
 ```
 
 
