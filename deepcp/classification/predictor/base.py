@@ -6,7 +6,7 @@
 #
 
 
-from abc import ABCMeta,abstractmethod
+from abc import ABCMeta, abstractmethod
 
 
 class BasePredictor(object):
@@ -21,7 +21,7 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self,score_function):
+    def __init__(self, score_function):
         """
         :calibration_method: methods used to calibrate 
         :param **kwargs: optional parameters used by child classes.
@@ -29,9 +29,8 @@ class BasePredictor(object):
 
         self.score_function = score_function
 
-            
     @abstractmethod
-    def fit(self, x,y,alpha):
+    def fit(self, x, y, alpha):
         """Virtual method for generating the adversarial examples.
 
         :param x: the model's output logits.
@@ -39,7 +38,7 @@ class BasePredictor(object):
         :alpha: the significance level.
         """
         raise NotImplementedError
-        
+
     @abstractmethod
     def predict(self, x):
         """ prediction sets for test examples.
