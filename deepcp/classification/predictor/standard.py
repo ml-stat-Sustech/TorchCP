@@ -8,6 +8,7 @@ class StandardPredictor(BasePredictor):
     def __init__(self, score_function):0
         super().__init__(score_function)
 
+
     def fit(self, x_cal, y_cal, alpha):
         scores = []
         for index, (x, y) in enumerate(zip(x_cal, y_cal)):
