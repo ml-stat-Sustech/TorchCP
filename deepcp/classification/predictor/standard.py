@@ -21,3 +21,5 @@ class StandardPredictor(BasePredictor):
         scores = self.score_function.predict(x)
         S = torch.argwhere(scores < self.q_hat).reshape(-1).tolist()
         return S
+
+
