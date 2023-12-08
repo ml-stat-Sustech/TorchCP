@@ -52,7 +52,7 @@ print(metrics.compute(prediction_sets,test_labels))
 ```
 
 
-## Coming Soon
+## Coming Soon later
 
 DeepCP is still under active development. We will add the following features/items down the road:
 
