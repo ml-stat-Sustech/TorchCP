@@ -17,6 +17,7 @@ class StandardPredictor(BasePredictor):
 
         self.q_hat = torch.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
 
+
     def predict(self, x):
         scores = self.score_function.predict(x)
         S = torch.argwhere(scores < self.q_hat).reshape(-1).tolist()
