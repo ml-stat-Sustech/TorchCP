@@ -18,7 +18,7 @@ class APS(DaseScoreFunction):
         else:
             self.penalties = torch.zeros(class_num)
             self.penalties[kreg:] += penalty
-        self.penalties_cumsum =  torch.cumsum(self.penalties)
+        self.penalties_cumsum =  torch.cumsum(self.penalties,dim=0)
     def __call__(self, probabilities, y):
 
         # sorting probabilities
