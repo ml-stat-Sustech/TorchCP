@@ -14,7 +14,7 @@ class SAPS(APS):
 
         :kreg : the rank of regularization [0,labels_num]
         """
-        super(APS, self).__init__()
+        super(SAPS, self).__init__()
         self.__randomized = randomized
         self.__penalty = penalty
 
