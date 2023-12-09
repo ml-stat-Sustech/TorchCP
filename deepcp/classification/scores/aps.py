@@ -35,7 +35,7 @@ class APS(DaseScoreFunction):
     def predict(self, probabilities):
         I, ordered, cumsum = self.__sort_sum(probabilities)
         U = torch.rand(probabilities.shape[0])
-        reg = torch.maximum(self.__penalty * ( torch.arange(1,probabilities.shape[0]+1) - self.__kreg), torch.zeros(size=probabilities.shape[0]))
+        reg = torch.maximum((self.__penalty * ( torch.arange(1,probabilities.shape[0]+1) - self.__kreg), torch.zeros(size=probabilities.shape[0])))
         if self.__randomized:
             ordered_scores = cumsum - ordered * U + reg
         else:
