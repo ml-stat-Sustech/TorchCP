@@ -45,12 +45,3 @@ class SAPS(APS):
             ordered_scores = cumsum
         return ordered_scores[torch.sort(I,descending= False)[1]]
 
-    def __sort_sum(self,probabilities):
-
-        #ordered: the ordered probabilities in descending order
-        #indices: the rank of ordered probabilities in descending order
-        ordered,indices = torch.sort(probabilities,descending= True)
-        # the accumulation of sorted probabilities
-        cumsum = torch.cumsum(ordered,dim=0)
-        return indices, ordered, cumsum
-
