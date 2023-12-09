@@ -31,7 +31,6 @@ if __name__ == '__main__':
     parser.add_argument('--kreg', default=0, type=int)
     args = parser.parse_args()
 
-
     fix_randomness(seed = args.seed)
 
 
