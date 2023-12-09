@@ -53,6 +53,6 @@ class APS(DaseScoreFunction):
         #indices: the rank of ordered probabilities in descending order
         ordered,indices = torch.sort(probabilities,descending= True)
         # the accumulation of sorted probabilities
-        cumsum = torch.cumsum(ordered)
+        cumsum = torch.cumsum(ordered,dim=0)
         return indices, ordered, cumsum
 
