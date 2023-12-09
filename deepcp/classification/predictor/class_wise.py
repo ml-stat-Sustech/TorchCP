@@ -13,8 +13,6 @@ from deepcp.classification.predictor.base import BasePredictor
 
 
 class ClassWisePredictor(BasePredictor):
-    def __init__(self, score_function):
-        super().__init__(score_function)
 
     def calibrate(self, x_cal, y_cal, alpha):
         # the number of labels
