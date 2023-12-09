@@ -17,19 +17,15 @@ from deepcp.classification.scores.aps import APS
 
 class SAPS(APS):
     def __init__(self, penalty=0, randomized=True):
-        """
-
-        :kreg : the rank of regularization [0,labels_num]
-        """
-        super(SAPS, self).__init__()
-        self.__randomized = randomized
+        super(SAPS, self).__init__(randomized)
         self.__penalty = penalty
+        #todo: add lambda?
+
 
     def __call__(self, probs, y):
-
         # sorting probabilities
-        I, ordered, cumsum = self._sort_sum(probs)
-        idx = torch.where(I == y)[0]
+        indices, ordered, cumsum = self._sort_sum(probs)
+        idx = torch.where(indices == y)[0]
         if not self.__randomized:
             return self.__penalty * idx + ordered[0]
         else:
