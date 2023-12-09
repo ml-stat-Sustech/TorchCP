@@ -13,11 +13,11 @@ class APS(DaseScoreFunction):
         super(APS, self).__init__()
         self.__randomized = randomized
         self.__lambda = penalty
-        if type(penalty) is not float:
-            self.penalties = penalty
-        else:
+        if (type(penalty) is float) or type(penalty) is int:
             self.penalties = torch.zeros(class_num)
             self.penalties[kreg:] += penalty
+        else:
+            self.penalties = penalty
         self.penalties_cumsum =  torch.cumsum(self.penalties,dim=0)
     def __call__(self, probabilities, y):
 
