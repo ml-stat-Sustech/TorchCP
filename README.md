@@ -56,7 +56,7 @@ print(metrics.compute(prediction_sets,test_labels))
 
 DeepCP is still under active development. We will add the following features/items down the road:
 
-* ClusterCP, Weigthed split CP.
+* ClusterCP, Weighted split conformal inference.
 * loss functions for CP
 * ...
 
