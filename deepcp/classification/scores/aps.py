@@ -9,11 +9,16 @@ import torch
 from deepcp.classification.scores.base import DaseScoreFunction
 
 class APS(DaseScoreFunction):
-    def __init__(self, randomized=True,allow_zero_sets =True):
+    def __init__(self, class_num = 1000, penalty = 0, kreg = 0,randomized=True):
         super(APS, self).__init__()
         self.__randomized = randomized
-        self.__allow_zero_sets =  allow_zero_sets
-
+        self.__lambda = penalty
+        if type(penalty) is not float:
+            self.penalties = penalty
+        else:
+            self.penalties = torch.zeros(class_num)
+            self.penalties[kreg:] += penalty
+        self.penalties_cumsum =  torch.cumsum(self.penalties)
     def __call__(self, probabilities, y):
 
         # sorting probabilities
@@ -22,24 +27,24 @@ class APS(DaseScoreFunction):
         tau_nonrandom = cumsum[idx]
 
         if not self.__randomized:
-            return tau_nonrandom
+            return tau_nonrandom + self.penalties[:idx].sum()
 
         U = np.random.random()
         if idx == torch.tensor(0):
-            return U * tau_nonrandom
+                return U * tau_nonrandom + self.penalties[0]
         else:
             if idx[0] == cumsum.shape[0]:
-                return U * ordered[idx] + cumsum[ idx - 1]
+                return U * ordered[idx] + cumsum[ idx - 1] + self.penalties[:idx].sum()
             else:
-                return U * ordered[idx] + cumsum[ idx - 1]
+                return U * ordered[idx] + cumsum[ idx - 1] + self.penalties[:idx+1].sum()
 
     def predict(self, probabilities):
         I, ordered, cumsum = self.__sort_sum(probabilities)
         U = torch.rand(probabilities.shape[0])
         if self.__randomized:
-            ordered_scores = cumsum - ordered * U
+            ordered_scores = cumsum - ordered * U + self.penalties_cumsum
         else:
-            ordered_scores = cumsum
+            ordered_scores = cumsum + self.penalties_cumsum
 
         return ordered_scores[torch.sort(I,descending= False)[1]]
 

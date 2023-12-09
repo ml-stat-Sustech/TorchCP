@@ -9,16 +9,16 @@ import torch
 from deepcp.classification.scores.base import DaseScoreFunction
 
 class RAPS(DaseScoreFunction):
-    def __init__(self, class_num = 100, penalty = 0, kreg = 0,randomized=True,allow_zero_sets =True):
+    def __init__(self, class_num = 100, penalty = 0, kreg = 0,randomized=True):
         super(RAPS, self).__init__()
         self.__randomized = randomized
-        self.__allow_zero_sets =  allow_zero_sets
         self.__lambda = penalty
         if type(penalty) is not float:
             self.penalties = penalty
         else:
             self.penalties = torch.zeros(class_num)
             self.penalties[kreg:] += penalty
+        self.penalties_cumsum =  torch.cumsum(self.penalties)
     def __call__(self, probabilities, y):
 
         # sorting probabilities
@@ -42,9 +42,9 @@ class RAPS(DaseScoreFunction):
         I, ordered, cumsum = self.__sort_sum(probabilities)
         U = torch.rand(probabilities.shape[0])
         if self.__randomized:
-            ordered_scores = cumsum - ordered * U
+            ordered_scores = cumsum - ordered * U + self.penalties_cumsum
         else:
-            ordered_scores = cumsum
+            ordered_scores = cumsum + self.penalties_cumsum
 
         return ordered_scores[torch.sort(I,descending= False)[1]]
 
