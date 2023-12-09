@@ -53,6 +53,6 @@ class APS(DaseScoreFunction):
         # the ordered probabilities in descending order
         ordered = np.sort(probabilities,axis=0)[::-1]
         # the accumulation of sorted probabilities
-        cumsum = np.cumsum(ordered,axis=1)
+        cumsum = np.cumsum(ordered,axis=0)
         return I, ordered, cumsum
 
