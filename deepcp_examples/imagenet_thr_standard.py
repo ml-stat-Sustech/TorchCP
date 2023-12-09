@@ -17,7 +17,7 @@ import torchvision.datasets as dset
 from torch.nn.functional import softmax
 
 from deepcp.classification.scores import THR  
-from deepcp.classification.predictor import StandardPredictor  
+from deepcp.classification.predictor import StandardPredictor,ClassWisePredictor
 from deepcp.classification.utils.metircs import Metrics
 from deepcp.utils import fix_randomness
 
@@ -75,7 +75,7 @@ test_probailities =  softmax(test_logits,dim=1)
 
 thr_score_function = THR()
 alpha = 0.1
-predictor = StandardPredictor(thr_score_function)
+predictor = ClassWisePredictor(thr_score_function)
 predictor.fit(cal_probailities, cal_labels, alpha)
 
 # test examples

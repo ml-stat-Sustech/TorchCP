@@ -11,12 +11,9 @@ from abc import ABCMeta, abstractmethod
 
 class BasePredictor(object):
     """
-    Abstract base class for all attack classes.
+    Abstract base class for all predictor classes.
 
-    :param predict: forward pass function.
-    :param loss_fn: loss function that takes .
-    :param clip_min: mininum value per input dimension.
-    :param clip_max: maximum value per input dimension.
+    :param score_function: non-conformity score function.
     """
 
     __metaclass__ = ABCMeta
@@ -31,17 +28,17 @@ class BasePredictor(object):
 
     @abstractmethod
     def fit(self, x, y, alpha):
-        """Virtual method for generating the adversarial examples.
+        """Virtual method to calibrate the calibration set.
 
         :param x: the model's output logits.
-        :y : optional parameters used by child classes.
+        :y : labels of calibration set.
         :alpha: the significance level.
         """
         raise NotImplementedError
 
     @abstractmethod
     def predict(self, x):
-        """ prediction sets for test examples.
+        """generate a prediction set for a test example.
 
         :param x: the model's output logits.
         """
