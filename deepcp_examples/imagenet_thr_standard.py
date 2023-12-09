@@ -75,8 +75,8 @@ test_probailities =  softmax(test_logits,dim=1)
 # score_function = THR()
 score_function = APS()
 alpha = 0.1
-# predictor = StandardPredictor(thr_score_function)
-predictor = ClassWisePredictor(score_function)
+predictor = StandardPredictor(score_function)
+# predictor = ClassWisePredictor(score_function)
 predictor.fit(cal_probailities, cal_labels, alpha)
 
 # test examples

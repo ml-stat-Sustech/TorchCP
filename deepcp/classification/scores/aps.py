@@ -18,34 +18,33 @@ class APS(DaseScoreFunction):
 
         # sorting probabilities
         I, ordered, cumsum = self.__sort_sum(probabilities)
-        idx = torch.where(I == y).view(-1)
+        idx = torch.where(I == y)[0]
         tau_nonrandom = cumsum[idx]
 
         if not self.__randomized:
             return tau_nonrandom
 
         U = np.random.random()
-        if idx == (0, 0):
+        if idx == torch.tensor(0):
             if not self.__allow_zero_sets:
                 return tau_nonrandom
             else:
                 return U * tau_nonrandom
         else:
-            if idx[1][0] == cumsum.shape[0]:
-                return U * ordered[idx] + cumsum[(idx[0], idx[1] - 1)]
+            if idx[0] == cumsum.shape[0]:
+                return U * ordered[idx] + cumsum[ idx - 1]
             else:
-                return U * ordered[idx] + cumsum[(idx[0], idx[1] - 1)]
+                return U * ordered[idx] + cumsum[ idx - 1]
 
     def predict(self, probabilities):
         I, ordered, cumsum = self.__sort_sum(probabilities)
         U = torch.rand(probabilities.shape[0])
         if self.__randomized:
-            ordered_scores = cumsum - probabilities*U
+            ordered_scores = cumsum - ordered*U
         else:
             ordered_scores = cumsum
 
-
-        return ordered_scores[I]
+        return ordered_scores[torch.sort(I,descending= False)[1]]
 
     def __sort_sum(self,probabilities):
 
