@@ -64,7 +64,6 @@ else:
         pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
-
 cal_logits = torch.stack([sample[0] for sample in cal_data])
 cal_labels = torch.stack([sample[1] for sample in cal_data])
 cal_probailities =  softmax(cal_logits,dim=1)
