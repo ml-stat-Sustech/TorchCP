@@ -27,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--score', default="APS", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=0, type=float)
+    parser.add_argument('--kreg', default=0, type=int)
     args = parser.parse_args()
 
 
