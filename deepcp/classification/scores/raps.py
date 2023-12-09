@@ -8,12 +8,17 @@ import torch
 
 from deepcp.classification.scores.base import DaseScoreFunction
 
-class APS(DaseScoreFunction):
-    def __init__(self, randomized=True,allow_zero_sets =True):
-        super(APS, self).__init__()
+class RAPS(DaseScoreFunction):
+    def __init__(self, class_num = 100, penalty = 0, kreg = 0,randomized=True,allow_zero_sets =True):
+        super(RAPS, self).__init__()
         self.__randomized = randomized
         self.__allow_zero_sets =  allow_zero_sets
-
+        self.__lambda = penalty
+        if type(penalty) is not float:
+            self.penalties = penalty
+        else:
+            self.penalties = torch.zeros(class_num)
+            self.penalties[kreg:] += penalty
     def __call__(self, probabilities, y):
 
         # sorting probabilities
@@ -22,16 +27,16 @@ class APS(DaseScoreFunction):
         tau_nonrandom = cumsum[idx]
 
         if not self.__randomized:
-            return tau_nonrandom
+            return tau_nonrandom + self.penalties[:idx].sum()
 
         U = np.random.random()
         if idx == torch.tensor(0):
-            return U * tau_nonrandom
+                return U * tau_nonrandom + self.penalties[0]
         else:
             if idx[0] == cumsum.shape[0]:
-                return U * ordered[idx] + cumsum[ idx - 1]
+                return U * ordered[idx] + cumsum[ idx - 1] + self.penalties[:idx].sum()
             else:
-                return U * ordered[idx] + cumsum[ idx - 1]
+                return U * ordered[idx] + cumsum[ idx - 1] + self.penalties[:idx+1].sum()
 
     def predict(self, probabilities):
         I, ordered, cumsum = self.__sort_sum(probabilities)
