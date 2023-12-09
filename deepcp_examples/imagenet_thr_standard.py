@@ -6,20 +6,19 @@
 #
 
 
-
-import os
-from tqdm import tqdm
-import pickle
 import argparse
+import os
+import pickle
 
 import torch
 import torchvision
-import torchvision.transforms as trn
 import torchvision.datasets as dset
+import torchvision.transforms as trn
 from torch.nn.functional import softmax
+from tqdm import tqdm
 
-from deepcp.classification.scores import THR,APS,SAPS
-from deepcp.classification.predictor import StandardPredictor,ClassWisePredictor
+from deepcp.classification.predictor import StandardPredictor
+from deepcp.classification.scores import THR, APS, SAPS
 from deepcp.classification.utils.metircs import Metrics
 from deepcp.utils import fix_randomness
 
@@ -31,33 +30,30 @@ if __name__ == '__main__':
     parser.add_argument('--kreg', default=0, type=int)
     args = parser.parse_args()
 
-
-    fix_randomness(seed = args.seed)
-
+    fix_randomness(seed=args.seed)
 
     model_name = 'ResNet101'
-    fname = ".cache/"+model_name+".pkl"
+    fname = ".cache/" + model_name + ".pkl"
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
-            dataset =  pickle.load(handle)
+            dataset = pickle.load(handle)
 
     else:
         # load dataset
         transform = trn.Compose([trn.Resize(256),
-                                        trn.CenterCrop(224),
-                                        trn.ToTensor(),
-                                        trn.Normalize(mean=[0.485, 0.456, 0.406],
-                                                    std =[0.229, 0.224, 0.225])
-                                        ])
+                                 trn.CenterCrop(224),
+                                 trn.ToTensor(),
+                                 trn.Normalize(mean=[0.485, 0.456, 0.406],
+                                               std=[0.229, 0.224, 0.225])
+                                 ])
         usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir,"data")
-        dataset = dset.ImageFolder(data_dir+"/imagenet/val",
-                                            transform)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size = 320, shuffle=False, pin_memory=True)
+        data_dir = os.path.join(usr_dir, "data")
+        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
+                                   transform)
+        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
 
         # load model
         model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
-
 
         logits_list = []
         labels_list = []
@@ -76,30 +72,30 @@ if __name__ == '__main__':
     cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_logits = torch.stack([sample[0] for sample in cal_data])
     cal_labels = torch.stack([sample[1] for sample in cal_data])
-    cal_probailities =  softmax(cal_logits,dim=1)
+    cal_probailities = softmax(cal_logits, dim=1)
 
     test_logits = torch.stack([sample[0] for sample in val_data])
     test_labels = torch.stack([sample[1] for sample in val_data])
-    test_probailities =  softmax(test_logits,dim=1)
+    test_probailities = softmax(test_logits, dim=1)
 
     if args.score == "THR":
         score_function = THR()
     elif args.score == "APS":
-        score_function = APS(penalty=args.penalty,kreg=args.kreg)
+        score_function = APS(penalty=args.penalty, kreg=args.kreg)
     elif args.score == "SAPS":
         score_function = SAPS(penalty=args.penalty)
     alpha = 0.1
     predictor = StandardPredictor(score_function)
     # predictor = ClassWisePredictor(score_function)
-    predictor.calibration(cal_probailities, cal_labels, alpha)
+    predictor.calibrate(cal_probailities, cal_labels, alpha)
 
     # test examples
     print("testing examples...")
     prediction_sets = []
-    for index,ele in enumerate(test_probailities):
-        prediction_set  = predictor.predict(ele)
+    for index, ele in enumerate(test_probailities):
+        prediction_set = predictor.predict(ele)
         prediction_sets.append(prediction_set)
 
     print("Evaluating prediction sets...")
-    metrics = Metrics(["coverage_rate","average_size"])
-    print(metrics.compute(prediction_sets,test_labels))
+    metrics = Metrics(["coverage_rate", "average_size"])
+    print(metrics.compute(prediction_sets, test_labels))

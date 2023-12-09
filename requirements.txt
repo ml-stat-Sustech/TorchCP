@@ -1,0 +1,5 @@
+torch~=1.6.0
+numpy~=1.18.1
+setuptools~=40.6.3
+torchvision~=0.10.0
+tqdm~=4.29.1

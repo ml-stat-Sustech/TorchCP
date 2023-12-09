@@ -16,8 +16,7 @@ class StandardPredictor(BasePredictor):
     def __init__(self, score_function):
         super().__init__(score_function)
 
-
-    def calibration(self, x_cal, y_cal, alpha):
+    def calibrate(self, x_cal, y_cal, alpha):
         scores = []
         for index, (x, y) in enumerate(zip(x_cal, y_cal)):
             scores.append(self.score_function(x, y))
@@ -30,4 +29,3 @@ class StandardPredictor(BasePredictor):
         scores = self.score_function.predict(x)
         S = torch.argwhere(scores < self.q_hat).reshape(-1).tolist()
         return S
-

@@ -1,2 +1,2 @@
 from .standard import StandardPredictor
-from .class_wise import  ClassWisePredictor
+from .class_wise import ClassWisePredictor

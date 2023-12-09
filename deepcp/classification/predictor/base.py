@@ -27,7 +27,7 @@ class BasePredictor(object):
         self.score_function = score_function
 
     @abstractmethod
-    def calibration(self, x, y, alpha):
+    def calibrate(self, x, y, alpha):
         """Virtual method to calibrate the calibration set.
 
         :param x: the model's output logits.
