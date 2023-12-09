@@ -15,8 +15,8 @@ class ClassWisePredictor(BasePredictor):
         self.q_hats = torch.zeros(labels_num)
         for index,label in enumerate(self.q_hats):
             scores = []
-            x_cal_tmp = x_cal[y_cal==index]
-            y_cal_tmp = y_cal[y_cal==index]
+            x_cal_tmp = x_cal[y_cal==label]
+            y_cal_tmp = y_cal[y_cal==label]
             for index, (x, y) in enumerate(zip(x_cal_tmp, y_cal_tmp)):
                 scores.append(self.score_function(x, y))
             scores = torch.tensor(scores)
