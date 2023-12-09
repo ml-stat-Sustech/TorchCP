@@ -1,15 +1,14 @@
 
 
-from typing import Any
+from deepcp.classification.scores.base import DaseScoreFunction
 
-
-class THR:
+class THR(DaseScoreFunction):
     def __init__(self) -> None:
         pass
     
     
-    def __call__(self, x, y):
-        return 1-x[y]
+    def __call__(self,probabilities,y):
+        return 1-probabilities[y]
     
-    def predict(self,x):
-        return 1-x
+    def predict(self,probabilities):
+        return 1-probabilities

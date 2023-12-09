@@ -24,5 +24,5 @@ class ClassWisePredictor(BasePredictor):
 
     def predict(self, x):
         x_scores = self.score_function.predict(x)
-        S = torch.argwhere(x_scores < self.q_hats).reshape(-1).tolist()
+        S = torch.argwhere( x_scores < self.q_hats ).reshape(-1).tolist()
         return S
