@@ -13,7 +13,7 @@ class ClassWisePredictor(BasePredictor):
         # the number of labels
         labels_num = x_cal.shape[1]
         self.q_hats = torch.zeros(labels_num)
-        for index,label in enumerate(self.q_hats)
+        for index,label in enumerate(self.q_hats):
             scores = []
             x_cal_tmp = x_cal[y_cal==index]
             y_cal_tmp = y_cal[y_cal==index]
