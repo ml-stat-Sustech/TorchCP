@@ -48,11 +48,11 @@ class APS(DaseScoreFunction):
         return ordered_scores[I]
 
     def __sort_sum(self,probabilities):
-        # the rank of ordered probabilities in descending order
-        I = torch.argsort(probabilities,descending=True)
-        # the ordered probabilities in descending order
-        ordered = torch.sort(probabilities,descending= True)
+
+        #ordered: the ordered probabilities in descending order
+        #indices: the rank of ordered probabilities in descending order
+        ordered,indices = torch.sort(probabilities,descending= True)
         # the accumulation of sorted probabilities
         cumsum = torch.cumsum(ordered)
-        return I, ordered, cumsum
+        return indices, ordered, cumsum
 
