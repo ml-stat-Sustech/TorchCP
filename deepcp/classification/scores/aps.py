@@ -18,7 +18,7 @@ class APS(DaseScoreFunction):
 
         # sorting probabilities
         I, ordered, cumsum = self.__sort_sum(probabilities)
-        idx = np.where(I == y)
+        idx = torch.where(I == y).reshape(-1)
         tau_nonrandom = cumsum[idx]
 
         if not self.__randomized:
@@ -31,7 +31,7 @@ class APS(DaseScoreFunction):
             else:
                 return U * tau_nonrandom
         else:
-            if idx[1][0] == cumsum.shape[1]:
+            if idx[1][0] == cumsum.shape[0]:
                 return U * ordered[idx] + cumsum[(idx[0], idx[1] - 1)]
             else:
                 return U * ordered[idx] + cumsum[(idx[0], idx[1] - 1)]
