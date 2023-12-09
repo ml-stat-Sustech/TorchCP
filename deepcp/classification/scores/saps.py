@@ -21,7 +21,7 @@ class SAPS(APS):
     def __call__(self, probabilities, y):
 
         # sorting probabilities
-        I, ordered, cumsum = self.__sort_sum(probabilities)
+        I, ordered, cumsum = self._sort_sum(probabilities)
         idx = torch.where( I == y )[0]
         if not self.__randomized:
             return self.__penalty*idx  + ordered[0]
@@ -35,7 +35,7 @@ class SAPS(APS):
 
 
     def predict(self, probabilities):
-        I, ordered, _ = self.__sort_sum(probabilities)
+        I, ordered, _ = self._sort_sum(probabilities)
         ordered[1:] = 0
         cumsum = torch.cumsum(ordered,dim=0)
         U = torch.rand(probabilities.shape[0])

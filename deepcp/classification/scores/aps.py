@@ -22,7 +22,7 @@ class APS(DaseScoreFunction):
     def __call__(self, probabilities, y):
 
         # sorting probabilities
-        I, ordered, cumsum = self.__sort_sum(probabilities)
+        I, ordered, cumsum = self._sort_sum(probabilities)
         idx = torch.where(I == y)[0]
         reg = torch.maximum(self.__penalty * (idx+1 - self.__kreg), torch.tensor(0))
         if not self.__randomized:
@@ -37,7 +37,7 @@ class APS(DaseScoreFunction):
 
 
     def predict(self, probabilities):
-        I, ordered, cumsum = self.__sort_sum(probabilities)
+        I, ordered, cumsum = self._sort_sum(probabilities)
         U = torch.rand(probabilities.shape[0])
         reg = torch.maximum(self.__penalty * ( torch.arange(1,probabilities.shape[0]+1) - self.__kreg), torch.tensor(0))
         if self.__randomized:
@@ -46,7 +46,7 @@ class APS(DaseScoreFunction):
             ordered_scores = cumsum + reg
         return ordered_scores[torch.sort(I,descending= False)[1]]
 
-    def __sort_sum(self,probabilities):
+    def _sort_sum(self,probabilities):
 
         #ordered: the ordered probabilities in descending order
         #indices: the rank of ordered probabilities in descending order
