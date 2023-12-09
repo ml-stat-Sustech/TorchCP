@@ -1,9 +1,10 @@
-# Copyright (c) 2023-present, (Nan).
+# Copyright (c) 2023-present, SUSTech-ML.
 # All rights reserved.
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
+
 
 
 import os
@@ -90,7 +91,7 @@ if __name__ == '__main__':
     alpha = 0.1
     predictor = StandardPredictor(score_function)
     # predictor = ClassWisePredictor(score_function)
-    predictor.fit(cal_probailities, cal_labels, alpha)
+    predictor.calibration(cal_probailities, cal_labels, alpha)
 
     # test examples
     print("testing examples...")

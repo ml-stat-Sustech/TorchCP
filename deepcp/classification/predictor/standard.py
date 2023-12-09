@@ -1,3 +1,11 @@
+# Copyright (c) 2023-present, SUSTech-ML.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+#
+
+
 import torch
 import numpy as np
 
@@ -9,7 +17,7 @@ class StandardPredictor(BasePredictor):
         super().__init__(score_function)
 
 
-    def fit(self, x_cal, y_cal, alpha):
+    def calibration(self, x_cal, y_cal, alpha):
         scores = []
         for index, (x, y) in enumerate(zip(x_cal, y_cal)):
             scores.append(self.score_function(x, y))

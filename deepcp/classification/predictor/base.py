@@ -1,4 +1,4 @@
-# Copyright (c) 2018-present, ml-stat-Sustech.
+# Copyright (c) 2023-present, SUSTech-ML.
 # All rights reserved.
 #
 # This source code is licensed under the license found in the
@@ -27,7 +27,7 @@ class BasePredictor(object):
         self.score_function = score_function
 
     @abstractmethod
-    def fit(self, x, y, alpha):
+    def calibration(self, x, y, alpha):
         """Virtual method to calibrate the calibration set.
 
         :param x: the model's output logits.

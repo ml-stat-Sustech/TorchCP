@@ -1,3 +1,11 @@
+# Copyright (c) 2023-present, SUSTech-ML.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+#
+
+
 import torch
 import numpy as np
 
@@ -9,7 +17,7 @@ class ClassWisePredictor(BasePredictor):
         super().__init__(score_function)
 
 
-    def fit(self, x_cal, y_cal, alpha):
+    def calibration(self, x_cal, y_cal, alpha):
         # the number of labels
         labels_num = x_cal.shape[1]
         self.q_hats = torch.zeros(labels_num)
