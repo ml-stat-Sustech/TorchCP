@@ -8,14 +8,13 @@
 # The reference repository is https://github.com/aangelopoulos/conformal_classification
 
 
-import numpy as np
 import torch
 
-from deepcp.classification.scores.base import BaseScoreFunction
+from deepcp.classification.scores.aps import APS
 
 
-class RAPS(BaseScoreFunction):
-    def __init__(self, penalty=0, kreg=0, randomized=True):
+class RAPS(APS):
+    def __init__(self, penalty, kreg, randomized=True):
         """
         :kreg : the rank of regularization [0,labels_num]
         """
@@ -47,12 +46,3 @@ class RAPS(BaseScoreFunction):
         else:
             ordered_scores = cumsum + reg
         return ordered_scores[torch.sort(I, descending=False)[1]]
-
-    def _sort_sum(self, probs):
-
-        # ordered: the ordered probabilities in descending order
-        # indices: the rank of ordered probabilities in descending order
-        ordered, indices = torch.sort(probs, descending=True)
-        # the accumulation of sorted probabilities
-        cumsum = torch.cumsum(ordered, dim=0)
-        return indices, ordered, cumsum
