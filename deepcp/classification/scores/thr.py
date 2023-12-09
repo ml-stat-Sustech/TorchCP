@@ -6,10 +6,10 @@
 #
 
 
-from deepcp.classification.scores.base import DaseScoreFunction
+from deepcp.classification.scores.base import BaseScoreFunction
 
 
-class THR(DaseScoreFunction):
+class THR(BaseScoreFunction):
     def __init__(self) -> None:
         pass
 

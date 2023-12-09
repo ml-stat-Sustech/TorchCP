@@ -11,10 +11,10 @@
 import numpy as np
 import torch
 
-from deepcp.classification.scores.base import DaseScoreFunction
+from deepcp.classification.scores.base import BaseScoreFunction
 
 
-class APS(DaseScoreFunction):
+class APS(BaseScoreFunction):
     def __init__(self, penalty=0, kreg=0, randomized=True):
         """
         :kreg : the rank of regularization [0,labels_num]
