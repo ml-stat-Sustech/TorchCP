@@ -17,7 +17,7 @@ import torchvision.transforms as trn
 import torchvision.datasets as dset
 from torch.nn.functional import softmax
 
-from deepcp.classification.scores import THR,APS
+from deepcp.classification.scores import THR,APS,SAPS
 from deepcp.classification.predictor import StandardPredictor,ClassWisePredictor
 from deepcp.classification.utils.metircs import Metrics
 from deepcp.utils import fix_randomness
@@ -85,6 +85,8 @@ if __name__ == '__main__':
         score_function = THR()
     elif args.score == "APS":
         score_function = APS(penalty=args.penalty,kreg=args.kreg)
+    elif args.score == "SAPS":
+        score_function = SAPS(penalty=args.penalty, kreg=args.kreg)
     alpha = 0.1
     predictor = StandardPredictor(score_function)
     # predictor = ClassWisePredictor(score_function)
