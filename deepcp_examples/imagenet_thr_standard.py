@@ -84,7 +84,7 @@ if __name__ == '__main__':
     if args.score == "THR":
         score_function = THR()
     elif args.score == "APS":
-        score_function = APS(penalty=args.penalty)
+        score_function = APS(penalty=args.penalty,kreg=args.kreg)
     alpha = 0.1
     predictor = StandardPredictor(score_function)
     # predictor = ClassWisePredictor(score_function)
