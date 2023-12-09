@@ -25,6 +25,7 @@ class APS(DaseScoreFunction):
         I, ordered, cumsum = self.__sort_sum(probabilities)
         idx = torch.where(I == y)[0]
         reg = torch.maximum(self.__penalty * (idx+1 - self.__kreg), torch.tensor(0))
+        print(reg)
         if not self.__randomized:
             return cumsum[idx] + reg
         else:
