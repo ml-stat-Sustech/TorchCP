@@ -14,7 +14,7 @@ __all__ = ["fix_randomness"]
 
 
 def fix_randomness(seed=0):
-    ### Fix randomness 
+    # Fix randomness
     np.random.seed(seed=seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
