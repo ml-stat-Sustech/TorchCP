@@ -86,7 +86,7 @@ if __name__ == '__main__':
     elif args.score == "APS":
         score_function = APS(penalty=args.penalty,kreg=args.kreg)
     elif args.score == "SAPS":
-        score_function = SAPS(penalty=args.penalty, kreg=args.kreg)
+        score_function = SAPS(penalty=args.penalty)
     alpha = 0.1
     predictor = StandardPredictor(score_function)
     # predictor = ClassWisePredictor(score_function)
