@@ -10,8 +10,6 @@ from deepcp.classification.scores.base import BaseScoreFunction
 
 
 class THR(BaseScoreFunction):
-    def __init__(self) -> None:
-        pass
 
     def __call__(self, probs, y):
         return 1 - probs[y]

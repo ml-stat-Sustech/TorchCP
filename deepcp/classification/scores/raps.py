@@ -8,7 +8,7 @@
 # The reference repository is https://github.com/aangelopoulos/conformal_classification
 
 
-import torch
+import numpy as np
 
 from deepcp.classification.scores.aps import APS
 
@@ -16,8 +16,14 @@ from deepcp.classification.scores.aps import APS
 class RAPS(APS):
     def __init__(self, penalty, kreg, randomized=True):
         """
+        when penalty=0, RAPS=APS.
+        
         :kreg : the rank of regularization [0,labels_num]
         """
+        if penalty <= 0:
+            raise ValueError("Weight must be a positive value.")
+        
+        
         super(RAPS, self).__init__(randomized)
         self.__penalty = penalty
         self.__kreg = kreg
@@ -26,23 +32,23 @@ class RAPS(APS):
 
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
-        idx = torch.where(indices == y)[0]
-        reg = torch.maximum(self.__penalty * (idx + 1 - self.__kreg), torch.tensor(0))
-        if not self.__randomized:
+        idx = np.where(indices == y)[0]
+        reg = np.maximum(self.__penalty * (idx + 1 - self.__kreg), 0)
+        if not self._randomized:
             return cumsum[idx] + reg
         else:
-            U = torch.rand(1)[0]
-            if idx == torch.tensor(0):
+            U = np.random.rand(1)[0]
+            if idx == 0:
                 return U * cumsum[idx] + reg
             else:
                 return U * ordered[idx] + cumsum[idx - 1] + reg
 
     def predict(self, probs):
         I, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(probs.shape[0])
-        reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[0] + 1) - self.__kreg), torch.tensor(0))
-        if self.__randomized:
+        U = np.random.rand(probs.shape[0])
+        reg = np.maximum(self.__penalty * (np.arange(1, probs.shape[0] + 1) - self.__kreg), 0)
+        if self._randomized:
             ordered_scores = cumsum - ordered * U + reg
         else:
             ordered_scores = cumsum + reg
-        return ordered_scores[torch.sort(I, descending=False)[1]]
+        return ordered_scores[I.argsort(axis=0)]

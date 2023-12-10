@@ -31,8 +31,8 @@ class BasePredictor(object):
         """Virtual method to calibrate the calibration set.
 
         :param x: the model's output logits.
-        :y : labels of calibration set.
-        :alpha: the significance level.
+        :param y : labels of calibration set.
+        :param alpha: the significance level.
         """
         raise NotImplementedError
 

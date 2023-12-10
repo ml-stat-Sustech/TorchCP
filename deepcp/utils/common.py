@@ -19,3 +19,7 @@ def fix_randomness(seed=0):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     random.seed(seed)
+
+
+class DimensionError(Exception):
+    pass

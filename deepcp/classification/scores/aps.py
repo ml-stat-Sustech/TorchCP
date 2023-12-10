@@ -9,7 +9,6 @@
 
 
 import numpy as np
-import torch
 
 from deepcp.classification.scores.base import BaseScoreFunction
 
@@ -17,36 +16,36 @@ from deepcp.classification.scores.base import BaseScoreFunction
 class APS(BaseScoreFunction):
     def __init__(self, randomized=True):
         super(APS, self).__init__()
-        self.__randomized = randomized
+        self._randomized = randomized
 
     def __call__(self, probs, y):
 
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
-        idx = torch.where(indices == y)[0]
-        if not self.__randomized:
+        idx = np.where(indices == y)[0]
+        if not self._randomized:
             return cumsum[idx]
         else:
-            U = torch.rand(1)[0]
-            if idx == torch.tensor(0):
+            U = np.random.rand(1)[0]
+            if idx == np.array(0):
                 return U * cumsum[idx]
             else:
                 return U * ordered[idx] + cumsum[idx - 1]
 
     def predict(self, probs):
         I, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(probs.shape[0])
-        if self.__randomized:
+        U = np.random.rand(probs.shape[0])
+        if self._randomized:
             ordered_scores = cumsum - ordered * U
         else:
             ordered_scores = cumsum
-        return ordered_scores[torch.sort(I, descending=False)[1]]
+        return ordered_scores[I.argsort(axis=0)]
 
     def _sort_sum(self, probs):
-
-        # ordered: the ordered probabilities in descending order
         # indices: the rank of ordered probabilities in descending order
-        ordered, indices = torch.sort(probs, descending=True)
+        indices = probs.argsort(axis=0)[::-1]
+        # ordered: the ordered probabilities in descending order
+        ordered = np.sort(probs,axis=0)[::-1]
         # the accumulation of sorted probabilities
-        cumsum = torch.cumsum(ordered, dim=0)
+        cumsum = np.cumsum(ordered,axis=0) 
         return indices, ordered, cumsum

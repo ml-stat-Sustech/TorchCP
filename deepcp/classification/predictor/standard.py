@@ -15,15 +15,13 @@ from deepcp.classification.predictor.base import BasePredictor
 class StandardPredictor(BasePredictor):
 
     def calibrate(self, x_cal, y_cal, alpha):
-        scores = []
+        scores = np.zeros(x_cal.shape[0])
         for index, (x, y) in enumerate(zip(x_cal, y_cal)):
-            scores.append(self.score_function(x, y))
-        scores = torch.tensor(scores)
+            scores[index] = self.score_function(x, y)
+        self.q_hat = np.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
 
-        self.q_hat = torch.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
-        print(self.q_hat)
 
     def predict(self, x):
         scores = self.score_function.predict(x)
-        S = torch.argwhere(scores < self.q_hat).reshape(-1).tolist()
+        S = np.argwhere(scores < self.q_hat).reshape(-1).tolist()
         return S

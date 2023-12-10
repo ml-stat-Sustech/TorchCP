@@ -17,16 +17,18 @@ import torchvision.transforms as trn
 from torch.nn.functional import softmax
 from tqdm import tqdm
 
-from deepcp.classification.predictor import StandardPredictor
-from deepcp.classification.scores import THR, APS, SAPS
+from deepcp.classification.predictor import StandardPredictor,ClusterPredictor,ClassWisePredictor
+from deepcp.classification.scores import THR, APS, SAPS,RAPS
 from deepcp.classification.utils.metircs import Metrics
 from deepcp.utils import fix_randomness
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train MNIST')
     parser.add_argument('--seed', default=0, type=int)
+    parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
     parser.add_argument('--score', default="APS", help="THR | APS | SAPS")
-    parser.add_argument('--penalty', default=0, type=float)
+    parser.add_argument('--penalty', default=1, type=float)
+    parser.add_argument('--weight', default=1, type=float)
     parser.add_argument('--kreg', default=0, type=int)
     args = parser.parse_args()
 
@@ -47,7 +49,7 @@ if __name__ == '__main__':
                                                std=[0.229, 0.224, 0.225])
                                  ])
         usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data")
+        data_dir = os.path.join(usr_dir, "data") 
         dataset = dset.ImageFolder(data_dir + "/imagenet/val",
                                    transform)
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
@@ -71,31 +73,42 @@ if __name__ == '__main__':
 
     cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_logits = torch.stack([sample[0] for sample in cal_data])
-    cal_labels = torch.stack([sample[1] for sample in cal_data])
-    cal_probailities = softmax(cal_logits, dim=1)
+    cal_labels = torch.stack([sample[1] for sample in cal_data]).numpy()
+    cal_probailities = softmax(cal_logits, dim=1).numpy()
 
     test_logits = torch.stack([sample[0] for sample in val_data])
-    test_labels = torch.stack([sample[1] for sample in val_data])
-    test_probailities = softmax(test_logits, dim=1)
+    test_labels = torch.stack([sample[1] for sample in val_data]).numpy()
+    test_probailities = softmax(test_logits, dim=1).numpy()
 
+
+    num_classes = 1000
     if args.score == "THR":
         score_function = THR()
     elif args.score == "APS":
-        score_function = APS(penalty=args.penalty, kreg=args.kreg)
+        score_function = APS()
+    elif args.score == "RAPS":
+        score_function = RAPS(args.penalty,args.kreg)
     elif args.score == "SAPS":
-        score_function = SAPS(penalty=args.penalty)
+        score_function = SAPS(weight=args.weight)
     alpha = 0.1
-    predictor = StandardPredictor(score_function)
-    # predictor = ClassWisePredictor(score_function)
+    if args.predictor  == "Standard":
+        predictor = StandardPredictor(score_function)
+    elif args.predictor  == "ClassWise":   
+        predictor = ClassWisePredictor(score_function)
+    elif args.predictor  == "Cluster":   
+        predictor = ClusterPredictor(score_function,args.seed)
+    print(f"The size of calibration set is {cal_labels.shape[0]}.")
     predictor.calibrate(cal_probailities, cal_labels, alpha)
 
     # test examples
-    print("testing examples...")
+    print("Testing examples...")
     prediction_sets = []
     for index, ele in enumerate(test_probailities):
         prediction_set = predictor.predict(ele)
         prediction_sets.append(prediction_set)
 
+    metrics = Metrics()
     print("Evaluating prediction sets...")
-    metrics = Metrics(["coverage_rate", "average_size"])
-    print(metrics.compute(prediction_sets, test_labels))
+    print(f"coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+    print(f"average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+    print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
