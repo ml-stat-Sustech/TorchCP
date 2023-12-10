@@ -14,7 +14,10 @@ from tqdm import tqdm
 from deepcp.classification.predictor.base import BasePredictor
 
 class StandardPredictor(BasePredictor):
-
+    
+    #############################
+    # The calibration process
+    ############################
     def calibrate(self, model, cal_dataloader, alpha):
         logits,labels = self._cal_model_output(model, cal_dataloader)
         probs = F.softmax(logits,dim=1)
@@ -30,18 +33,23 @@ class StandardPredictor(BasePredictor):
         self.q_hat = np.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
 
 
+    #############################
+    # The prediction process
+    ############################
     def predict(self, x_batch):
         logits = self.model(x_batch.to(self.model_device)).detach().cpu()
         probs_batch = F.softmax(logits,dim=1).numpy()
         sets = []
         for index, probs in enumerate(probs_batch):
-            scores = self.score_function.predict(probs)
-            sets.append(np.argwhere(scores < self.q_hat).reshape(-1).tolist())
+            sets.append(self.predict_with_probs(probs))
         return sets
     
     def predict_with_probs(self, probs):
         scores = self.score_function.predict(probs)
-        S = np.argwhere(scores < self.q_hat).reshape(-1).tolist()
+        S = self._generate_prediction_set(scores, self.q_hat)
         return S
+    
+    def _generate_prediction_set(self,scores, q_hat):
+        return np.argwhere(scores < q_hat).reshape(-1).tolist()
     
 

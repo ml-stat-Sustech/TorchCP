@@ -14,34 +14,38 @@ from sklearn.cluster import KMeans
 
 
 from deepcp.classification.predictor.base import BasePredictor
-from deepcp.classification.predictor.class_wise import ClassWisePredictor
+from deepcp.classification.predictor.class_wise import StandardPredictor
 from deepcp.utils.common import DimensionError
+from deepcp.classification.utils import Metrics
 
 
-class ClusterPredictor(ClassWisePredictor):
-    def __init__(self, score_function,seed):
-        super(ClusterPredictor, self).__init__(score_function)
-        self.__seed = seed
-
-    def calibrate(self, x_cal, y_cal, alpha, cluster_ratio= "auto", cluster_num = "auto", split= 'random',):
+class ClusterPredictor(StandardPredictor):
+    def __init__(self, score_function, seed, cluster_ratio= "auto", cluster_num = "auto", split= 'random'):
         """_summary_
 
         Args:
-            x_cal (_type_): _description_
-            y_cal (_type_): _description_
-            alpha (_type_): _description_
-            cluster_ratio (float, optional): _description_. Defaults to 0.2.
+            score_function (_type_): _description_
+            seed (_type_): random seed
+            cluster_ratio (float, optional): the ratio of examples for clustering step. Defaults to 0.2.
             split (str, optional):split: How to split data between clustering step and calibration step. Options are 'balanced' (sample n_clustering per class), 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability) 
         """
+        super(ClusterPredictor, self).__init__(score_function)
+        self.__seed = seed
+        self.__cluster_ratio =  cluster_ratio
+        self.__cluster_num =  cluster_num
+        self.__split =  split
 
-        num_classes = x_cal.shape[1]
-        scores = np.zeros(x_cal.shape[0])
-        for index, (x, y) in enumerate(zip(x_cal, y_cal)):
+        
+    def calibrate_threshold(self, probs, labels, alpha, ):
+
+        num_classes = probs.shape[1]
+        scores = np.zeros(probs.shape[0])
+        for index, (x, y) in enumerate(zip(probs, labels)):
             scores[index] = self.score_function(x, y)
 
         
-        if cluster_ratio == 'auto' and cluster_num == 'auto':
-            list_y_cal = y_cal.tolist()
+        if self.__cluster_ratio == 'auto' and self.__cluster_num == 'auto':
+            list_y_cal = labels.tolist()
 
             cts_dict = Counter(list_y_cal)
             cts = [cts_dict.get(k, 0) for k in range(num_classes)]
@@ -60,24 +64,24 @@ class ClusterPredictor(ClassWisePredictor):
 
         
         # 2a) Split data
-        if split == 'proportional':
+        if self.__split == 'proportional':
             n_k = [int(frac_clustering*cts[k]) for k in range(num_classes)]
             clustering_scores, clustering_labels, cal_scores, cal_labels = self.__split_X_and_y(scores, 
-                                                            y_cal, 
+                                                            labels, 
                                                             n_k, 
                                                             num_classes=num_classes, 
                                                             seed=self.__seed)
     #                                                            split=split, # Balanced or stratified sampling 
-        elif split == 'doubledip':
-            clustering_scores, clustering_labels = scores, y_cal
-            cal_scores, cal_labels = scores, y_cal
-        elif split == 'random':
+        elif self.__split == 'doubledip':
+            clustering_scores, clustering_labels = scores, labels
+            cal_scores, cal_labels = scores, labels
+        elif self.__split == 'random':
             # Each point is assigned to clustering set w.p. frac_clustering 
-            idx1 = np.random.uniform(size=(len(y_cal),)) < frac_clustering 
+            idx1 = np.random.uniform(size=(len(labels),)) < frac_clustering 
             clustering_scores = scores[idx1]
-            clustering_labels = y_cal[idx1]
+            clustering_labels = labels[idx1]
             cal_scores = scores[~idx1]
-            cal_labels = y_cal[~idx1]
+            cal_labels = labels[~idx1]
             
         else:
             raise Exception('Invalid split. Options are balanced, proportional, doubledip, and random')
@@ -117,16 +121,12 @@ class ClusterPredictor(ClassWisePredictor):
         # 4) Compute qhats for each cluster
 
        
-        self.q_hats = self.__compute_cluster_specific_qhats(cluster_assignments, 
+        self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments, 
                 cal_scores, cal_labels, 
                 alpha=alpha, 
                 null_qhat = 'standard')
 
 
-
-
-
-    
     
     def __get_quantile_threshold(self,alpha):
         '''
@@ -494,8 +494,9 @@ class ClusterPredictor(ClassWisePredictor):
 
             curr_qhats = qhats + adjustment_guess 
 
-            preds = create_cb_prediction_sets(scores, curr_qhats)
-            marginal_coverage = compute_coverage(labels, preds)
+            preds = self._generate_prediction_set(scores, curr_qhats)
+            metrics = Metrics()
+            marginal_coverage = metrics('coverage_rate')(labels, preds)
             print(f"Marginal coverage: {marginal_coverage:.4f}")
 
             if marginal_coverage > 1 - alpha:

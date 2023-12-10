@@ -28,7 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
     parser.add_argument('--score', default="APS", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
-    parser.add_argument('--weight', default=1, type=float)
+    parser.add_argument('--weight', default=0.2, type=float)
     parser.add_argument('--kreg', default=0, type=int)
     args = parser.parse_args()
 
