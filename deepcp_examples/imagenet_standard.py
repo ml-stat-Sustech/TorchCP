@@ -35,51 +35,29 @@ if __name__ == '__main__':
     fix_randomness(seed=args.seed)
 
     model_name = 'ResNet101'
-    fname = ".cache/" + model_name + ".pkl"
-    if os.path.exists(fname):
-        with open(fname, 'rb') as handle:
-            dataset = pickle.load(handle)
+    # load model
+    model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
+    model_device = torch.device("cuda:6" if torch.cuda.is_available() else "cpu")
+    model.to(model_device)
 
-    else:
-        # load dataset
-        transform = trn.Compose([trn.Resize(256),
-                                 trn.CenterCrop(224),
-                                 trn.ToTensor(),
-                                 trn.Normalize(mean=[0.485, 0.456, 0.406],
-                                               std=[0.229, 0.224, 0.225])
-                                 ])
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data") 
-        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
-                                   transform)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
 
-        # load model
-        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
-
-        logits_list = []
-        labels_list = []
-        with torch.no_grad():
-            for examples in tqdm(data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]
-                tmp_logits = model(tmp_x)
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_label)
-        logits = torch.cat(logits_list)
-        labels = torch.cat(labels_list)
-        dataset = torch.utils.data.TensorDataset(logits, labels.long())
-        with open(fname, 'wb') as handle:
-            pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
-    cal_logits = torch.stack([sample[0] for sample in cal_data])
-    cal_labels = torch.stack([sample[1] for sample in cal_data]).numpy()
-    cal_probailities = softmax(cal_logits, dim=1).numpy()
-
-    test_logits = torch.stack([sample[0] for sample in val_data])
-    test_labels = torch.stack([sample[1] for sample in val_data]).numpy()
-    test_probailities = softmax(test_logits, dim=1).numpy()
-
+   
+    # load dataset
+    transform = trn.Compose([trn.Resize(256),
+                                trn.CenterCrop(224),
+                                trn.ToTensor(),
+                                trn.Normalize(mean=[0.485, 0.456, 0.406],
+                                            std=[0.229, 0.224, 0.225])
+                                ])
+    usr_dir = os.path.expanduser('~')
+    data_dir = os.path.join(usr_dir, "data") 
+    dataset = dset.ImageFolder(data_dir + "/imagenet/val", transform)
+    
+    cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
+    cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1600, shuffle=False, pin_memory=True)
+    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1600, shuffle=False, pin_memory=True)
+    
+    
 
     num_classes = 1000
     if args.score == "THR":
@@ -97,18 +75,23 @@ if __name__ == '__main__':
         predictor = ClassWisePredictor(score_function)
     elif args.predictor  == "Cluster":   
         predictor = ClusterPredictor(score_function,args.seed)
-    print(f"The size of calibration set is {cal_labels.shape[0]}.")
-    predictor.calibrate(cal_probailities, cal_labels, alpha)
+    print(f"The size of calibration set is {len(cal_dataset)}.")
+    predictor.calibrate(model, cal_data_loader,  alpha)
 
     # test examples
     print("Testing examples...")
     prediction_sets = []
-    for index, ele in enumerate(test_probailities):
-        prediction_set = predictor.predict(ele)
-        prediction_sets.append(prediction_set)
-
+    labels_list = []
+    with torch.no_grad():
+            for  examples in tqdm(test_data_loader):
+                tmp_x, tmp_label = examples[0], examples[1]            
+                prediction_sets_batch = predictor.predict(tmp_x)
+                prediction_sets.extend(prediction_sets_batch)
+                labels_list.append(tmp_label)
+    test_labels = torch.cat(labels_list)
+    
     metrics = Metrics()
-    print("Evaluating prediction sets...")
-    print(f"coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
-    print(f"average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+    print("Etestuating prediction sets...")
+    print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+    print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
     print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")

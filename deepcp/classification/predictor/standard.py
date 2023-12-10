@@ -7,21 +7,41 @@
 
 
 import torch
+import torch.nn.functional as F
 import numpy as np
+from tqdm import tqdm
 
 from deepcp.classification.predictor.base import BasePredictor
 
-
 class StandardPredictor(BasePredictor):
 
-    def calibrate(self, x_cal, y_cal, alpha):
-        scores = np.zeros(x_cal.shape[0])
-        for index, (x, y) in enumerate(zip(x_cal, y_cal)):
+    def calibrate(self, model, cal_dataloader, alpha):
+        logits,labels = self._cal_model_output(model, cal_dataloader)
+        probs = F.softmax(logits,dim=1)
+        probs = probs.numpy()
+        labels = labels.numpy()
+        self.calibrate_threshold(probs, labels, alpha)
+        
+        
+    def calibrate_threshold(self, probs, labels, alpha):
+        scores = np.zeros(probs.shape[0])
+        for index, (x, y) in enumerate(zip(probs, labels)):
             scores[index] = self.score_function(x, y)
         self.q_hat = np.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
 
 
-    def predict(self, x):
-        scores = self.score_function.predict(x)
+    def predict(self, x_batch):
+        logits = self.model(x_batch.to(self.model_device)).detach().cpu()
+        probs_batch = F.softmax(logits,dim=1).numpy()
+        sets = []
+        for index, probs in enumerate(probs_batch):
+            scores = self.score_function.predict(probs)
+            sets.append(np.argwhere(scores < self.q_hat).reshape(-1).tolist())
+        return sets
+    
+    def predict_with_probs(self, probs):
+        scores = self.score_function.predict(probs)
         S = np.argwhere(scores < self.q_hat).reshape(-1).tolist()
         return S
+    
+

@@ -9,6 +9,11 @@
 from abc import ABCMeta, abstractmethod
 
 
+
+import torch
+from tqdm import tqdm
+
+
 class BasePredictor(object):
     """
     Abstract base class for all predictor classes.
@@ -27,11 +32,11 @@ class BasePredictor(object):
         self.score_function = score_function
 
     @abstractmethod
-    def calibrate(self, x, y, alpha):
+    def calibrate(self,model, cal_dataloader, alpha):
         """Virtual method to calibrate the calibration set.
 
-        :param x: the model's output logits.
-        :param y : labels of calibration set.
+        :param model: the deep learning model.
+        :param cal_dataloader : dataloader of calibration set.
         :param alpha: the significance level.
         """
         raise NotImplementedError
@@ -43,3 +48,19 @@ class BasePredictor(object):
         :param x: the model's output logits.
         """
         raise NotImplementedError
+    
+    def _cal_model_output(self,model, dataloader):
+        self.model = model
+        self.model_device = next(model.parameters()).device
+
+        logits_list = []
+        labels_list = []
+        with torch.no_grad():
+            for  examples in tqdm(dataloader):
+                tmp_x, tmp_label = examples[0].to(self.model_device), examples[1]            
+                tmp_logits = model(tmp_x).detach().cpu()
+                logits_list.append(tmp_logits)
+                labels_list.append(tmp_label)
+            logits = torch.cat(logits_list)
+            labels = torch.cat(labels_list)
+        return logits, labels
