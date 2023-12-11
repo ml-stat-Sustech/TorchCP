@@ -115,4 +115,3 @@ if __name__ == '__main__':
         # print(f"average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
         # print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
         CovGap +=  metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)/num_trials
-    print(CovGap) 

@@ -14,31 +14,27 @@ from deepcp.classification.scores.base import BaseScoreFunction
 
 
 class APS(BaseScoreFunction):
-    def __init__(self, randomized=True):
+    def __init__(self,):
         super(APS, self).__init__()
-        self._randomized = randomized
 
     def __call__(self, probs, y):
 
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
         idx = np.where(indices == y)[0]
-        if not self._randomized:
-            return cumsum[idx]
+        
+        U = np.random.rand()
+        if idx == np.array(0):
+            return U * cumsum[idx]
         else:
-            U = np.random.rand(1)[0]
-            if idx == np.array(0):
-                return U * cumsum[idx]
-            else:
-                return U * ordered[idx] + cumsum[idx - 1]
+            return U * ordered[idx] + cumsum[idx - 1]
 
     def predict(self, probs):
         I, ordered, cumsum = self._sort_sum(probs)
         U = np.random.rand(probs.shape[0])
-        if self._randomized:
-            ordered_scores = cumsum - ordered * U
-        else:
-            ordered_scores = cumsum
+
+        ordered_scores = cumsum - ordered * U
+
         return ordered_scores[I.argsort(axis=0)]
 
     def _sort_sum(self, probs):

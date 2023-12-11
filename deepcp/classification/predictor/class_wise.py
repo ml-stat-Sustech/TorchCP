@@ -16,10 +16,9 @@ from deepcp.classification.predictor.standard import StandardPredictor
 
 
 class ClassWisePredictor(StandardPredictor):
-    def __init__(self, score_function):
-        super().__init__(score_function)
+
     
-    def calibrate_threshold(self, probs, labels, alpha):
+    def calculate_threshold(self, probs, labels, alpha):
         # the number of labels
         labels_num = probs.shape[1]
         self.q_hat = np.zeros(labels_num)

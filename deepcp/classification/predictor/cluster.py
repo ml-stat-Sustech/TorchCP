@@ -20,7 +20,7 @@ from deepcp.classification.utils import Metrics
 
 
 class ClusterPredictor(StandardPredictor):
-    def __init__(self, score_function, seed, cluster_ratio= "auto", cluster_num = "auto", split= 'random'):
+    def __init__(self, score_function, model, seed, cluster_ratio= "auto", cluster_num = "auto", split= 'random'):
         """_summary_
 
         Args:
@@ -29,14 +29,14 @@ class ClusterPredictor(StandardPredictor):
             cluster_ratio (float, optional): the ratio of examples for clustering step. Defaults to 0.2.
             split (str, optional):split: How to split data between clustering step and calibration step. Options are 'balanced' (sample n_clustering per class), 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability) 
         """
-        super(ClusterPredictor, self).__init__(score_function)
+        super(ClusterPredictor, self).__init__(score_function, model)
         self.__seed = seed
         self.__cluster_ratio =  cluster_ratio
         self.__cluster_num =  cluster_num
         self.__split =  split
 
         
-    def calibrate_threshold(self, probs, labels, alpha, ):
+    def calculate_threshold(self, probs, labels, alpha, ):
 
         num_classes = probs.shape[1]
         scores = np.zeros(probs.shape[0])

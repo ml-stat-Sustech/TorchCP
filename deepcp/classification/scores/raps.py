@@ -14,7 +14,7 @@ from deepcp.classification.scores.aps import APS
 
 
 class RAPS(APS):
-    def __init__(self, penalty, kreg, randomized=True):
+    def __init__(self, penalty, kreg):
         """
         when penalty=0, RAPS=APS.
         
@@ -24,7 +24,7 @@ class RAPS(APS):
             raise ValueError("Weight must be a positive value.")
         
         
-        super(RAPS, self).__init__(randomized)
+        super(RAPS, self).__init__()
         self.__penalty = penalty
         self.__kreg = kreg
 
@@ -34,21 +34,17 @@ class RAPS(APS):
         indices, ordered, cumsum = self._sort_sum(probs)
         idx = np.where(indices == y)[0]
         reg = np.maximum(self.__penalty * (idx + 1 - self.__kreg), 0)
-        if not self._randomized:
-            return cumsum[idx] + reg
+
+        U = np.random.rand()
+        if idx == 0:
+            return U * cumsum[idx] + reg
         else:
-            U = np.random.rand(1)[0]
-            if idx == 0:
-                return U * cumsum[idx] + reg
-            else:
-                return U * ordered[idx] + cumsum[idx - 1] + reg
+            return U * ordered[idx] + cumsum[idx - 1] + reg
 
     def predict(self, probs):
         I, ordered, cumsum = self._sort_sum(probs)
         U = np.random.rand(probs.shape[0])
         reg = np.maximum(self.__penalty * (np.arange(1, probs.shape[0] + 1) - self.__kreg), 0)
-        if self._randomized:
-            ordered_scores = cumsum - ordered * U + reg
-        else:
-            ordered_scores = cumsum + reg
+        ordered_scores = cumsum - ordered * U + reg
+        
         return ordered_scores[I.argsort(axis=0)]

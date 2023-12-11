@@ -74,11 +74,11 @@ if __name__ == '__main__':
     cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_logits = torch.stack([sample[0] for sample in cal_data])
     cal_labels = torch.stack([sample[1] for sample in cal_data]).numpy()
-    cal_probailities = softmax(cal_logits, dim=1).numpy()
+    cal_pros = softmax(cal_logits, dim=1).numpy()
 
     test_logits = torch.stack([sample[0] for sample in val_data])
     test_labels = torch.stack([sample[1] for sample in val_data]).numpy()
-    test_probailities = softmax(test_logits, dim=1).numpy()
+    test_pros = softmax(test_logits, dim=1).numpy()
 
 
     num_classes = 1000
@@ -92,18 +92,18 @@ if __name__ == '__main__':
         score_function = SAPS(weight=args.weight)
     alpha = 0.1
     if args.predictor  == "Standard":
-        predictor = StandardPredictor(score_function)
+        predictor = StandardPredictor(score_function, model=None)
     elif args.predictor  == "ClassWise":   
-        predictor = ClassWisePredictor(score_function)
+        predictor = ClassWisePredictor(score_function, model=None)
     elif args.predictor  == "Cluster":   
-        predictor = ClusterPredictor(score_function,args.seed)
+        predictor = ClusterPredictor(score_function, model=None, seed = args.seed)
     print(f"The size of calibration set is {cal_labels.shape[0]}.")
-    predictor.calibrate_threshold(cal_probailities, cal_labels, alpha)
+    predictor.calculate_threshold(cal_pros, cal_labels, alpha)
 
     # test examples
     print("Testing examples...")
     prediction_sets = []
-    for index, ele in enumerate(test_probailities):
+    for index, ele in enumerate(test_pros):
         prediction_set = predictor.predict_with_probs(ele)
         prediction_sets.append(prediction_set)
 

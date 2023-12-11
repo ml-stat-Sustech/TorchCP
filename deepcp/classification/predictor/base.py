@@ -13,6 +13,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
+from deepcp.classification.utils.metircs import Metrics
+from deepcp.classification.utils import ConfCalibrator
 
 class BasePredictor(object):
     """
@@ -23,13 +25,20 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function):
+    def __init__(self, score_function, model):
         """
         :calibration_method: methods used to calibrate 
         :param **kwargs: optional parameters used by child classes.
         """
 
         self.score_function = score_function
+        self._model = model
+        if self._model ==  None:
+            self._model_device = None
+        else:
+            self._model_device = next(model.parameters()).device
+        self._metric = Metrics()
+        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")
 
     @abstractmethod
     def calibrate(self,model, cal_dataloader, alpha):
@@ -49,21 +58,16 @@ class BasePredictor(object):
         """
         raise NotImplementedError
     
-    def _cal_model_output(self,model, dataloader):
-        self.model = model
-        self.model_device = next(model.parameters()).device
-
-        logits_list = []
-        labels_list = []
-        with torch.no_grad():
-            for  examples in tqdm(dataloader):
-                tmp_x, tmp_label = examples[0].to(self.model_device), examples[1]            
-                tmp_logits = model(tmp_x).detach().cpu()
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_label)
-            logits = torch.cat(logits_list)
-            labels = torch.cat(labels_list)
-        return logits, labels
+        
     
     def _generate_prediction_set(self,scores, q_hat):
+        """Generate the prediction set with the threshold q_hat.
+
+        Args:
+            scores (_type_): The non-conformity scores of {(x,y_1),..., (x,y_K)}
+            q_hat (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return np.argwhere(scores < q_hat).reshape(-1).tolist()
