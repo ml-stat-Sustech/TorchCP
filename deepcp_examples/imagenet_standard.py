@@ -37,7 +37,7 @@ if __name__ == '__main__':
     model_name = 'ResNet101'
     # load model
     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
-    model_device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    model_device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
     model.to(model_device)
 
 

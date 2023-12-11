@@ -38,7 +38,7 @@ class BasePredictor(object):
         else:
             self._model_device = next(model.parameters()).device
         self._metric = Metrics()
-        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")
+        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")()
 
     @abstractmethod
     def calibrate(self,model, cal_dataloader, alpha):

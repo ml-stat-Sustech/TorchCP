@@ -13,13 +13,13 @@ class ConfCalibrator:
     @classmethod
     def registry_ConfCalibrator(cls, conf_calibrator):
         if conf_calibrator not in ConfCalibrator_REGISTRY.registered_names():
-            raise NameError(f"The ConfCalibrator: {conf_calibrator} is not defined in DeepCP.")
+            raise NameError(f"The Confidence Calibrator: {conf_calibrator} is not defined in DeepCP.")
         return ConfCalibrator_REGISTRY.get(conf_calibrator)
     
     @classmethod
     def registry_ConfOptimizer(cls, ConfOptimizer):
         if ConfOptimizer not in ConfOptimizer_REGISTRY.registered_names():
-            raise NameError(f"The ConfOptimizer: {ConfOptimizer} is not defined in DeepCP.")
+            raise NameError(f"The Optimizer of Confidence Calibrator: {ConfOptimizer} is not defined in DeepCP.")
         return ConfOptimizer_REGISTRY.get(ConfOptimizer)
     
 @ConfCalibrator_REGISTRY.register()

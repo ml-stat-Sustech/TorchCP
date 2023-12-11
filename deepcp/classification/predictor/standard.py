@@ -37,7 +37,7 @@ class StandardPredictor(BasePredictor):
         if type(method) == str:
             raise ValueError(f"The type of method is str.")
         logits_transformation = ConfCalibrator.registry_ConfCalibrator(method)(*args).to(self._model_device)
-        self.logits_transformation = ConfCalibrator.registry_ConfOptimizer("optimze_"+method)(logits_transformation, conf_calibration_dataloader, self._model_device)
+        self._logits_transformation = ConfCalibrator.registry_ConfOptimizer("optimze_"+method)(logits_transformation, conf_calibration_dataloader, self._model_device)
         
         
     
@@ -50,7 +50,7 @@ class StandardPredictor(BasePredictor):
         with torch.no_grad():
             for  examples in tqdm(cal_dataloader):
                 tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]            
-                tmp_logits = self._model(tmp_x).detach().cpu()
+                tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
                 logits_list.append(tmp_logits)
                 labels_list.append(tmp_labels)
             logits = torch.cat(logits_list)
@@ -72,7 +72,7 @@ class StandardPredictor(BasePredictor):
     # The prediction process
     ############################
     def predict(self, x_batch):
-        logits = self._model(x_batch.to(self._model_device)).detach().cpu()
+        logits = self._logits_transformation( self._model(x_batch.to(self._model_device))).detach().cpu()
         probs_batch = F.softmax(logits,dim=1).numpy()
         sets = []
         for index, probs in enumerate(probs_batch):
