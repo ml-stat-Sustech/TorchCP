@@ -49,7 +49,6 @@ class StandardPredictor(BasePredictor):
         S = self._generate_prediction_set(scores, self.q_hat)
         return S
     
-    def _generate_prediction_set(self,scores, q_hat):
-        return np.argwhere(scores < q_hat).reshape(-1).tolist()
+    
     
 

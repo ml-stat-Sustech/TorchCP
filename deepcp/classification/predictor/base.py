@@ -9,7 +9,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -64,3 +64,6 @@ class BasePredictor(object):
             logits = torch.cat(logits_list)
             labels = torch.cat(labels_list)
         return logits, labels
+    
+    def _generate_prediction_set(self,scores, q_hat):
+        return np.argwhere(scores < q_hat).reshape(-1).tolist()
