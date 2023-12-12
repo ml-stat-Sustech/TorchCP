@@ -23,7 +23,7 @@ from deepcp.classification.utils.metircs import Metrics
 from deepcp.utils import fix_randomness
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train MNIST')
+    parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int )
     parser.add_argument('--predictor', default= "Standard", help= "Standard | ClassWise | Cluster" )
     parser.add_argument('--score', default="APS", help= "THR | APS | SAPS" )

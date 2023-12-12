@@ -53,7 +53,7 @@ class StandardPredictor(BasePredictor):
                 tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
                 logits_list.append(tmp_logits)
                 labels_list.append(tmp_labels)
-            logits = torch.cat(logits_list)
+            logits = torch.cat(logits_list).float()
             labels = torch.cat(labels_list)
         probs = F.softmax(logits,dim=1)
         probs = probs.numpy()
@@ -61,25 +61,28 @@ class StandardPredictor(BasePredictor):
         self.calculate_threshold(probs, labels, alpha)
         
         
+        
     def calculate_threshold(self, probs, labels, alpha):
-        scores = np.zeros(probs.shape[0])
+        self.scores = np.zeros(probs.shape[0])
         for index, (x, y) in enumerate(zip(probs, labels)):
-            scores[index] = self.score_function(x, y)
-        self.q_hat = np.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
+            self.scores[index] = self.score_function(x, y)
+        self.q_hat = np.quantile(self.scores, np.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0])
+        
 
 
     #############################
     # The prediction process
     ############################
     def predict(self, x_batch):
-        logits = self._logits_transformation( self._model(x_batch.to(self._model_device))).detach().cpu()
+        logits = self._model(x_batch.to(self._model_device)).float()
+        logits = self._logits_transformation(logits).detach().cpu()
         probs_batch = F.softmax(logits,dim=1).numpy()
         sets = []
         for index, probs in enumerate(probs_batch):
-            sets.append(self.predict_with_probs(probs))
+            sets.append(self.predict_with_probs(probs, self.q_hat))
         return sets
     
-    def predict_with_probs(self, probs):
+    def predict_with_probs(self, probs, q_hat):
         """ The input of score function is softmax probability.
 
         Args:
@@ -89,7 +92,7 @@ class StandardPredictor(BasePredictor):
             _type_: _description_
         """
         scores = self.score_function.predict(probs)
-        S = self._generate_prediction_set(scores, self.q_hat)
+        S = self._generate_prediction_set(scores, q_hat)
         return S
     
     
@@ -112,6 +115,8 @@ class StandardPredictor(BasePredictor):
         res_dict["Coverage_rate"] = self._metric('coverage_rate')(prediction_sets, val_labels)
         res_dict["Average_size"] = self._metric('average_size')(prediction_sets, val_labels)
         return res_dict
+    
+
         
 
     

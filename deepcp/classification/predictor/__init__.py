@@ -1,6 +1,7 @@
 from .standard import StandardPredictor
 from .class_wise import ClassWisePredictor
 from .cluster import ClusterPredictor
+from .weighted_predictor import WeightedPredictor
 
 
 #

@@ -41,26 +41,27 @@ class BasePredictor(object):
         self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")()
 
     @abstractmethod
-    def calibrate(self,model, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha):
         """Virtual method to calibrate the calibration set.
 
         :param model: the deep learning model.
-        :param cal_dataloader : dataloader of calibration set.
+        :param cal_dataloader : a dataloader of calibration set.
         :param alpha: the significance level.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, x):
-        """generate a prediction set for a test example.
+    def predict(self, x_batch):
+        """generate prediction sets for  test examples.
 
-        :param x: the model's output logits.
+        :param x_batch: a batch of input.
+
         """
         raise NotImplementedError
     
         
     
-    def _generate_prediction_set(self,scores, q_hat):
+    def _generate_prediction_set(self, scores, q_hat):
         """Generate the prediction set with the threshold q_hat.
 
         Args:

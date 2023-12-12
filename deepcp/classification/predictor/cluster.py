@@ -36,7 +36,7 @@ class ClusterPredictor(StandardPredictor):
         self.__split =  split
 
         
-    def calculate_threshold(self, probs, labels, alpha, ):
+    def calculate_threshold(self, probs, labels, alpha):
 
         num_classes = probs.shape[1]
         scores = np.zeros(probs.shape[0])
@@ -122,8 +122,9 @@ class ClusterPredictor(StandardPredictor):
 
        
         self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments, 
-                cal_scores, cal_labels, 
-                alpha=alpha, 
+                cal_scores, 
+                cal_labels, 
+                alpha= alpha, 
                 null_qhat = 'standard')
 
 
