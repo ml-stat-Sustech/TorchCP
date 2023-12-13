@@ -8,56 +8,40 @@
 # The reference repository is https://github.com/aangelopoulos/conformal_classification
 
 
-
 import numpy as np
-import torch
 
-from deepcp.classification.scores.base import DaseScoreFunction
+from deepcp.classification.scores.base import BaseScoreFunction
 
-class APS(DaseScoreFunction):
-    def __init__(self, penalty = 0, kreg = 0,randomized=True):
-        """
 
-        :kreg : the rank of regularization [0,labels_num]
-        """
+class APS(BaseScoreFunction):
+    def __init__(self,):
         super(APS, self).__init__()
-        self.__randomized = randomized
-        self.__penalty = penalty
-        self.__kreg = kreg
 
-    def __call__(self, probabilities, y):
+    def __call__(self, probs, y):
 
         # sorting probabilities
-        I, ordered, cumsum = self._sort_sum(probabilities)
-        idx = torch.where(I == y)[0]
-        reg = torch.maximum(self.__penalty * (idx+1 - self.__kreg), torch.tensor(0))
-        if not self.__randomized:
-            return cumsum[idx] + reg
+        indices, ordered, cumsum = self._sort_sum(probs)
+        idx = np.where(indices == y)[0]
+        
+        U = np.random.rand()
+        if idx == np.array(0):
+            return U * cumsum[idx]
         else:
-            U = torch.rand(1)[0]
-            if idx == torch.tensor(0):
-                return U * cumsum[idx ] + reg
-            else:
-                return U * ordered[idx] + cumsum[idx - 1] + reg
+            return U * ordered[idx] + cumsum[idx - 1]
 
+    def predict(self, probs):
+        I, ordered, cumsum = self._sort_sum(probs)
+        U = np.random.rand(probs.shape[0])
 
+        ordered_scores = cumsum - ordered * U
 
-    def predict(self, probabilities):
-        I, ordered, cumsum = self._sort_sum(probabilities)
-        U = torch.rand(probabilities.shape[0])
-        reg = torch.maximum(self.__penalty * ( torch.arange(1,probabilities.shape[0]+1) - self.__kreg), torch.tensor(0))
-        if self.__randomized:
-            ordered_scores = cumsum - ordered * U + reg
-        else:
-            ordered_scores = cumsum + reg
-        return ordered_scores[torch.sort(I,descending= False)[1]]
+        return ordered_scores[I.argsort(axis=0)]
 
-    def _sort_sum(self,probabilities):
-
-        #ordered: the ordered probabilities in descending order
-        #indices: the rank of ordered probabilities in descending order
-        ordered,indices = torch.sort(probabilities,descending= True)
+    def _sort_sum(self, probs):
+        # indices: the rank of ordered probabilities in descending order
+        indices = probs.argsort(axis=0)[::-1]
+        # ordered: the ordered probabilities in descending order
+        ordered = np.sort(probs,axis=0)[::-1]
         # the accumulation of sorted probabilities
-        cumsum = torch.cumsum(ordered,dim=0)
+        cumsum = np.cumsum(ordered,axis=0) 
         return indices, ordered, cumsum
-

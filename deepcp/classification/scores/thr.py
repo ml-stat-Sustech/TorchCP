@@ -6,15 +6,13 @@
 #
 
 
-from deepcp.classification.scores.base import DaseScoreFunction
+from deepcp.classification.scores.base import BaseScoreFunction
 
-class THR(DaseScoreFunction):
-    def __init__(self) -> None:
-        pass
-    
-    
-    def __call__(self,probabilities,y):
-        return 1-probabilities[y]
-    
-    def predict(self,probabilities):
-        return 1-probabilities
+
+class THR(BaseScoreFunction):
+
+    def __call__(self, probs, y):
+        return 1 - probs[y]
+
+    def predict(self, probs):
+        return 1 - probs
