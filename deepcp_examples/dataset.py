@@ -9,7 +9,7 @@ import torchvision.transforms as trn
 from torch.utils.data import Dataset, DataLoader
 
 
-def build_dataset(dataset_name, transform = None):
+def build_dataset(dataset_name, transform = None, mode = "train"):
 
     
     #  path of usr
@@ -42,8 +42,21 @@ def build_dataset(dataset_name, transform = None):
 
 
         dataset = ImageNetV2Dataset(os.path.join(data_dir,"imagenetv2/imagenetv2-matched-frequency-format-val"),transform)
+
+    elif dataset_name == 'mnist':
+        if transform == None:
+            transform = trn.Compose([
+                        trn.ToTensor(),
+                        trn.Normalize((0.1307,), (0.3081,))
+            ])
+        if mode ==  "train":
+            dataset = dset.MNIST(data_dir, train=True, download=True, transform = transform)
+        elif mode ==  "test":
+            dataset = dset.MNIST(data_dir, train=False, transform = transform)
+
     else:
         raise NotImplementedError
+
     return dataset
 
 class ImageNetV2Dataset(Dataset):
