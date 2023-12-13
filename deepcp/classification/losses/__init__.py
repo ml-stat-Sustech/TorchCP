@@ -1,0 +1,1 @@
+from .conftr import ConfTr

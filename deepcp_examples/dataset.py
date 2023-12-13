@@ -52,7 +52,7 @@ def build_dataset(dataset_name, transform = None, mode = "train"):
         if mode ==  "train":
             dataset = dset.MNIST(data_dir, train=True, download=True, transform = transform)
         elif mode ==  "test":
-            dataset = dset.MNIST(data_dir, train=False, transform = transform)
+            dataset = dset.MNIST(data_dir, train=False, download=True , transform = transform)
 
     else:
         raise NotImplementedError

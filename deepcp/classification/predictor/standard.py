@@ -16,7 +16,7 @@ from deepcp.classification.utils import ConfCalibrator
 
 
 class StandardPredictor(BasePredictor):
-    def __init__(self, score_function, model):
+    def __init__(self, score_function, model= None):
         super().__init__(score_function, model)
     
     

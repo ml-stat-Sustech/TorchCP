@@ -25,7 +25,7 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model):
+    def __init__(self, score_function, model= None):
         """
         :calibration_method: methods used to calibrate 
         :param **kwargs: optional parameters used by child classes.
