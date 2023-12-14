@@ -89,8 +89,6 @@ if __name__ == '__main__':
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
-                if batch_idx % 10 == 0:
-                    print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
         checkpoint_path = f'.cache/conformal_training_model_checkpoint_{args.loss}_seed={seed}.pth'
         # if os.path.exists(checkpoint_path):
         #     checkpoint = torch.load(checkpoint_path)
