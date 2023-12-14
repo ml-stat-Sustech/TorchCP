@@ -9,39 +9,48 @@
 
 
 import numpy as np
-
+import torch
 from deepcp.classification.scores.base import BaseScoreFunction
 
 
 class APS(BaseScoreFunction):
     def __init__(self,):
         super(APS, self).__init__()
+        self.transform = lambda x: torch.softmax(x, dim= len(x.shape)-1)
 
-    def __call__(self, probs, y):
-
-        # sorting probabilities
+    def __call__(self, logits, y):
+        probs =  self.transform(logits)
         indices, ordered, cumsum = self._sort_sum(probs)
-        idx = np.where(indices == y)[0]
+        if len(probs.shape) == 1:
+            return self._compute_score(indices, y, cumsum, ordered)
+        else:
+            scores = torch.zeros(probs.shape[0])
+            for i in range(probs.shape[0]):
+                scores[i] = self._compute_score(indices[i,:], y[i], cumsum[i,:], ordered[i,:])
+            return scores
+            
+
+    def predict(self, logits):
+        probs =  self.transform(logits)
+        I, ordered, cumsum = self._sort_sum(probs)
+        U = torch.rand(probs.shape)
+        ordered_scores = cumsum - ordered * U
+        return ordered_scores[torch.sort(I, descending= False, dim = -1)[1]]
         
-        U = np.random.rand()
-        if idx == np.array(0):
+
+    def _sort_sum(self, probs):
+        # ordered: the ordered probabilities in descending order
+        # indices: the rank of ordered probabilities in descending order
+        
+        ordered,indices = torch.sort(probs,dim=-1,descending= True)
+        # the accumulation of sorted probabilities
+        cumsum = torch.cumsum(ordered,dim=-1)
+        return indices, ordered, cumsum
+    
+    def _compute_score(self,indices, y, cumsum, ordered):
+        idx = torch.where(indices == y)[0][0]
+        U = torch.rand(1)
+        if idx == torch.tensor(0):
             return U * cumsum[idx]
         else:
             return U * ordered[idx] + cumsum[idx - 1]
-
-    def predict(self, probs):
-        I, ordered, cumsum = self._sort_sum(probs)
-        U = np.random.rand(probs.shape[0])
-
-        ordered_scores = cumsum - ordered * U
-
-        return ordered_scores[I.argsort(axis=0)]
-
-    def _sort_sum(self, probs):
-        # indices: the rank of ordered probabilities in descending order
-        indices = probs.argsort(axis=0)[::-1]
-        # ordered: the ordered probabilities in descending order
-        ordered = np.sort(probs,axis=0)[::-1]
-        # the accumulation of sorted probabilities
-        cumsum = np.cumsum(ordered,axis=0) 
-        return indices, ordered, cumsum

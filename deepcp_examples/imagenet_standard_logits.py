@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from deepcp.classification.predictor import StandardPredictor,ClusterPredictor,ClassWisePredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
-from deepcp.classification.utils.metircs import Metrics
+from classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
 
 if __name__ == '__main__':
@@ -100,7 +100,6 @@ if __name__ == '__main__':
 
     # test examples
     print("Testing examples...")
-   
     prediction_sets = []
     for index, ele in enumerate(test_logits):
         prediction_set = predictor.predict_with_logits(ele)

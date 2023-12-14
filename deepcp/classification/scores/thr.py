@@ -32,12 +32,10 @@ class THR(BaseScoreFunction):
             raise NotImplementedError
 
     def __call__(self, logits, y):
-        
         if len(logits.shape) >1:
             return 1 - self.transform(logits)[torch.arange(y.shape[0]),y]
         else:
             return 1- self.transform(logits)[y]
 
     def predict(self, logits):
-        print(logits, self.transform(logits))
         return 1 - self.transform(logits)

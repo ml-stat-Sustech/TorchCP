@@ -9,6 +9,7 @@
 
 
 import numpy as np
+import torch
 
 from deepcp.classification.scores.aps import APS
 
@@ -28,23 +29,25 @@ class RAPS(APS):
         self.__penalty = penalty
         self.__kreg = kreg
 
-    def __call__(self, probs, y):
+    def __call__(self, logits, y):
+        probs =  self.transform(logits)
 
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
-        idx = np.where(indices == y)[0]
-        reg = np.maximum(self.__penalty * (idx + 1 - self.__kreg), 0)
-
-        U = np.random.rand()
-        if idx == 0:
+        idx = torch.where(indices == y)[0][0]
+        
+        reg = torch.maximum(self.__penalty * (idx + 1 - self.__kreg), torch.tensor(0))
+        U = torch.rand(1)
+        if idx == torch.tensor(0):
             return U * cumsum[idx] + reg
         else:
             return U * ordered[idx] + cumsum[idx - 1] + reg
 
-    def predict(self, probs):
+    def predict(self, logits):
+        probs =  self.transform(logits)
         I, ordered, cumsum = self._sort_sum(probs)
-        U = np.random.rand(probs.shape[0])
-        reg = np.maximum(self.__penalty * (np.arange(1, probs.shape[0] + 1) - self.__kreg), 0)
+        U = torch.rand(probs.shape)
+        reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1) - self.__kreg), torch.tensor(0))
         ordered_scores = cumsum - ordered * U + reg
         
-        return ordered_scores[I.argsort(axis=0)]
+        return ordered_scores[torch.sort(I, descending= False, dim = -1)[1]]

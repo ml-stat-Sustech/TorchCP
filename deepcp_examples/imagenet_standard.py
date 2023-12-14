@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from deepcp.classification.predictor import StandardPredictor,ClusterPredictor,ClassWisePredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
-from deepcp.classification.utils.metircs import Metrics
+from classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
 
 if __name__ == '__main__':
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     model_name = 'ResNet101'
     # load model
     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
-    model_device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+    model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(model_device)
 
 
@@ -54,8 +54,8 @@ if __name__ == '__main__':
     dataset = dset.ImageFolder(data_dir + "/imagenet/val", transform)
     
     cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
-    cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1600, shuffle=False, pin_memory=True)
-    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1600, shuffle=False, pin_memory=True)
+    cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
+    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
     
     
 

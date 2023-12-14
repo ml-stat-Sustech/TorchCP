@@ -57,9 +57,6 @@ class ConfTr(nn.Module):
         self.loss_types =  loss_types
 
     def forward(self, logits, labels):
-
-        
-
         # Compute Size Loss
         val_split = int(self.fraction * logits.shape[0])
         cal_logits = logits[:val_split]
@@ -74,15 +71,15 @@ class ConfTr(nn.Module):
 
 
         if type(self.loss_types) == set:
+            loss = torch.tensor(0).to(self.device)
             for i in range(len(self.loss_types)):
                 loss += self.weight[i] * self.loss_functions_dict[self.loss_types[i]](pred_sets, test_labels)
         else:
-            loss += self.weight * self.loss_functions_dict[self.loss_types](pred_sets, test_labels)
+            loss = self.weight * self.loss_functions_dict[self.loss_types](pred_sets, test_labels)
             
-        if self.base_loss_fn == None:
-            loss = self.base_loss_fn(logits, labels).float()
-        else:
-            loss = torch.tensor(0).float().to(self.device)
+        if self.base_loss_fn != None:
+            loss += self.base_loss_fn(logits, labels).float()
+       
 
         return  loss
 

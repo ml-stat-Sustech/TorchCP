@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 from deepcp.classification.predictor import StandardPredictor,ClusterPredictor,ClassWisePredictor,WeightedPredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
-from deepcp.classification.utils.metircs import Metrics
+from classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
 from dataset import build_dataset
 

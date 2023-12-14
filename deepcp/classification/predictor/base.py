@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from deepcp.classification.utils.metircs import Metrics
+from classification.utils.metrics import Metrics
 from deepcp.classification.utils import ConfCalibrator
 
 class BasePredictor(object):

@@ -19,18 +19,18 @@ class BaseScoreFunction(object):
         pass
 
     @abstractmethod
-    def __call__(self, probs, y):
+    def __call__(self, logits, y):
         """Virtual method to compute scores for a data pair (x,y).
 
-        :param probs: the model's output probs for an input.
+        :param logits: the logits for an input.
         :y : the label.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, probs):
+    def predict(self, logits):
         """Virtual method to compute scores of all labels for input x.
 
-        :param probs: the model's output probabilities for an input.
+        :param logits: the logits for an input.
         """
         raise NotImplementedError

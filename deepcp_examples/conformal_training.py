@@ -33,7 +33,7 @@ from tqdm import tqdm
 from deepcp.classification.predictor import StandardPredictor, ClusterPredictor, ClassWisePredictor, WeightedPredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
 from deepcp.classification.loss_function import ConfTr
-from deepcp.classification.utils.metircs import Metrics
+from classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
 from dataset import build_dataset
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
             criterion = nn.CrossEntropyLoss()
         elif args.loss == "ConfTr":
             predictor =  StandardPredictor(score_function = THR(score_type= "log_softmax"))
-            criterion = ConfTr(weights=0.5,
+            criterion = ConfTr(weights=0.01,
                                predictor = predictor, 
                                alpha=0.05,
                                device = device,             
@@ -97,12 +97,12 @@ if __name__ == '__main__':
                 if batch_idx % 10 == 0:
                     print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
         checkpoint_path = f'.cache/conformal_training_model_checkpoint_{args.loss}_seed={seed}.pth'
-        if os.path.exists(checkpoint_path):
-            checkpoint = torch.load(checkpoint_path)
-            model.load_state_dict(checkpoint['model_state_dict'])
-        else:
-            for epoch in range(1, 10):
-                train(model, device, train_data_loader, optimizer, epoch)
+        # if os.path.exists(checkpoint_path):
+        #     checkpoint = torch.load(checkpoint_path)
+        #     model.load_state_dict(checkpoint['model_state_dict'])
+        # else:
+        for epoch in range(1, 10):
+            train(model, device, train_data_loader, optimizer, epoch)
         
         torch.save({'model_state_dict': model.state_dict(),}, checkpoint_path)
         
