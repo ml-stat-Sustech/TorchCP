@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import torch
 from torch.nn import CrossEntropyLoss
 class ConfTr(nn.Module):
-    def __init__(self, weights, predictor, alpha, device, fraction, types = ("valid", "classification"), target_size = 1 , loss_transform = "square", loss_function = None):
+    def __init__(self, weights, predictor, alpha, device, fraction, loss_types = "valid", target_size = 1 , loss_transform = "square", base_loss_fn = None):
         """
         :param weights: the weight of each loss function
         :param predictor: the CP predictor
@@ -24,8 +24,13 @@ class ConfTr(nn.Module):
         :param loss_function: a base loss function, such as cross entropy for classification
         """
         super(ConfTr, self).__init__()
-        self.loss_function = loss_function
+        self.weight = torch.tensor(weights).to(device)
         self.predictor = predictor
+        self.alpha = alpha
+        self.device = device
+        self.fraction = fraction
+        self.base_loss_fn = base_loss_fn
+        
         self.target_size = target_size
         if loss_transform == "square":
             self.transform = torch.square
@@ -36,46 +41,48 @@ class ConfTr(nn.Module):
         else:
             raise NotImplementedError
         self.loss_functions_dict = {"valid": self.__compute_hinge_size_loss,
-                               "probs": self.__compute_probabilistic_size_loss,
+                                    "probs": self.__compute_probabilistic_size_loss,
                                "coverage": self.__compute_coverage_loss,
                                "classification": self.__compute_classification_loss}
 
-        self.weight = torch.tensor(weights).to(device)
-        self.fraction = fraction
-        self.alpha = alpha
-        if type(types) == set:
+        
+        if type(loss_types) == set:
             if type(weights) != set:
                 raise TypeError("weights must be a set.")
-        elif type(types) == str:
-            if type(weights) != float or type(weights) != int:
+        elif type(loss_types) == str:
+            if type(weights) != float and type(weights) != int:
                 raise TypeError("weights must be a float or a int.")
-        else: raise TypeError("types must be a set or a string.")
-        self.types =  types
+        else: 
+            raise TypeError("types must be a set or a string.")
+        self.loss_types =  loss_types
 
     def forward(self, logits, labels):
-        if self.loss_function == None:
-            loss = self.loss_function(logits, labels)
-        else:
-            loss = torch.tensor(0).to(self.device)
+
+        
 
         # Compute Size Loss
-        probs = F.softmax(logits,dim=1)
-        val_split = int(self.fraction * probs.shape[0])
-        val_probs = probs[:val_split]
-        val_labels = labels[:val_split]
-        test_probs = probs[val_split:]
+        val_split = int(self.fraction * logits.shape[0])
+        cal_logits = logits[:val_split]
+        cal_labels = labels[:val_split]
+        test_logits = logits[val_split:]
         test_labels = labels[val_split:]
 
-        self.predictor.calculate_threshold(val_probs.detach().cpu().numpy(), labels.detach().cpu().numpy(), self.alpha)
+        self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
         tau = self.predictor.q_hat
-        pred_sets = torch.sigmoid(tau - test_probs)
+        test_scores = self.predictor.score_function.predict(test_logits)
+        pred_sets = torch.sigmoid(tau - test_scores)
 
 
-        if type(self.types) == set:
-            for i in range(len(self.types)):
-                loss += self.weight[i] * self.loss_functions_dict[self.types[i]](pred_sets, test_labels)
+        if type(self.loss_types) == set:
+            for i in range(len(self.loss_types)):
+                loss += self.weight[i] * self.loss_functions_dict[self.loss_types[i]](pred_sets, test_labels)
         else:
-            loss = self.weight * self.loss_functions_dict[self.types](pred_sets, test_labels)
+            loss += self.weight * self.loss_functions_dict[self.loss_types](pred_sets, test_labels)
+            
+        if self.base_loss_fn == None:
+            loss = self.base_loss_fn(logits, labels).float()
+        else:
+            loss = torch.tensor(0).float().to(self.device)
 
         return  loss
 

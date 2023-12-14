@@ -6,31 +6,38 @@
 #
 import numpy as np
 import scipy
+import torch
 
 from deepcp.classification.scores.base import BaseScoreFunction
 
 
 class THR(BaseScoreFunction):
-    def __init__(self, score_type = "logits") -> None:
+    def __init__(self, score_type = "softmax") -> None:
         """_summary_
 
         Args:
             score_type (str, optional): _description_. Defaults to "logits". Other values can be "logp" or "prob"
         """
         super().__init__()
+        self.score_type =  score_type
         if score_type == "Identity":
             self.transform = lambda x: x
-        elif score_type == "prob":
-            self.transform = scipy.special.softmax
-        elif score_type == "logp":
-            self.transform = lambda x: np.log(scipy.special.softmax(x))
+        elif score_type == "softmax":
+            self.transform = lambda x: torch.softmax(x,dim= len(x.shape)-1)
+        elif score_type == "log_softmax":
+            self.transform = lambda x: torch.log_softmax(x,dim= len(x.shape)-1)
         elif score_type == "log":
-            self.transform = lambda x: np.log(x)
+            self.transform = lambda x: torch.log(x,dim= len(x.shape)-1)
         else:
             raise NotImplementedError
 
-    def __call__(self, probs, y):
-        return 1 - self.transform(probs)[y]
+    def __call__(self, logits, y):
+        
+        if len(logits.shape) >1:
+            return 1 - self.transform(logits)[torch.arange(y.shape[0]),y]
+        else:
+            return 1- self.transform(logits)[y]
 
-    def predict(self, probs):
-        return 1 - self.transform(probs)
+    def predict(self, logits):
+        print(logits, self.transform(logits))
+        return 1 - self.transform(logits)

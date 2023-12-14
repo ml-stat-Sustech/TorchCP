@@ -71,4 +71,7 @@ class BasePredictor(object):
         Returns:
             _type_: _description_
         """
-        return np.argwhere(scores < q_hat).reshape(-1).tolist()
+        if len(scores.shape) ==1:
+            return torch.argwhere(scores < q_hat).reshape(-1).tolist()
+        else:
+            return torch.argwhere(scores < q_hat).tolist()

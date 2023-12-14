@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
-    parser.add_argument('--score', default="APS", help="THR | APS | SAPS")
+    parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
     parser.add_argument('--weight', default=0.2, type=float)
     parser.add_argument('--kreg', default=0, type=int)
@@ -73,12 +73,10 @@ if __name__ == '__main__':
 
     cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_logits = torch.stack([sample[0] for sample in cal_data])
-    cal_labels = torch.stack([sample[1] for sample in cal_data]).numpy()
-    cal_pros = softmax(cal_logits, dim=1).numpy()
+    cal_labels = torch.stack([sample[1] for sample in cal_data])
 
     test_logits = torch.stack([sample[0] for sample in val_data])
-    test_labels = torch.stack([sample[1] for sample in val_data]).numpy()
-    test_pros = softmax(test_logits, dim=1).numpy()
+    test_labels = torch.stack([sample[1] for sample in val_data])
 
 
     num_classes = 1000
@@ -98,13 +96,14 @@ if __name__ == '__main__':
     elif args.predictor  == "Cluster":   
         predictor = ClusterPredictor(score_function, model=None, seed = args.seed)
     print(f"The size of calibration set is {cal_labels.shape[0]}.")
-    predictor.calculate_threshold(cal_pros, cal_labels, alpha)
+    predictor.calculate_threshold(cal_logits, cal_labels, alpha)
 
     # test examples
     print("Testing examples...")
+   
     prediction_sets = []
-    for index, ele in enumerate(test_pros):
-        prediction_set = predictor.predict_with_probs(ele)
+    for index, ele in enumerate(test_logits):
+        prediction_set = predictor.predict_with_logits(ele)
         prediction_sets.append(prediction_set)
 
     metrics = Metrics()

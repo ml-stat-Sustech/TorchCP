@@ -55,18 +55,16 @@ class StandardPredictor(BasePredictor):
                 labels_list.append(tmp_labels)
             logits = torch.cat(logits_list).float()
             labels = torch.cat(labels_list)
-        probs = F.softmax(logits,dim=1)
-        probs = probs.numpy()
-        labels = labels.numpy()
-        self.calculate_threshold(probs, labels, alpha)
+        self.calculate_threshold(logits, labels, alpha)
         
         
         
-    def calculate_threshold(self, probs, labels, alpha):
-        self.scores = np.zeros(probs.shape[0])
-        for index, (x, y) in enumerate(zip(probs, labels)):
+    def calculate_threshold(self, logits, labels, alpha):
+        
+        self.scores = torch.zeros(logits.shape[0])
+        for index, (x, y) in enumerate(zip(logits, labels)):
             self.scores[index] = self.score_function(x, y)
-        self.q_hat = np.quantile(self.scores, np.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0])
+        self.q_hat = torch.quantile(self.scores, np.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0])
         
 
 
@@ -74,15 +72,14 @@ class StandardPredictor(BasePredictor):
     # The prediction process
     ############################
     def predict(self, x_batch):
-        logits = self._model(x_batch.to(self._model_device)).float()
-        logits = self._logits_transformation(logits).detach().cpu()
-        probs_batch = F.softmax(logits,dim=1).numpy()
+        logits_batch = self._model(x_batch.to(self._model_device)).float()
+        logits_batch = self._logits_transformation(logits_batch).detach().cpu()
         sets = []
-        for index, probs in enumerate(probs_batch):
-            sets.append(self.predict_with_probs(probs, self.q_hat))
+        for index, logits in enumerate(logits_batch):
+            sets.append(self.predict_with_logits(logits))
         return sets
     
-    def predict_with_probs(self, probs, q_hat):
+    def predict_with_logits(self, logits):
         """ The input of score function is softmax probability.
 
         Args:
@@ -91,8 +88,8 @@ class StandardPredictor(BasePredictor):
         Returns:
             _type_: _description_
         """
-        scores = self.score_function.predict(probs)
-        S = self._generate_prediction_set(scores, q_hat)
+        scores = self.score_function.predict(logits)
+        S = self._generate_prediction_set(scores, self.q_hat)
         return S
     
     
@@ -122,4 +119,3 @@ class StandardPredictor(BasePredictor):
     
     
     
-

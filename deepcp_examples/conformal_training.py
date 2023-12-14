@@ -32,7 +32,7 @@ from tqdm import tqdm
 
 from deepcp.classification.predictor import StandardPredictor, ClusterPredictor, ClassWisePredictor, WeightedPredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
-from deepcp.classification.losses import ConfTr
+from deepcp.classification.loss_function import ConfTr
 from deepcp.classification.utils.metircs import Metrics
 from deepcp.utils import fix_randomness
 from dataset import build_dataset
@@ -41,11 +41,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Covariate shift')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--predictor', default="Standard", help="Standard")
-    parser.add_argument('--score', default="APS", help="THR")
+    parser.add_argument('--score', default="THR", help="THR")
     parser.add_argument('--loss', default="CE", help="CE | ConfTr")
     args = parser.parse_args()
     res = {'Coverage_rate': 0, 'Average_size': 0}
-    num_trials = 5
+    num_trials = 1
     for seed in range(num_trials):
         fix_randomness(seed=seed)
 
@@ -73,9 +73,14 @@ if __name__ == '__main__':
         if args.loss == "CE":
             criterion = nn.CrossEntropyLoss()
         elif args.loss == "ConfTr":
-            thr =  THR(score_type= "log")
-            predictor =  StandardPredictor(thr)
-            criterion = ConfTr(0.5, nn.CrossEntropyLoss(), predictor, 0.05, device, 0.5)
+            predictor =  StandardPredictor(score_function = THR(score_type= "log_softmax"))
+            criterion = ConfTr(weights=0.5,
+                               predictor = predictor, 
+                               alpha=0.05,
+                               device = device,             
+                               fraction=0.5,
+                               loss_types = "valid",
+                               base_loss_fn = nn.CrossEntropyLoss())
         else:
             raise NotImplementedError
             
@@ -89,13 +94,15 @@ if __name__ == '__main__':
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
+                if batch_idx % 10 == 0:
+                    print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
         checkpoint_path = f'.cache/conformal_training_model_checkpoint_{args.loss}_seed={seed}.pth'
-        # if os.path.exists(checkpoint_path):
-        #     checkpoint = torch.load(checkpoint_path)
-        #     model.load_state_dict(checkpoint['model_state_dict'])
-        # else:
-        for epoch in range(1, 10):
-            train(model, device, train_data_loader, optimizer, epoch)
+        if os.path.exists(checkpoint_path):
+            checkpoint = torch.load(checkpoint_path)
+            model.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            for epoch in range(1, 10):
+                train(model, device, train_data_loader, optimizer, epoch)
         
         torch.save({'model_state_dict': model.state_dict(),}, checkpoint_path)
         
