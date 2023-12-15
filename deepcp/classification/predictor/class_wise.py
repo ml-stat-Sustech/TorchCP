@@ -18,16 +18,16 @@ from deepcp.classification.predictor.standard import StandardPredictor
 class ClassWisePredictor(StandardPredictor):
 
     
-    def calculate_threshold(self, probs, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha):
         # the number of labels
-        labels_num = probs.shape[1]
+        labels_num = logits.shape[1]
         self.q_hat = np.zeros(labels_num)
         for label in range(labels_num):
-            x_cal_tmp = probs[labels == label]
+            x_cal_tmp = logits[labels == label]
             y_cal_tmp = labels[labels == label]
-            scores = np.zeros(x_cal_tmp.shape[0])
+            scores = torch.zeros(x_cal_tmp.shape[0])
             for index, (x, y) in enumerate(zip(x_cal_tmp, y_cal_tmp)):
                 scores[index] = self.score_function(x, y)
-            self.q_hat[label] = np.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
+            self.q_hat[label] = torch.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
 
 

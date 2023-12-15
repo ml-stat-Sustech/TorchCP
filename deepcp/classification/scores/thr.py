@@ -12,11 +12,14 @@ from deepcp.classification.scores.base import BaseScoreFunction
 
 
 class THR(BaseScoreFunction):
-    def __init__(self, score_type = "softmax") -> None:
-        """_summary_
+    """
+    Threshold conformal predictor (Sadinle et al., 2016)
+    paper : https://arxiv.org/abs/1609.00451
+    """
 
-        Args:
-            score_type (str, optional): _description_. Defaults to "logits". Other values can be "logp" or "prob"
+    def __init__(self, score_type = "softmax") -> None:
+        """
+        param score_type: either "softmax" "Identity", "log_softmax" or "log". Default: "softmax". A transformation for logits.
         """
         super().__init__()
         self.score_type =  score_type

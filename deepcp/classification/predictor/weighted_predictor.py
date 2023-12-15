@@ -4,7 +4,6 @@
 #
 
 import torch
-import torch.nn.functional as F
 import torch.nn  as nn
 import numpy as np
 from tqdm import tqdm
@@ -16,6 +15,10 @@ from deepcp.classification.predictor.utils import build_DomainDetecor,IW
 
 
 class WeightedPredictor(StandardPredictor):
+    """
+    Weighted conformal predictor (Tibshirani et al., 2019)
+    paper : https://arxiv.org/abs/1904.06019
+    """
     def __init__(self, score_function, model, image_encoder):
         super().__init__(score_function, model)
         
@@ -30,31 +33,40 @@ class WeightedPredictor(StandardPredictor):
     def calibrate(self, cal_dataloader, alpha):
         self.alpha = alpha
         self.cal_dataloader = cal_dataloader
-        logits_list = []
-        labels_list = []
-        cal_features_list = []
-        with torch.no_grad():
-            for  examples in tqdm(cal_dataloader):
-                tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]            
-                tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
-                cal_features_list.append(self.image_encoder(tmp_x))
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_labels)
-            logits = torch.cat(logits_list).float()
-            labels = torch.cat(labels_list)
-            cal_features = torch.cat(cal_features_list).float()
+        # logits_list = []
+        # labels_list = []
+        # cal_features_list = []
+        # with torch.no_grad():
+        #     for  examples in tqdm(cal_dataloader):
+        #         tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
+        #         tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
+        #         cal_features_list.append(self.image_encoder(tmp_x))
+        #         logits_list.append(tmp_logits)
+        #         labels_list.append(tmp_labels)
+        #     logits = torch.cat(logits_list).float()
+        #     labels = torch.cat(labels_list)
+        #     cal_features = torch.cat(cal_features_list).float()
+        features_logits_labels = [
+            (self.image_encoder(examples[0].to(self._model_device)),
+             self._logits_transformation(self._model(examples[0])).detach().cpu(),
+             examples[1])
+            for examples in tqdm(cal_dataloader)
+        ]
+        cal_features, logits, labels = map(
+            lambda x: torch.stack(x).float(),
+            zip(*features_logits_labels)
+        )
+
         self.source_image_features = cal_features
-        probs = F.softmax(logits,dim=1)
-        probs = probs.numpy()
-        labels = labels.numpy()
-        self.calculate_threshold(probs, labels, alpha)
+
+        self.calculate_threshold(logits, labels, alpha)
         
         
-    def calculate_threshold(self, probs, labels, alpha):
-        self.scores = np.zeros(probs.shape[0]+1)
-        for index, (x, y) in enumerate(zip(probs, labels)):
+    def calculate_threshold(self, logits, labels, alpha):
+        self.scores = torch.zeros(logits.shape[0]+1)
+        for index, (x, y) in enumerate(zip(logits, labels)):
             self.scores[index] = self.score_function(x, y)
-        self.scores[index+1] =np.inf
+        self.scores[index+1] = torch.tensor(np.inf)
         self.scores_sorted = torch.tensor(self.scores).to(self._model_device).sort()[0]
         
     def predict(self, x_batch):
@@ -73,11 +85,10 @@ class WeightedPredictor(StandardPredictor):
             q_hat_batch = self.scores_sorted.expand([bs, -1]).gather(1, i_T).detach().cpu()
 
         logits = self._model(x_batch.to(self._model_device)).float()
-        logits = self._logits_transformation(logits).detach().cpu()
-        probs_batch = F.softmax(logits,dim=1).numpy()
+        logits_batch = self._logits_transformation(logits).detach().cpu()
         sets = []
-        for index, (probs,q_hat) in enumerate(zip(probs_batch,q_hat_batch)):
-            sets.append(self.predict_with_probs(probs, q_hat.numpy()[0]))
+        for index, (logits,q_hat) in enumerate(zip(logits_batch,q_hat_batch)):
+            sets.append(self.predict_with_probs(logits, q_hat))
         return sets
         
         

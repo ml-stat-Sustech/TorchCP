@@ -14,6 +14,10 @@ from deepcp.classification.scores.base import BaseScoreFunction
 
 
 class APS(BaseScoreFunction):
+    """
+    Adaptive Prediction Sets (Romano et al., 2020)
+    paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
+    """
     def __init__(self,):
         super(APS, self).__init__()
         self.transform = lambda x: torch.softmax(x, dim= len(x.shape)-1)
@@ -41,9 +45,8 @@ class APS(BaseScoreFunction):
     def _sort_sum(self, probs):
         # ordered: the ordered probabilities in descending order
         # indices: the rank of ordered probabilities in descending order
-        
-        ordered,indices = torch.sort(probs,dim=-1,descending= True)
-        # the accumulation of sorted probabilities
+        # cumsum: the accumulation of sorted probabilities
+        ordered, indices = torch.sort(probs,dim=-1,descending= True)
         cumsum = torch.cumsum(ordered,dim=-1)
         return indices, ordered, cumsum
     

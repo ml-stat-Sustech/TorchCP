@@ -12,32 +12,17 @@ import numpy as np
 from tqdm import tqdm
 
 from deepcp.classification.predictor.base import BasePredictor
-from deepcp.classification.utils import ConfCalibrator
+from deepcp.classification.utils.conf_calibration import TS
 
 
 class StandardPredictor(BasePredictor):
-    def __init__(self, score_function, model= None):
+    def __init__(self, score_function, model= None, temperature = 1):
         super().__init__(score_function, model)
-    
+
     
     #############################
     # The confidence calibration process
     ############################
-    
-    def conf_calibrator(self, conf_calibration_dataloader, method, *args):
-        """ Utilize conf_calibration_dataloader to optimize confidence calibrator.
-
-        Args:
-            conf_calibration_dataloader (_type_):  dataloader used to calibrate the confidence of models' output
-            method:  the method of calibration method
-            **args: optional parameters
-        Returns:
-            _type_: _description_
-        """
-        if type(method) == str:
-            raise ValueError(f"The type of method is str.")
-        logits_transformation = ConfCalibrator.registry_ConfCalibrator(method)(*args).to(self._model_device)
-        self._logits_transformation = ConfCalibrator.registry_ConfOptimizer("optimze_"+method)(logits_transformation, conf_calibration_dataloader, self._model_device)
         
         
     
@@ -45,16 +30,27 @@ class StandardPredictor(BasePredictor):
     # The calibration process
     ############################
     def calibrate(self, cal_dataloader, alpha):
-        logits_list = []
-        labels_list = []
-        with torch.no_grad():
-            for  examples in tqdm(cal_dataloader):
-                tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]            
-                tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_labels)
-            logits = torch.cat(logits_list).float()
-            labels = torch.cat(labels_list)
+        # logits_list = []
+        # labels_list = []
+        # with torch.no_grad():
+        #     for  examples in tqdm(cal_dataloader):
+        #         tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
+        #         tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
+        #         logits_list.append(tmp_logits)
+        #         labels_list.append(tmp_labels)
+        #     logits = torch.cat(logits_list).float()
+        #     labels = torch.cat(labels_list)
+
+        logits_labels = [
+            (self.image_encoder(examples[0].to(self._model_device)),
+             self._logits_transformation(self._model(examples[0])).detach().cpu(),
+             examples[1])
+            for examples in tqdm(cal_dataloader)
+        ]
+        logits, labels = map(
+            lambda x: torch.stack(x).float(),
+            zip(*logits_labels)
+        )
         self.calculate_threshold(logits, labels, alpha)
         
         

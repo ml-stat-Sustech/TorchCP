@@ -20,41 +20,45 @@ from deepcp.classification.utils import Metrics
 
 
 class ClusterPredictor(StandardPredictor):
-    def __init__(self, score_function, model, seed, cluster_ratio= "auto", cluster_num = "auto", split= 'random'):
-        """_summary_
-
-        Args:
-            score_function (_type_): _description_
-            seed (_type_): random seed
-            cluster_ratio (float, optional): the ratio of examples for clustering step. Defaults to 0.2.
-            split (str, optional):split: How to split data between clustering step and calibration step. Options are 'balanced' (sample n_clustering per class), 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability) 
+    """
+    Clustered conformal prediction (Ding et al., 2023)
+    paper: https://arxiv.org/abs/2306.09335
+    """
+    def __init__(self, score_function, model, cluster_ratio= "auto", cluster_num = "auto", split= 'random'):
         """
+
+        :param score_function: score functions of CP
+        :param model: a deep learning model
+        :param cluster_ratio: The ratio of examples in the calibration dataset used to cluster classes
+        :param cluster_num: The number of clusters. If cluster_ratio is "auto", the number of clusters is automatically computed.
+        :param split: The method to split the dataset into clustering dataset and calibration set. split: How to split data between clustering step and calibration step. Options are 'balanced' (sample n_clustering per class), 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability)
+        """
+
         super(ClusterPredictor, self).__init__(score_function, model)
-        self.__seed = seed
         self.__cluster_ratio =  cluster_ratio
         self.__cluster_num =  cluster_num
         self.__split =  split
 
         
-    def calculate_threshold(self, probs, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha):
 
-        num_classes = probs.shape[1]
-        scores = np.zeros(probs.shape[0])
-        for index, (x, y) in enumerate(zip(probs, labels)):
+        num_classes = logits.shape[1]
+        scores = torch.zeros(logits.shape[0])
+        for index, (x, y) in enumerate(zip(logits, labels)):
             scores[index] = self.score_function(x, y)
 
         
         if self.__cluster_ratio == 'auto' and self.__cluster_num == 'auto':
-            list_y_cal = labels.tolist()
+            y_cal = labels.tolist()
 
-            cts_dict = Counter(list_y_cal)
+            cts_dict = Counter(y_cal)
             cts = [cts_dict.get(k, 0) for k in range(num_classes)]
             n_min = min(cts)
             n_thresh = self.__get_quantile_threshold(alpha) 
 
             
             n_min = max(n_min, n_thresh) # Classes with fewer than n_thresh examples will be excluded from clustering
-            num_remaining_classes = np.sum(np.array(list(cts)) >= n_min)
+            num_remaining_classes = torch.sum(torch.Tensor(list(cts)) >= n_min)
 
             # Compute the number of clusters and the minium number of examples for each class
             n_clustering, num_clusters = self.__get_clustering_parameters(num_remaining_classes, n_min)
@@ -69,15 +73,14 @@ class ClusterPredictor(StandardPredictor):
             clustering_scores, clustering_labels, cal_scores, cal_labels = self.__split_X_and_y(scores, 
                                                             labels, 
                                                             n_k, 
-                                                            num_classes=num_classes, 
-                                                            seed=self.__seed)
+                                                            num_classes=num_classes)
     #                                                            split=split, # Balanced or stratified sampling 
         elif self.__split == 'doubledip':
             clustering_scores, clustering_labels = scores, labels
             cal_scores, cal_labels = scores, labels
         elif self.__split == 'random':
             # Each point is assigned to clustering set w.p. frac_clustering 
-            idx1 = np.random.uniform(size=(len(labels),)) < frac_clustering 
+            idx1 = torch.rand(size=(len(labels),)) < frac_clustering
             clustering_scores = scores[idx1]
             clustering_labels = labels[idx1]
             cal_scores = scores[~idx1]
@@ -102,7 +105,7 @@ class ClusterPredictor(StandardPredictor):
             # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels, q=[0.5, 0.6, 0.7, 0.8, 0.9], return_cts=True)
         
-            kmeans = KMeans(n_clusters=int(num_clusters), random_state=self.__seed, n_init=10).fit(embeddings, sample_weight=np.sqrt(class_cts))
+            kmeans = KMeans(n_clusters=int(num_clusters), n_init=10).fit(embeddings, sample_weight=np.sqrt(class_cts))
             nonrare_class_cluster_assignments = kmeans.labels_  
 
             # breakpoint()
@@ -164,7 +167,7 @@ class ClusterPredictor(StandardPredictor):
     
     
     # Used for creating balanced or stratified calibration dataset
-    def __split_X_and_y(self,X, y, n_k, num_classes, seed=0, split='balanced'):
+    def __split_X_and_y(self,X, y, n_k, num_classes, split='balanced'):
         '''
         Randomly generate two subsets of features X and corresponding labels y such that the
         first subset contains n_k instances of each class k and the second subset contains all
@@ -175,14 +178,12 @@ class ClusterPredictor(StandardPredictor):
             y: n x 1 array
             n_k: positive int or n x 1 array
             num_classes: total number of classes, corresponding to max(y)
-            seed: random seed
-            
+
         Output:
             X1, y1
             X2, y2
         '''
-        np.random.seed(self.__seed)
-        
+
         if split == 'balanced':
         
             if not hasattr(n_k, '__iter__'):

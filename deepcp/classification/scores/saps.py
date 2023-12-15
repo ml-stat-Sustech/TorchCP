@@ -6,8 +6,6 @@
 #
 
 
-# The reference repository is https://arxiv.org/abs/2310.06430
-
 
 import numpy as np
 import torch
@@ -16,10 +14,17 @@ from deepcp.classification.scores.aps import APS
 
 
 class SAPS(APS):
+    """
+    Sorted Adaptive Prediction Sets (Huang et al., 2023)
+    paper: https://arxiv.org/abs/2310.06430
+    """
     def __init__(self, weight):
+        """
+        :param weight: the weigth of label ranking.
+        """
         super(SAPS, self).__init__()
         if weight <= 0:
-            raise ValueError("Weight must be a positive value.")
+            raise ValueError("param 'weight' must be a positive value.")
         self.__weight = torch.tensor(weight)
 
 

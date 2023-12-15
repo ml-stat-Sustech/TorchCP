@@ -9,26 +9,22 @@
 from abc import ABCMeta, abstractmethod
 
 
-import numpy as np
 import torch
-from tqdm import tqdm
 
-from classification.utils.metrics import Metrics
+from deepcp.classification.utils.metrics import Metrics
 from deepcp.classification.utils import ConfCalibrator
 
 class BasePredictor(object):
     """
     Abstract base class for all predictor classes.
-
-    :param score_function: non-conformity score function.
     """
 
     __metaclass__ = ABCMeta
 
     def __init__(self, score_function, model= None):
         """
-        :calibration_method: methods used to calibrate 
-        :param **kwargs: optional parameters used by child classes.
+        :score_function: non-conformity score function.
+        :param model: a deep learning model.
         """
 
         self.score_function = score_function
@@ -44,7 +40,6 @@ class BasePredictor(object):
     def calibrate(self, cal_dataloader, alpha):
         """Virtual method to calibrate the calibration set.
 
-        :param model: the deep learning model.
         :param cal_dataloader : a dataloader of calibration set.
         :param alpha: the significance level.
         """
@@ -53,9 +48,7 @@ class BasePredictor(object):
     @abstractmethod
     def predict(self, x_batch):
         """generate prediction sets for  test examples.
-
         :param x_batch: a batch of input.
-
         """
         raise NotImplementedError
     
@@ -66,7 +59,7 @@ class BasePredictor(object):
 
         Args:
             scores (_type_): The non-conformity scores of {(x,y_1),..., (x,y_K)}
-            q_hat (_type_): _description_
+            q_hat (_type_): the calibrated threshold.
 
         Returns:
             _type_: _description_

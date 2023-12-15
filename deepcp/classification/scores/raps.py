@@ -15,16 +15,23 @@ from deepcp.classification.scores.aps import APS
 
 
 class RAPS(APS):
-    def __init__(self, penalty, kreg):
+    """
+    Regularized Adaptive Prediction Sets (Angelopoulos et al., 2020)
+    paper : https://arxiv.org/abs/2009.14193
+    """
+
+    def __init__(self, penalty, kreg = 0):
         """
-        when penalty=0, RAPS=APS.
-        
-        :kreg : the rank of regularization [0,labels_num]
+        when penalty = 0, RAPS=APS.
+
+        :param kreg : the rank of regularization which is an integer in [0,labels_num].
         """
         if penalty <= 0:
-            raise ValueError("Weight must be a positive value.")
-        
-        
+            raise ValueError("param 'penalty' must be a positive value.")
+        if kreg < 0:
+            raise ValueError("param 'kreg' must be a nonnegative  value.")
+        if type(kreg) != int:
+            raise TypeError("param 'kreg' must be a integer.")
         super(RAPS, self).__init__()
         self.__penalty = penalty
         self.__kreg = kreg
@@ -49,5 +56,4 @@ class RAPS(APS):
         U = torch.rand(probs.shape)
         reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1) - self.__kreg), torch.tensor(0))
         ordered_scores = cumsum - ordered * U + reg
-        
         return ordered_scores[torch.sort(I, descending= False, dim = -1)[1]]

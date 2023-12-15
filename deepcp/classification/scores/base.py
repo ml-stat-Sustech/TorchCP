@@ -22,14 +22,14 @@ class BaseScoreFunction(object):
     def __call__(self, logits, y):
         """Virtual method to compute scores for a data pair (x,y).
 
-        :param logits: the logits for an input.
-        :y : the label.
+        :param logits: the logits for inputs.
+        :y : the labels.
         """
         raise NotImplementedError
 
     @abstractmethod
     def predict(self, logits):
-        """Virtual method to compute scores of all labels for input x.
+        """Virtual method to compute scores of all labels for an input.
 
         :param logits: the logits for an input.
         """
