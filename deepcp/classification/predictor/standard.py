@@ -40,10 +40,8 @@ class StandardPredictor(BasePredictor):
         #         labels_list.append(tmp_labels)
         #     logits = torch.cat(logits_list).float()
         #     labels = torch.cat(labels_list)
-
         logits_labels = [
-            (self.image_encoder(examples[0].to(self._model_device)),
-             self._logits_transformation(self._model(examples[0])).detach().cpu(),
+            (self._logits_transformation(self._model(examples[0])).detach().cpu(),
              examples[1])
             for examples in tqdm(cal_dataloader)
         ]
