@@ -57,7 +57,6 @@ if __name__ == '__main__':
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
     
-    
 
     num_classes = 1000
     if args.score == "THR":
@@ -83,11 +82,11 @@ if __name__ == '__main__':
     prediction_sets = []
     labels_list = []
     with torch.no_grad():
-            for  examples in tqdm(test_data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]            
-                prediction_sets_batch = predictor.predict(tmp_x)
-                prediction_sets.extend(prediction_sets_batch)
-                labels_list.append(tmp_label)
+        for  examples in tqdm(test_data_loader):
+            tmp_x, tmp_label = examples[0], examples[1]            
+            prediction_sets_batch = predictor.predict(tmp_x)
+            prediction_sets.extend(prediction_sets_batch)
+            labels_list.append(tmp_label)
     test_labels = torch.cat(labels_list)
     
     metrics = Metrics()

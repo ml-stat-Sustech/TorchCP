@@ -15,4 +15,4 @@ class ABS:
         pass
 
     def __call__(self, predicts, labels):
-        return torch.abs(predicts, labels)
+        return torch.abs(predicts-labels)

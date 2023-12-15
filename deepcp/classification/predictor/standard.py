@@ -30,25 +30,25 @@ class StandardPredictor(BasePredictor):
     # The calibration process
     ############################
     def calibrate(self, cal_dataloader, alpha):
-        # logits_list = []
-        # labels_list = []
-        # with torch.no_grad():
-        #     for  examples in tqdm(cal_dataloader):
-        #         tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
-        #         tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
-        #         logits_list.append(tmp_logits)
-        #         labels_list.append(tmp_labels)
-        #     logits = torch.cat(logits_list).float()
-        #     labels = torch.cat(labels_list)
-        logits_labels = [
-            (self._logits_transformation(self._model(examples[0])).detach().cpu(),
-             examples[1])
-            for examples in tqdm(cal_dataloader)
-        ]
-        logits, labels = map(
-            lambda x: torch.stack(x).float(),
-            zip(*logits_labels)
-        )
+        logits_list = []
+        labels_list = []
+        with torch.no_grad():
+            for  examples in tqdm(cal_dataloader):
+                tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
+                tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
+                logits_list.append(tmp_logits)
+                labels_list.append(tmp_labels)
+            logits = torch.cat(logits_list).float()
+            labels = torch.cat(labels_list)
+        # logits_labels = [
+        #     (self._logits_transformation(self._model(examples[0].to(self._model_device))).detach().cpu(),
+        #      examples[1])
+        #     for examples in tqdm(cal_dataloader)
+        # ]
+        # logits, labels = map(
+        #     lambda x: torch.stack(x).float(),
+        #     zip(*logits_labels)
+        # )
         self.calculate_threshold(logits, labels, alpha)
         
         
