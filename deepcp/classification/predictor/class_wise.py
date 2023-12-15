@@ -21,7 +21,7 @@ class ClassWisePredictor(StandardPredictor):
     def calculate_threshold(self, logits, labels, alpha):
         # the number of labels
         labels_num = logits.shape[1]
-        self.q_hat = np.zeros(labels_num)
+        self.q_hat = torch.zeros(labels_num)
         for label in range(labels_num):
             x_cal_tmp = logits[labels == label]
             y_cal_tmp = labels[labels == label]

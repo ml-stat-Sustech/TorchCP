@@ -47,7 +47,8 @@ class ClusterPredictor(StandardPredictor):
         for index, (x, y) in enumerate(zip(logits, labels)):
             scores[index] = self.score_function(x, y)
 
-        
+        scores = scores.numpy()
+        labels = labels.numpy()
         if self.__cluster_ratio == 'auto' and self.__cluster_num == 'auto':
             y_cal = labels.tolist()
 
@@ -95,7 +96,6 @@ class ClusterPredictor(StandardPredictor):
         rare_classes = self.__get_rare_classes(clustering_labels, alpha, num_classes)
         print(f'{len(rare_classes)} of {num_classes} classes are rare in the clustering set'
             ' and will be assigned to the null cluster')
-        
         # 3) Run clustering
         if num_classes - len(rare_classes) > num_clusters and num_clusters > 1:  
             # Filter out rare classes and re-index
@@ -104,7 +104,6 @@ class ClusterPredictor(StandardPredictor):
             
             # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels, q=[0.5, 0.6, 0.7, 0.8, 0.9], return_cts=True)
-        
             kmeans = KMeans(n_clusters=int(num_clusters), n_init=10).fit(embeddings, sample_weight=np.sqrt(class_cts))
             nonrare_class_cluster_assignments = kmeans.labels_  
 
@@ -127,8 +126,7 @@ class ClusterPredictor(StandardPredictor):
         self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments, 
                 cal_scores, 
                 cal_labels, 
-                alpha= alpha, 
-                null_qhat = 'standard')
+                alpha= alpha)
 
 
     
@@ -288,9 +286,7 @@ class ClusterPredictor(StandardPredictor):
             '''
             Computes the q-quantiles of samples and returns the vector of quantiles
             '''
-            
             return np.quantile(samples, q)
-        
         num_classes = len(np.unique(labels))
         
         embeddings = np.zeros((num_classes, len(q)))
@@ -311,8 +307,7 @@ class ClusterPredictor(StandardPredictor):
             return embeddings
 
 
-    def __compute_cluster_specific_qhats(self, cluster_assignments, cal_class_scores, cal_true_labels, alpha, 
-                                   null_qhat ='standard'):
+    def __compute_cluster_specific_qhats(self, cluster_assignments, cal_class_scores, cal_true_labels, alpha):
         '''
         Computes cluster-specific quantiles (one for each class) that will result in marginal coverage of (1-alpha)
         
@@ -331,30 +326,32 @@ class ClusterPredictor(StandardPredictor):
             All classes in the same cluster have the same quantile.
         '''
         # If we want the null_qhat to be the standard qhat, we should compute this before we remap the values
-        if null_qhat == 'standard':
-            null_qhat = self.__compute_qhat(cal_class_scores, cal_true_labels, alpha)
+        null_qhat = self.__compute_qhat(cal_class_scores, cal_true_labels, alpha)
                 
         # Extract conformal scores for true labels if not already done
         if len(cal_class_scores) == 2:
             cal_class_scores = cal_class_scores[np.arange(len(cal_true_labels)), cal_true_labels]
-            
         # Edge case: all cluster_assignments are -1. 
         if np.all(cluster_assignments==-1):
-            
-            return null_qhat * np.ones(cluster_assignments.shape)
+            return null_qhat * torch.ones(cluster_assignments.shape)
         
         # Map true class labels to clusters
-        cal_true_clusters = np.array([cluster_assignments[label] for label in cal_true_labels])
+        cal_true_clusters = torch.Tensor([cluster_assignments[label] for label in cal_true_labels])
         
         # Compute cluster qhats
         
-        cluster_qhats = self.__compute_class_specific_qhats(cal_class_scores, cal_true_clusters, 
-                                                    alpha=alpha, num_classes=np.max(cluster_assignments)+1,
-                                                    default_qhat=np.inf,
-                                                    null_qhat=null_qhat)                            
+        cluster_qhats = self.__compute_class_specific_qhats(
+                                                            cal_class_scores, 
+                                                            cal_true_clusters, 
+                                                            alpha=alpha, 
+                                                            num_classes=np.max(cluster_assignments)+1,
+                                                             null_qhat=null_qhat,
+                                                            default_qhat=np.inf,
+                                                           
+                                                    )                            
         # Map cluster qhats back to classes
         num_classes = len(cluster_assignments)
-        class_qhats = np.array([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)])
+        class_qhats = torch.Tensor([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)])
 
         return class_qhats
         
@@ -386,8 +383,8 @@ class ClusterPredictor(StandardPredictor):
 
         return q_hat
     
-    def __compute_class_specific_qhats(self,cal_class_scores, cal_true_labels, num_classes, alpha, 
-                                 default_qhat=np.inf, null_qhat='standard', regularize=False):
+    def __compute_class_specific_qhats(self,cal_class_scores, cal_true_labels, num_classes, alpha, null_qhat,
+                                 default_qhat, regularize=False):
         '''
         Computes class-specific quantiles (one for each class) that will result in marginal coverage of (1-alpha)
         
@@ -409,12 +406,6 @@ class ClusterPredictor(StandardPredictor):
             - regularize: If True, shrink the class-specific qhat towards the default_qhat value. Amount of
             shrinkage for a class is determined by number of samples of that class
         '''
-        
-        if default_qhat == 'standard':
-            default_qhat = self.__compute_qhat(cal_class_scores, cal_true_labels, alpha=alpha)
-            
-        if null_qhat == 'standard':
-            null_qhat = self.__compute_qhat(cal_class_scores, cal_true_labels, alpha=alpha)
         
         # If we are regularizing the qhats, we should set aside some data to correct the regularized qhats 
         # to get a marginal coverage guarantee
