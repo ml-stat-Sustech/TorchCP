@@ -11,30 +11,12 @@ from deepcp.regression.utils.metrics import Metrics
 from deepcp.regression.predictor.splitpredictor import SplitPredictor
 
 
-class CQR(object):
+class CQR(SplitPredictor):
     def __init__(self, model, device):
         self._model = model
         self._device = device
         self._metric = Metrics()
 
-    def calibrate(self, cal_dataloader, alpha):
-        predicts_list = []
-        labels_list = []
-        x_list = []
-        with torch.no_grad():
-            for  examples in tqdm(cal_dataloader):
-                tmp_x, tmp_labels = examples[0].to(self._device), examples[1]
-                tmp_predicts = self._model(tmp_x).detach().cpu()
-                x_list.append(tmp_x)
-                predicts_list.append(tmp_predicts)
-                labels_list.append(tmp_labels)
-            predicts = torch.cat(predicts_list).float()
-            labels = torch.cat(labels_list)
-            x = torch.cat(x_list).float()
-        self.predicts = predicts
-        self.labels = labels
-        self.x = x
-        self.calculate_threshold(predicts, labels, alpha)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = torch.maximum(predicts[:,0]-y_truth, y_truth - predicts[:,1])

@@ -363,7 +363,7 @@ class ClusterPredictor(StandardPredictor):
         return q_hat
     
     def __compute_class_specific_qhats(self,cal_class_scores, cal_true_labels, num_classes, alpha, null_qhat,
-                                 default_qhat, regularize=False):
+                                 default_qhat):
         '''
         Computes class-specific quantiles (one for each class) that will result in marginal coverage of (1-alpha)
         
@@ -382,18 +382,10 @@ class ClusterPredictor(StandardPredictor):
             - null_qhat: Float, or 'standard', as described for default_qhat. Only used if -1 appears in
             cal_true_labels. null_qhat is assigned to 
             class/cluster -1 
-            - regularize: If True, shrink the class-specific qhat towards the default_qhat value. Amount of
-            shrinkage for a class is determined by number of samples of that class
         '''
         
         # If we are regularizing the qhats, we should set aside some data to correct the regularized qhats 
         # to get a marginal coverage guarantee
-        if regularize:
-            num_reserve = min(1000, int(.5*len(cal_true_labels))) # Reserve 1000 or half of calibration set, whichever is smaller
-            idx = np.random.choice(np.arange(len(cal_true_labels)), size=num_reserve, replace=False)
-            idx2 = ~np.isin(np.arange(len(cal_true_labels)), idx)
-            reserved_scores, reserved_labels = cal_class_scores[idx], cal_true_labels[idx]
-            cal_class_scores, cal_true_labels = cal_class_scores[idx2], cal_true_labels[idx2]
                     
         num_samples = len(cal_true_labels)
         q_hats = np.zeros((num_classes,)) # q_hats[i] = quantile for class i
@@ -429,61 +421,9 @@ class ClusterPredictor(StandardPredictor):
                     
         if -1 in cal_true_labels:
             q_hats = np.concatenate((q_hats, [null_qhat]))
-        
-        # Optionally apply shrinkage 
-        if regularize:
-            N = num_classes
-            n_k = np.maximum(class_cts, 1) # So that classes that never appear do not cause division by 0 issues. 
-            shrinkage_factor = .03 * n_k # smaller = less shrinkage
-            shrinkage_factor = np.minimum(shrinkage_factor, 1)
-            print('SHRINKAGE FACTOR:', shrinkage_factor)  
-            print(np.min(shrinkage_factor), np.max(shrinkage_factor))
-            q_hats = default_qhat + shrinkage_factor * (q_hats - default_qhat)
-            
-            # Correct qhats via additive factor to achieve marginal coverage
-            q_hats = self.__reconformalize(q_hats, reserved_scores, reserved_labels, alpha)
 
         
         return q_hats
     
-    # Additive version
-    def __reconformalize(self,qhats, scores, labels, alpha, adjustment_min=-1, adjustment_max=1):
-        '''
-        Adjust qhats by additive factor so that marginal coverage of 1-alpha is achieved
-        '''
-        print('Applying additive adjustment to qhats')
-        # ===== Perform binary search =====
-        # Convergence criteria: Either (1) marginal coverage is within tol of desired or (2)
-        # quantile_min and quantile_max differ by less than .001, so there is no need to try 
-        # to get a more precise estimate
-        tol = 0.0005
 
-        marginal_coverage = 0
-        while np.abs(marginal_coverage - (1-alpha)) > tol:
-
-            adjustment_guess = (adjustment_min +  adjustment_max) / 2
-            print(f"\nCurrent adjustment: {adjustment_guess:.6f}")
-
-            curr_qhats = qhats + adjustment_guess 
-
-            preds = self._generate_prediction_set(scores, curr_qhats)
-            metrics = Metrics()
-            marginal_coverage = metrics('coverage_rate')(labels, preds)
-            print(f"Marginal coverage: {marginal_coverage:.4f}")
-
-            if marginal_coverage > 1 - alpha:
-                adjustment_max = adjustment_guess
-            else:
-                adjustment_min = adjustment_guess
-            print(f"Search range: [{adjustment_min}, {adjustment_max}]")
-
-            if adjustment_max - adjustment_min < .00001:
-                adjustment_guess = adjustment_max # Conservative estimate, which ensures coverage
-                print("Adequate precision reached; stopping early.")
-                break
-                
-        print('Final adjustment:', adjustment_guess)
-        qhats += adjustment_guess
-        
-        return qhats
     
