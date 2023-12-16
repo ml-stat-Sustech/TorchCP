@@ -13,30 +13,15 @@ METRICS_REGISTRY = Registry("METRICS")
 
 
 @METRICS_REGISTRY.register()
-def coverage_rate(prediction_intervals, labels):
-    cvg = 0
-    for index, ele in enumerate(zip(prediction_intervals, labels)):
-        if (ele[1] >= ele[0][0]) and (ele[1] <= ele[0][1]):
-            cvg += 1
-    return cvg / len(prediction_intervals)
+def coverage_rate(prediction_intervals, y_truth):
+    y_truth = np.array(y_truth)
+    return np.mean((y_truth >= prediction_intervals[:,0]) & (y_truth <= prediction_intervals[:,1]))
 
 
 @METRICS_REGISTRY.register()
-def average_size(prediction_intervals, labels):
-    avg_size = 0
-    for index, ele in enumerate(prediction_intervals):
-        avg_size += ele[1]- ele[0]
-    return avg_size / len(prediction_intervals)
+def average_size(prediction_intervals, y_truth):
+    return np.mean(abs(prediction_intervals[:,1] - prediction_intervals[:,0]))
 
-@METRICS_REGISTRY.register()
-def CovGap(prediction_sets, labels,alpha,num_classes):
-    rate_classes = np.zeros(num_classes)
-    for k in range(num_classes):
-        idx = np.where(labels == k)[0]
-        selected_preds = [prediction_sets[i] for i in idx]
-        rate_classes[k] = coverage_rate(selected_preds,labels[labels==k])
-    
-    return np.mean(np.abs(rate_classes-(1-alpha)))*100
 
 
 

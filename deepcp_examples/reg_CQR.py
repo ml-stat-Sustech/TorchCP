@@ -7,9 +7,9 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from deepcp.utils import fix_randomness
-from deepcp.regression.predictor import SplitPredictor
+from deepcp.regression.predictor import SplitPredictor,CQR
 from deepcp.regression.utils.metrics import Metrics
-
+from deepcp.regression.loss_function.quantile_loss import QuantileLoss
 
 from utils import build_reg_data
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
@@ -41,7 +41,7 @@ class NonLinearNet(nn.Module):
         super(NonLinearNet, self).__init__()
         self.hidden_size = hidden_size
         self.in_shape = in_shape
-        self.out_shape = 1
+        self.out_shape = 2
         self.dropout = dropout
         self.base_model = nn.Sequential(
             nn.Linear(self.in_shape, self.hidden_size),
@@ -56,8 +56,10 @@ class NonLinearNet(nn.Module):
     def forward(self, x):
         return self.base_model(x)
     
+alpha = 0.1
+quantiles = [alpha/2, 1-alpha/2]
 model = NonLinearNet(X.shape[1], 64, 0.5).to(device)
-criterion = nn.MSELoss()
+criterion = QuantileLoss(quantiles)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 # Train Model
@@ -65,13 +67,13 @@ epochs = 100
 for epoch in tqdm(range(epochs)):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader): 
         outputs = model(tmp_x.to(device))
-        loss = criterion(outputs.reshape(-1), tmp_y.to(device))
+        loss = criterion(outputs, tmp_y.to(device))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-alpha = 0.1
+
     
-predictor = SplitPredictor(model, device)
+predictor = CQR(model, device)
 predictor.calibrate(cal_data_loader, alpha)
 
 y_list = []
@@ -96,6 +98,7 @@ print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}.")
 print(f"Average_size: {metrics('average_size')(predicts, test_y)}.")
 
 
+# print(predictor.evaluate(test_data_loader))
     
 
 
