@@ -66,10 +66,11 @@ class StandardPredictor(BasePredictor):
     # The prediction process
     ############################
     def predict(self, x_batch):
-        logits_batch = self._model(x_batch.to(self._model_device)).float()
-        logits_batch = self._logits_transformation(logits_batch).detach().cpu()
+        if self._model != None:
+            x_batch = self._model(x_batch.to(self._model_device)).float()
+        x_batch = self._logits_transformation(x_batch).detach().cpu()
         sets = []
-        for index, logits in enumerate(logits_batch):
+        for index, logits in enumerate(x_batch):
             sets.append(self.predict_with_logits(logits))
         return sets
     
@@ -106,6 +107,8 @@ class StandardPredictor(BasePredictor):
         res_dict["Coverage_rate"] = self._metric('coverage_rate')(prediction_sets, val_labels)
         res_dict["Average_size"] = self._metric('average_size')(prediction_sets, val_labels)
         return res_dict
+    
+
     
 
         

@@ -15,6 +15,7 @@ METRICS_REGISTRY = Registry("METRICS")
 @METRICS_REGISTRY.register()
 def coverage_rate(prediction_sets, labels):
     cvg = 0
+    labels = labels.numpy()
     for index, ele in enumerate(zip(prediction_sets, labels)):
         if ele[1] in ele[0]:
             cvg += 1

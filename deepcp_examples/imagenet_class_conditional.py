@@ -100,7 +100,7 @@ if __name__ == '__main__':
         elif args.predictor  == "Cluster":   
             predictor = ClusterPredictor(score_function,seed)
         # print(f"The size of calibration set is {cal_labels.shape[0]}.")
-        predictor.calibrate(cal_probailities, cal_labels, alpha)
+        predictor.calculate_threshold(cal_probailities, cal_labels, alpha)
 
         # test examples
         # print("Testing examples...")
