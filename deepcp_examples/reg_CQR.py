@@ -87,10 +87,9 @@ with torch.no_grad():
         x_list.append(tmp_x)
         predict_list.append(tmp_prediction_intervals)
         
-predicts = torch.cat(predict_list).float()
+predicts = torch.cat(predict_list).float().cpu()
 test_y = torch.cat(y_list)
 x = torch.cat(x_list).float()
-predicts = predicts.cpu().numpy()
 
 metrics = Metrics()
 print("Etestuating prediction sets...")

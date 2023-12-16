@@ -73,27 +73,27 @@ alpha = 0.1
     
 predictor = SplitPredictor(model, device)
 predictor.calibrate(cal_data_loader, alpha)
+print(predictor.evaluate(test_data_loader))
 
-y_list = []
-x_list = []
-predict_list = []
-with torch.no_grad():
-    for  examples in test_data_loader:
-        tmp_x, tmp_y = examples[0].to(device), examples[1]
-        tmp_prediction_intervals = predictor.predict(tmp_x)
-        y_list.append(tmp_y)
-        x_list.append(tmp_x)
-        predict_list.append(tmp_prediction_intervals)
+# y_list = []
+# x_list = []
+# predict_list = []
+# with torch.no_grad():
+#     for  examples in test_data_loader:
+#         tmp_x, tmp_y = examples[0].to(device), examples[1]
+#         tmp_prediction_intervals = predictor.predict(tmp_x)
+#         y_list.append(tmp_y)
+#         x_list.append(tmp_x)
+#         predict_list.append(tmp_prediction_intervals)
         
-predicts = torch.cat(predict_list).float()
-test_y = torch.cat(y_list)
-x = torch.cat(x_list).float()
-predicts = predicts.cpu().numpy()
+# predicts = torch.cat(predict_list).float().cpu()
+# test_y = torch.cat(y_list)
+# x = torch.cat(x_list).float()
 
-metrics = Metrics()
-print("Etestuating prediction sets...")
-print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}.")
-print(f"Average_size: {metrics('average_size')(predicts, test_y)}.")
+# metrics = Metrics()
+# print("Etestuating prediction sets...")
+# print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}.")
+# print(f"Average_size: {metrics('average_size')(predicts, test_y)}.")
 
 
     

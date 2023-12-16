@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 import numpy as np
+import torch
 
 from typing import Any
 from deepcp.utils.registry import Registry
@@ -14,13 +15,13 @@ METRICS_REGISTRY = Registry("METRICS")
 
 @METRICS_REGISTRY.register()
 def coverage_rate(prediction_intervals, y_truth):
-    y_truth = np.array(y_truth)
-    return np.mean((y_truth >= prediction_intervals[:,0]) & (y_truth <= prediction_intervals[:,1]))
+    # y_truth = np.array(y_truth)
+    return ((y_truth >= prediction_intervals[:,0]) & (y_truth <= prediction_intervals[:,1])).float().mean().item()
 
 
 @METRICS_REGISTRY.register()
 def average_size(prediction_intervals, y_truth):
-    return np.mean(abs(prediction_intervals[:,1] - prediction_intervals[:,0]))
+    return torch.abs(prediction_intervals[:,1] - prediction_intervals[:,0]).mean().item()
 
 
 

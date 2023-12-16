@@ -48,26 +48,6 @@ class CQR(object):
         prediction_intervals =  torch.stack([lower_bound, upper_bound],dim=1)
         return prediction_intervals
 
-    def evaluate(self, data_loader):
-        predicts_list = []
-        labels_list = []
-        with torch.no_grad():
-            for  examples in tqdm(data_loader):
-                tmp_x, tmp_labels = examples[0].to(self._device), examples[1]
-                tmp_logits = self._model(tmp_x).detach().cpu()
-                predicts_list.append(tmp_logits)
-                labels_list.append(tmp_labels)
-            predicts = torch.cat(predicts_list).float()
-            val_labels = torch.cat(labels_list)
-        lower_bound = predicts - self.q_hat
-        upper_bound = predicts + self.q_hat
-        prediction_intervals =  torch.hstack([lower_bound, upper_bound])
-    
-        res_dict = {}
-        res_dict["Coverage_rate"] = self._metric('coverage_rate')(prediction_intervals, val_labels)
-        res_dict["Average_size"] = self._metric('average_size')(prediction_intervals, val_labels)
-        return res_dict
-
         
     
 
