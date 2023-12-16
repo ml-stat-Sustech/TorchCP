@@ -62,7 +62,8 @@ class ClusterPredictor(StandardPredictor):
             num_remaining_classes = torch.sum(torch.Tensor(list(cts)) >= n_min)
 
             # Compute the number of clusters and the minium number of examples for each class
-            n_clustering, num_clusters = self.__get_clustering_parameters(num_remaining_classes, n_min)
+            n_clustering = int(n_min*num_remaining_classes/(75+num_remaining_classes))
+            num_clusters = int(np.floor(n_clustering / 2))
             print(f'n_clustering={n_clustering}, num_clusters={num_clusters}')
             # Convert n_clustering to fraction relative to n_min
             frac_clustering = n_clustering / n_min
@@ -138,29 +139,7 @@ class ClusterPredictor(StandardPredictor):
         while np.ceil((n+1)*(1-alpha)/n) > 1:
             n += 1
         return n
-    
-    def __get_clustering_parameters(self,num_classes, n_totalcal):
-        '''
-        Returns a guess of good values for num_clusters and n_clustering based solely 
-        on the number of classes and the number of examples per class. 
-        
-        This relies on two heuristics:
-        1) We want at least 150 points per cluster on average
-        2) We need more samples as we try to distinguish between more distributions. 
-        To distinguish between 2 distribution, want at least 4 samples per class. 
-        To distinguish between 5 distributions, want at least 10 samples per class. 
-        
-        Output: n_clustering, num_clusters
-        
-        '''
-        # Alias for convenience
-        K = num_classes
-        N = n_totalcal
-        
-        n_clustering = int(N*K/(75+K))
-        num_clusters = int(np.floor(n_clustering / 2))
-        
-        return n_clustering, num_clusters
+
     
     
     
