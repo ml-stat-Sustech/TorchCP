@@ -24,7 +24,7 @@ class ClusterPredictor(StandardPredictor):
     Clustered conformal prediction (Ding et al., 2023)
     paper: https://arxiv.org/abs/2306.09335
     """
-    def __init__(self, score_function, model, cluster_ratio= "auto", cluster_num = "auto", split= 'random'):
+    def __init__(self, score_function, model=None, cluster_ratio= "auto", cluster_num = "auto", split= 'random'):
         """
 
         :param score_function: score functions of CP

@@ -35,12 +35,60 @@ def CovGap(prediction_sets, labels,alpha,num_classes):
     for k in range(num_classes):
         idx = np.where(labels == k)[0]
         selected_preds = [prediction_sets[i] for i in idx]
-        rate_classes[k] = coverage_rate(selected_preds,labels[labels==k])
+        if len(labels[labels==k]) !=0:
+            rate_classes[k] = coverage_rate(selected_preds,labels[labels==k])
     
     return np.mean(np.abs(rate_classes-(1-alpha)))*100
 
 
-
+@METRICS_REGISTRY.register()
+def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
+    strata_diff = [[1,1],[2,3],[4,6],[7,10],[11,100],[101,1000]]
+    correct_array  = np.zeros(len(labels))
+    size_array  = np.zeros(len(labels))
+    topk = []
+    for index, ele in enumerate(logits):
+        I = ele.argsort(descending = True)
+        # print(labels[index])
+        target = labels[index]
+        topk.append(np.where((I - target.view(-1,1).numpy())==0)[1]+1) 
+        correct_array[index] = 1 if labels[index] in prediction_sets[index] else 0
+        size_array[index] = len(prediction_sets[index])
+    topk  = np.concatenate(topk)
+    
+    ccss_diff = {}
+    diff_violation =-1 
+    
+    for stratum in strata_diff:
+        
+        temp_index = np.argwhere( (topk >= stratum[0]) & (topk <= stratum[1]) )
+        ccss_diff[str(stratum)]={}
+        ccss_diff[str(stratum)]['cnt'] = len(temp_index)
+        if len(temp_index) == 0:
+            ccss_diff[str(stratum)]['cvg'] = 0
+            ccss_diff[str(stratum)]['sz'] = 0
+        else:
+            temp_index= temp_index[:,0]
+            cvg = np.round(np.mean(correct_array[temp_index]),3)
+            sz  = np.round(np.mean(size_array[temp_index]),3)
+            
+            ccss_diff[str(stratum)]['cvg'] = cvg
+            ccss_diff[str(stratum)]['sz'] = sz
+            # 这个值越小越好
+            stratum_violation = max(0,(1-alpha) -cvg)
+            diff_violation = max(diff_violation, stratum_violation)
+            
+    diff_violation_one =0   
+    for i in range(1,num_classes+1):
+        temp_index = np.argwhere( topk == i )
+        if len(temp_index)>0:
+            temp_index= temp_index[:,0]
+            # 这个值越小越好
+            stratum_violation = max(0,(1-alpha) - np.mean(correct_array[temp_index]))
+            diff_violation_one = max(diff_violation_one, stratum_violation)
+    return diff_violation, diff_violation_one, ccss_diff
+                
+                
 class Metrics:
         
     def __call__(self, metric ) -> Any:
