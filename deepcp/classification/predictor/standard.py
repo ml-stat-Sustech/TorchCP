@@ -17,14 +17,7 @@ from deepcp.classification.utils.conf_calibration import TS
 
 class StandardPredictor(BasePredictor):
     def __init__(self, score_function, model= None, temperature = 1):
-        super().__init__(score_function, model)
-
-    
-    #############################
-    # The confidence calibration process
-    ############################
-        
-        
+        super().__init__(score_function, model)        
     
     #############################
     # The calibration process
@@ -50,7 +43,6 @@ class StandardPredictor(BasePredictor):
         #     zip(*logits_labels)
         # )
         self.calculate_threshold(logits, labels, alpha)
-        
         
         
     def calculate_threshold(self, logits, labels, alpha):

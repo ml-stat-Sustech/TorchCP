@@ -40,6 +40,22 @@ def CovGap(prediction_sets, labels,alpha,num_classes):
     
     return np.mean(np.abs(rate_classes-(1-alpha)))*100
 
+@METRICS_REGISTRY.register()
+def VioClasses(prediction_sets, labels,alpha,num_classes):
+    violation_nums = 0
+    for k in range(num_classes):
+        if len(labels[labels==k]) ==0:
+            violation_nums += 1
+        else:
+            idx = np.where(labels == k)[0]
+            selected_preds = [prediction_sets[i] for i in idx]
+            if coverage_rate(selected_preds,labels[labels==k]) < 1-alpha:
+                violation_nums += 1
+        
+        
+    
+    return violation_nums
+
 
 @METRICS_REGISTRY.register()
 def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
