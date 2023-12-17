@@ -110,7 +110,7 @@ class ClusterPredictor(StandardPredictor):
 
             # breakpoint()
             # Print cluster sizes
-            print(f'Cluster sizes:', [x[1] for x in Counter(nonrare_class_cluster_assignments).most_common()])
+            # print(f'Cluster sizes:', [x[1] for x in Counter(nonrare_class_cluster_assignments).most_common()])
 
             # Remap cluster assignments to original classes. Any class not included in kmeans clustering is a rare 
             # class, so we will assign it to cluster "-1" = num_clusters by Python indexing
@@ -404,8 +404,8 @@ class ClusterPredictor(StandardPredictor):
 
             if len(scores) == 0:
                 assert default_qhat is not None, f"Class/cluster {k} does not appear in the calibration set, so the quantile for this class cannot be computed. Please specify a value for default_qhat to use in this case."
-                print(f'Warning: Class/cluster {k} does not appear in the calibration set,', 
-                    f'so default q_hat value of {default_qhat} will be used')
+                # print(f'Warning: Class/cluster {k} does not appear in the calibration set,', 
+                    # f'so default q_hat value of {default_qhat} will be used')
                 q_hats[k] = default_qhat
             else:
                 scores = np.sort(scores)
@@ -413,8 +413,8 @@ class ClusterPredictor(StandardPredictor):
                 val = np.ceil((num_samples+1)*(1-alpha)) / num_samples
                 if val > 1:
                     assert default_qhat is not None, f"Class/cluster {k} does not appear enough times to compute a proper quantile. Please specify a value for default_qhat to use in this case."
-                    print(f'Warning: Class/cluster {k} does not appear enough times to compute a proper quantile,', 
-                        f'so default q_hat value of {default_qhat} will be used')
+                    # print(f'Warning: Class/cluster {k} does not appear enough times to compute a proper quantile,', 
+                        # f'so default q_hat value of {default_qhat} will be used')
                     q_hats[k] = default_qhat
                 else:
                     q_hats[k] = np.quantile(scores, val, method='inverted_cdf')
