@@ -64,7 +64,7 @@ class ClusterPredictor(StandardPredictor):
             # Compute the number of clusters and the minium number of examples for each class
             n_clustering = int(n_min*num_remaining_classes/(75+num_remaining_classes))
             num_clusters = int(np.floor(n_clustering / 2))
-            print(f'n_clustering={n_clustering}, num_clusters={num_clusters}')
+            # print(f'n_clustering={n_clustering}, num_clusters={num_clusters}')
             # Convert n_clustering to fraction relative to n_min
             frac_clustering = n_clustering / n_min
 
@@ -95,8 +95,8 @@ class ClusterPredictor(StandardPredictor):
         # 2b)  Identify "rare" classes = classes that have fewer than 1/alpha - 1 examples 
         # in the clustering set 
         rare_classes = self.__get_rare_classes(clustering_labels, alpha, num_classes)
-        print(f'{len(rare_classes)} of {num_classes} classes are rare in the clustering set'
-            ' and will be assigned to the null cluster')
+        # print(f'{len(rare_classes)} of {num_classes} classes are rare in the clustering set'
+            # ' and will be assigned to the null cluster')
         # 3) Run clustering
         if num_classes - len(rare_classes) > num_clusters and num_clusters > 1:  
             # Filter out rare classes and re-index
@@ -119,7 +119,7 @@ class ClusterPredictor(StandardPredictor):
                 cluster_assignments[cls] = nonrare_class_cluster_assignments[remapped_cls]
         else: 
             cluster_assignments = -np.ones((num_classes,), dtype=int)
-            print('Skipped clustering because the number of clusters requested was <= 1')
+            # print('Skipped clustering because the number of clusters requested was <= 1')
             
         # 4) Compute qhats for each cluster
 
