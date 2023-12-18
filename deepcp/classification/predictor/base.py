@@ -8,7 +8,6 @@
 
 from abc import ABCMeta, abstractmethod
 
-
 import torch
 
 from deepcp.classification.utils.metrics import Metrics
@@ -82,22 +81,13 @@ class InductivePredictor(BasePredictor):
         logits_list = []
         labels_list = []
         with torch.no_grad():
-            for examples in tqdm(cal_dataloader):
+            for examples in cal_dataloader:
                 tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
                 tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
                 logits_list.append(tmp_logits)
                 labels_list.append(tmp_labels)
             logits = torch.cat(logits_list).float()
             labels = torch.cat(labels_list)
-        # logits_labels = [
-        #     (self._logits_transformation(self._model(examples[0].to(self._model_device))).detach().cpu(),
-        #      examples[1])
-        #     for examples in tqdm(cal_dataloader)
-        # ]
-        # logits, labels = map(
-        #     lambda x: torch.stack(x).float(),
-        #     zip(*logits_labels)
-        # )
         self.calculate_threshold(logits, labels, alpha)
 
     def calculate_threshold(self, logits, labels, alpha):
@@ -106,8 +96,8 @@ class InductivePredictor(BasePredictor):
         for index, (x, y) in enumerate(zip(logits, labels)):
             self.scores[index] = self.score_function(x, y)
         self.q_hat = torch.quantile(self.scores,
-                                    np.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0])
-
+                                    torch.ceil(torch.tensor((self.scores.shape[0] + 1) * (1 - alpha))) / self.scores.shape[0])
+        
     #############################
     # The prediction process
     ############################
@@ -141,7 +131,7 @@ class InductivePredictor(BasePredictor):
         prediction_sets = []
         labels_list = []
         with torch.no_grad():
-            for examples in tqdm(val_dataloader):
+            for examples in val_dataloader:
                 tmp_x, tmp_label = examples[0], examples[1]
                 prediction_sets_batch = self.predict(tmp_x)
                 prediction_sets.extend(prediction_sets_batch)
