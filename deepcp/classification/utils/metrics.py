@@ -31,13 +31,13 @@ def average_size(prediction_sets, labels):
 
 @METRICS_REGISTRY.register()
 def CovGap(prediction_sets, labels,alpha,num_classes):
-    rate_classes = np.zeros(num_classes)
+    rate_classes = []
     for k in range(num_classes):
         idx = np.where(labels == k)[0]
         selected_preds = [prediction_sets[i] for i in idx]
         if len(labels[labels==k]) !=0:
-            rate_classes[k] = coverage_rate(selected_preds,labels[labels==k])
-    
+            rate_classes.append(coverage_rate(selected_preds,labels[labels==k]))
+    rate_classes = np.array(rate_classes)
     return np.mean(np.abs(rate_classes-(1-alpha)))*100
 
 @METRICS_REGISTRY.register()
