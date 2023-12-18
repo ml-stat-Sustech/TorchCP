@@ -10,11 +10,11 @@ from tqdm import tqdm
 import torch.optim as optim
 
 
-from deepcp.classification.predictor.standard import StandardPredictor
+from deepcp.classification.predictor.base import InductivePredictor
 from deepcp.classification.predictor.utils import build_DomainDetecor,IW
 
 
-class WeightedPredictor(StandardPredictor):
+class WeightedPredictor(InductivePredictor):
     """
     Weighted conformal predictor (Tibshirani et al., 2019)
     paper : https://arxiv.org/abs/1904.06019

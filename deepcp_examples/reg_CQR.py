@@ -9,7 +9,7 @@ from tqdm import tqdm
 from deepcp.utils import fix_randomness
 from deepcp.regression.predictor import SplitPredictor,CQR
 from deepcp.regression.utils.metrics import Metrics
-from deepcp.regression.loss_function.quantile_loss import QuantileLoss
+from deepcp.regression.loss.quantile_loss import QuantileLoss
 
 from utils import build_reg_data
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")

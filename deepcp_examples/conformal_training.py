@@ -32,7 +32,7 @@ from tqdm import tqdm
 
 from deepcp.classification.predictor import StandardPredictor, ClusterPredictor, ClassWisePredictor, WeightedPredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
-from deepcp.classification.loss_function import ConfTr
+from deepcp.classification.loss import ConfTr
 from deepcp.classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
 from dataset import build_dataset

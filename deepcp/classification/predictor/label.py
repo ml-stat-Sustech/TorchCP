@@ -12,10 +12,15 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from deepcp.classification.predictor.standard import StandardPredictor
+from deepcp.classification.predictor.base import InductivePredictor
 
 
-class ClassWisePredictor(StandardPredictor):
+class ClassWisePredictor(InductivePredictor):
+    """
+
+    Applications of Class-Conditional Conformal Predictor in Multi-Class Classification (Shi et al., 2013)
+    paper: https://ieeexplore.ieee.org/document/6784618
+    """
 
     
     def calculate_threshold(self, logits, labels, alpha):

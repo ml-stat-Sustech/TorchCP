@@ -1,7 +1,7 @@
-from .standard import StandardPredictor
-from .class_wise import ClassWisePredictor
+from .base import InductivePredictor
+from .label import ClassWisePredictor
 from .cluster import ClusterPredictor
-from .weighted_predictor import WeightedPredictor
+from .weight import WeightedPredictor
 
 
 #

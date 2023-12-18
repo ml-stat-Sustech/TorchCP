@@ -21,7 +21,7 @@ class ConfTr(nn.Module):
         :param types: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
         :param target_size:
         :param loss_transform: a transform for loss
-        :param loss_function: a base loss function, such as cross entropy for classification
+        :param loss: a base loss function, such as cross entropy for classification
         """
         super(ConfTr, self).__init__()
         self.weight = torch.tensor(weights).to(device)
