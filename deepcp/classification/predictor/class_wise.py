@@ -33,6 +33,6 @@ class ClassWisePredictor(StandardPredictor):
             if qunatile_value>1:
                 qunatile_value = 1
                 
-            self.q_hat[label] = torch.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
+            self.q_hat[label] = torch.quantile(scores, qunatile_value)
 
 
