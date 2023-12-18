@@ -60,7 +60,7 @@ class ClusterPredictor(InductivePredictor):
             n_clustering = (n_min * num_remaining_classes / (75 + num_remaining_classes)).detach().clone().to(torch.int16)
             self.__num_clusters = torch.floor(n_clustering / 2).to(torch.int16)
             self.__ratio_clustering = n_clustering / n_min
-        print(f'n_clustering={n_clustering}, num_clusters={self.__num_clusters}')
+        # print(f'n_clustering={n_clustering}, num_clusters={self.__num_clusters}')
         # 2) Split data
         if self.__split == 'proportional':
             # Split dataset along with fraction "frac_clustering"
@@ -100,7 +100,7 @@ class ClusterPredictor(InductivePredictor):
                                                                                 sample_weight=torch.sqrt(class_cts))
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_)
             
-            print(f'Cluster sizes:', [x[1] for x in Counter(kmeans.labels_).most_common()])
+            # print(f'Cluster sizes:', [x[1] for x in Counter(kmeans.labels_).most_common()])
 
             cluster_assignments = -torch.ones((self.num_classes,), dtype=int)
             
