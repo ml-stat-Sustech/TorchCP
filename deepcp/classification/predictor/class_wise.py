@@ -28,6 +28,11 @@ class ClassWisePredictor(StandardPredictor):
             scores = torch.zeros(x_cal_tmp.shape[0])
             for index, (x, y) in enumerate(zip(x_cal_tmp, y_cal_tmp)):
                 scores[index] = self.score_function(x, y)
+            
+            qunatile_value = np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0]
+            if qunatile_value>1:
+                qunatile_value = 1
+                
             self.q_hat[label] = torch.quantile(scores, np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0])
 
 
