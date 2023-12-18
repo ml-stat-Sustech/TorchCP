@@ -5,12 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-
-
-
 import torch
-import torch.nn.functional as F
-import numpy as np
 
 from deepcp.classification.predictor.base import InductivePredictor
 
@@ -34,7 +29,7 @@ class ClassWisePredictor(InductivePredictor):
             for index, (x, y) in enumerate(zip(x_cal_tmp, y_cal_tmp)):
                 scores[index] = self.score_function(x, y)
             
-            qunatile_value = np.ceil((scores.shape[0] + 1) * (1 - alpha)) / scores.shape[0]
+            qunatile_value = torch.ceil((torch.tensor(scores.shape[0] + 1) * (1 - alpha))) / scores.shape[0]
             if qunatile_value>1:
                 qunatile_value = 1
                 

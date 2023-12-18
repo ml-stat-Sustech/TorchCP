@@ -28,8 +28,8 @@ if __name__ == '__main__':
     parser.add_argument('--predictor', default="Inductive", help="Inductive | ClassWise | Cluster")
     parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
-    parser.add_argument('--weight', default=0.2, type=float)
     parser.add_argument('--kreg', default=0, type=int)
+    parser.add_argument('--split', default="random", type=str, help ="proportional")
     args = parser.parse_args()
 
     fix_randomness(seed=args.seed)
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     elif args.predictor  == "ClassWise":   
         predictor = ClassWisePredictor(score_function, model=None)
     elif args.predictor  == "Cluster":   
-        predictor = ClusterPredictor(score_function, model=None)
+        predictor = ClusterPredictor(score_function, split=args.split, model=None)
     print(f"The size of calibration set is {cal_labels.shape[0]}.")
     predictor.calculate_threshold(cal_logits, cal_labels, alpha)
 

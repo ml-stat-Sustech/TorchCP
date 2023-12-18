@@ -83,7 +83,7 @@ class InductivePredictor(BasePredictor):
         with torch.no_grad():
             for examples in cal_dataloader:
                 tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
-                tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
+                tmp_logits = self._logits_transformation(self._model(tmp_x)).detach()
                 logits_list.append(tmp_logits)
                 labels_list.append(tmp_labels)
             logits = torch.cat(logits_list).float()
@@ -104,7 +104,7 @@ class InductivePredictor(BasePredictor):
     def predict(self, x_batch):
         if self._model != None:
             x_batch = self._model(x_batch.to(self._model_device)).float()
-        x_batch = self._logits_transformation(x_batch).detach().cpu()
+        x_batch = self._logits_transformation(x_batch).detach()
         sets = []
         for index, logits in enumerate(x_batch):
             sets.append(self.predict_with_logits(logits))

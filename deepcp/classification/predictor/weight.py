@@ -5,7 +5,6 @@
 
 import torch
 import torch.nn  as nn
-import numpy as np
 from tqdm import tqdm
 import torch.optim as optim
 
@@ -33,29 +32,20 @@ class WeightedPredictor(InductivePredictor):
     def calibrate(self, cal_dataloader, alpha):
         self.alpha = alpha
         self.cal_dataloader = cal_dataloader
-        # logits_list = []
-        # labels_list = []
-        # cal_features_list = []
-        # with torch.no_grad():
-        #     for  examples in tqdm(cal_dataloader):
-        #         tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
-        #         tmp_logits = self._logits_transformation(self._model(tmp_x)).detach().cpu()
-        #         cal_features_list.append(self.image_encoder(tmp_x))
-        #         logits_list.append(tmp_logits)
-        #         labels_list.append(tmp_labels)
-        #     logits = torch.cat(logits_list).float()
-        #     labels = torch.cat(labels_list)
-        #     cal_features = torch.cat(cal_features_list).float()
-        features_logits_labels = [
-            (self.image_encoder(examples[0].to(self._model_device)),
-             self._logits_transformation(self._model(examples[0])).detach().cpu(),
-             examples[1])
-            for examples in tqdm(cal_dataloader)
-        ]
-        cal_features, logits, labels = map(
-            lambda x: torch.stack(x).float(),
-            zip(*features_logits_labels)
-        )
+        logits_list = []
+        labels_list = []
+        cal_features_list = []
+        with torch.no_grad():
+            for  examples in tqdm(cal_dataloader):
+                tmp_x, tmp_labels = examples[0].to(self._model_device), examples[1]
+                tmp_logits = self._logits_transformation(self._model(tmp_x)).detach()
+                cal_features_list.append(self.image_encoder(tmp_x))
+                logits_list.append(tmp_logits)
+                labels_list.append(tmp_labels)
+            logits = torch.cat(logits_list).float()
+            labels = torch.cat(labels_list)
+            cal_features = torch.cat(cal_features_list).float()
+        
 
         self.source_image_features = cal_features
 
@@ -66,7 +56,7 @@ class WeightedPredictor(InductivePredictor):
         self.scores = torch.zeros(logits.shape[0]+1)
         for index, (x, y) in enumerate(zip(logits, labels)):
             self.scores[index] = self.score_function(x, y)
-        self.scores[index+1] = torch.tensor(np.inf)
+        self.scores[index+1] = torch.tensor(torch.inf)
         self.scores_sorted = torch.tensor(self.scores).to(self._model_device).sort()[0]
         
     def predict(self, x_batch):
@@ -82,10 +72,10 @@ class WeightedPredictor(InductivePredictor):
             p_sorted_acc = p_sorted.cumsum(1)
             
             i_T = torch.argmax((p_sorted_acc >= 1.0 - self.alpha).int(), dim=1, keepdim=True)
-            q_hat_batch = self.scores_sorted.expand([bs, -1]).gather(1, i_T).detach().cpu()
+            q_hat_batch = self.scores_sorted.expand([bs, -1]).gather(1, i_T).detach()
 
         logits = self._model(x_batch.to(self._model_device)).float()
-        logits_batch = self._logits_transformation(logits).detach().cpu()
+        logits_batch = self._logits_transformation(logits).detach()
         sets = []
         for index, (logits,q_hat) in enumerate(zip(logits_batch,q_hat_batch)):
             sets.append(self.predict_with_probs(logits, q_hat))
