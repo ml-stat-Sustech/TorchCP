@@ -17,7 +17,7 @@ import torchvision.transforms as trn
 from torch.nn.functional import softmax
 from tqdm import tqdm
 
-from deepcp.classification.predictor import StandardPredictor,ClusterPredictor,ClassWisePredictor
+from deepcp.classification.predictor import InductivePredictor,ClusterPredictor,ClassWisePredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
 from deepcp.classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness

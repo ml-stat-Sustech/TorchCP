@@ -19,7 +19,7 @@ from torch.nn.functional import softmax
 import torch.nn as nn
 from tqdm import tqdm
 
-from deepcp.classification.predictor import StandardPredictor,ClusterPredictor,ClassWisePredictor,WeightedPredictor
+from deepcp.classification.predictor import InductivePredictor,ClusterPredictor,ClassWisePredictor,WeightedPredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
 from deepcp.classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness

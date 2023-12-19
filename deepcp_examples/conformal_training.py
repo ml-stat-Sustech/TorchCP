@@ -30,7 +30,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from deepcp.classification.predictor import StandardPredictor, ClusterPredictor, ClassWisePredictor, WeightedPredictor
+from deepcp.classification.predictor import InductivePredictor, ClusterPredictor, ClassWisePredictor, WeightedPredictor
 from deepcp.classification.scores import THR, APS, SAPS,RAPS
 from deepcp.classification.loss import ConfTr
 from deepcp.classification.utils.metrics import Metrics
@@ -73,7 +73,7 @@ if __name__ == '__main__':
         if args.loss == "CE":
             criterion = nn.CrossEntropyLoss()
         elif args.loss == "ConfTr":
-            predictor =  StandardPredictor(score_function = THR(score_type= "log_softmax"))
+            predictor =  InductivePredictor(score_function = THR(score_type= "log_softmax"))
             criterion = ConfTr(weights=0.01,
                                predictor = predictor, 
                                alpha=0.05,

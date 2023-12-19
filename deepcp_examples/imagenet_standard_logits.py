@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
     parser.add_argument('--kreg', default=0, type=int)
-    parser.add_argument('--split', default="random", type=str, help ="proportional")
+    parser.add_argument('--split', default="random", type=str, help ="proportional | doubledip | random")
     args = parser.parse_args()
 
     fix_randomness(seed=args.seed)

@@ -9,7 +9,7 @@ from tqdm import tqdm
 import torch.optim as optim
 
 
-from deepcp.classification.predictor.base import InductivePredictor
+from deepcp.classification.predictor.induction import InductivePredictor
 from deepcp.classification.predictor.utils import build_DomainDetecor,IW
 
 

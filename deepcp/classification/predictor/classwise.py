@@ -7,7 +7,7 @@
 
 import torch
 
-from deepcp.classification.predictor.base import InductivePredictor
+from deepcp.classification.predictor.induction import InductivePredictor
 
 
 class ClassWisePredictor(InductivePredictor):
