@@ -17,25 +17,17 @@
 
 
 import argparse
-import os
-import json
 
 import torch
-import torchvision
-import torchvision.datasets as dset
-import torchvision.transforms as trn
-import torch.optim as optim
-from torch.nn.functional import softmax
 import torch.nn as nn
 import torch.nn.functional as F
-from tqdm import tqdm
+import torch.optim as optim
 
-from deepcp.classification.predictor import InductivePredictor, ClusterPredictor, ClassWisePredictor, WeightedPredictor
-from deepcp.classification.scores import THR, APS, SAPS,RAPS
-from deepcp.classification.loss import ConfTr
-from deepcp.classification.utils.metrics import Metrics
-from deepcp.utils import fix_randomness
 from dataset import build_dataset
+from deepcp.classification.loss import ConfTr
+from deepcp.classification.predictor import InductivePredictor, ClusterPredictor, ClassWisePredictor
+from deepcp.classification.scores import THR, APS, SAPS, RAPS
+from deepcp.utils import fix_randomness
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Covariate shift')
@@ -54,37 +46,41 @@ if __name__ == '__main__':
         # Invalid prediction sets
         ##################################
         train_dataset = build_dataset("mnist")
-        train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True, pin_memory=True)    
-        
+        train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True, pin_memory=True)
+
+
         class Net(nn.Module):
             def __init__(self):
                 super(Net, self).__init__()
-                self.fc1 = nn.Linear(28*28, 500)
+                self.fc1 = nn.Linear(28 * 28, 500)
                 self.fc2 = nn.Linear(500, 10)
 
             def forward(self, x):
-                x = x.view(-1, 28*28)
+                x = x.view(-1, 28 * 28)
                 x = F.relu(self.fc1(x))
                 x = self.fc2(x)
                 return x
 
+
         model = Net().to(device)
-        
+
         if args.loss == "CE":
             criterion = nn.CrossEntropyLoss()
         elif args.loss == "ConfTr":
-            predictor =  InductivePredictor(score_function = THR(score_type= "log_softmax"))
+            predictor = InductivePredictor(score_function=THR(score_type="log_softmax"))
             criterion = ConfTr(weights=0.01,
-                               predictor = predictor, 
+                               predictor=predictor,
                                alpha=0.05,
-                               device = device,             
+                               device=device,
                                fraction=0.5,
-                               loss_types = "valid",
-                               base_loss_fn = nn.CrossEntropyLoss())
+                               loss_types="valid",
+                               base_loss_fn=nn.CrossEntropyLoss())
         else:
             raise NotImplementedError
-            
+
         optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+
+
         def train(model, device, train_loader, optimizer, epoch):
             model.train()
             for batch_idx, (data, target) in enumerate(train_loader):
@@ -95,7 +91,10 @@ if __name__ == '__main__':
                 loss.backward()
                 optimizer.step()
                 if batch_idx % 10 == 0:
-                    print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
+                    print(
+                        f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
+
+
         checkpoint_path = f'.cache/conformal_training_model_checkpoint_{args.loss}_seed={seed}.pth'
         # if os.path.exists(checkpoint_path):
         #     checkpoint = torch.load(checkpoint_path)
@@ -103,15 +102,13 @@ if __name__ == '__main__':
         # else:
         for epoch in range(1, 10):
             train(model, device, train_data_loader, optimizer, epoch)
-        
-        torch.save({'model_state_dict': model.state_dict(),}, checkpoint_path)
-        
-        test_dataset = build_dataset("mnist", mode= 'test')
+
+        torch.save({'model_state_dict': model.state_dict(), }, checkpoint_path)
+
+        test_dataset = build_dataset("mnist", mode='test')
         cal_dataset, test_dataset = torch.utils.data.random_split(test_dataset, [5000, 5000])
         cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1600, shuffle=False, pin_memory=True)
         test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1600, shuffle=False, pin_memory=True)
-        
-        
 
         if args.score == "THR":
             score_function = THR()
@@ -120,32 +117,20 @@ if __name__ == '__main__':
         elif args.score == "RAPS":
             score_function = RAPS(args.penalty, args.kreg)
         elif args.score == "SAPS":
-            score_function = SAPS(weight= args.weight)
-            
+            score_function = SAPS(weight=args.weight)
+
         alpha = 0.01
-        if args.predictor  == "Standard":
+        if args.predictor == "Standard":
             predictor = StandardPredictor(score_function, model)
-        elif args.predictor  == "ClassWise":   
+        elif args.predictor == "ClassWise":
             predictor = ClassWisePredictor(score_function, model)
-        elif args.predictor  == "Cluster":   
+        elif args.predictor == "Cluster":
             predictor = ClusterPredictor(score_function, model, args.seed)
-        predictor.calibrate(cal_data_loader,  alpha)
+        predictor.calibrate(cal_data_loader, alpha)
 
         # test examples
         tmp_res = predictor.evaluate(test_data_loader)
-        res['Coverage_rate'] += tmp_res['Coverage_rate']/num_trials
-        res['Average_size'] += tmp_res['Average_size']/num_trials
-        
+        res['Coverage_rate'] += tmp_res['Coverage_rate'] / num_trials
+        res['Average_size'] += tmp_res['Average_size'] / num_trials
 
     print(res)
-
-
-
-    
-    
-    
-
-
-
-
-

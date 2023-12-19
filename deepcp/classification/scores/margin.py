@@ -4,8 +4,6 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-import numpy as np
-import scipy
 import torch
 
 from deepcp.classification.scores.base import BaseScoreFunction
@@ -17,18 +15,18 @@ class Margin(BaseScoreFunction):
     paper : https://arxiv.org/abs/1609.00451
     """
 
-    def __init__(self,) -> None:
+    def __init__(self, ) -> None:
         """
         param score_type: either "softmax" "Identity", "log_softmax" or "log". Default: "softmax". A transformation for logits.
         """
         super().__init__()
 
-        self.transform = lambda x: torch.softmax(x,dim= len(x.shape)-1)
+        self.transform = lambda x: torch.softmax(x, dim=len(x.shape) - 1)
 
     def _compute_score(self, probs, index):
         target_prob = probs[index].clone()
         probs[index] = -1
-        second_highest_prob = torch.max(probs,dim=-1).values
+        second_highest_prob = torch.max(probs, dim=-1).values
         return second_highest_prob - target_prob
 
     def __call__(self, logits, y):
@@ -43,7 +41,7 @@ class Margin(BaseScoreFunction):
 
     def predict(self, logits):
         probs = self.transform(logits)
-        temp_probs = probs.repeat(logits.shape[0],1)
+        temp_probs = probs.repeat(logits.shape[0], 1)
         indices = torch.arange(logits.shape[0])
         temp_probs[indices, indices] = torch.finfo(torch.float32).min
-        return torch.max(temp_probs,dim=1).values - probs  
+        return torch.max(temp_probs, dim=1).values - probs

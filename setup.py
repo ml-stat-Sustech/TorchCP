@@ -7,13 +7,12 @@
 #
 
 import os
-from setuptools import setup
-from setuptools import find_packages
 
+from setuptools import find_packages
+from setuptools import setup
 
 with open(os.path.join(os.path.dirname(__file__), 'deepcp/VERSION')) as f:
     version = f.read().strip()
-
 
 setup(name='deepcp',
       version=version,

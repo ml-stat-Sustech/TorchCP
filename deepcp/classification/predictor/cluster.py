@@ -6,15 +6,12 @@
 #
 # The reference repository is https://github.com/tiffanyding/class-conditional-conformal
 
-from collections import Counter
-
-import torch
 import numpy as np
+import torch
 from sklearn.cluster import KMeans
 
 from deepcp.classification.predictor.induction import InductivePredictor
 from deepcp.utils.common import DimensionError
-from deepcp.classification.utils import Metrics
 
 
 class ClusterPredictor(InductivePredictor):
@@ -52,16 +49,20 @@ class ClusterPredictor(InductivePredictor):
         if self.__ratio_clustering == 'auto' and self.__num_clusters == 'auto':
             n_min = torch.min(classes_statistics)
             n_thresh = self.__get_quantile_minimum(alpha)
-            n_min = torch.maximum(n_min, n_thresh)  # Classes with fewer than n_thresh examples will be excluded from clustering
+            n_min = torch.maximum(n_min,
+                                  n_thresh)  # Classes with fewer than n_thresh examples will be excluded from clustering
             num_remaining_classes = torch.sum(classes_statistics >= n_min)
 
             # Compute the number of clusters and the minium number of examples for each class
-            n_clustering = (n_min * num_remaining_classes / (75 + num_remaining_classes)).detach().clone().to(torch.int32).to(device)
+            n_clustering = (n_min * num_remaining_classes / (75 + num_remaining_classes)).detach().clone().to(
+                torch.int32).to(device)
             self.__num_clusters = torch.floor(n_clustering / 2).to(torch.int32).to(device)
             self.__ratio_clustering = n_clustering / n_min
-            
+
         # 2) Split data
-        clustering_scores, clustering_labels, cal_scores, cal_labels = self.__split_data(scores, labels, self.__ratio_clustering, classes_statistics, device)
+        clustering_scores, clustering_labels, cal_scores, cal_labels = self.__split_data(scores, labels,
+                                                                                         self.__ratio_clustering,
+                                                                                         classes_statistics, device)
 
         # 3)  Identify "rare" classes
         rare_classes = self.__get_rare_classes(clustering_labels, alpha, self.num_classes)
@@ -71,34 +72,34 @@ class ClusterPredictor(InductivePredictor):
             # Filter out rare classes and re-index
             remaining_idx, filtered_labels, class_remapping = self.__remap_classes(clustering_labels, rare_classes)
             filtered_scores = clustering_scores[remaining_idx]
-            
-           # Compute embedding for each class and get class counts
+
+            # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels)
             kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10).fit(embeddings,
                                                                                 sample_weight=torch.sqrt(class_cts))
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_)
-            
 
             cluster_assignments = - torch.ones((self.num_classes,), dtype=int)
-            
+
             for cls, remapped_cls in class_remapping.items():
                 cluster_assignments[cls] = nonrare_class_cluster_assignments[remapped_cls]
         else:
             cluster_assignments = - torch.ones((self.num_classes,), dtype=int)
 
         # 5) Compute qhats for each cluster
-  
+
         self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments,
                                                            cal_scores,
                                                            cal_labels,
                                                            alpha=alpha)
-        
-    def __split_data(self,scores, labels, ratio_clustering, classes_statistics, device):
-        
+
+    def __split_data(self, scores, labels, ratio_clustering, classes_statistics, device):
+
         if self.__split == 'proportional':
             # Split dataset along with fraction "frac_clustering"
-            n_k = torch.tensor([self.__ratio_clustering * classes_statistics[k] for k in range(self.num_classes)]).to(torch.int32)
-            idx1 = torch.zeros(labels.shape, dtype = torch.bool).to(device)
+            n_k = torch.tensor([self.__ratio_clustering * classes_statistics[k] for k in range(self.num_classes)]).to(
+                torch.int32)
+            idx1 = torch.zeros(labels.shape, dtype=torch.bool).to(device)
             for k in range(self.num_classes):
                 # Randomly select n instances of class k
                 idx = torch.argwhere(labels == k).flatten()
@@ -123,8 +124,6 @@ class ClusterPredictor(InductivePredictor):
         else:
             raise Exception("Invalid split method. Options are 'proportional', 'doubledip', and 'random'")
         return clustering_scores, clustering_labels, cal_scores, cal_labels
-    
-    
 
     def __get_quantile_minimum(self, alpha):
         '''
@@ -207,7 +206,6 @@ class ClusterPredictor(InductivePredictor):
 
         return embeddings, cts
 
-
     def __compute_cluster_specific_qhats(self, cluster_assignments, cal_class_scores, cal_true_labels, alpha):
         '''
         Computes cluster-specific quantiles (one for each class) that will result in marginal coverage of (1-alpha)
@@ -221,12 +219,12 @@ class ClusterPredictor(InductivePredictor):
         Output:
             num_classes length array where entry i is the quantile correspond to the cluster that class i belongs to. 
         '''
-        
+
         # Compute quantile q_hat that will result in marginal coverage of (1-alpha)
-        null_qhat =  torch.quantile(cal_class_scores, torch.ceil((len(cal_true_labels) + 1) * (1 - alpha)) / len(cal_true_labels))
+        null_qhat = torch.quantile(cal_class_scores,
+                                   torch.ceil((len(cal_true_labels) + 1) * (1 - alpha)) / len(cal_true_labels))
 
-
-        # Edge case: all cluster_assignments are -1. 
+        # Edge case: all cluster_assignments are -1.
         if torch.all(cluster_assignments == -1):
             return null_qhat * torch.ones(cluster_assignments.shape)
 
@@ -236,19 +234,18 @@ class ClusterPredictor(InductivePredictor):
         # Compute cluster qhats
 
         cluster_qhats = self.__compute_class_specific_qhats(
-                                                                cal_class_scores,
-                                                                cal_true_clusters,
-                                                                alpha = alpha,
-                                                                num_classes = torch.max(cluster_assignments) + 1,
-                                                                null_qhat = null_qhat,
-                                                                default_qhat = torch.inf
-                                                                )
+            cal_class_scores,
+            cal_true_clusters,
+            alpha=alpha,
+            num_classes=torch.max(cluster_assignments) + 1,
+            null_qhat=null_qhat,
+            default_qhat=torch.inf
+        )
         # Map cluster qhats back to classes
         num_classes = len(cluster_assignments)
         class_qhats = torch.Tensor([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)])
 
         return class_qhats
-
 
     def __compute_class_specific_qhats(self, cal_class_scores, cal_true_labels, num_classes, alpha, null_qhat,
                                        default_qhat):
@@ -261,7 +258,6 @@ class ClusterPredictor(InductivePredictor):
         :param default_qhat: the q_hat for absent classes.
         :param null_qhat: Only used if -1 appears in cal_true_labels. null_qhat is assigned to class/cluster -1.
         '''
-
 
         num_samples = len(cal_true_labels)
         q_hats = torch.zeros((num_classes,))  # q_hats[i] = quantile for class i

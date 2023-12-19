@@ -6,8 +6,6 @@
 #
 
 
-from difflib import SequenceMatcher
-
 __all__ = ["Registry"]
 
 

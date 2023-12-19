@@ -4,18 +4,22 @@ Thank you considering contributing to deepcp!
 
 This document provide brief guidelines for potential contributors.
 
-Please use pull requests for new features, bug fixes, new examples and etc. If you work on something with significant efforts, please mention it in early stage using issues.
+Please use pull requests for new features, bug fixes, new examples and etc. If you work on something with significant
+efforts, please mention it in early stage using issues.
 
-We ask that you follow the `PEP8` coding style in your pull requests, [`flake8`](http://flake8.pycqa.org/) is used in continuous integration to enforce this.
+We ask that you follow the `PEP8` coding style in your pull requests, [`flake8`](http://flake8.pycqa.org/) is used in
+continuous integration to enforce this.
 
 ---
+
 ### Detailed guidelines for contributing new attacks
 
-
 ---
+
 ### Copyright notice at the beginning of files
 
 For files purely contributed by contributors outside of RBC, the following lines should appear at the beginning
+
 ```
 # Copyright (c) 2019-present, Name of the Contributor.
 # All rights reserved.
@@ -25,8 +29,9 @@ For files purely contributed by contributors outside of RBC, the following lines
 #
 ```
 
-For files involving both RBC employees and 
+For files involving both RBC employees and
 contributors outside of RBC, the following lines should appear at the beginning
+
 ```
 # Copyright (c) 2018-present, Royal Bank of Canada and other authors.
 # See the AUTHORS.txt file for a list of contributors.

@@ -14,11 +14,10 @@ import torch
 import torchvision
 import torchvision.datasets as dset
 import torchvision.transforms as trn
-from torch.nn.functional import softmax
 from tqdm import tqdm
 
-from deepcp.classification.predictor import InductivePredictor,ClusterPredictor,ClassWisePredictor
-from deepcp.classification.scores import THR, APS, SAPS,RAPS,Margin
+from deepcp.classification.predictor import InductivePredictor, ClusterPredictor, ClassWisePredictor
+from deepcp.classification.scores import THR, APS, SAPS, RAPS, Margin
 from deepcp.classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
 
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
     parser.add_argument('--kreg', default=0, type=int)
-    parser.add_argument('--split', default="random", type=str, help ="proportional | doubledip | random")
+    parser.add_argument('--split', default="random", type=str, help="proportional | doubledip | random")
     args = parser.parse_args()
 
     fix_randomness(seed=args.seed)
@@ -49,7 +48,7 @@ if __name__ == '__main__':
                                                std=[0.229, 0.224, 0.225])
                                  ])
         usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data") 
+        data_dir = os.path.join(usr_dir, "data")
         dataset = dset.ImageFolder(data_dir + "/imagenet/val",
                                    transform)
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
@@ -78,14 +77,13 @@ if __name__ == '__main__':
     test_logits = torch.stack([sample[0] for sample in val_data])
     test_labels = torch.stack([sample[1] for sample in val_data])
 
-
     num_classes = 1000
     if args.score == "THR":
         score_function = THR()
     elif args.score == "APS":
         score_function = APS()
     elif args.score == "RAPS":
-        score_function = RAPS(args.penalty,args.kreg)
+        score_function = RAPS(args.penalty, args.kreg)
     elif args.score == "SAPS":
         score_function = SAPS(weight=args.weight)
     elif args.score == "Margin":
@@ -93,11 +91,11 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError
     alpha = 0.1
-    if args.predictor  == "Inductive":
+    if args.predictor == "Inductive":
         predictor = InductivePredictor(score_function, model=None)
-    elif args.predictor  == "ClassWise":   
+    elif args.predictor == "ClassWise":
         predictor = ClassWisePredictor(score_function, model=None)
-    elif args.predictor  == "Cluster":   
+    elif args.predictor == "Cluster":
         predictor = ClusterPredictor(score_function, split=args.split, model=None)
     print(f"The size of calibration set is {cal_labels.shape[0]}.")
     predictor.calculate_threshold(cal_logits, cal_labels, alpha)

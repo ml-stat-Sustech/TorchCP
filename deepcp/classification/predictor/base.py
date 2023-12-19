@@ -10,8 +10,9 @@ from abc import ABCMeta, abstractmethod
 
 import torch
 
-from deepcp.classification.utils.metrics import Metrics
 from deepcp.classification.utils import ConfCalibrator
+from deepcp.classification.utils.metrics import Metrics
+
 
 class BasePredictor(object):
     """
@@ -20,7 +21,7 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model= None):
+    def __init__(self, score_function, model=None):
         """
         :score_function: non-conformity score function.
         :param model: a deep learning model.
@@ -28,7 +29,7 @@ class BasePredictor(object):
 
         self.score_function = score_function
         self._model = model
-        if self._model ==  None:
+        if self._model == None:
             self._model_device = None
         else:
             self._model_device = next(model.parameters()).device
@@ -50,9 +51,7 @@ class BasePredictor(object):
         :param x_batch: a batch of input.
         """
         raise NotImplementedError
-    
-        
-    
+
     def _generate_prediction_set(self, scores, q_hat):
         """Generate the prediction set with the threshold q_hat.
 
@@ -63,10 +62,7 @@ class BasePredictor(object):
         Returns:
             _type_: _description_
         """
-        if len(scores.shape) ==1:
+        if len(scores.shape) == 1:
             return torch.argwhere(scores < q_hat).reshape(-1).tolist()
         else:
             return torch.argwhere(scores < q_hat).tolist()
-
-
-

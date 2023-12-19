@@ -5,13 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import torch
 # @Time : 13/12/2023  16:27
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
-from torch.nn import CrossEntropyLoss
+
+
 class ConfTr(nn.Module):
-    def __init__(self, weights, predictor, alpha, device, fraction, loss_types = "valid", target_size = 1 , loss_transform = "square", base_loss_fn = None):
+    def __init__(self, weights, predictor, alpha, device, fraction, loss_types="valid", target_size=1,
+                 loss_transform="square", base_loss_fn=None):
         """
         :param weights: the weight of each loss function
         :param predictor: the CP predictor
@@ -30,7 +32,7 @@ class ConfTr(nn.Module):
         self.device = device
         self.fraction = fraction
         self.base_loss_fn = base_loss_fn
-        
+
         self.target_size = target_size
         if loss_transform == "square":
             self.transform = torch.square
@@ -42,19 +44,18 @@ class ConfTr(nn.Module):
             raise NotImplementedError
         self.loss_functions_dict = {"valid": self.__compute_hinge_size_loss,
                                     "probs": self.__compute_probabilistic_size_loss,
-                               "coverage": self.__compute_coverage_loss,
-                               "classification": self.__compute_classification_loss}
+                                    "coverage": self.__compute_coverage_loss,
+                                    "classification": self.__compute_classification_loss}
 
-        
         if type(loss_types) == set:
             if type(weights) != set:
                 raise TypeError("weights must be a set.")
         elif type(loss_types) == str:
             if type(weights) != float and type(weights) != int:
                 raise TypeError("weights must be a float or a int.")
-        else: 
+        else:
             raise TypeError("types must be a set or a string.")
-        self.loss_types =  loss_types
+        self.loss_types = loss_types
 
     def forward(self, logits, labels):
         # Compute Size Loss
@@ -69,34 +70,31 @@ class ConfTr(nn.Module):
         test_scores = self.predictor.score_function.predict(test_logits)
         pred_sets = torch.sigmoid(tau - test_scores)
 
-
         if type(self.loss_types) == set:
             loss = torch.tensor(0).to(self.device)
             for i in range(len(self.loss_types)):
                 loss += self.weight[i] * self.loss_functions_dict[self.loss_types[i]](pred_sets, test_labels)
         else:
             loss = self.weight * self.loss_functions_dict[self.loss_types](pred_sets, test_labels)
-            
+
         if self.base_loss_fn != None:
             loss += self.base_loss_fn(logits, labels).float()
-       
 
-        return  loss
+        return loss
 
-
-    def __compute_hinge_size_loss(self,pred_sets, labels):
-        return torch.mean(self.transform(torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0))))
+    def __compute_hinge_size_loss(self, pred_sets, labels):
+        return torch.mean(
+            self.transform(torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0))))
 
     def __compute_probabilistic_size_loss(self, pred_sets, labels):
         classes = pred_sets.shape[0]
-        one_hot_labels = torch.unsqueeze(torch.eye(classes),dim=0)
+        one_hot_labels = torch.unsqueeze(torch.eye(classes), dim=0)
         repeated_confidence_sets = torch.repeat_interleave(
             torch.unsqueeze(pred_sets, 2), classes, dim=2)
         loss = one_hot_labels * repeated_confidence_sets + \
                (1 - one_hot_labels) * (1 - repeated_confidence_sets)
         loss = torch.prod(loss, dim=1)
         return torch.sum(loss, dim=1)
-
 
     def __compute_coverage_loss(self, pred_sets, labels):
         one_hot_labels = F.one_hot(labels, num_classes=pred_sets.shape[1])
@@ -112,7 +110,7 @@ class ConfTr(nn.Module):
     def __compute_classification_loss(self, pred_sets, labels):
         # Convert labels to one-hot encoding
         one_hot_labels = F.one_hot(labels, num_classes=pred_sets.shape[1]).float()
-        loss_matrix =  torch.eye(pred_sets.shape[1])
+        loss_matrix = torch.eye(pred_sets.shape[1])
         # Calculate l1 and l2 losses
         l1 = (1 - pred_sets) * one_hot_labels * loss_matrix[labels]
         l2 = pred_sets * (1 - one_hot_labels) * loss_matrix[labels]
@@ -122,6 +120,3 @@ class ConfTr(nn.Module):
 
         # Return the mean loss
         return torch.mean(loss)
-
-
-

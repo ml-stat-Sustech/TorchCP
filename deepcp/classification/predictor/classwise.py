@@ -17,7 +17,6 @@ class ClassWisePredictor(InductivePredictor):
     paper: https://ieeexplore.ieee.org/document/6784618
     """
 
-    
     def calculate_threshold(self, logits, labels, alpha):
         # the number of labels
         labels_num = logits.shape[1]
@@ -28,11 +27,9 @@ class ClassWisePredictor(InductivePredictor):
             scores = torch.zeros(x_cal_tmp.shape[0])
             for index, (x, y) in enumerate(zip(x_cal_tmp, y_cal_tmp)):
                 scores[index] = self.score_function(x, y)
-            
+
             qunatile_value = torch.ceil((torch.tensor(scores.shape[0] + 1) * (1 - alpha))) / scores.shape[0]
-            if qunatile_value>1:
+            if qunatile_value > 1:
                 qunatile_value = 1
-                
+
             self.q_hat[label] = torch.quantile(scores, qunatile_value)
-
-

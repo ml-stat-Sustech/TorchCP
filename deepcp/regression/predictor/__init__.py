@@ -7,5 +7,5 @@
 
 # @Time : 15/12/2023  17:34
 
-from .splitpredictor import SplitPredictor
 from .cqr import CQR
+from .split import SplitPredictor

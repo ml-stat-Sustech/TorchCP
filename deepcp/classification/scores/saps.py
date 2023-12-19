@@ -6,8 +6,6 @@
 #
 
 
-
-import numpy as np
 import torch
 
 from deepcp.classification.scores.aps import APS
@@ -18,6 +16,7 @@ class SAPS(APS):
     Sorted Adaptive Prediction Sets (Huang et al., 2023)
     paper: https://arxiv.org/abs/2310.06430
     """
+
     def __init__(self, weight):
         """
         :param weight: the weigth of label ranking.
@@ -27,9 +26,8 @@ class SAPS(APS):
             raise ValueError("param 'weight' must be a positive value.")
         self.__weight = torch.tensor(weight)
 
-
     def __call__(self, logits, y):
-        probs =  self.transform(logits)
+        probs = self.transform(logits)
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
         idx = torch.where(indices == y)[0][0]
@@ -40,11 +38,11 @@ class SAPS(APS):
             return self.__weight * (idx - U) + ordered[0]
 
     def predict(self, logits):
-        probs =  self.transform(logits)
+        probs = self.transform(logits)
         I, ordered, _ = self._sort_sum(probs)
         ordered[1:] = self.__weight
         cumsum = torch.cumsum(ordered, dim=-1)
         U = torch.rand(probs.shape[0])
         ordered_scores = cumsum - ordered * U
-        
-        return ordered_scores[torch.sort(I, descending= False, dim = -1)[1]]
+
+        return ordered_scores[torch.sort(I, descending=False, dim=-1)[1]]

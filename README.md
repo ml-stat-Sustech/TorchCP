@@ -1,4 +1,6 @@
-DeepCP is a Python toolbox for conformal prediction research on deep learning models. The primary functionalities are implemented in PyTorch. Specifically, DeepCP contains modules of post-hoc methods and training methods for classification problems and regression problems.
+DeepCP is a Python toolbox for conformal prediction research on deep learning models. The primary functionalities are
+implemented in PyTorch. Specifically, DeepCP contains modules of post-hoc methods and training methods for
+classification problems and regression problems.
 
 ## Installation
 
@@ -11,17 +13,19 @@ pip install deepcp
 ```
 
 or clone the repo and run
+
 ```
 python setup.py install
 ```
 
 To install the package in "editable" mode:
+
 ```
 pip install -e .
 ```
 
-
 ## Examples
+
 ```python
 cal_labels = ...
 cal_probailities =  ...
@@ -51,7 +55,6 @@ print(metrics.compute(prediction_sets,test_labels))
 
 ```
 
-
 ## Coming Soon later
 
 DeepCP is still under active development. We will add the following features/items down the road:
@@ -63,8 +66,6 @@ DeepCP is still under active development. We will add the following features/ite
 ## License
 
 This project is licensed under the LGPL. The terms and conditions can be found in the LICENSE and LICENSE.GPL files.
-
-
 
 ## Contributors
 

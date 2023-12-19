@@ -1,9 +1,7 @@
-
-
 import torch
 
-
 from deepcp.classification.predictor.base import BasePredictor
+
 
 class InductivePredictor(BasePredictor):
     def __init__(self, score_function, model=None, temperature=1):
@@ -32,8 +30,9 @@ class InductivePredictor(BasePredictor):
         for index, (x, y) in enumerate(zip(logits, labels)):
             self.scores[index] = self.score_function(x, y)
         self.q_hat = torch.quantile(self.scores,
-                                    torch.ceil(torch.tensor((self.scores.shape[0] + 1) * (1 - alpha))) / self.scores.shape[0])
-        
+                                    torch.ceil(torch.tensor((self.scores.shape[0] + 1) * (1 - alpha))) /
+                                    self.scores.shape[0])
+
     #############################
     # The prediction process
     ############################
