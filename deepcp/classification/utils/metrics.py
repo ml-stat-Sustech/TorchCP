@@ -12,6 +12,10 @@ from deepcp.utils.registry import Registry
 METRICS_REGISTRY = Registry("METRICS")
 
 
+#########################################
+# Marginal coverage metric
+#########################################
+
 @METRICS_REGISTRY.register()
 def coverage_rate(prediction_sets, labels):
     cvg = 0
@@ -29,6 +33,11 @@ def average_size(prediction_sets, labels):
         avg_size += len(ele)
     return avg_size / len(prediction_sets)
 
+
+#########################################
+# Conditional coverage metric
+#########################################
+
 @METRICS_REGISTRY.register()
 def CovGap(prediction_sets, labels,alpha,num_classes):
     rate_classes = []
@@ -39,6 +48,8 @@ def CovGap(prediction_sets, labels,alpha,num_classes):
             rate_classes.append(coverage_rate(selected_preds,labels[labels==k]))
     rate_classes = np.array(rate_classes)
     return np.mean(np.abs(rate_classes-(1-alpha)))*100
+
+
 
 @METRICS_REGISTRY.register()
 def VioClasses(prediction_sets, labels,alpha,num_classes):
@@ -51,9 +62,6 @@ def VioClasses(prediction_sets, labels,alpha,num_classes):
             selected_preds = [prediction_sets[i] for i in idx]
             if coverage_rate(selected_preds,labels[labels==k]) < 1-alpha:
                 violation_nums += 1
-        
-        
-    
     return violation_nums
 
 
@@ -103,6 +111,28 @@ def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
             stratum_violation = max(0,(1-alpha) - np.mean(correct_array[temp_index]))
             diff_violation_one = max(diff_violation_one, stratum_violation)
     return diff_violation, diff_violation_one, ccss_diff
+
+
+@METRICS_REGISTRY.register()
+def SSCV(logits, prediction_sets, labels, alpha, stratified_size = [[0,1],[2,3],[4,10],[11,100],[101,1000]]):
+    """Size-stratified coverage violation (SSCV)
+
+    """
+    size_array = np.zeros(len(labels))
+    correct_array = np.zeros(len(labels))
+    for index, ele in enumerate(prediction_sets):
+        size_array[index] = len(ele)
+        correct_array[index] = 1 if labels[index] in prediction_sets[index] else 0
+        
+    sscv = -1 
+    for stratum in stratified_size:
+        temp_index = np.argwhere( (size_array >= stratum[0]) & (size_array <= stratum[1]) )
+        if len(temp_index) > 0:
+           
+            stratum_violation = max(0,(1-alpha) - np.mean(correct_array[temp_index]))
+            sscv = max(sscv, stratum_violation)
+    return sscv
+                
                 
                 
 class Metrics:
