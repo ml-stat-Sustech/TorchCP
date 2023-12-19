@@ -5,6 +5,10 @@ from deepcp.regression.utils.metrics import Metrics
 
 
 class CQR(SplitPredictor):
+    """_summary_
+
+    :param model: a deep learning model that can output alpha/2 and 1-alpha/2 quantile regression.
+    """
     def __init__(self, model, device):
         self._model = model
         self._device = device
