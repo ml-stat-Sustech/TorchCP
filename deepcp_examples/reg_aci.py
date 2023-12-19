@@ -16,24 +16,12 @@ device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 fix_randomness(seed=2)
 
 X,y = build_reg_data(data_name="synthetic")
-indices = np.arange(X.shape[0])
-np.random.shuffle(indices)
-split_index1 = int(len(indices) * 0.4)  
-split_index2 = int(len(indices) * 0.6)  
-part1, part2, part3 = np.split(indices, [split_index1, split_index2])
+num_examples = X.shape[0]
 
-from sklearn.preprocessing import StandardScaler
-scalerX = StandardScaler()
-scalerX = scalerX.fit(X[part1,:])
+T0 =  int(num_examples * 0.4)  
 
-train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1,:])),torch.from_numpy(y[part1]))
-cal_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2,:])),torch.from_numpy(y[part2]))
-test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part3,:])),torch.from_numpy(y[part3]))
-
-
+train_dataset = TensorDataset(torch.from_numpy(X[:T0,:]),torch.from_numpy(y[:T0]))
 train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True, pin_memory=True)
-cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
-test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
 
 
 class NonLinearNet(nn.Module):
@@ -63,7 +51,7 @@ criterion = QuantileLoss(quantiles)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 # Train Model
-epochs = 100
+epochs = 10
 for epoch in tqdm(range(epochs)):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader): 
         outputs = model(tmp_x.to(device))
@@ -74,21 +62,24 @@ for epoch in tqdm(range(epochs)):
 
     
 predictor = CQR(model, device)
-predictor.calibrate(cal_data_loader, alpha)
+
 
 y_list = []
 x_list = []
 predict_list = []
-with torch.no_grad():
-    for  examples in test_data_loader:
-        tmp_x, tmp_y = examples[0].to(device), examples[1]
+for i in range(num_examples - T0):
+    with torch.no_grad():
+        cal_dataset = TensorDataset(torch.from_numpy(X[i:(T0+i),:]),torch.from_numpy(y[i:(T0+i)]))
+        cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
+        predictor.calibrate(cal_data_loader, alpha)
+        tmp_x =  torch.from_numpy(X[(T0+i),:])
         tmp_prediction_intervals = predictor.predict(tmp_x)
-        y_list.append(tmp_y)
+        y_list.append(y[T0+i])
         x_list.append(tmp_x)
         predict_list.append(tmp_prediction_intervals)
         
-predicts = torch.cat(predict_list).float().cpu()
-test_y = torch.cat(y_list)
+predicts = torch.stack(predict_list, dim=0)
+test_y = torch.Tensor(y_list)
 x = torch.cat(x_list).float()
 
 metrics = Metrics()

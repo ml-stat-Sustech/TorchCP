@@ -4,7 +4,6 @@ import pandas as pd
 base_path = ".cache/data/"
 
 
-<<<<<<< HEAD
 def build_reg_data(data_name="community"):
     if data_name == "community":
         # https://github.com/vbordalo/Communities-Crime/blob/master/Crime_v1.ipynb
@@ -28,18 +27,18 @@ def build_reg_data(data_name="community"):
         data = data.dropna(axis=1)
         X = data.iloc[:, 0:100].values
         y = data.iloc[:, 100].values
-=======
+
             
-            # imputer = SimpleImputer(missing_values = 'NaN', strategy = 'mean')
-            
-            # imputer = imputer.fit(data[['OtherPerCap']])
-            # data[['OtherPerCap']] = imputer.transform(data[['OtherPerCap']])
-            data['OtherPerCap'] = data['OtherPerCap'].astype("float")
-            mean_value = data['OtherPerCap'].mean()
-            data['OtherPerCap'].fillna(value=mean_value, inplace=True)
-            data = data.dropna(axis=1)
-            X = data.iloc[:, 0:100].values
-            y = data.iloc[:, 100].values
+        # imputer = SimpleImputer(missing_values = 'NaN', strategy = 'mean')
+        
+        # imputer = imputer.fit(data[['OtherPerCap']])
+        # data[['OtherPerCap']] = imputer.transform(data[['OtherPerCap']])
+        data['OtherPerCap'] = data['OtherPerCap'].astype("float")
+        mean_value = data['OtherPerCap'].mean()
+        data['OtherPerCap'].fillna(value=mean_value, inplace=True)
+        data = data.dropna(axis=1)
+        X = data.iloc[:, 0:100].values
+        y = data.iloc[:, 100].values
     elif data_name == "S&P500":
         data = pd.read_csv(base_path + "S&P500.csv")
         # the price of stock index
@@ -64,7 +63,7 @@ def build_reg_data(data_name="community"):
             delta_t_1 =  delta_t
             
         y = y_wo_noise + eplison
->>>>>>> e205752 (revise regression)
+
 
     X = X.astype(np.float32)
     y = y.astype(np.float32)

@@ -20,7 +20,13 @@ class CQR(SplitPredictor):
 
     def predict(self, x_batch):
         predicts_batch = self._model(x_batch.to(self._device)).float()
-        lower_bound = predicts_batch[:, 0] - self.q_hat
-        upper_bound = predicts_batch[:, 1] + self.q_hat
-        prediction_intervals = torch.stack([lower_bound, upper_bound], dim=1)
+        if len(x_batch.shape) == 2:
+            
+            lower_bound = predicts_batch[:, 0] - self.q_hat
+            upper_bound = predicts_batch[:, 1] + self.q_hat
+            prediction_intervals = torch.stack([lower_bound, upper_bound], dim=1)
+        else:
+            prediction_intervals = torch.zeros(2)
+            prediction_intervals[0] = predicts_batch[0] - self.q_hat
+            prediction_intervals[1] = predicts_batch[1] + self.q_hat
         return prediction_intervals

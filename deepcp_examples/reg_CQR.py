@@ -21,27 +21,15 @@ split_index2 = int(len(indices) * 0.6)
 part1, part2, part3 = np.split(indices, [split_index1, split_index2])
 
 from sklearn.preprocessing import StandardScaler
-<<<<<<< HEAD
-
 scalerX = StandardScaler()
 scalerX = scalerX.fit(X[part1, :])
-=======
-# scalerX = StandardScaler()
-# scalerX = scalerX.fit(X[part1,:])
-
-# train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1,:])),torch.from_numpy(y[part1]))
-# cal_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2,:])),torch.from_numpy(y[part2]))
-# test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part3,:])),torch.from_numpy(y[part3]))
-
+scalerX = StandardScaler()
+scalerX = scalerX.fit(X[part1,:])
 
 train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1,:])),torch.from_numpy(y[part1]))
 cal_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2,:])),torch.from_numpy(y[part2]))
 test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part3,:])),torch.from_numpy(y[part3]))
->>>>>>> e205752 (revise regression)
 
-train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1, :])), torch.from_numpy(y[part1]))
-cal_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2, :])), torch.from_numpy(y[part2]))
-test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part3, :])), torch.from_numpy(y[part3]))
 
 train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True, pin_memory=True)
 cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
@@ -76,7 +64,7 @@ criterion = QuantileLoss(quantiles)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 # Train Model
-epochs = 100
+epochs = 200
 for epoch in tqdm(range(epochs)):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader):
         outputs = model(tmp_x.to(device))

@@ -16,7 +16,7 @@ class SplitPredictor(object):
         labels_list = []
         x_list = []
         with torch.no_grad():
-            for examples in tqdm(cal_dataloader):
+            for examples in cal_dataloader:
                 tmp_x, tmp_labels = examples[0].to(self._device), examples[1]
                 tmp_predicts = self._model(tmp_x).detach().cpu()
                 x_list.append(tmp_x)
