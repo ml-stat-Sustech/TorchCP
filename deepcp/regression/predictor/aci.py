@@ -36,6 +36,7 @@ class ACI(SplitPredictor):
         :param y_t: the truth value at the time t.
         :param pred_interval_t: the prediction interval for the time t.
         """
+        self._model.eval()
         x = x.to(self._device)
 
         if y_t == None:

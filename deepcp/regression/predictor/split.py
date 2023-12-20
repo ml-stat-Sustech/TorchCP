@@ -25,6 +25,7 @@ class SplitPredictor(object):
         self._metric = Metrics()
 
     def calibrate(self, cal_dataloader, alpha):
+        self._model.eval()
         predicts_list = []
         labels_list = []
         with torch.no_grad():
@@ -45,10 +46,10 @@ class SplitPredictor(object):
         self.q_hat = torch.quantile(self.scores, quantile)
 
     def predict(self, x_batch):
+        self._model.eval()
         x_batch.to(self._device)
         with torch.no_grad():
-            predicts_batch = self._model(x_batch).float()
-            predicts_batch = predicts_batch.reshape(-1)
+            predicts_batch = self._model(x_batch).float().reshape(-1)
             prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2))
             prediction_intervals[:, 0] = predicts_batch - self.q_hat
             prediction_intervals[:, 1] = predicts_batch + self.q_hat

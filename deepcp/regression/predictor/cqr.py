@@ -30,6 +30,7 @@ class CQR(SplitPredictor):
         self.q_hat = torch.quantile(self.scores, quantile)
 
     def predict(self, x_batch):
+        self._model.eval()
         predicts_batch = self._model(x_batch.to(self._device)).float()
         if len(x_batch.shape) == 2:
             predicts_batch = self._model(x_batch.to(self._device)).float()

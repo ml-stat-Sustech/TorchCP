@@ -20,6 +20,7 @@ class SplitPredictor(BasePredictor):
     # The calibration process
     ############################
     def calibrate(self, cal_dataloader, alpha):
+        self._model.eval()
         logits_list = []
         labels_list = []
         with torch.no_grad():
@@ -46,6 +47,7 @@ class SplitPredictor(BasePredictor):
     # The prediction process
     ############################
     def predict(self, x_batch):
+        self._model.eval()
         if self._model != None:
             x_batch = self._model(x_batch.to(self._device)).float()
         x_batch = self._logits_transformation(x_batch).detach()

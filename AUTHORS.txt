@@ -1,5 +1,2 @@
-Authors contributed more than 100 lines, ordered by first contribution.
-
 Hongxi Wei <weihx@sustech.edu.cn>
 Jianguo Huang <huangjg@shanghaitech.com>
-Huajun Xi <12112806@mail.sustech.edu.cn>
