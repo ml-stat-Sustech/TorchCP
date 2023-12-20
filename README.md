@@ -28,10 +28,10 @@ pip install -e .
 
 ```python
 cal_labels = ...
-cal_probailities =  ...
+cal_probailities = ...
 
 test_labels = ...
-test_probailities =  ...
+test_probailities = ...
 
 # define a score function
 thr_score_function = THR()
@@ -45,13 +45,13 @@ predictor.fit(cal_probailities, cal_labels, alpha)
 # test examples
 print("testing examples...")
 prediction_sets = []
-for index,ele in enumerate(test_probailities):
-    prediction_set  = predictor.predict(ele)
+for index, ele in enumerate(test_probailities):
+    prediction_set = predictor.predict(ele)
     prediction_sets.append(prediction_set)
 
 print("computing metrics...")
 metrics = Metrics(["coverage_rate"])
-print(metrics.compute(prediction_sets,test_labels))
+print(metrics.compute(prediction_sets, test_labels))
 
 ```
 

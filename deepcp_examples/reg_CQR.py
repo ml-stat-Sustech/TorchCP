@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn as nn
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
@@ -8,7 +7,7 @@ from deepcp.regression.loss.quantile import QuantileLoss
 from deepcp.regression.predictor import CQR
 from deepcp.regression.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
-from utils import build_reg_data,build_regression_model
+from utils import build_reg_data, build_regression_model
 
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 fix_randomness(seed=2)
@@ -21,23 +20,19 @@ split_index2 = int(len(indices) * 0.6)
 part1, part2, part3 = np.split(indices, [split_index1, split_index2])
 
 from sklearn.preprocessing import StandardScaler
+
 scalerX = StandardScaler()
 scalerX = scalerX.fit(X[part1, :])
 scalerX = StandardScaler()
-scalerX = scalerX.fit(X[part1,:])
+scalerX = scalerX.fit(X[part1, :])
 
-train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1,:])),torch.from_numpy(y[part1]))
-cal_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2,:])),torch.from_numpy(y[part2]))
-test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part3,:])),torch.from_numpy(y[part3]))
-
+train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1, :])), torch.from_numpy(y[part1]))
+cal_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2, :])), torch.from_numpy(y[part2]))
+test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part3, :])), torch.from_numpy(y[part3]))
 
 train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True, pin_memory=True)
 cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
 test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
-
-
-
-
 
 alpha = 0.1
 quantiles = [alpha / 2, 1 - alpha / 2]

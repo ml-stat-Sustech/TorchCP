@@ -12,6 +12,7 @@ import torch
 
 from deepcp.classification.utils import ConfCalibrator
 from deepcp.classification.utils.metrics import Metrics
+from deepcp.utils.common import get_device
 
 
 class BasePredictor(object):
@@ -29,7 +30,7 @@ class BasePredictor(object):
 
         self.score_function = score_function
         self._model = model
-        self._device = self.__get_device(model)
+        self._device = get_device(model)
         self._metric = Metrics()
         self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")()
 
@@ -59,7 +60,7 @@ class BasePredictor(object):
             return torch.argwhere(scores < q_hat).reshape(-1).tolist()
         else:
             return torch.argwhere(scores < q_hat).tolist()
-        
+
     def __get_device(self, model):
         """
         If model exists, the default device is the device of model. If model is None, the default device is GPU.

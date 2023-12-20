@@ -24,3 +24,15 @@ def fix_randomness(seed=0):
 
 class DimensionError(Exception):
     pass
+
+
+def get_device(model):
+    if model == None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+        else:
+            cuda_idx = torch.cuda.current_device()
+            device = torch.device(f"cuda:{cuda_idx}")
+    else:
+        device = next(model.parameters()).device
+    return device

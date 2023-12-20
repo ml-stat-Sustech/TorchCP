@@ -12,13 +12,12 @@ import torch.nn.functional as F
 
 
 class ConfTr(nn.Module):
-    def __init__(self, weights, predictor, alpha, device, fraction, loss_types="valid", target_size=1,
+    def __init__(self, weights, predictor, alpha, fraction, loss_types="valid", target_size=1,
                  loss_transform="square", base_loss_fn=None):
         """
         :param weights: the weight of each loss function
         :param predictor: the CP predictor
         :param alpha: the significance level for each training batch
-        :param device: the device to use
         :param fraction: the fraction of the calibration set in each training batch
         :param types: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
         :param target_size:
@@ -26,10 +25,9 @@ class ConfTr(nn.Module):
         :param loss: a base loss function, such as cross entropy for classification
         """
         super(ConfTr, self).__init__()
-        self.weight = torch.tensor(weights).to(device)
+        self.weight = weights
         self.predictor = predictor
         self.alpha = alpha
-        self.device = device
         self.fraction = fraction
         self.base_loss_fn = base_loss_fn
 
@@ -71,7 +69,7 @@ class ConfTr(nn.Module):
         pred_sets = torch.sigmoid(tau - test_scores)
 
         if type(self.loss_types) == set:
-            loss = torch.tensor(0).to(self.device)
+            loss = torch.tensor(0).to(logits.device)
             for i in range(len(self.loss_types)):
                 loss += self.weight[i] * self.loss_functions_dict[self.loss_types[i]](pred_sets, test_labels)
         else:

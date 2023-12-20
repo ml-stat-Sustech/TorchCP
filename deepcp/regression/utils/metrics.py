@@ -15,7 +15,6 @@ METRICS_REGISTRY = Registry("METRICS")
 
 @METRICS_REGISTRY.register()
 def coverage_rate(prediction_intervals, y_truth):
-    # y_truth = np.array(y_truth)
     return ((y_truth >= prediction_intervals[:, 0]) & (y_truth <= prediction_intervals[:, 1])).float().mean().item()
 
 
@@ -25,7 +24,6 @@ def average_size(prediction_intervals, y_truth):
 
 
 class Metrics:
-
     def __call__(self, metric) -> Any:
         if metric not in METRICS_REGISTRY.registered_names():
             raise NameError(f"The metric: {metric} is not defined in DeepCP.")

@@ -5,7 +5,6 @@ from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
 from deepcp.regression.predictor import SplitPredictor
-from deepcp.regression import Metrics
 from deepcp.utils import fix_randomness
 from utils import build_reg_data, build_regression_model
 
@@ -32,10 +31,7 @@ train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, s
 cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
 test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
 
-
-
-
-model =  build_regression_model("NonLinearNet")(X.shape[1], 64, 0.5).to(device)
+model = build_regression_model("NonLinearNet")(X.shape[1], 64, 0.5).to(device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -57,7 +53,6 @@ predictor.calibrate(cal_data_loader, alpha)
 # First method to evaluate test instances
 ############################################
 # print(predictor.evaluate(test_data_loader))
-
 
 
 ############################################

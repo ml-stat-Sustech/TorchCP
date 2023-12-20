@@ -1,7 +1,13 @@
+# Copyright (c) 2023-present, SUSTech-ML.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+#
+
 import torch
 
 from deepcp.regression.predictor.split import SplitPredictor
-from deepcp.regression.utils.metrics import Metrics
 
 
 class CQR(SplitPredictor):
@@ -11,6 +17,7 @@ class CQR(SplitPredictor):
 
     :param model: a deep learning model that can output alpha/2 and 1-alpha/2 quantile regression.
     """
+
     def __init__(self, model):
         super().__init__(model)
 
@@ -24,9 +31,10 @@ class CQR(SplitPredictor):
     def predict(self, x_batch):
         predicts_batch = self._model(x_batch.to(self._device)).float()
         if len(x_batch.shape) == 2:
-            lower_bound = predicts_batch[:, 0] - self.q_hat
-            upper_bound = predicts_batch[:, 1] + self.q_hat
-            prediction_intervals = torch.stack([lower_bound, upper_bound], dim=1)
+            predicts_batch = self._model(x_batch.to(self._device)).float()
+            prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2))
+            prediction_intervals[:, 0] = predicts_batch[:, 0] - self.q_hat
+            prediction_intervals[:, 1] = predicts_batch[:, 1] + self.q_hat
         else:
             prediction_intervals = torch.zeros(2)
             prediction_intervals[0] = predicts_batch[0] - self.q_hat
