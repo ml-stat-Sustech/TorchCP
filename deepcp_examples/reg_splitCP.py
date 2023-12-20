@@ -23,7 +23,6 @@ from sklearn.preprocessing import StandardScaler
 
 scalerX = StandardScaler()
 scalerX = scalerX.fit(X[part1, :])
-
 train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1, :])), torch.from_numpy(y[part1]))
 cal_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2, :])), torch.from_numpy(y[part2]))
 test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part3, :])), torch.from_numpy(y[part3]))
@@ -37,7 +36,7 @@ criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 # Train Model
-epochs = 100
+epochs = 200
 for epoch in tqdm(range(epochs)):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader):
         

@@ -27,16 +27,16 @@ class SplitPredictor(object):
     def calibrate(self, cal_dataloader, alpha):
         self._model.eval()
         predicts_list = []
-        labels_list = []
+        y_truth_list = []
         with torch.no_grad():
             for examples in cal_dataloader:
                 tmp_x, tmp_labels = examples[0].to(self._device), examples[1].to(self._device)
                 tmp_predicts = self._model(tmp_x).detach()
                 predicts_list.append(tmp_predicts)
-                labels_list.append(tmp_labels)
-            predicts = torch.cat(predicts_list).float().to(self._device)
-            labels = torch.cat(labels_list).to(self._device)
-        self.calculate_threshold(predicts, labels, alpha)
+                y_truth_list.append(tmp_labels)
+            predicts = torch.cat(predicts_list).float().to(self._device).reshape(-1)
+            y_truth = torch.cat(y_truth_list).to(self._device)
+        self.calculate_threshold(predicts, y_truth, alpha)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = torch.abs(predicts - y_truth)
