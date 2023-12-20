@@ -39,25 +39,25 @@ class ClusterPredictor(SplitPredictor):
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         self.num_classes = logits.shape[1]
-        scores = torch.zeros(logits.shape[0]).to(self._device)
+        scores = logits.new_zeros(logits.shape[0])
         for index, (x, y) in enumerate(zip(logits, labels)):
             scores[index] = self.score_function(x, y)
 
-        alpha = torch.tensor(alpha).to(self._device)
-        classes_statistics = torch.tensor([torch.sum(labels == k).item() for k in range(self.num_classes)]).to(self._device)
+        alpha = torch.tensor(alpha, device= self._device)
+        classes_statistics = torch.tensor([torch.sum(labels == k).item() for k in range(self.num_classes)], device=self._device)
 
         # 1) Choose necessary parameters for Cluster algorithm
         if self.__ratio_clustering == 'auto' and self.__num_clusters == 'auto':
             n_min = torch.min(classes_statistics)
             n_thresh = self.__get_quantile_minimum(alpha)
-            n_min = torch.maximum(n_min,
-                                  n_thresh)  # Classes with fewer than n_thresh examples will be excluded from clustering
+            # Classes with fewer than n_thresh examples will be excluded from clustering
+            n_min = torch.maximum(n_min, n_thresh)  
             num_remaining_classes = torch.sum(classes_statistics >= n_min)
 
             # Compute the number of clusters and the minium number of examples for each class
-            n_clustering = (n_min * num_remaining_classes / (75 + num_remaining_classes)).detach().clone().to(
+            n_clustering = (n_min * num_remaining_classes / (75 + num_remaining_classes)).clone().to(
                 torch.int32).to(self._device)
-            self.__num_clusters = torch.floor(n_clustering / 2).to(torch.int32).to(self._device)
+            self.__num_clusters = torch.floor(n_clustering / 2).to(torch.int32)
             self.__ratio_clustering = n_clustering / n_min
 
         # 2) Split data
@@ -76,9 +76,9 @@ class ClusterPredictor(SplitPredictor):
 
             # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels)
-            kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10).fit(embeddings,
-                                                                                sample_weight=np.sqrt(class_cts))
-            nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_)
+            kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10).fit(X = embeddings.detach().cpu().numpy(),
+                                                                                sample_weight = np.sqrt(class_cts.detach().cpu().numpy()))
+            nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_, device=self._device)
 
             cluster_assignments = - torch.ones((self.num_classes,), dtype=int).to(self._device)
 
@@ -97,12 +97,12 @@ class ClusterPredictor(SplitPredictor):
     def __split_data(self, scores, labels, classes_statistics):
         if self.__split == 'proportional':
             # Split dataset along with fraction "frac_clustering"
-            n_k = torch.tensor([self.__ratio_clustering * classes_statistics[k] for k in range(self.num_classes)]).to(torch.int32)
-            idx1 = torch.zeros(labels.shape, dtype=torch.bool).to(self._device)
+            n_k = torch.tensor([self.__ratio_clustering * classes_statistics[k] for k in range(self.num_classes)], device= self._device, dtype=torch.int32)
+            idx1 = torch.zeros(labels.shape, dtype=torch.bool, device= self._device)
             for k in range(self.num_classes):
                 # Randomly select n instances of class k
                 idx = torch.argwhere(labels == k).flatten()
-                random_indices = torch.randint(0, classes_statistics[k], (n_k[k],)).to(self._device)
+                random_indices = torch.randint(0, classes_statistics[k], (n_k[k],), device= self._device)
                 selected_idx = idx[random_indices]
                 idx1[selected_idx] = 1
             clustering_scores = scores[idx1]
@@ -116,7 +116,7 @@ class ClusterPredictor(SplitPredictor):
             
         elif self.__split == 'random':
             # Each point is assigned to clustering set w.p. frac_clustering 
-            idx1 = torch.rand(size=(len(labels),)).to(self._device) < self.__ratio_clustering
+            idx1 = torch.rand(size=(len(labels),), device=self._device) < self.__ratio_clustering
             
             clustering_scores = scores[idx1]
             clustering_labels = labels[idx1]
@@ -130,7 +130,7 @@ class ClusterPredictor(SplitPredictor):
         '''
         Compute smallest n such that ceil((n+1)*(1-alpha)/n) <= 1
         '''
-        n = torch.tensor(0).to(alpha.device)
+        n = torch.tensor(0, device=alpha.device)
         while torch.ceil((n + 1) * (1 - alpha) / n) > 1:
             n += 1
         return n
@@ -145,7 +145,7 @@ class ClusterPredictor(SplitPredictor):
 
         # Also included any classes that are so rare that we have 0 labels for it
 
-        all_classes = torch.arange(num_classes).to(self._device)
+        all_classes = torch.arange(num_classes, device=self._device)
         zero_ct_classes = all_classes[(all_classes.view(1, -1) != classes.view(-1, 1)).all(dim=0)]
         rare_classes = torch.concatenate((rare_classes, zero_ct_classes))
 
@@ -178,7 +178,8 @@ class ClusterPredictor(SplitPredictor):
                 remapped_labels[i] = new_idx
                 remapping[remaining_labels[i]] = new_idx
                 new_idx += 1
-        return remaining_idx, torch.tensor(remapped_labels).to(self._device), remapping
+        
+        return torch.from_numpy(remaining_idx).to(self._device), torch.tensor(remapped_labels, device=self._device), remapping
 
     def __embed_all_classes(self, scores_all, labels, q=[0.5, 0.6, 0.7, 0.8, 0.9]):
         '''
@@ -192,8 +193,8 @@ class ClusterPredictor(SplitPredictor):
             - cts: num_classes-length array where cts[i] = # of times class i appears in labels 
         '''
         num_classes = len(torch.unique(labels))
-        embeddings = torch.zeros((num_classes, len(q))).to(self._device)
-        cts = torch.zeros((num_classes,)).to(self._device)
+        embeddings = torch.zeros((num_classes, len(q)), device = self._device)
+        cts = torch.zeros((num_classes,), device = self._device)
 
         for i in range(num_classes):
             if len(scores_all.shape) > 1:
@@ -203,9 +204,9 @@ class ClusterPredictor(SplitPredictor):
 
             cts[i] = class_i_scores.shape[0]
             # Computes the q-quantiles of samples and returns the vector of quantiles
-            embeddings[i, :] = torch.quantile(class_i_scores, torch.tensor(q).to(self._device))
+            embeddings[i, :] = torch.quantile(class_i_scores, torch.tensor(q,device = self._device))
 
-        return embeddings.detach().cpu().numpy(), cts.detach().cpu().numpy()
+        return embeddings, cts
 
     def __compute_cluster_specific_qhats(self, cluster_assignments, cal_class_scores, cal_true_labels, alpha):
         '''
@@ -227,10 +228,10 @@ class ClusterPredictor(SplitPredictor):
 
         # Edge case: all cluster_assignments are -1.
         if torch.all(cluster_assignments == -1):
-            return null_qhat * torch.ones(cluster_assignments.shape).to(self._device)
+            return null_qhat * torch.ones(cluster_assignments.shape, device = self._device)
 
         # Map true class labels to clusters
-        cal_true_clusters = torch.Tensor([cluster_assignments[label] for label in cal_true_labels]).to(self._device)
+        cal_true_clusters = torch.tensor([cluster_assignments[label] for label in cal_true_labels], device=self._device)
 
         # Compute cluster qhats
 
@@ -244,7 +245,7 @@ class ClusterPredictor(SplitPredictor):
         )
         # Map cluster qhats back to classes
         num_classes = len(cluster_assignments)
-        class_qhats = torch.Tensor([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)])
+        class_qhats = torch.tensor([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)], device= self._device)
 
         return class_qhats
 
@@ -261,8 +262,8 @@ class ClusterPredictor(SplitPredictor):
         '''
 
         num_samples = len(cal_true_labels)
-        q_hats = torch.zeros((num_classes,)).to(self._device) # q_hats[i] = quantile for class i
-        class_cts = torch.zeros((num_classes,)).to(self._device)
+        q_hats = torch.zeros((num_classes,), device= self._device) # q_hats[i] = quantile for class i
+        class_cts = torch.zeros((num_classes,), device= self._device)
         for k in range(num_classes):
 
             # Only select data for which k is true class
@@ -286,6 +287,7 @@ class ClusterPredictor(SplitPredictor):
                 else:
                     q_hats[k] = torch.quantile(scores, val)
         if -1 in cal_true_labels:
-            q_hats = torch.concatenate((q_hats, torch.tensor([null_qhat]))).to(self._device)
+            pass
+        q_hats = torch.concatenate((q_hats, torch.tensor([null_qhat], device=self._device)))
 
         return q_hats

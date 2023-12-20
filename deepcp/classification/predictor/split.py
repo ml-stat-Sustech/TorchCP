@@ -65,7 +65,7 @@ class SplitPredictor(BasePredictor):
         Returns:
             _type_: _description_
         """
-        scores = self.score_function.predict(logits)
+        scores = self.score_function.predict(logits).to(self._device)
         if q_hat == None:
             S = self._generate_prediction_set(scores, self.q_hat)
         else:
