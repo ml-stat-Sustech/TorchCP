@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from deepcp.utils import fix_randomness
-from deepcp.regression.predictor import SplitPredictor,CQR
+from deepcp.regression.predictor import SplitPredictor,CQR, ACI
 from deepcp.regression.utils.metrics import Metrics
 from deepcp.regression.loss import QuantileLoss
 
@@ -61,26 +61,25 @@ for epoch in tqdm(range(epochs)):
         optimizer.step()
 
     
-predictor = CQR(model, device)
+predictor = ACI(model, device, 0.0001)
 
 
-y_list = []
-x_list = []
-predict_list = []
+test_y = torch.from_numpy(y[T0:num_examples]).to(device)
+predicts = torch.zeros((num_examples - T0, 2)).to(device)
 for i in range(num_examples - T0):
     with torch.no_grad():
         cal_dataset = TensorDataset(torch.from_numpy(X[i:(T0+i),:]),torch.from_numpy(y[i:(T0+i)]))
         cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
         predictor.calibrate(cal_data_loader, alpha)
         tmp_x =  torch.from_numpy(X[(T0+i),:])
-        tmp_prediction_intervals = predictor.predict(tmp_x)
-        y_list.append(y[T0+i])
-        x_list.append(tmp_x)
-        predict_list.append(tmp_prediction_intervals)
+        if i == 0:
+            tmp_prediction_intervals = predictor.predict(tmp_x)
+        else:
+            tmp_prediction_intervals = predictor.predict(tmp_x,test_y[i-1], predicts[i-1])
+        predicts[i,:] = tmp_prediction_intervals
+
         
-predicts = torch.stack(predict_list, dim=0)
-test_y = torch.Tensor(y_list)
-x = torch.cat(x_list).float()
+
 
 metrics = Metrics()
 print("Etestuating prediction sets...")

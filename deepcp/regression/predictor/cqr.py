@@ -10,9 +10,7 @@ class CQR(SplitPredictor):
     :param model: a deep learning model that can output alpha/2 and 1-alpha/2 quantile regression.
     """
     def __init__(self, model, device):
-        self._model = model
-        self._device = device
-        self._metric = Metrics()
+        super().__init__(model, device)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = torch.maximum(predicts[:, 0] - y_truth, y_truth - predicts[:, 1])

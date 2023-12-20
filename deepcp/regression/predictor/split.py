@@ -7,7 +7,7 @@ from deepcp.regression.utils.metrics import Metrics
 
 class SplitPredictor(object):
     def __init__(self, model, device):
-        self._model = model
+        self._model = model.to(device)
         self._device = device
         self._metric = Metrics()
 
@@ -18,16 +18,13 @@ class SplitPredictor(object):
         with torch.no_grad():
             for examples in cal_dataloader:
                 tmp_x, tmp_labels = examples[0].to(self._device), examples[1]
-                tmp_predicts = self._model(tmp_x).detach().cpu()
+                tmp_predicts = self._model(tmp_x).detach()
                 x_list.append(tmp_x)
                 predicts_list.append(tmp_predicts)
                 labels_list.append(tmp_labels)
-            predicts = torch.cat(predicts_list).float()
-            labels = torch.cat(labels_list)
+            predicts = torch.cat(predicts_list).float().to(self._device)
+            labels = torch.cat(labels_list).to(self._device)
             x = torch.cat(x_list).float()
-        self.predicts = predicts
-        self.labels = labels
-        self.x = x
         self.calculate_threshold(predicts, labels, alpha)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
