@@ -34,12 +34,12 @@ class SplitPredictor(object):
                 tmp_predicts = self._model(tmp_x).detach()
                 predicts_list.append(tmp_predicts)
                 y_truth_list.append(tmp_labels)
-            predicts = torch.cat(predicts_list).float().to(self._device).reshape(-1)
+            predicts = torch.cat(predicts_list).float().to(self._device)
             y_truth = torch.cat(y_truth_list).to(self._device)
         self.calculate_threshold(predicts, y_truth, alpha)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
-        self.scores = torch.abs(predicts - y_truth)
+        self.scores = torch.abs(predicts.reshape(-1) - y_truth)
         quantile = math.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
         if quantile > 1:
             quantile = 1
