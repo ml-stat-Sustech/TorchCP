@@ -7,6 +7,7 @@
 
 
 import torch
+import math
 
 from deepcp.regression.utils.metrics import Metrics
 from deepcp.utils.common import get_device
@@ -38,16 +39,20 @@ class SplitPredictor(object):
 
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = torch.abs(predicts - y_truth)
-        quantile = torch.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
+        quantile = math.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
         if quantile > 1:
             quantile = 1
-        self.q_hat = torch.quantile(self.scores, quantile).to(self._device)
+        self.q_hat = torch.quantile(self.scores, quantile)
 
     def predict(self, x_batch):
-        predicts_batch = self._model(x_batch.to(self._device)).float()
-        prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2))
-        prediction_intervals[:, 0] = predicts_batch[:, 0] - self.q_hat
-        prediction_intervals[:, 1] = predicts_batch[:, 1] + self.q_hat
+        x_batch.to(self._device)
+        with torch.no_grad():
+            predicts_batch = self._model(x_batch).float()
+            predicts_batch = predicts_batch.reshape(-1)
+            prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2))
+            prediction_intervals[:, 0] = predicts_batch - self.q_hat
+            prediction_intervals[:, 1] = predicts_batch + self.q_hat
+        
         return prediction_intervals
 
     def evaluate(self, data_loader):

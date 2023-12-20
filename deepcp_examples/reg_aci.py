@@ -21,7 +21,7 @@ train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, s
 
 alpha = 0.1
 quantiles = [alpha / 2, 1 - alpha / 2]
-model = build_regression_model("NonLinearNet")(X.shape[1], 64, 0.5).to(device)
+model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
 criterion = QuantileLoss(quantiles)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 

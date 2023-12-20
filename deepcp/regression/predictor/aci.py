@@ -26,6 +26,8 @@ class ACI(SplitPredictor):
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = torch.maximum(predicts[:, 0] - y_truth, y_truth - predicts[:, 1])
         self.alpha = alpha
+        if self.alpha_t == None:
+            self.alpha_t = alpha
 
     def predict(self, x, y_t=None, pred_interval_t=None):
         """

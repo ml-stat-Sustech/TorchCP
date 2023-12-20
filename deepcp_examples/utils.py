@@ -73,11 +73,11 @@ def build_reg_data(data_name="community"):
 def build_regression_model(model_name="NonLinearNet"):
     if model_name == "NonLinearNet":
         class NonLinearNet(nn.Module):
-            def __init__(self, in_shape, hidden_size, dropout):
+            def __init__(self, in_shape, out_shape, hidden_size, dropout):
                 super(NonLinearNet, self).__init__()
                 self.hidden_size = hidden_size
                 self.in_shape = in_shape
-                self.out_shape = 2
+                self.out_shape = out_shape
                 self.dropout = dropout
                 self.base_model = nn.Sequential(
                     nn.Linear(self.in_shape, self.hidden_size),

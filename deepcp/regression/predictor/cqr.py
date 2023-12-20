@@ -6,6 +6,7 @@
 #
 
 import torch
+import math
 
 from deepcp.regression.predictor.split import SplitPredictor
 
@@ -23,7 +24,7 @@ class CQR(SplitPredictor):
 
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = torch.maximum(predicts[:, 0] - y_truth, y_truth - predicts[:, 1])
-        quantile = torch.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
+        quantile = math.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
         if quantile > 1:
             quantile = 1
         self.q_hat = torch.quantile(self.scores, quantile)

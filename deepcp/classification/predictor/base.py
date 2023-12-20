@@ -36,7 +36,8 @@ class BasePredictor(object):
 
     @abstractmethod
     def calibrate(self, cal_dataloader, alpha):
-        """Virtual method to calibrate the calibration set.
+        """
+        Virtual method to calibrate the calibration set.
 
         :param cal_dataloader : a dataloader of calibration set.
         :param alpha: the significance level.
@@ -45,13 +46,16 @@ class BasePredictor(object):
 
     @abstractmethod
     def predict(self, x_batch):
-        """generate prediction sets for  test examples.
+        """
+        Generate prediction sets for  test examples.
+        
         :param x_batch: a batch of input.
         """
         raise NotImplementedError
 
     def _generate_prediction_set(self, scores, q_hat):
-        """Generate the prediction set with the threshold q_hat.
+        """
+        Generate the prediction set with the threshold q_hat.
 
         :param scores : The non-conformity scores of {(x,y_1),..., (x,y_K)}
         :param q_hat : the calibrated threshold.

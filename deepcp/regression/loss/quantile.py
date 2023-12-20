@@ -15,7 +15,8 @@ class QuantileLoss(nn.Module):
         self.quantiles = quantiles
 
     def forward(self, preds, target):
-        """ Compute the pinball loss
+        """ 
+        Compute the pinball loss
 
         :param preds: the alpha/2 and 1-alpha/2 predictions of the model
         :param target: the truth values

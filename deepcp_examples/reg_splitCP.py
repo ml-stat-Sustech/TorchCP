@@ -5,10 +5,11 @@ from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
 from deepcp.regression.predictor import SplitPredictor
-from deepcp.utils import fix_randomness
+from deepcp.utils import fix_randomness 
+from deepcp.regression import Metrics
 from utils import build_reg_data, build_regression_model
 
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 fix_randomness(seed=2)
 
 X, y = build_reg_data()
@@ -31,7 +32,7 @@ train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, s
 cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
 test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
 
-model = build_regression_model("NonLinearNet")(X.shape[1], 64, 0.5).to(device)
+model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -39,20 +40,22 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 epochs = 100
 for epoch in tqdm(range(epochs)):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader):
+        
         outputs = model(tmp_x.to(device))
         loss = criterion(outputs.reshape(-1), tmp_y.to(device))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
 alpha = 0.1
-
+model.eval()
 predictor = SplitPredictor(model)
 predictor.calibrate(cal_data_loader, alpha)
 
 ############################################
 # First method to evaluate test instances
 ############################################
-# print(predictor.evaluate(test_data_loader))
+print(predictor.evaluate(test_data_loader))
 
 
 ############################################
