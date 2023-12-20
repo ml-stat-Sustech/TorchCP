@@ -19,15 +19,13 @@ class ACI(SplitPredictor):
 
     :param model: a deep learning model that can output alpha/2 and 1-alpha/2 quantile regression.
     """
-    def __init__(self, model, device, gamma):
-        super().__init__(model, device)
+    def __init__(self, model, gamma):
+        super().__init__(model)
         self.__gamma = gamma
         self.alpha_t = None
 
 
     def calculate_threshold(self, predicts, y_truth, alpha):
-        predicts = predicts.to(self._device)
-        y_truth = y_truth.to(self._device)
         self.scores = torch.maximum(predicts[:,0]-y_truth, y_truth - predicts[:,1])
         self.alpha = alpha
         if self.alpha_t == None:

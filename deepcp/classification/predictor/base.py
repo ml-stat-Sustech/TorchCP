@@ -29,10 +29,7 @@ class BasePredictor(object):
 
         self.score_function = score_function
         self._model = model
-        if self._model == None:
-            self._model_device = None
-        else:
-            self._model_device = next(model.parameters()).device
+        self._device = self.__get_device(model)
         self._metric = Metrics()
         self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")()
 
@@ -55,14 +52,24 @@ class BasePredictor(object):
     def _generate_prediction_set(self, scores, q_hat):
         """Generate the prediction set with the threshold q_hat.
 
-        Args:
-            scores (_type_): The non-conformity scores of {(x,y_1),..., (x,y_K)}
-            q_hat (_type_): the calibrated threshold.
-
-        Returns:
-            _type_: _description_
+        :param scores : The non-conformity scores of {(x,y_1),..., (x,y_K)}
+        :param q_hat : the calibrated threshold.
         """
         if len(scores.shape) == 1:
             return torch.argwhere(scores < q_hat).reshape(-1).tolist()
         else:
             return torch.argwhere(scores < q_hat).tolist()
+        
+    def __get_device(self, model):
+        """
+        If model exists, the default device is the device of model. If model is None, the default device is GPU.
+        """
+        if model == None:
+            if not torch.cuda.is_available():
+                device = torch.device("cpu")
+            else:
+                cuda_idx = torch.cuda.current_device()
+                device = torch.device(f"cuda:{cuda_idx}")
+        else:
+            device = next(model.parameters()).device
+        return device

@@ -5,21 +5,25 @@ from deepcp.regression.utils.metrics import Metrics
 
 
 class CQR(SplitPredictor):
-    """_summary_
+    """
+    Conformalized Quantile Regression (Romano et al., 2019)
+    paper: https://arxiv.org/abs/1905.03222
 
     :param model: a deep learning model that can output alpha/2 and 1-alpha/2 quantile regression.
     """
-    def __init__(self, model, device):
-        super().__init__(model, device)
+    def __init__(self, model):
+        super().__init__(model)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = torch.maximum(predicts[:, 0] - y_truth, y_truth - predicts[:, 1])
-        self.q_hat = torch.quantile(self.scores, (1 - alpha) * (1 + 1 / self.scores.shape[0]))
+        quantile = torch.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
+        if quantile > 1:
+            quantile = 1
+        self.q_hat = torch.quantile(self.scores, quantile)
 
     def predict(self, x_batch):
         predicts_batch = self._model(x_batch.to(self._device)).float()
         if len(x_batch.shape) == 2:
-            
             lower_bound = predicts_batch[:, 0] - self.q_hat
             upper_bound = predicts_batch[:, 1] + self.q_hat
             prediction_intervals = torch.stack([lower_bound, upper_bound], dim=1)

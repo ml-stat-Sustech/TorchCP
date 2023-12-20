@@ -5,8 +5,9 @@ from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
 from deepcp.regression.predictor import SplitPredictor
+from deepcp.regression import Metrics
 from deepcp.utils import fix_randomness
-from utils import build_reg_data
+from utils import build_reg_data, build_regression_model
 
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 fix_randomness(seed=2)
@@ -32,28 +33,9 @@ cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuff
 test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
 
 
-class NonLinearNet(nn.Module):
-    def __init__(self, in_shape, hidden_size, dropout):
-        super(NonLinearNet, self).__init__()
-        self.hidden_size = hidden_size
-        self.in_shape = in_shape
-        self.out_shape = 1
-        self.dropout = dropout
-        self.base_model = nn.Sequential(
-            nn.Linear(self.in_shape, self.hidden_size),
-            nn.ReLU(),
-            nn.Dropout(self.dropout),
-            nn.Linear(self.hidden_size, self.hidden_size),
-            nn.ReLU(),
-            nn.Dropout(self.dropout),
-            nn.Linear(self.hidden_size, self.out_shape),
-        )
-
-    def forward(self, x):
-        return self.base_model(x)
 
 
-model = NonLinearNet(X.shape[1], 64, 0.5).to(device)
+model =  build_regression_model("NonLinearNet")(X.shape[1], 64, 0.5).to(device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -68,10 +50,19 @@ for epoch in tqdm(range(epochs)):
         optimizer.step()
 alpha = 0.1
 
-predictor = SplitPredictor(model, device)
+predictor = SplitPredictor(model)
 predictor.calibrate(cal_data_loader, alpha)
-print(predictor.evaluate(test_data_loader))
 
+############################################
+# First method to evaluate test instances
+############################################
+# print(predictor.evaluate(test_data_loader))
+
+
+
+############################################
+# Second method to evaluate test instances
+############################################
 # y_list = []
 # x_list = []
 # predict_list = []
