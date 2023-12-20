@@ -16,7 +16,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as trn
 from tqdm import tqdm
 
-from deepcp.classification.predictor import InductivePredictor, ClusterPredictor, ClassWisePredictor
+from deepcp.classification.predictor import SplitPredictor, ClusterPredictor, ClassWisePredictor
 from deepcp.classification.scores import THR, APS, SAPS, RAPS, Margin
 from deepcp.classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
@@ -24,10 +24,11 @@ from deepcp.utils import fix_randomness
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--predictor', default="Inductive", help="Inductive | ClassWise | Cluster")
+    parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
     parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
     parser.add_argument('--kreg', default=0, type=int)
+    parser.add_argument('--weight', default=0.2, type=int)
     parser.add_argument('--split', default="random", type=str, help="proportional | doubledip | random")
     args = parser.parse_args()
 
@@ -91,8 +92,8 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError
     alpha = 0.1
-    if args.predictor == "Inductive":
-        predictor = InductivePredictor(score_function, model=None)
+    if args.predictor == "Standard":
+        predictor = SplitPredictor(score_function, model=None)
     elif args.predictor == "ClassWise":
         predictor = ClassWisePredictor(score_function, model=None)
     elif args.predictor == "Cluster":

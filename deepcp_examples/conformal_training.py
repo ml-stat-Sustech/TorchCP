@@ -25,7 +25,7 @@ import torch.optim as optim
 
 from dataset import build_dataset
 from deepcp.classification.loss import ConfTr
-from deepcp.classification.predictor import InductivePredictor, ClusterPredictor, ClassWisePredictor
+from deepcp.classification.predictor import SplitPredictor, ClusterPredictor, ClassWisePredictor
 from deepcp.classification.scores import THR, APS, SAPS, RAPS
 from deepcp.utils import fix_randomness
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
         alpha = 0.01
         if args.predictor == "Standard":
-            predictor = StandardPredictor(score_function, model)
+            predictor = SplitPredictor(score_function, model)
         elif args.predictor == "ClassWise":
             predictor = ClassWisePredictor(score_function, model)
         elif args.predictor == "Cluster":

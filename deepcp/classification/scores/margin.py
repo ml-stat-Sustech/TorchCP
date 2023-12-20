@@ -32,7 +32,7 @@ class Margin(BaseScoreFunction):
     def __call__(self, logits, y):
         probs = self.transform(logits)
         if len(logits.shape) > 1:
-            scores = torch.zeros(logits.shape[0])
+            scores = torch.zeros(logits.shape[0]).to(logits.device)
             for i in range(logits.shape[0]):
                 scores[i] = self._compute_score(probs[i], y[i])
             return scores

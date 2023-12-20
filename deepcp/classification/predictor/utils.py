@@ -57,10 +57,10 @@ class IW(nn.Module):
     """Compute the importance weight
     """
 
-    def __init__(self, domain_detecor, device):
+    def __init__(self, domain_detecor):
         super().__init__()
 
-        self.domain_detecor = domain_detecor.to(device)
+        self.domain_detecor = domain_detecor
 
     def forward(self, x_batch):
         prob = self.domain_detecor(x_batch)

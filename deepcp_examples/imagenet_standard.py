@@ -15,7 +15,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as trn
 from tqdm import tqdm
 
-from deepcp.classification.predictor import ClusterPredictor, ClassWisePredictor, InductivePredictor
+from deepcp.classification.predictor import ClusterPredictor, ClassWisePredictor, SplitPredictor
 from deepcp.classification.scores import THR, APS, SAPS, RAPS
 from deepcp.classification.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         score_function = SAPS(weight=args.weight)
     alpha = 0.1
     if args.predictor == "Standard":
-        predictor = InductivePredictor(score_function, model)
+        predictor = SplitPredictor(score_function, model)
     elif args.predictor == "ClassWise":
         predictor = ClassWisePredictor(score_function, model)
     elif args.predictor == "Cluster":

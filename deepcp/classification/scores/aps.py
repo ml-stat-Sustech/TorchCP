@@ -29,7 +29,7 @@ class APS(BaseScoreFunction):
         if len(probs.shape) == 1:
             return self._compute_score(indices, y, cumsum, ordered)
         else:
-            scores = torch.zeros(probs.shape[0])
+            scores = torch.zeros(probs.shape[0]).to(logits.device)
             for i in range(probs.shape[0]):
                 scores[i] = self._compute_score(indices[i, :], y[i], cumsum[i, :], ordered[i, :])
             return scores
@@ -51,8 +51,8 @@ class APS(BaseScoreFunction):
 
     def _compute_score(self, indices, y, cumsum, ordered):
         idx = torch.where(indices == y)[0][0]
-        U = torch.rand(1)
-        if idx == torch.tensor(0):
+        U = torch.rand(1).to(indices.device)
+        if idx == torch.tensor(0).to(indices.device):
             return U * cumsum[idx]
         else:
             return U * ordered[idx] + cumsum[idx - 1]

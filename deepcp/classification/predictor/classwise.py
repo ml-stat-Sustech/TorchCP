@@ -4,13 +4,14 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
+import math
 
 import torch
 
-from deepcp.classification.predictor.induction import InductivePredictor
+from deepcp.classification.predictor.split import SplitPredictor
 
 
-class ClassWisePredictor(InductivePredictor):
+class ClassWisePredictor(SplitPredictor):
     """
 
     Applications of Class-Conditional Conformal Predictor in Multi-Class Classification (Shi et al., 2013)
@@ -20,16 +21,15 @@ class ClassWisePredictor(InductivePredictor):
     def calculate_threshold(self, logits, labels, alpha):
         # the number of labels
         labels_num = logits.shape[1]
-        self.q_hat = torch.zeros(labels_num)
+        self.q_hat = logits.new_zeros(labels_num)
         for label in range(labels_num):
             x_cal_tmp = logits[labels == label]
             y_cal_tmp = labels[labels == label]
-            scores = torch.zeros(x_cal_tmp.shape[0])
+            scores = logits.new_zeros(x_cal_tmp.shape[0])
             for index, (x, y) in enumerate(zip(x_cal_tmp, y_cal_tmp)):
                 scores[index] = self.score_function(x, y)
 
-            qunatile_value = torch.ceil((torch.tensor(scores.shape[0] + 1) * (1 - alpha))) / scores.shape[0]
+            qunatile_value = math.ceil(scores.shape[0] + 1) * (1 - alpha) / scores.shape[0]
             if qunatile_value > 1:
                 qunatile_value = 1
-
             self.q_hat[label] = torch.quantile(scores, qunatile_value)

@@ -21,11 +21,9 @@ from deepcp.utils import fix_randomness
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Covariate shift')
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--predictor', default="Standard", help="Standard")
-    parser.add_argument('--score', default="APS", help="THR")
     args = parser.parse_args()
+    
     fix_randomness(seed=args.seed)
-
     model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model_name = 'CLIP_ViTB16'
     from clip import load as clipload

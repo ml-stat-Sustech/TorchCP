@@ -1,6 +1,6 @@
 from .classwise import ClassWisePredictor
 from .cluster import ClusterPredictor
-from .induction import InductivePredictor
+from .split import SplitPredictor
 from .weight import WeightedPredictor
 
 #

@@ -24,14 +24,14 @@ class SAPS(APS):
         super(SAPS, self).__init__()
         if weight <= 0:
             raise ValueError("param 'weight' must be a positive value.")
-        self.__weight = torch.tensor(weight)
+        self.__weight = weight
 
     def __call__(self, logits, y):
         probs = self.transform(logits)
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
         idx = torch.where(indices == y)[0][0]
-        U = torch.rand(1)
+        U = torch.rand(1).to(logits.device)
         if idx == torch.tensor(0):
             return U * cumsum[idx]
         else:
@@ -42,7 +42,7 @@ class SAPS(APS):
         I, ordered, _ = self._sort_sum(probs)
         ordered[1:] = self.__weight
         cumsum = torch.cumsum(ordered, dim=-1)
-        U = torch.rand(probs.shape[0])
+        U = torch.rand(probs.shape[0]).to(logits.device)
         ordered_scores = cumsum - ordered * U
 
         return ordered_scores[torch.sort(I, descending=False, dim=-1)[1]]

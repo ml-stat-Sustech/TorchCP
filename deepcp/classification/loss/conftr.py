@@ -6,7 +6,7 @@
 #
 
 import torch
-# @Time : 13/12/2023  16:27
+
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -82,11 +82,11 @@ class ConfTr(nn.Module):
 
     def __compute_hinge_size_loss(self, pred_sets, labels):
         return torch.mean(
-            self.transform(torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0))))
+            self.transform(torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0).to(pred_sets.device))))
 
     def __compute_probabilistic_size_loss(self, pred_sets, labels):
         classes = pred_sets.shape[0]
-        one_hot_labels = torch.unsqueeze(torch.eye(classes), dim=0)
+        one_hot_labels = torch.unsqueeze(torch.eye(classes).to(pred_sets.device), dim=0)
         repeated_confidence_sets = torch.repeat_interleave(
             torch.unsqueeze(pred_sets, 2), classes, dim=2)
         loss = one_hot_labels * repeated_confidence_sets + \
@@ -108,13 +108,13 @@ class ConfTr(nn.Module):
     def __compute_classification_loss(self, pred_sets, labels):
         # Convert labels to one-hot encoding
         one_hot_labels = F.one_hot(labels, num_classes=pred_sets.shape[1]).float()
-        loss_matrix = torch.eye(pred_sets.shape[1])
+        loss_matrix = torch.eye(pred_sets.shape[1]).to(pred_sets.device)
         # Calculate l1 and l2 losses
         l1 = (1 - pred_sets) * one_hot_labels * loss_matrix[labels]
         l2 = pred_sets * (1 - one_hot_labels) * loss_matrix[labels]
 
         # Calculate the total loss
-        loss = torch.sum(torch.maximum(l1 + l2, torch.zeros_like(l1)), dim=1)
+        loss = torch.sum(torch.maximum(l1 + l2, torch.zeros_like(l1).to(pred_sets.device)), dim=1)
 
         # Return the mean loss
         return torch.mean(loss)
