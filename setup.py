@@ -16,7 +16,7 @@ with open(os.path.join(os.path.dirname(__file__), 'torchcp/VERSION')) as f:
 
 setup(name='torchcp',
       version=version,
-      url='https://github.com/ml-stat-Sustech/DeepCP',
+      url='https://github.com/ml-stat-Sustech/torchCP',
       package_data={'torchcp_examples': ['*.ipynb']},
       description="A Python toolbox for conformal prediction research on deep learning models.",
       install_requires=[],

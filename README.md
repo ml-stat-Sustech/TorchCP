@@ -1,9 +1,9 @@
-torchCP is a Python toolbox for conformal prediction research. The primary functionalities are
-implemented in PyTorch. Specifically, torchCP contains modules of post-hoc methods and training methods for
+TorchCP is a Python toolbox for conformal prediction research. The primary functionalities are
+implemented in PyTorch. Specifically, TorchCP contains modules of post-hoc methods and training methods for
 classification problems and regression problems.
 
 # Overview
-torchCP has implemented the following methods:
+TorchCP has implemented the following methods:
 ## Classification
  Year | Title                                                                                                                                           | Venue   | Code Link |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------|-------------|
@@ -42,12 +42,12 @@ DeepCP is still under active development. We will add the following features/ite
 
 ## Installation
 
-### Installing torchCP itself
+### Installing TorchCP itself
 
-We developed torchCP under Python 3.9 and PyTorch 2.0.1. To install torchCP, simply run
+We developed TorchCP under Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
 
 ```
-pip install torchCP
+pip install torchcp
 ```
 
 ## Examples
