@@ -11,7 +11,7 @@ import random
 import numpy as np
 import torch
 
-__all__ = ["fix_randomness"]
+__all__ = ["fix_randomness", "DimensionError"]
 
 
 def fix_randomness(seed=0):

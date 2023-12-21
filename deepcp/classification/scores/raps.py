@@ -53,6 +53,7 @@ class RAPS(APS):
         probs = self.transform(logits)
         I, ordered, cumsum = self._sort_sum(probs)
         U = torch.rand(probs.shape).to(logits.device)
-        reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1).to(logits.device) - self.__kreg), torch.tensor(0).to(logits.device))
+        reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1).to(logits.device) - self.__kreg),
+                            torch.tensor(0).to(logits.device))
         ordered_scores = cumsum - ordered * U + reg
         return ordered_scores[torch.sort(I, descending=False, dim=-1)[1]]

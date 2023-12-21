@@ -24,7 +24,7 @@ class BasePredictor(object):
 
     def __init__(self, score_function, model=None):
         """
-        :score_function: non-conformity score function.
+        :param score_function: non-conformity score function.
         :param model: a deep learning model.
         """
 

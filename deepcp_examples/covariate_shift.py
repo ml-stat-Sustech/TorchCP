@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Covariate shift')
     parser.add_argument('--seed', default=0, type=int)
     args = parser.parse_args()
-    
+
     fix_randomness(seed=args.seed)
     model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model_name = 'CLIP_ViTB16'

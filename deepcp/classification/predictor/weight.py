@@ -115,7 +115,7 @@ class WeightedPredictor(SplitPredictor):
                 loss = criterion(outputs, y_train.view(-1))
                 loss_log += loss.item() / len(data_loader)
                 predictions = torch.argmax(outputs, dim=1)
-                accuracy = torch.sum(predictions == y_train.view(-1)).item() / len(y_train)
+                accuracy = torch.sum((predictions == y_train.view(-1))).item() / len(y_train)
                 accuracy_log += accuracy / len(data_loader)
                 optimizer.zero_grad()
                 loss.backward()
@@ -139,5 +139,3 @@ class WeightedPredictor(SplitPredictor):
         res_dict["Coverage_rate"] = self._metric('coverage_rate')(prediction_sets, val_labels)
         res_dict["Average_size"] = self._metric('average_size')(prediction_sets, val_labels)
         return res_dict
-    
-        

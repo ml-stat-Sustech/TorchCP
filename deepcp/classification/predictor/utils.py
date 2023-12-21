@@ -54,7 +54,8 @@ class BigFNN(FNN):
 
 
 class IW(nn.Module):
-    """Compute the importance weight
+    """
+    Compute the importance weight
     """
 
     def __init__(self, domain_detecor):

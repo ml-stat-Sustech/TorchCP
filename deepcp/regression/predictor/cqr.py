@@ -5,8 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import torch
 import math
+import torch
 
 from deepcp.regression.predictor.split import SplitPredictor
 

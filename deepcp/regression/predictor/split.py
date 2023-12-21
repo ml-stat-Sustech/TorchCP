@@ -6,8 +6,8 @@
 #
 
 
-import torch
 import math
+import torch
 
 from deepcp.regression.utils.metrics import Metrics
 from deepcp.utils.common import get_device
@@ -23,6 +23,9 @@ class SplitPredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
+        self.q_hat = None
+        self.scores = None
+        self.alpha = None
 
     def calibrate(self, cal_dataloader, alpha):
         self._model.eval()
@@ -53,7 +56,7 @@ class SplitPredictor(object):
             prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2))
             prediction_intervals[:, 0] = predicts_batch - self.q_hat
             prediction_intervals[:, 1] = predicts_batch + self.q_hat
-        
+
         return prediction_intervals
 
     def evaluate(self, data_loader):
@@ -69,7 +72,6 @@ class SplitPredictor(object):
         predicts = torch.cat(predict_list).float().to(self._device)
         test_y = torch.cat(y_list).to(self._device)
 
-        res_dict = {}
-        res_dict["Coverage_rate"] = self._metric('coverage_rate')(predicts, test_y)
-        res_dict["Average_size"] = self._metric('average_size')(predicts, test_y)
+        res_dict = {"Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
+                    "Average_size": self._metric('average_size')(predicts, test_y)}
         return res_dict

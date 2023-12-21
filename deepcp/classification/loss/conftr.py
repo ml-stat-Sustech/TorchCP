@@ -82,7 +82,8 @@ class ConfTr(nn.Module):
 
     def __compute_hinge_size_loss(self, pred_sets, labels):
         return torch.mean(
-            self.transform(torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0).to(pred_sets.device))))
+            self.transform(
+                torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0).to(pred_sets.device))))
 
     def __compute_probabilistic_size_loss(self, pred_sets, labels):
         classes = pred_sets.shape[0]

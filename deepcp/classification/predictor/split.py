@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 #
 import math
-
 import torch
 
 from deepcp.classification.predictor.base import BasePredictor
@@ -56,14 +55,14 @@ class SplitPredictor(BasePredictor):
             sets.append(self.predict_with_logits(logits))
         return sets
 
-    def predict_with_logits(self, logits, q_hat = None):
-        """ The input of score function is softmax probability.
+    def predict_with_logits(self, logits, q_hat=None):
+        """
+        The input of score function is softmax probability.
 
-        Args:
-            probs (_type_): _description_
+        :param logits: model output before softmax.
+        :param q_hat: the conformal threshold.
 
-        Returns:
-            _type_: _description_
+        :return: prediction sets
         """
         scores = self.score_function.predict(logits).to(self._device)
         if q_hat == None:

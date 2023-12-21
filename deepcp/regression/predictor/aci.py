@@ -32,7 +32,7 @@ class ACI(SplitPredictor):
     def predict(self, x, y_t=None, pred_interval_t=None):
         """
         
-        :param x: the .
+        :param x: input features.
         :param y_t: the truth value at the time t.
         :param pred_interval_t: the prediction interval for the time t.
         """
