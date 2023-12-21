@@ -24,7 +24,7 @@ class ClassWisePredictor(SplitPredictor):
     def calculate_threshold(self, logits, labels, alpha):
         # the number of labels
         labels_num = logits.shape[1]
-        self.q_hat = torch.zeros(labels_num, dtype=self._device)
+        self.q_hat = torch.zeros(labels_num,device=self._device)
         for label in range(labels_num):
             x_cal_tmp = logits[labels == label]
             y_cal_tmp = labels[labels == label]
