@@ -24,7 +24,7 @@ class ClassWisePredictor(SplitPredictor):
     def calculate_threshold(self, logits, labels, alpha):
         # the number of labels
         labels_num = logits.shape[1]
-        self.q_hat = logits.new_zeros(labels_num)
+        self.q_hat = torch.zeros(labels_num, dtype=self._device)
         for label in range(labels_num):
             x_cal_tmp = logits[labels == label]
             y_cal_tmp = labels[labels == label]
@@ -35,4 +35,5 @@ class ClassWisePredictor(SplitPredictor):
             qunatile = math.ceil(scores.shape[0] + 1) * (1 - alpha) / scores.shape[0]
             if qunatile > 1:
                 qunatile = 1
+                
             self.q_hat[label] = torch.quantile(scores, qunatile)

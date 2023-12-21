@@ -40,7 +40,7 @@ class SplitPredictor(BasePredictor):
         qunatile_value = math.ceil(self.scores.shape[0] + 1) * (1 - alpha) / self.scores.shape[0]
         if qunatile_value > 1:
             qunatile_value = 1
-        self.q_hat = torch.quantile(self.scores, qunatile_value)
+        self.q_hat = torch.quantile(self.scores, qunatile_value).to(self._device)
 
     #############################
     # The prediction process
