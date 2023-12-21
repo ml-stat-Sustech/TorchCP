@@ -53,20 +53,22 @@ pip install torchcp
 
 ```python
 from torchcp.classification.scores import THR
-from torchcp.classification.predictors import SplitPredictor
+from torchcp.classification.predictors import SplitPredictor,
 
+# prepare a calibration data and a test data.
 cal_dataloader = ...
 test_dataloader = ...
+# prepare a pytorch model
 model = ...
 model.eval()
 
-# define a score function
+# define a score function. Optional: THR, APS, SAPS, RAPS
 thr_score_function = THR()
 
 # significance level
 alpha = 0.1
 
-# define a conformal prediction algorithm
+# define a conformal prediction algorithm. Optional: SplitPredictor, ClusterPredictor, ClassWisePredictor
 predictor = SplitPredictor(thr_score_function, model)
 
 # calibration process
@@ -76,10 +78,24 @@ predictor.calibrate(cal_dataloader, alpha)
 print(predictor.evaluate(test_dataloader))
 ```
 
-## License
 
+
+## License
 This project is licensed under the LGPL. The terms and conditions can be found in the LICENSE and LICENSE.GPL files.
 
+## Citation
+
+If you use TorchCP in your research, we kindly ask that you cite the following:
+
+```
+@misc{huang2023conformal,
+  title={Conformal Prediction for Deep Classifier via Label Ranking}, 
+  author={Jianguo Huang and Huajun Xi and Linjun Zhang and Huaxiu Yao and Yue Qiu and Hongxin Wei},
+  year={2023},
+  eprint={2310.06430},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG}}
+```
 ## Contributors
 
 * [Hongxin Wei](https://hongxin001.github.io/)
