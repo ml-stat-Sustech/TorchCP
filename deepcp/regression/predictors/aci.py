@@ -24,6 +24,8 @@ class ACI(SplitPredictor):
         self.alpha_t = None
 
     def calculate_threshold(self, predicts, y_truth, alpha):
+        if alpha>=1 or alpha<=0:
+            raise ValueError("Significance level 'alpha' must be in (0,1).")
         self.scores = torch.maximum(predicts[:, 0] - y_truth, y_truth - predicts[:, 1])
         self.alpha = alpha
         if self.alpha_t == None:

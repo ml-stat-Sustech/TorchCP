@@ -18,6 +18,7 @@ setup(name='deepcp',
       version=version,
       url='https://github.com/ml-stat-Sustech/DeepCP',
       package_data={'deepcp_examples': ['*.ipynb']},
+      description="A Python toolbox for conformal prediction research on deep learning models.",
       install_requires=[],
       include_package_data=True,
       packages=find_packages())

@@ -22,6 +22,8 @@ class ClassWisePredictor(SplitPredictor):
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):
+        if alpha>=1 or alpha<=0:
+            raise ValueError("Significance level 'alpha' must be in (0,1).")
         # the number of labels
         labels_num = logits.shape[1]
         self.q_hat = torch.zeros(labels_num,device=self._device)

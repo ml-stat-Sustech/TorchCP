@@ -29,7 +29,7 @@ class WeightedPredictor(SplitPredictor):
         self.alpha = None
 
     def calibrate(self, cal_dataloader, alpha):
-        self.alpha = alpha
+        
         self.cal_dataloader = cal_dataloader
         logits_list = []
         labels_list = []
@@ -44,12 +44,14 @@ class WeightedPredictor(SplitPredictor):
             logits = torch.cat(logits_list).float()
             labels = torch.cat(labels_list)
             cal_features = torch.cat(cal_features_list).float()
-
         self.source_image_features = cal_features
 
-        self.calculate_threshold(logits, labels)
+        self.calculate_threshold(logits, labels, alpha)
 
-    def calculate_threshold(self, logits, labels):
+    def calculate_threshold(self, logits, labels, alpha):
+        if alpha>=1 or alpha<=0:
+            raise ValueError("Significance level 'alpha' must be in (0,1).")
+        self.alpha = alpha
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)
         for index, (x, y) in enumerate(zip(logits, labels)):
             self.scores[index] = self.score_function(x, y)

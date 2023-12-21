@@ -36,6 +36,8 @@ class ClusterPredictor(SplitPredictor):
         self.__split = split
 
     def calculate_threshold(self, logits, labels, alpha):
+        if alpha>=1 or alpha<=0:
+            raise ValueError("Significance level 'alpha' must be in (0,1).")
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         self.num_classes = logits.shape[1]
