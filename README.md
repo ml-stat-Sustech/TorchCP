@@ -2,6 +2,44 @@ DeepCP is a Python toolbox for conformal prediction research on deep learning mo
 implemented in PyTorch. Specifically, DeepCP contains modules of post-hoc methods and training methods for
 classification problems and regression problems.
 
+# Overview
+DeepCP has implemented the following methods:
+## Classification
+ Year | Title                                                                                                                                           | Venue   | Code Link |
+|------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------|-------------|
+| 2023 | [**Class-Conditional Conformal Prediction with Many Classes**](https://arxiv.org/abs/2306.09335)                                                | NeurIPS | [Link](https://github.com/tiffanyding/class-conditional-conformal) |
+| 2023 | [**Conformal Prediction for Deep Classifier via Label Ranking**](https://arxiv.org/abs/2310.06430)                                              | Arxiv   | [Link](https://github.com/ml-stat-Sustech/conformal_prediction_via_label_ranking) |
+| 2021 | [**Learning Optimal Conformal Classifiers**](https://arxiv.org/abs/2110.09192)                                                               | ICLR    | [Link](https://github.com/google-deepmind/conformal_training/tree/main) |
+| 2020 | [**Uncertainty Sets for Image Classifiers using Conformal Prediction**](https://arxiv.org/abs/2009.14193       )                                | ICLR    | [Link](https://github.com/aangelopoulos/conformal_classification) |
+| 2020 | [**Classification with Valid and Adaptive Coverage**](https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf) | NeurIPS | [Link](https://github.com/msesia/arc) |
+| 2019 | [**Conformal Prediction Under Covariate Shift**](https://arxiv.org/abs/1904.06019)                                                              | NeurIPS | [Link](https://github.com/ryantibs/conformal/) |
+| 2016 | [**Least Ambiguous Set-Valued Classifiers with Bounded Error Levels**](https://arxiv.org/abs/1609.00451)                                        | JASA    | |
+| 2013 | [**Applications of Class-Conditional Conformal Predictor in Multi-Class Classification**](https://ieeexplore.ieee.org/document/6784618)         | ICMLA   | |
+
+## Regression
+ Year | Title                                                                                                                       | Venue   | Code Link                                            |
+|------|-----------------------------------------------------------------------------------------------------------------------------|---------|------------------------------------------------------|
+| 2021 | [**Adaptive Conformal Inference Under Distribution Shift**](https://arxiv.org/abs/2106.00170)                               | NeurIPS | [Link](https://github.com/isgibbs/AdaptiveConformal) |
+| 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf) | NeurIPS | [Link](https://github.com/yromano/cqr)               |
+| 2016 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                               | JASA    | [Link](https://github.com/ryantibs/conformal)        |
+
+
+
+## TODO
+DeepCP is still under active development. We will add the following features/items down the road:
+
+ Year | Title                                                                                                      | Venue   | Code Link |
+|------|------------------------------------------------------------------------------------------------------------|---------|---------------|
+| 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878) | NeurIPS | [Link](https://github.com/bat-sheva/conformal-learning) |
+| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                     | ICML    | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
+| 2022 | [**Predictive Inference with Feature Conformal Prediction**](https://arxiv.org/abs/2210.00173)             | ICLR    | [Link](https://github.com/AlvinWen428/FeatureCP) |
+| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)             | ICML    | [Link](https://github.com/ajfisch/conformal-fp) |
+| 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255)                           | Arxiv   | |
+
+
+
+
+
 ## Installation
 
 ### Installing DeepCP itself
@@ -28,40 +66,35 @@ pip install -e .
 
 ```python
 cal_labels = ...
-cal_probailities = ...
+cal_logits = ...
 
 test_labels = ...
-test_probailities = ...
+test_logits = ...
 
+from deepcp.classification.scores import THR
+from deepcp.classification.predictors import SplitPredictor
+from deepcp.classification import  Metrics
 # define a score function
 thr_score_function = THR()
 
 # set significance level
 alpha = 0.1
 
-predictor = StandardPredictor(thr_score_function)
-predictor.fit(cal_probailities, cal_labels, alpha)
+predictor = SplitPredictor(thr_score_function)
+predictor.fit(cal_logits, cal_labels, alpha)
 
 # test examples
 print("testing examples...")
 prediction_sets = []
-for index, ele in enumerate(test_probailities):
+for index, ele in enumerate(test_logits):
     prediction_set = predictor.predict(ele)
     prediction_sets.append(prediction_set)
 
 print("computing metrics...")
-metrics = Metrics(["coverage_rate"])
-print(metrics.compute(prediction_sets, test_labels))
+metrics = Metrics()
+print(metrics('average_size')(prediction_sets, test_labels))
 
 ```
-
-## Coming Soon later
-
-DeepCP is still under active development. We will add the following features/items down the road:
-
-* ClusterCP, Weighted split conformal inference.
-* loss functions for CP
-* ...
 
 ## License
 

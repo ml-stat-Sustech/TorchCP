@@ -10,13 +10,13 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 
-from deepcp.classification.predictor.split import SplitPredictor
+from deepcp.classification.predictors.split import SplitPredictor
 from deepcp.utils.common import DimensionError
 
 
 class ClusterPredictor(SplitPredictor):
     """
-    Clustered conformal prediction (Ding et al., 2023).
+    Class-Conditional Conformal Prediction with Many Classes (Ding et al., 2023).
     paper: https://arxiv.org/abs/2306.09335
     """
 

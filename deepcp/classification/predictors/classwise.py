@@ -7,7 +7,7 @@
 import math
 import torch
 
-from deepcp.classification.predictor.split import SplitPredictor
+from deepcp.classification.predictors.split import SplitPredictor
 
 
 class ClassWisePredictor(SplitPredictor):

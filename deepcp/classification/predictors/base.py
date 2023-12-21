@@ -17,7 +17,7 @@ from deepcp.utils.common import get_device
 
 class BasePredictor(object):
     """
-    Abstract base class for all predictor classes.
+    Abstract base class for all predictors classes.
     """
 
     __metaclass__ = ABCMeta

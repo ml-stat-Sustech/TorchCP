@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 
 from dataset import build_dataset
-from deepcp.classification.predictor import WeightedPredictor
+from deepcp.classification.predictors import WeightedPredictor
 from deepcp.classification.scores import THR
 from deepcp.utils import fix_randomness
 
@@ -68,12 +68,12 @@ if __name__ == '__main__':
     alpha = 0.1
 
 
-    # predictor = StandardPredictor(score_function, model)
-    # predictor.calibrate(cal_data_loader, alpha)
+    # predictors = StandardPredictor(score_function, model)
+    # predictors.calibrate(cal_data_loader, alpha)
 
     # # test examples
     # print("Testing examples...")
-    # print(predictor.evaluate(test_data_loader))
+    # print(predictors.evaluate(test_data_loader))
 
     ##################################
     # Invalid prediction sets

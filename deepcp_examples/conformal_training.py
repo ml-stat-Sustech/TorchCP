@@ -25,14 +25,14 @@ import torch.optim as optim
 
 from dataset import build_dataset
 from deepcp.classification.loss import ConfTr
-from deepcp.classification.predictor import SplitPredictor, ClusterPredictor, ClassWisePredictor
+from deepcp.classification.predictors import SplitPredictor, ClusterPredictor, ClassWisePredictor
 from deepcp.classification.scores import THR, APS, SAPS, RAPS
 from deepcp.utils import fix_randomness
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Covariate shift')
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--predictor', default="Standard", help="Standard")
+    parser.add_argument('--predictors', default="Standard", help="Standard")
     parser.add_argument('--score', default="THR", help="THR")
     parser.add_argument('--loss', default="CE", help="CE | ConfTr")
     args = parser.parse_args()

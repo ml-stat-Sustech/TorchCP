@@ -7,7 +7,7 @@
 
 import torch
 
-from deepcp.regression.predictor.split import SplitPredictor
+from deepcp.regression.predictors.split import SplitPredictor
 
 
 class ACI(SplitPredictor):

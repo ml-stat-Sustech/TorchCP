@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
-from deepcp.regression.predictor import SplitPredictor
+from deepcp.regression.predictors import SplitPredictor
 from deepcp.utils import fix_randomness
 from utils import build_reg_data, build_regression_model
 
@@ -63,7 +63,7 @@ print(predictor.evaluate(test_data_loader))
 # with torch.no_grad():
 #     for  examples in test_data_loader:
 #         tmp_x, tmp_y = examples[0].to(device), examples[1]
-#         tmp_prediction_intervals = predictor.predict(tmp_x)
+#         tmp_prediction_intervals = predictors.predict(tmp_x)
 #         y_list.append(tmp_y)
 #         x_list.append(tmp_x)
 #         predict_list.append(tmp_prediction_intervals)

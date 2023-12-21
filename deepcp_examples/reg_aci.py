@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from deepcp.regression import Metrics
 from deepcp.regression.loss import QuantileLoss
-from deepcp.regression.predictor import ACI
+from deepcp.regression.predictors import ACI
 from deepcp.utils import fix_randomness
 from utils import build_reg_data, build_regression_model
 

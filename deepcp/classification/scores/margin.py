@@ -10,10 +10,6 @@ from deepcp.classification.scores.base import BaseScoreFunction
 
 
 class Margin(BaseScoreFunction):
-    """
-    Threshold conformal predictor (Sadinle et al., 2016)
-    paper : https://arxiv.org/abs/1609.00451
-    """
 
     def __init__(self, ) -> None:
         """

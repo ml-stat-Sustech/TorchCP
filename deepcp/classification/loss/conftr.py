@@ -16,7 +16,7 @@ class ConfTr(nn.Module):
                  loss_transform="square", base_loss_fn=None):
         """
         :param weights: the weight of each loss function
-        :param predictor: the CP predictor
+        :param predictor: the CP predictors
         :param alpha: the significance level for each training batch
         :param fraction: the fraction of the calibration set in each training batch
         :param types: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".

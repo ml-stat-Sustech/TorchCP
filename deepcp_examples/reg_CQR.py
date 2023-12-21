@@ -4,7 +4,7 @@ from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
 from deepcp.regression.loss import QuantileLoss
-from deepcp.regression.predictor import CQR
+from deepcp.regression.predictors import CQR
 from deepcp.regression.utils.metrics import Metrics
 from deepcp.utils import fix_randomness
 from utils import build_reg_data, build_regression_model
@@ -71,4 +71,4 @@ print("Etestuating prediction sets...")
 print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}.")
 print(f"Average_size: {metrics('average_size')(predicts, test_y)}.")
 
-# print(predictor.evaluate(test_data_loader))
+# print(predictors.evaluate(test_data_loader))

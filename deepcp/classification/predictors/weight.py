@@ -7,13 +7,13 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
-from deepcp.classification.predictor.split import SplitPredictor
-from deepcp.classification.predictor.utils import build_DomainDetecor, IW
+from deepcp.classification.predictors.split import SplitPredictor
+from deepcp.classification.predictors.utils import build_DomainDetecor, IW
 
 
 class WeightedPredictor(SplitPredictor):
     """
-    Weighted conformal predictor (Tibshirani et al., 2019)
+    Conformal Prediction Under Covariate Shift (Tibshirani et al., 2019)
     paper : https://arxiv.org/abs/1904.06019
     """
 

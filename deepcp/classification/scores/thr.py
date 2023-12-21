@@ -11,7 +11,7 @@ from deepcp.classification.scores.base import BaseScoreFunction
 
 class THR(BaseScoreFunction):
     """
-    Threshold conformal predictor (Sadinle et al., 2016)
+    Threshold conformal predictors (Sadinle et al., 2016)
     paper : https://arxiv.org/abs/1609.00451
     """
 
