@@ -53,7 +53,7 @@ pip install torchcp
 
 ```python
 from torchcp.classification.scores import THR
-from torchcp.classification.predictors import SplitPredictor,
+from torchcp.classification.predictors import SplitPredictor
 
 # prepare a calibration data and a test data.
 cal_dataloader = ...
@@ -63,13 +63,14 @@ model = ...
 model.eval()
 
 # define a score function. Optional: THR, APS, SAPS, RAPS
-thr_score_function = THR()
+score_function  = THR()
 
 # significance level
 alpha = 0.1
 
-# define a conformal prediction algorithm. Optional: SplitPredictor, ClusterPredictor, ClassWisePredictor
-predictor = SplitPredictor(thr_score_function, model)
+# define a conformal prediction algorithm. Optional: SplitPredictor, ClusterPredictor, 
+# ClassWisePredictor
+predictor = SplitPredictor(score_function , model)
 
 # calibration process
 predictor.calibrate(cal_dataloader, alpha)

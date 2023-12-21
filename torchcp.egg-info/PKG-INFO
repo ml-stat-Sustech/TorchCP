@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: torchcp
+Version: 0.1.1
+Summary: A Python toolbox for conformal prediction on deep learning models.
+Home-page: https://github.com/ml-stat-Sustech/TorchCP
+License-File: LICENSE
+License-File: LICENSE.GPL
+License-File: AUTHORS.txt
