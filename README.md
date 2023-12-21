@@ -1,9 +1,9 @@
 torchCP is a Python toolbox for conformal prediction research. The primary functionalities are
-implemented in PyTorch. Specifically, DeepCP contains modules of post-hoc methods and training methods for
+implemented in PyTorch. Specifically, torchCP contains modules of post-hoc methods and training methods for
 classification problems and regression problems.
 
 # Overview
-DeepCP has implemented the following methods:
+torchCP has implemented the following methods:
 ## Classification
  Year | Title                                                                                                                                           | Venue   | Code Link |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------|-------------|
@@ -42,20 +42,20 @@ DeepCP is still under active development. We will add the following features/ite
 
 ## Installation
 
-### Installing DeepCP itself
+### Installing torchCP itself
 
-We developed DeepCP under Python 3.9 and PyTorch 2.0.1. To install DeepCP, simply run
+We developed torchCP under Python 3.9 and PyTorch 2.0.1. To install torchCP, simply run
 
 ```
-pip install deepcp
+pip install torchCP
 ```
 
 ## Examples
 
 ```python
-from deepcp.classification.scores import THR
-from deepcp.classification.predictors import SplitPredictor
-from deepcp.classification.utils.metrics import Metrics
+from torchcp.classification.scores import THR
+from torchcp.classification.predictors import SplitPredictor
+from torchcp.classification.utils.metrics import Metrics
 
 
 
