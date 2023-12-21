@@ -9,7 +9,7 @@
 __pycache__/
 *.pdf
 *.npz
-deepcp/__pycache__/
+torchcp/__pycache__/
 deepcp.egg-info
 data/
 .pytest_cache/

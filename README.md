@@ -4,7 +4,7 @@ classification and regression tasks. This codebase is still under construction. 
 
 
 # Overview
-DeepCP has implemented the following methods:
+torchCP has implemented the following methods:
 ## Classification
  Year | Title                                                                                                                                           | Venue   | Code Link |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------|-------------|
@@ -43,46 +43,60 @@ DeepCP is still under active development. We will add the following features/ite
 
 ## Installation
 
-### Installing DeepCP itself
+### Installing torchCP itself
 
-We developed DeepCP under Python 3.9 and PyTorch 2.0.1. To install DeepCP, simply run
-
-```
-pip install deepcp
-```
-
-or clone the repo and run
+We developed torchCP under Python 3.9 and PyTorch 2.0.1. To install torchCP, simply run
 
 ```
-python setup.py install
-```
-
-To install the package in "editable" mode:
-
-```
-pip install -e .
+pip install torchCP
 ```
 
 ## Examples
 
 ```python
+from torchcp.classification.scores import THR
+from torchcp.classification.predictors import SplitPredictor
+from torchcp.classification.utils.metrics import Metrics
+
+
+
+################################
+# First Method (dataloader)
+################################
+cal_dataloader = ...
+test_dataloader = ...
+model = ...
+model.eval()
+
+# define a score function
+thr_score_function = THR()
+
+# significance level
+alpha = 0.1
+
+# define a conformal prediction algorithm
+predictor = SplitPredictor(thr_score_function, model)
+
+# calibration process
+predictor.calibrate(cal_dataloader, alpha)
+
+# test examples and return basic metrics
+print(predictor.evaluate(test_dataloader))
+
+
+################################
+# Second Method (tenors)
+################################
 cal_labels = ...
 cal_logits = ...
 
 test_labels = ...
 test_logits = ...
 
-from deepcp.classification.scores import THR
-from deepcp.classification.predictors import SplitPredictor
-from deepcp.classification import  Metrics
-# define a score function
 thr_score_function = THR()
-
-# set significance level
 alpha = 0.1
-
 predictor = SplitPredictor(thr_score_function)
-predictor.fit(cal_logits, cal_labels, alpha)
+predictor.calculate_threshold(cal_logits, cal_labels, alpha)
 
 # test examples
 print("testing examples...")
@@ -94,6 +108,11 @@ for index, ele in enumerate(test_logits):
 print("computing metrics...")
 metrics = Metrics()
 print(metrics('average_size')(prediction_sets, test_labels))
+print(metrics('average_size')(prediction_sets, test_labels))
+
+
+
+
 
 ```
 
