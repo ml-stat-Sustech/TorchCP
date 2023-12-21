@@ -1,1 +1,1 @@
-from .utils import Metrics
+from torchcp.classification.utils.metrics import Metrics

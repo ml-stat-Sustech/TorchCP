@@ -43,8 +43,6 @@ TorchCP is still under active development. We will add the following features/it
 
 ## Installation
 
-### Installing TorchCP itself
-
 We developed TorchCP under Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
 
 ```
@@ -56,13 +54,7 @@ pip install torchcp
 ```python
 from torchcp.classification.scores import THR
 from torchcp.classification.predictors import SplitPredictor
-from torchcp.classification.utils.metrics import Metrics
 
-
-
-################################
-# First Method (dataloader)
-################################
 cal_dataloader = ...
 test_dataloader = ...
 model = ...
@@ -82,38 +74,6 @@ predictor.calibrate(cal_dataloader, alpha)
 
 # test examples and return basic metrics
 print(predictor.evaluate(test_dataloader))
-
-
-################################
-# Second Method (tenors)
-################################
-cal_labels = ...
-cal_logits = ...
-
-test_labels = ...
-test_logits = ...
-
-thr_score_function = THR()
-alpha = 0.1
-predictor = SplitPredictor(thr_score_function)
-predictor.calculate_threshold(cal_logits, cal_labels, alpha)
-
-# test examples
-print("testing examples...")
-prediction_sets = []
-for index, ele in enumerate(test_logits):
-    prediction_set = predictor.predict(ele)
-    prediction_sets.append(prediction_set)
-
-print("computing metrics...")
-metrics = Metrics()
-print(metrics('average_size')(prediction_sets, test_labels))
-print(metrics('average_size')(prediction_sets, test_labels))
-
-
-
-
-
 ```
 
 ## License
