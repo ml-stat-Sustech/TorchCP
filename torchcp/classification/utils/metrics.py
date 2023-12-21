@@ -136,5 +136,5 @@ class Metrics:
 
     def __call__(self, metric) -> Any:
         if metric not in METRICS_REGISTRY.registered_names():
-            raise NameError(f"The metric: {metric} is not defined in DeepCP.")
+            raise NameError(f"The metric: {metric} is not defined in TorchCP.")
         return METRICS_REGISTRY.get(metric)
