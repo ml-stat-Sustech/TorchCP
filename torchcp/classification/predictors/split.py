@@ -33,7 +33,7 @@ class SplitPredictor(BasePredictor):
         self.calculate_threshold(logits, labels, alpha)
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha>=1 or alpha<=0:
+        if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         self.scores = logits.new_zeros(logits.shape[0])
         for index, (x, y) in enumerate(zip(logits, labels)):
@@ -47,6 +47,11 @@ class SplitPredictor(BasePredictor):
     # The prediction process
     ############################
     def predict(self, x_batch):
+        """
+        The input of score function is softmax probability.
+
+        :param x_batch: a batch of instances.
+        """
         self._model.eval()
         if self._model != None:
             x_batch = self._model(x_batch.to(self._device)).float()
@@ -59,12 +64,14 @@ class SplitPredictor(BasePredictor):
     def predict_with_logits(self, logits, q_hat=None):
         """
         The input of score function is softmax probability.
+        if q_hat is not given by the function 'self.calibrate', the construction progress of prediction set is a naive method.
 
         :param logits: model output before softmax.
         :param q_hat: the conformal threshold.
 
         :return: prediction sets
         """
+        
         scores = self.score_function.predict(logits).to(self._device)
         if q_hat == None:
             S = self._generate_prediction_set(scores, self.q_hat)

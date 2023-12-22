@@ -75,8 +75,23 @@ predictor = SplitPredictor(score_function , model)
 # calibration process
 predictor.calibrate(cal_dataloader, alpha)
 
+
+
+#########################################
+# First method: a Pytorch dataloader for testing
+########################################
 # test examples and return basic metrics
 print(predictor.evaluate(test_dataloader))
+
+
+#########################################
+# Second method: a single test instance
+########################################
+# prepare a batch of examples
+test_examples = ...
+print(predictor.predict(test_examples))
+
+
 ```
 
 
