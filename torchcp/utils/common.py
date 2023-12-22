@@ -15,7 +15,11 @@ __all__ = ["fix_randomness", "DimensionError"]
 
 
 def fix_randomness(seed=0):
-    # Fix randomness
+    """
+    Fix the random seed for python, torch, numpy.
+
+    :param seed: the random seed
+    """
     np.random.seed(seed=seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -27,6 +31,11 @@ class DimensionError(Exception):
 
 
 def get_device(model):
+    """
+    Get the device of Torch model.
+
+    :param model: a Pytorch model. If None, it uses GPU when the cuda is available, otherwise it uses CPU.
+    """
     if model == None:
         if not torch.cuda.is_available():
             device = torch.device("cpu")

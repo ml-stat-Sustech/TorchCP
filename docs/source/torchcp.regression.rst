@@ -1,19 +1,26 @@
-torchcp.regression package
+:mod:`torchcp.regression`
 ==========================
 
-Subpackages
------------
+.. automodule:: torchcp.regression.predictors
+Predictors
+-------
 
-.. toctree::
-   :maxdepth: 4
+..  autosummary::
+    :nosignatures:
 
-   torchcp.regression.loss
-   torchcp.regression.predictors
+    SplitPredictor
+    cqr
+    ACI
 
-Module contents
----------------
 
-.. automodule:: torchcp.regression
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Detailed description
+--------------------
+
+..  autoclass:: SplitPredictor
+    :members:
+
+..  autoclass:: CQR
+    :members:
+
+..  autoclass:: ACI
+    :members:

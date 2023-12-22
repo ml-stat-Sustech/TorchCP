@@ -1,21 +1,60 @@
-torchcp.classification package
-==============================
+:mod:`torchcp.classification`
+==========================
 
-Subpackages
------------
+.. automodule:: torchcp.classification.scores
+Score functions
+-------
 
-.. toctree::
-   :maxdepth: 4
+..  autosummary::
+    :nosignatures:
 
-   torchcp.classification.loss
-   torchcp.classification.predictors
-   torchcp.classification.scores
-   torchcp.classification.utils
+    THR
+    APS
+    RAPS
+    SAPS
+    Margin
 
-Module contents
----------------
+.. automodule:: torchcp.classification.predictors
+Predictors
+-------
 
-.. automodule:: torchcp.classification
-   :members:
-   :undoc-members:
-   :show-inheritance:
+..  autosummary::
+    :nosignatures:
+
+    SplitPredictor
+    ClassWisePredictor
+    ClusterPredictor
+    WeightedPredictor
+
+
+Detailed description
+--------------------
+.. automodule:: torchcp.classification.scores
+..  autoclass:: THR
+    :members:
+
+..  autoclass:: APS
+    :members:
+
+..  autoclass:: RAPS
+    :members:
+
+..  autoclass:: SAPS
+    :members:
+
+..  autoclass:: Margin
+    :members:
+
+.. automodule:: torchcp.classification.predictors
+
+..  autoclass:: SplitPredictor
+    :members:
+
+..  autoclass:: ClassWisePredictor
+    :members:
+
+..  autoclass:: ClusterPredictor
+    :members:
+
+..  autoclass:: WeightedPredictor
+    :members:

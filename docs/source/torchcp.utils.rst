@@ -1,29 +1,25 @@
-torchcp.utils package
-=====================
-
-Submodules
-----------
-
-torchcp.utils.common module
----------------------------
-
-.. automodule:: torchcp.utils.common
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-torchcp.utils.registry module
------------------------------
-
-.. automodule:: torchcp.utils.registry
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
+:mod:`torchcp.utils`
+==========================
 
 .. automodule:: torchcp.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Tools
+-------
+
+..  autosummary::
+    :nosignatures:
+
+    Registry
+    fix_randomness
+    get_device
+
+
+Detailed description
+--------------------
+
+..  autoclass:: Registry
+    :members:
+
+..  autofunction:: fix_randomness
+
+..  autofunction:: get_device
+

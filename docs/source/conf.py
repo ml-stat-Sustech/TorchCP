@@ -60,6 +60,11 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
+    'sphinx.ext.autosummary',
+    # 'sphinx.ext.linkcode',
+    'nbsphinx',
+    'numpydoc',
+
 ]
 
 templates_path = ['_templates']

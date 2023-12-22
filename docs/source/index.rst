@@ -3,13 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to TorchCP's documentation!
+Welcome to TorchCP
 ===================================
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Contents:
+   :maxdepth: 2
+   :caption: User Guide
 
+   installation
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   torchcp.classification
+   torchcp.regression
+   torchcp.utils
 
 
 Indices and tables
