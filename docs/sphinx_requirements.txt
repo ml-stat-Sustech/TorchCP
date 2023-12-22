@@ -1,2 +1,0 @@
-nbsphinx
-numpydoc
