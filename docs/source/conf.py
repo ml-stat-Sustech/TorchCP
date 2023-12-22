@@ -41,7 +41,7 @@ sys.modules['torch.utils.data'] = Mock()
 sys.modules['torchvision'] = Mock()
 sys.modules['randomstate'] = Mock()
 sys.modules['scipy._lib'] = Mock()
-sys.modules['sklearn'] = Mock()
+sys.modules['sklearn.cluster'] = Mock()
 import torchcp
 
 project = 'TorchCP'
