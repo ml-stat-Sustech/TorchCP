@@ -85,7 +85,7 @@ print(predictor.evaluate(test_dataloader))
 
 
 #########################################
-# Second method: a single test instance
+# Second method: only test instances
 ########################################
 # prepare a batch of examples
 test_examples = ...
