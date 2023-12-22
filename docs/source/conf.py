@@ -63,9 +63,14 @@ extensions = [
 ]
 
 templates_path = ['_templates']
+numpydoc_show_class_members = False
 exclude_patterns = []
 
 source_suffix = '.rst'
+
+# The master toctree document.
+master_doc = 'index'
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -77,5 +82,11 @@ html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 
+# A list of files that should not be packed into the epub file.
+epub_exclude_files = ['search.html']
 
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {'https://docs.python.org/': None}
 
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = True
