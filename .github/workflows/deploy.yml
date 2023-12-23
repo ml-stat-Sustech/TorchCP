@@ -2,9 +2,14 @@ name: Publish Python 🐍 distributions 📦 to PyPI
 
 
 on:
+#  push:
+#    branches:
+#      - development
+# automatically running github actions when push a tag
   push:
-    branches:
-      - development
+    tags:
+      - '*'
+
 
 jobs:
   build-n-publish:
@@ -27,9 +32,14 @@ jobs:
     - name: Build a binary wheel
       run: >-
         python setup.py sdist bdist_wheel
-    - name: Publish distribution 📦 to TestPyPI
+#    - name: Publish distribution 📦 to TestPyPI
+#      uses: pypa/gh-action-pypi-publish@release/v1
+#      with:
+#        user: __token__
+#        password: ${{ secrets.jianguo_test_pypi_password }}
+#        repository_url: https://test.pypi.org/legacy/
+    - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
-        password: ${{ secrets.jianguo_test_pypi_password }}
-        repository_url: https://test.pypi.org/legacy/
+        password: ${{ secrets.jianguo_pypi_password }}
