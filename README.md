@@ -1,5 +1,5 @@
 TorchCP is a Python toolbox for conformal prediction research on deep learning models, using PyTorch. Specifically, this toolbox has implemented some representative methods (including posthoc and training methods) for
-classification and regression tasks. This codebase is still under construction. Comments, issues, contributions, and collaborations are all welcomed!
+classification and regression tasks. We build the framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This codebase is still under construction. Comments, issues, contributions, and collaborations are all welcomed! 
 
 
 
@@ -43,7 +43,7 @@ TorchCP is still under active development. We will add the following features/it
 
 ## Installation
 
-We developed TorchCP under Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
+TorchCP is deveoped with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
 
 ```
 pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
@@ -51,6 +51,7 @@ pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 
 ## Examples
 
+Here, we provide a simple example for classification task, with THR score and SplitPredictor.
 ```python
 from torchcp.classification.scores import THR
 from torchcp.classification.predictors import SplitPredictor
@@ -60,25 +61,35 @@ cal_dataloader = ...
 test_dataloader = ...
 # prepare a pytorch model
 model = ...
+
 model.eval()
 
-# define a score function. Optional: THR, APS, SAPS, RAPS
-score_function  = THR()
+# Options of score function: THR, APS, SAPS, RAPS
+# Define a conformal prediction algorithm. Optional: SplitPredictor, ClusterPredictor, ClassWisePredictor
+predictor = SplitPredictor(score_function=THR(), model=model)
 
-# significance level
-alpha = 0.1
+# Calibrating the predictor with significance level as 0.1
+predictor.calibrate(cal_dataloader, alpha=0.1)
 
-# define a conformal prediction algorithm. Optional: SplitPredictor, ClusterPredictor, 
-# ClassWisePredictor
-predictor = SplitPredictor(score_function , model)
+#########################################
+# Predicting for test instances
+########################################
+test_instances = ...
+predict_set = predictor.predict(test_instances)
+print(predict_set)
 
-# calibration process
-predictor.calibrate(cal_dataloader, alpha)
+#########################################
+# Evaluating the coverage rate and average set size on a given dataset.
+########################################
+result_dict = predictor.evaluate(test_dataloader)
+print(res_dict["Coverage_rate"], res_dict["Average_size"])
 
-# test examples and return basic metrics
-print(predictor.evaluate(test_dataloader))
 ```
+You may find more tutorials in [`examples`](https://github.com/ml-stat-Sustech/TorchCP/tree/master/examples) folder.
 
+## Documentation
+
+The documentation webpage is on readthedocs  https://torchcp.readthedocs.io/en/stable/index.html.
 
 
 ## License
@@ -86,20 +97,20 @@ This project is licensed under the LGPL. The terms and conditions can be found i
 
 ## Citation
 
-If you use TorchCP in your research, we kindly ask that you cite the following:
+We will release the technical report of TorchCP If you find our repository useful for your research, please consider citing our paper:
 
 ```
-@misc{huang2023conformal,
-  title={Conformal Prediction for Deep Classifier via Label Ranking}, 
-  author={Jianguo Huang and Huajun Xi and Linjun Zhang and Huaxiu Yao and Yue Qiu and Hongxin Wei},
-  year={2023},
-  eprint={2310.06430},
-  archivePrefix={arXiv},
-  primaryClass={cs.LG}}
+@article{huang2023conformal,
+  title={Conformal Prediction for Deep Classifier via Label Ranking},
+  author={Huang, Jianguo and Xi, Huajun and Zhang, Linjun and Yao, Huaxiu and Qiu, Yue and Wei, Hongxin},
+  journal={arXiv preprint arXiv:2310.06430},
+  year={2023}
+}
 ```
 ## Contributors
 
 * [Hongxin Wei](https://hongxin001.github.io/)
 * [Jianguo Huang](https://jianguo99.github.io/)
+
 
 

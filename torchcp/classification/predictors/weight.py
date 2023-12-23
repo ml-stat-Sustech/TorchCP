@@ -5,7 +5,6 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from tqdm import tqdm
 
 from torchcp.classification.predictors.split import SplitPredictor
 from torchcp.classification.predictors.utils import build_DomainDetecor, IW
@@ -35,7 +34,7 @@ class WeightedPredictor(SplitPredictor):
         labels_list = []
         cal_features_list = []
         with torch.no_grad():
-            for examples in tqdm(cal_dataloader):
+            for examples in cal_dataloader:
                 tmp_x, tmp_labels = examples[0].to(self._device), examples[1].to(self._device)
                 tmp_logits = self._logits_transformation(self._model(tmp_x)).detach()
                 cal_features_list.append(self.image_encoder(tmp_x))
@@ -86,7 +85,7 @@ class WeightedPredictor(SplitPredictor):
         print(f'Training a domain classifier')
         val_features_list = []
         with torch.no_grad():
-            for examples in tqdm(val_dataloader):
+            for examples in val_dataloader:
                 tmp_x, tmp_labels = examples[0].to(self._device), examples[1].to(self._device)
                 val_features_list.append(self.image_encoder(tmp_x))
             target_image_features = torch.cat(val_features_list).float()
@@ -130,7 +129,7 @@ class WeightedPredictor(SplitPredictor):
         prediction_sets = []
         labels_list = []
         with torch.no_grad():
-            for examples in tqdm(val_dataloader):
+            for examples in val_dataloader:
                 tmp_x, tmp_label = examples[0].to(self._device), examples[1].to(self._device)
                 prediction_sets_batch = self.predict(tmp_x)
                 prediction_sets.extend(prediction_sets_batch)
