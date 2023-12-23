@@ -21,4 +21,7 @@ setup(name='torchcp',
       description="A Python toolbox for conformal prediction on deep learning models.",
       install_requires=[],
       include_package_data=True,
-      packages=find_packages())
+      packages=find_packages(),
+      long_description=open('README.md').read(),
+      long_description_content_type='text/markdown',
+      )
