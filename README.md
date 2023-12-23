@@ -43,7 +43,7 @@ TorchCP is still under active development. We will add the following features/it
 
 ## Installation
 
-TorchCP is deveoped with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
+TorchCP is developed with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
 
 ```
 pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
@@ -51,15 +51,15 @@ pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 
 ## Examples
 
-Here, we provide a simple example for classification task, with THR score and SplitPredictor.
+Here, we provide a simple example for a classification task, with THR score and SplitPredictor.
 ```python
 from torchcp.classification.scores import THR
 from torchcp.classification.predictors import SplitPredictor
 
-# prepare a calibration data and a test data.
+# Preparing a calibration data and a test data.
 cal_dataloader = ...
 test_dataloader = ...
-# prepare a pytorch model
+# Preparing a pytorch model
 model = ...
 
 model.eval()
@@ -89,7 +89,7 @@ You may find more tutorials in [`examples`](https://github.com/ml-stat-Sustech/T
 
 ## Documentation
 
-The documentation webpage is on readthedocs  https://torchcp.readthedocs.io/en/stable/index.html.
+The documentation webpage is on readthedocs  https://torchcp.readthedocs.io/en/lastest/index.html.
 
 
 ## License
