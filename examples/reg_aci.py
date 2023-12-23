@@ -53,4 +53,4 @@ for i in range(num_examples - T0):
 metrics = Metrics()
 print("Etestuating prediction sets...")
 print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}.")
-print(f"Average_size: {metrics('average_size')(predicts, test_y)}.")
+print(f"Average_size: {metrics('average_size')(predicts)}.")

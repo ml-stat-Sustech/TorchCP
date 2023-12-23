@@ -75,5 +75,5 @@ class SplitPredictor(object):
         test_y = torch.cat(y_list).to(self._device)
 
         res_dict = {"Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
-                    "Average_size": self._metric('average_size')(predicts, test_y)}
+                    "Average_size": self._metric('average_size')(predicts)}
         return res_dict

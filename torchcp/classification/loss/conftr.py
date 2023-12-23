@@ -19,10 +19,10 @@ class ConfTr(nn.Module):
         :param predictor: the CP predictors
         :param alpha: the significance level for each training batch
         :param fraction: the fraction of the calibration set in each training batch
-        :param types: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
+        :param loss_types: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
         :param target_size:
         :param loss_transform: a transform for loss
-        :param loss: a base loss function, such as cross entropy for classification
+        :param base_loss_fn: a base loss function, such as cross entropy for classification
         """
         super(ConfTr, self).__init__()
         self.weight = weights
@@ -75,7 +75,7 @@ class ConfTr(nn.Module):
         else:
             loss = self.weight * self.loss_functions_dict[self.loss_types](pred_sets, test_labels)
 
-        if self.base_loss_fn != None:
+        if self.base_loss_fn is not None:
             loss += self.base_loss_fn(logits, labels).float()
 
         return loss

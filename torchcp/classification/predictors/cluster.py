@@ -20,7 +20,7 @@ class ClusterPredictor(SplitPredictor):
     paper: https://arxiv.org/abs/2306.09335
     """
 
-    def __init__(self, score_function, model=None, ratio_clustering="auto", num_clusters="auto", split='random'):
+    def __init__(self, score_function, model=None, ratio_clustering="auto", num_clusters="auto", split='random', temperature= 1):
         """
 
         :param score_function: score functions of CP
@@ -30,7 +30,7 @@ class ClusterPredictor(SplitPredictor):
         :param split: The method to split the dataset into clustering dataset and calibration set. split: How to split data between clustering step and calibration step. Options are 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability)
         """
 
-        super(ClusterPredictor, self).__init__(score_function, model)
+        super(ClusterPredictor, self).__init__(score_function, model, temperature)
         self.__ratio_clustering = ratio_clustering
         self.__num_clusters = num_clusters
         self.__split = split
@@ -243,7 +243,6 @@ class ClusterPredictor(SplitPredictor):
             alpha=alpha,
             num_classes=torch.max(cluster_assignments) + 1,
             null_qhat=null_qhat,
-            default_qhat=torch.inf
         )
         # Map cluster qhats back to classes
         num_classes = len(cluster_assignments)
@@ -252,15 +251,13 @@ class ClusterPredictor(SplitPredictor):
 
         return class_qhats
 
-    def __compute_class_specific_qhats(self, cal_class_scores, cal_true_labels, num_classes, alpha, null_qhat,
-                                       default_qhat):
+    def __compute_class_specific_qhats(self, cal_class_scores, cal_true_labels, num_classes, alpha, null_qhat):
         '''
         Computes class-specific quantiles (one for each class) that will result in marginal coverage of (1-alpha)
         
         :param cal_class_scores: num_instances-length array where cal_class_scores[i] is the score for instance i
         :param cal_true_labels: num_instances-length array of true class labels. If class -1 appears, it will be assigned the null_qhat value. It is appended as an extra entry of the returned q_hats so that q_hats[-1] = null_qhat.
         :param alpha: Desired coverage level.
-        :param default_qhat: the q_hat for absent classes.
         :param null_qhat: Only used if -1 appears in cal_true_labels. null_qhat is assigned to class/cluster -1.
 
         :return: the conformal threshold of each class

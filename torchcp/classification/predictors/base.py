@@ -22,7 +22,7 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model=None):
+    def __init__(self, score_function, model=None, temperature=1):
         """
         :param score_function: non-conformity score function.
         :param model: a deep learning model.
@@ -32,7 +32,7 @@ class BasePredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
-        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")()
+        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("TS")(temperature)
 
     @abstractmethod
     def calibrate(self, cal_dataloader, alpha):
@@ -64,3 +64,4 @@ class BasePredictor(object):
             return torch.argwhere(scores < q_hat).reshape(-1).tolist()
         else:
             return torch.argwhere(scores < q_hat).tolist()
+

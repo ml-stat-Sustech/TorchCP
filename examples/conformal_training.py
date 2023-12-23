@@ -67,7 +67,7 @@ if __name__ == '__main__':
         if args.loss == "CE":
             criterion = nn.CrossEntropyLoss()
         elif args.loss == "ConfTr":
-            predictor = InductivePredictor(score_function=THR(score_type="log_softmax"))
+            predictor = SplitPredictor(score_function=THR(score_type="log_softmax"))
             criterion = ConfTr(weights=0.01,
                                predictor=predictor,
                                alpha=0.05,

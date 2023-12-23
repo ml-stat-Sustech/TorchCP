@@ -39,18 +39,6 @@ def build_reg_data(data_name="community"):
         data = data.dropna(axis=1)
         X = data.iloc[:, 0:100].values
         y = data.iloc[:, 100].values
-    elif data_name == "S&P500":
-        data = pd.read_csv(base_path + "S&P500.csv")
-        # the price of stock index
-        prices = np.array(data["Close/Last"])
-        days = prices.shape[0]
-        # the rate of return from 2-ed day
-        rate_return = (prices[1:days] - prices[:days - 1]) / prices[:days - 1]
-        volatility = rate_return ** 2
-
-        sigma2 = rate_return / np.random.randn(rate_return.shape[0])
-        X = np.concatenate((volatility[:-1], sigma2[:-1]))
-        y = sigma2[1:]
     elif data_name == "synthetic":
         X = np.random.rand(500, 5)
         y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + 20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]

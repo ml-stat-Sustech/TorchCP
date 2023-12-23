@@ -16,14 +16,12 @@ class WeightedPredictor(SplitPredictor):
     paper : https://arxiv.org/abs/1904.06019
     """
 
-    def __init__(self, score_function, model, image_encoder):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model, image_encoder, temperature):
+        super().__init__(score_function, model, temperature)
 
         self.image_encoder = image_encoder
         #  non-conformity scores
         self.scores = None
-        # important weight
-        self.IWeight = None
         # significance level
         self.alpha = None
 
@@ -52,7 +50,7 @@ class WeightedPredictor(SplitPredictor):
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)
         for index, (x, y) in enumerate(zip(logits, labels)):
             self.scores[index] = self.score_function(x, y)
-        self.scores[index + 1] = torch.tensor(torch.inf).to(self._device)
+        self.scores[logits.shape[0]] = torch.tensor(torch.inf).to(self._device)
         self.scores_sorted = self.scores.sort()[0]
 
     def predict(self, x_batch):
