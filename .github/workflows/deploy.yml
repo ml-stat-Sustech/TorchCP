@@ -4,12 +4,12 @@ name: Publish Python 🐍 distributions 📦 to PyPI
 on:
 # automatically running github actions when push a tag
 
-  push:
-    tags:
-      - '*'
 #  push:
-#    branches:
-#      - development
+#    tags:
+#      - '*'
+  push:
+    branches:
+      - master
 
 
 
