@@ -47,7 +47,7 @@ project = 'TorchCP'
 copyright = '2023, ml-stat-Sustech'
 author = 'ml-stat-Sustech'
 with open(os.path.join(os.path.abspath('../../'), 'torchcp/VERSION')) as f:
-    release = f.read().strip()
+    version = f.read().strip()
 
 
 
