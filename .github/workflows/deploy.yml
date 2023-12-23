@@ -5,12 +5,13 @@ on:
   push:
     branches:
       - development
+
 jobs:
   build-n-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@development
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
