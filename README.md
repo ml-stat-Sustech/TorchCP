@@ -97,7 +97,7 @@ This project is licensed under the LGPL. The terms and conditions can be found i
 
 ## Citation
 
-We will release the technical report of TorchCP If you find our repository useful for your research, please consider citing our paper:
+We will release the technical report of TorchCP recently. If you find our repository useful for your research, please consider citing our paper:
 
 ```
 @article{huang2023conformal,
