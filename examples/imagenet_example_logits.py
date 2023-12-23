@@ -24,7 +24,8 @@ from torchcp.utils import fix_randomness
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--predictors', default="Standard", help="Standard | ClassWise | Cluster")
+    parser.add_argument('--alpha', default=0.1, type=float)
+    parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
     parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
     parser.add_argument('--kreg', default=0, type=int)
@@ -79,6 +80,8 @@ if __name__ == '__main__':
     test_labels = torch.stack([sample[1] for sample in val_data])
 
     num_classes = 1000
+    alpha = args.alpha
+    print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
     if args.score == "THR":
         score_function = THR()
     elif args.score == "APS":
@@ -91,7 +94,7 @@ if __name__ == '__main__':
         score_function = Margin()
     else:
         raise NotImplementedError
-    alpha = 0.1
+    
     if args.predictor == "Standard":
         predictor = SplitPredictor(score_function, model=None)
     elif args.predictor == "ClassWise":

@@ -80,8 +80,7 @@ class ClusterPredictor(SplitPredictor):
             # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels)
             kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10).fit(X=embeddings.detach().cpu().numpy(),
-                                                                                sample_weight=np.sqrt(
-                                                                                    class_cts.detach().cpu().numpy()))
+                                                                                sample_weight=np.sqrt(class_cts.detach().cpu().numpy()))
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_, device=self._device)
 
             cluster_assignments = - torch.ones((self.num_classes,), dtype=torch.int32, device=self._device)
@@ -267,35 +266,13 @@ class ClusterPredictor(SplitPredictor):
         :return: the conformal threshold of each class
         '''
 
-        num_samples = len(cal_true_labels)
         q_hats = torch.zeros((num_classes,), device=self._device)  # q_hats[i] = quantile for class i
-        class_cts = torch.zeros((num_classes,), device=self._device)
         for k in range(num_classes):
 
             # Only select data for which k is true class
             idx = (cal_true_labels == k)
-
-            if len(cal_class_scores.shape) == 2:
-                scores = cal_class_scores[idx, k]
-            else:
-                scores = cal_class_scores[idx]
-
-            class_cts[k] = scores.shape[0]
-            if len(scores) == 0:
-                assert default_qhat is not None, (f"Class/cluster {k} does not appear in the calibration set, so the "
-                                                  f"quantile for this class cannot be computed. Please specify a value "
-                                                  f"for default_qhat to use in this case.")
-                q_hats[k] = default_qhat
-            else:
-                num_samples = len(scores)
-                val = torch.ceil((num_samples + 1) * (1 - alpha)).to(self._device) / num_samples
-                if val > 1:
-                    assert default_qhat is not None, (f"Class/cluster {k} does not appear enough times to compute a "
-                                                      f"proper quantile. Please specify a value for default_qhat to "
-                                                      f"use in this case.")
-                    q_hats[k] = default_qhat
-                else:
-                    q_hats[k] = torch.quantile(scores, val)
+            scores = cal_class_scores[idx]
+            q_hats[k] = self._calculate_conformal_value(scores, alpha)
         if -1 in cal_true_labels:
             q_hats = torch.concatenate((q_hats, torch.tensor([null_qhat], device=self._device)))
 

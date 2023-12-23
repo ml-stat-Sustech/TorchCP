@@ -47,7 +47,10 @@ import torchcp
 project = 'TorchCP'
 copyright = '2023, ml-stat-Sustech'
 author = 'ml-stat-Sustech'
-release = '0.1.1'
+with open(os.path.join(os.path.abspath('../../'), 'torchcp/VERSION')) as f:
+    release = f.read().strip()
+
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

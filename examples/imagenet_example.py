@@ -23,11 +23,13 @@ from torchcp.utils import fix_randomness
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--predictors', default="Standard", help="Standard | ClassWise | Cluster")
+    parser.add_argument('--alpha', default=0.1, type=float)
+    parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
     parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
     parser.add_argument('--penalty', default=1, type=float)
-    parser.add_argument('--weight', default=1, type=float)
     parser.add_argument('--kreg', default=0, type=int)
+    parser.add_argument('--weight', default=0.2, type=int)
+    parser.add_argument('--split', default="random", type=str, help="proportional | doubledip | random")
     args = parser.parse_args()
 
     fix_randomness(seed=args.seed)
@@ -53,6 +55,8 @@ if __name__ == '__main__':
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
 
+    alpha = args.alpha
+    print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
     num_classes = 1000
     if args.score == "THR":
         score_function = THR()
@@ -62,7 +66,7 @@ if __name__ == '__main__':
         score_function = RAPS(args.penalty, args.kreg)
     elif args.score == "SAPS":
         score_function = SAPS(weight=args.weight)
-    alpha = 0.1
+
     if args.predictor == "Standard":
         predictor = SplitPredictor(score_function, model)
     elif args.predictor == "ClassWise":
