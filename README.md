@@ -43,8 +43,11 @@ TorchCP is still under active development. We will add the following features/it
 
 ## Installation
 
-TorchCP is developed with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
-
+TorchCP is deveoped with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
+```
+pip install torchcp
+```
+To install from Pypi-test server, run
 ```
 pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 ```
