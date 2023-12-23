@@ -12,11 +12,10 @@ from torchcp.classification.predictors.base import BasePredictor
 
 
 class SplitPredictor(BasePredictor):
-    def __init__(self, score_function, model=None, temperature=1):
+    def __init__(self, score_function, model=None):
         super().__init__(score_function, model)
 
-        #############################
-
+    #############################
     # The calibration process
     ############################
     def calibrate(self, cal_dataloader, alpha):

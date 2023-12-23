@@ -28,8 +28,6 @@ class WeightedPredictor(SplitPredictor):
         self.alpha = None
 
     def calibrate(self, cal_dataloader, alpha):
-        
-        self.cal_dataloader = cal_dataloader
         logits_list = []
         labels_list = []
         cal_features_list = []

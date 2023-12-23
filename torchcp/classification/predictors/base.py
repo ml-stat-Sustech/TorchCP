@@ -64,17 +64,3 @@ class BasePredictor(object):
             return torch.argwhere(scores < q_hat).reshape(-1).tolist()
         else:
             return torch.argwhere(scores < q_hat).tolist()
-
-    def __get_device(self, model):
-        """
-        If model exists, the default device is the device of model. If model is None, the default device is GPU.
-        """
-        if model == None:
-            if not torch.cuda.is_available():
-                device = torch.device("cpu")
-            else:
-                cuda_idx = torch.cuda.current_device()
-                device = torch.device(f"cuda:{cuda_idx}")
-        else:
-            device = next(model.parameters()).device
-        return device
