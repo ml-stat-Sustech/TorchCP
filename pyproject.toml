@@ -25,3 +25,6 @@ commitizen = "^1.17.1"
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+[project]
+readme = "README.md"
