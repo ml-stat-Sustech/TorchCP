@@ -19,7 +19,7 @@ def coverage_rate(prediction_intervals, y_truth):
 
 
 @METRICS_REGISTRY.register()
-def average_size(prediction_intervals, y_truth):
+def average_size(prediction_intervals):
     return torch.abs(prediction_intervals[:, 1] - prediction_intervals[:, 0]).mean().item()
 
 

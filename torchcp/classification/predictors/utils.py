@@ -8,7 +8,7 @@ def build_DomainDetecor(in_dim, out_dim, device):
 
 
 class FNN(nn.Module):
-    def __init__(self, n_in, n_out, n_hiddens, n_layers, path_pretrained=None):
+    def __init__(self, n_in, n_out, n_hiddens, n_layers):
         super().__init__()
 
         models = []

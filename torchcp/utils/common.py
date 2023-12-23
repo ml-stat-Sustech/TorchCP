@@ -11,7 +11,7 @@ import random
 import numpy as np
 import torch
 
-__all__ = ["fix_randomness", "DimensionError"]
+__all__ = ["fix_randomness", "DimensionError", "get_device"]
 
 
 def fix_randomness(seed=0):
@@ -34,9 +34,11 @@ def get_device(model):
     """
     Get the device of Torch model.
 
-    :param model: a Pytorch model. If None, it uses GPU when the cuda is available, otherwise it uses CPU.
+    :param model: a Pytorch model. If None, it uses GPU when the cuda is available, otherwise it uses CPU。
+
+    :return: the device in use
     """
-    if model == None:
+    if model is None:
         if not torch.cuda.is_available():
             device = torch.device("cpu")
         else:

@@ -28,20 +28,20 @@ class ACI(SplitPredictor):
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         self.scores = torch.maximum(predicts[:, 0] - y_truth, y_truth - predicts[:, 1])
         self.alpha = alpha
-        if self.alpha_t == None:
+        if self.alpha_t is None:
             self.alpha_t = alpha
 
     def predict(self, x, y_t=None, pred_interval_t=None):
         """
         
-        :param x: input features.
+        :param x: input features at the time t+1.
         :param y_t: the truth value at the time t.
         :param pred_interval_t: the prediction interval for the time t.
         """
         self._model.eval()
         x = x.to(self._device)
 
-        if y_t == None:
+        if y_t is None:
             err_t = self.alpha
         else:
             if len(y_t.shape) == 0:

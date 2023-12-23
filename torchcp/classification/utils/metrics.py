@@ -72,7 +72,6 @@ def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
     topk = []
     for index, ele in enumerate(logits):
         I = ele.argsort(descending=True)
-        # print(labels[index])
         target = labels[index]
         topk.append(np.where((I - target.view(-1, 1).numpy()) == 0)[1] + 1)
         correct_array[index] = 1 if labels[index] in prediction_sets[index] else 0
@@ -97,7 +96,6 @@ def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
 
             ccss_diff[str(stratum)]['cvg'] = cvg
             ccss_diff[str(stratum)]['sz'] = sz
-            # 这个值越小越好
             stratum_violation = max(0, (1 - alpha) - cvg)
             diff_violation = max(diff_violation, stratum_violation)
 
@@ -106,7 +104,6 @@ def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
         temp_index = np.argwhere(topk == i)
         if len(temp_index) > 0:
             temp_index = temp_index[:, 0]
-            # 这个值越小越好
             stratum_violation = max(0, (1 - alpha) - np.mean(correct_array[temp_index]))
             diff_violation_one = max(diff_violation_one, stratum_violation)
     return diff_violation, diff_violation_one, ccss_diff

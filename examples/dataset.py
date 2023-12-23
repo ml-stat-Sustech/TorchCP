@@ -24,7 +24,6 @@ def build_dataset(dataset_name, transform=None, mode="train"):
 
         dataset = dset.ImageFolder(data_dir + "/imagenet/val",
                                    transform)
-        num_classes = 1000
     elif dataset_name == 'imagenetv2':
         if transform == None:
             transform = trn.Compose([

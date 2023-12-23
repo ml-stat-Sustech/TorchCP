@@ -56,7 +56,8 @@ if __name__ == '__main__':
     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
 
     alpha = args.alpha
-    print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
+    print(
+        f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
     num_classes = 1000
     if args.score == "THR":
         score_function = THR()
@@ -66,6 +67,8 @@ if __name__ == '__main__':
         score_function = RAPS(args.penalty, args.kreg)
     elif args.score == "SAPS":
         score_function = SAPS(weight=args.weight)
+    else:
+        raise NotImplementedError
 
     if args.predictor == "Standard":
         predictor = SplitPredictor(score_function, model)
@@ -73,6 +76,8 @@ if __name__ == '__main__':
         predictor = ClassWisePredictor(score_function, model)
     elif args.predictor == "Cluster":
         predictor = ClusterPredictor(score_function, model, args.seed)
+    else:
+        raise NotImplementedError
     print(f"The size of calibration set is {len(cal_dataset)}.")
     predictor.calibrate(cal_data_loader, alpha)
 

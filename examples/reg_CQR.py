@@ -69,6 +69,6 @@ x = torch.cat(x_list).float()
 metrics = Metrics()
 print("Etestuating prediction sets...")
 print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}.")
-print(f"Average_size: {metrics('average_size')(predicts, test_y)}.")
+print(f"Average_size: {metrics('average_size')(predicts)}.")
 
 # print(predictors.evaluate(test_data_loader))

@@ -22,7 +22,7 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model=None):
+    def __init__(self, score_function, model=None, temperature=1):
         """
         :param score_function: non-conformity score function.
         :param model: a deep learning model.
@@ -32,7 +32,7 @@ class BasePredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
-        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("Identity")()
+        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("TS")(temperature)
 
     @abstractmethod
     def calibrate(self, cal_dataloader, alpha):
@@ -65,16 +65,3 @@ class BasePredictor(object):
         else:
             return torch.argwhere(scores < q_hat).tolist()
 
-    def __get_device(self, model):
-        """
-        If model exists, the default device is the device of model. If model is None, the default device is GPU.
-        """
-        if model == None:
-            if not torch.cuda.is_available():
-                device = torch.device("cpu")
-            else:
-                cuda_idx = torch.cuda.current_device()
-                device = torch.device(f"cuda:{cuda_idx}")
-        else:
-            device = next(model.parameters()).device
-        return device
