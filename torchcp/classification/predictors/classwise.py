@@ -16,8 +16,8 @@ class ClassWisePredictor(SplitPredictor):
     paper: https://ieeexplore.ieee.org/document/6784618
     """
 
-    def __init__(self, score_function, model=None, temperature=1):
-        super().__init__(score_function, model, temperature)
+    def __init__(self, score_function, model=None):
+        super(ClassWisePredictor, self).__init__(score_function, model)
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):
