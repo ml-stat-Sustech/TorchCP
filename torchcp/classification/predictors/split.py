@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
+import warnings
 import math
 import torch
 
@@ -11,11 +12,10 @@ from torchcp.classification.predictors.base import BasePredictor
 
 
 class SplitPredictor(BasePredictor):
-    def __init__(self, score_function, model=None, temperature=1):
+    def __init__(self, score_function, model=None):
         super().__init__(score_function, model)
 
-        #############################
-
+    #############################
     # The calibration process
     ############################
     def calibrate(self, cal_dataloader, alpha):
@@ -35,13 +35,30 @@ class SplitPredictor(BasePredictor):
     def calculate_threshold(self, logits, labels, alpha):
         if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
-        self.scores = logits.new_zeros(logits.shape[0])
+        scores = logits.new_zeros(logits.shape[0])
         for index, (x, y) in enumerate(zip(logits, labels)):
-            self.scores[index] = self.score_function(x, y)
-        qunatile_value = math.ceil(self.scores.shape[0] + 1) * (1 - alpha) / self.scores.shape[0]
+            scores[index] = self.score_function(x, y)
+        self.q_hat = self._calculate_conformal_value(scores, alpha)
+        
+    def _calculate_conformal_value(self, scores, alpha):
+        """
+        Calculate the 1-alpha quantile of scores.
+        
+        :param scores: non-conformity scores.
+        :param alpha: a significance level.
+        
+        :return: the threshold which is use to construct prediction sets.
+        """
+        if len(scores) == 0:
+            warnings.warn("The shape of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as torch.inf.")
+            return torch.inf
+        qunatile_value = math.ceil(scores.shape[0] + 1) * (1 - alpha) / scores.shape[0]
+        
         if qunatile_value > 1:
-            qunatile_value = 1
-        self.q_hat = torch.quantile(self.scores, qunatile_value).to(self._device)
+            warnings.warn("The value of quantile exceed 1. It should be a value in (0,1). To avoid program crash, the threshold is set as torch.inf.")
+            return torch.inf
+        
+        return torch.quantile(scores, qunatile_value).to(self._device)
 
     #############################
     # The prediction process

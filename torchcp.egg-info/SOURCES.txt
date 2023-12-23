@@ -3,6 +3,7 @@ LICENSE
 LICENSE.GPL
 MANIFEST.in
 README.md
+pyproject.toml
 setup.cfg
 setup.py
 examples/__init__.py
@@ -15,6 +16,10 @@ examples/reg_CQR.py
 examples/reg_aci.py
 examples/reg_splitCP.py
 examples/utils.py
+examples/clip/__init__.py
+examples/clip/clip.py
+examples/clip/model.py
+examples/clip/simple_tokenizer.py
 torchcp/__init__.py
 torchcp.egg-info/PKG-INFO
 torchcp.egg-info/SOURCES.txt
