@@ -92,7 +92,7 @@ You may find more tutorials in [`examples`](https://github.com/ml-stat-Sustech/T
 
 ## Documentation
 
-The documentation webpage is on readthedocs  https://torchcp.readthedocs.io/en/lastest/index.html.
+The documentation webpage is on readthedocs  https://torchcp.readthedocs.io/en/latest/index.html.
 
 
 ## License
