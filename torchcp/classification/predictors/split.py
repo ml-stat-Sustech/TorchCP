@@ -39,9 +39,6 @@ class SplitPredictor(BasePredictor):
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         scores = self.score_function(logits,labels)
-        # scores = logits.new_zeros(logits.shape[0])
-        # for index, (x, y) in enumerate(zip(logits, labels)):
-        #     scores[index] = self.score_function(x, y)
         self.q_hat = self._calculate_conformal_value(scores, alpha)
         
     def _calculate_conformal_value(self, scores, alpha):
@@ -90,7 +87,7 @@ class SplitPredictor(BasePredictor):
 
         :return: prediction sets
         """
-        scores = self.score_function.predict(logits).to(self._device)
+        scores = self.score_function(logits).to(self._device)
         if q_hat is None:
             S = self._generate_prediction_set(scores, self.q_hat)
         else:
