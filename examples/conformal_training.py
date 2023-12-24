@@ -71,7 +71,6 @@ if __name__ == '__main__':
             criterion = ConfTr(weights=0.01,
                                predictor=predictor,
                                alpha=0.05,
-                               device=device,
                                fraction=0.5,
                                loss_types="valid",
                                base_loss_fn=nn.CrossEntropyLoss())

@@ -45,7 +45,6 @@ class RAPS(APS):
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)
         return scores
     
-
     
     def _calculate_single_label(self, probs, y):    
         indices, ordered, cumsum = self._sort_sum(probs)    
