@@ -25,3 +25,4 @@ _tutorials/
 *.xml
 .history
 docs/build
+examples/clip

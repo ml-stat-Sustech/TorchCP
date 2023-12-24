@@ -36,9 +36,12 @@ class SplitPredictor(BasePredictor):
     def calculate_threshold(self, logits, labels, alpha):
         if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
-        scores = logits.new_zeros(logits.shape[0])
-        for index, (x, y) in enumerate(zip(logits, labels)):
-            scores[index] = self.score_function(x, y)
+        logits = logits.to(self._device)
+        labels = labels.to(self._device)
+        scores = self.score_function(logits,labels)
+        # scores = logits.new_zeros(logits.shape[0])
+        # for index, (x, y) in enumerate(zip(logits, labels)):
+        #     scores[index] = self.score_function(x, y)
         self.q_hat = self._calculate_conformal_value(scores, alpha)
         
     def _calculate_conformal_value(self, scores, alpha):
@@ -51,7 +54,7 @@ class SplitPredictor(BasePredictor):
         :return: the threshold which is use to construct prediction sets.
         """
         if len(scores) == 0:
-            warnings.warn("The shape of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as torch.inf.")
+            warnings.warn("The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as torch.inf.")
             return torch.inf
         qunatile_value = math.ceil(scores.shape[0] + 1) * (1 - alpha) / scores.shape[0]
         
@@ -74,9 +77,7 @@ class SplitPredictor(BasePredictor):
         if self._model != None:
             x_batch = self._model(x_batch.to(self._device)).float()
         x_batch = self._logits_transformation(x_batch).detach()
-        sets = []
-        for index, logits in enumerate(x_batch):
-            sets.append(self.predict_with_logits(logits))
+        sets =  self.predict_with_logits(x_batch)
         return sets
 
     def predict_with_logits(self, logits, q_hat=None):
@@ -89,7 +90,6 @@ class SplitPredictor(BasePredictor):
 
         :return: prediction sets
         """
-        
         scores = self.score_function.predict(logits).to(self._device)
         if q_hat is None:
             S = self._generate_prediction_set(scores, self.q_hat)

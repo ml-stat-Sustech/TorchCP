@@ -106,10 +106,12 @@ if __name__ == '__main__':
 
     # test examples
     print("Testing examples...")
-    prediction_sets = []
-    for index, ele in enumerate(test_logits):
-        prediction_set = predictor.predict_with_logits(ele)
-        prediction_sets.append(prediction_set)
+    # prediction_sets = []
+    # for index, ele in enumerate(test_logits):
+    #     prediction_set = predictor.predict_with_logits(ele)
+    #     prediction_sets.append(prediction_set)
+        
+    prediction_sets = predictor.predict_with_logits(test_logits)
 
     metrics = Metrics()
     print("Evaluating prediction sets...")

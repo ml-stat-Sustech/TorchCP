@@ -30,19 +30,36 @@ class SAPS(APS):
         probs = self.transform(logits)
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
-        idx = torch.where(indices == y)[0][0]
-        U = torch.rand(1).to(logits.device)
-        if idx == torch.tensor(0):
-            return U * cumsum[idx]
-        else:
-            return self.__weight * (idx - U) + ordered[0]
+        return self.__compute_score(indices, y, cumsum, ordered)
 
     def predict(self, logits):
         probs = self.transform(logits)
         I, ordered, _ = self._sort_sum(probs)
-        ordered[1:] = self.__weight
+        if len(logits.shape) == 1:
+            ordered[1:] = self.__weight
+        else:
+            ordered[...,1:] = self.__weight
         cumsum = torch.cumsum(ordered, dim=-1)
-        U = torch.rand(probs.shape[0]).to(logits.device)
+        U = torch.rand(probs.shape)
         ordered_scores = cumsum - ordered * U
-
-        return ordered_scores[torch.sort(I, descending=False, dim=-1)[1]]
+        _, sorted_indices = torch.sort(I, descending=False, dim=-1)
+        scores = ordered_scores.gather(dim=-1, index=sorted_indices)
+        return scores
+    
+    def __compute_score(self, indices, y, cumsum, ordered):
+        if len(indices.shape) <= 2 :
+            if len(indices.shape) == 1:
+                idx = torch.where(indices == y)[0]
+                U = torch.rand(1).to(indices.device)
+                scores_first_rank  = U * cumsum[idx]
+                scores_usual  = self.__weight * (idx - U) + ordered[0]
+                return torch.where(idx == 0, scores_first_rank, scores_usual)
+            else:
+                U = torch.rand(indices.shape[0], device = indices.device)
+                idx = torch.where(indices == y.view(-1, 1))
+                scores_first_rank  = U * cumsum[idx] 
+                scores_usual  = self.__weight * (idx[1] - U) + ordered[:,0]
+                return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
+            
+        else:
+            raise RuntimeError(" The dimension of logits must be less than 2.")
