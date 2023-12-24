@@ -20,7 +20,7 @@ class APS(BaseScore):
     """
 
     def __init__(self):
-        super(APS, self).__init__()
+        pass
 
     def __call__(self, logits, y=None):
         assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."

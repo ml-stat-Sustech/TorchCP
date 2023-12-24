@@ -12,10 +12,7 @@ from torchcp.classification.scores.aps import APS
 class Margin(APS):
 
     def __init__(self, ) -> None:
-        """
-        param score_type: either "softmax" "Identity", "log_softmax" or "log". Default: "softmax". A transformation for logits.
-        """
-        super().__init__()
+        pass
 
         
     def _calculate_single_label(self, probs, y):
@@ -26,10 +23,9 @@ class Margin(APS):
         return second_highest_prob - target_prob
             
 
-    def _calculate_all_label(self, logits):
-        probs = torch.softmax(logits, dim=-1)
+    def _calculate_all_label(self, probs):
         temp_probs = probs.unsqueeze(1).repeat(1, probs.shape[1], 1)
-        indices = torch.arange(probs.shape[1]).to(logits.device)
+        indices = torch.arange(probs.shape[1]).to(probs.device)
         temp_probs[None, indices, indices] = torch.finfo(torch.float32).min
         scores = torch.max(temp_probs, dim=-1).values - probs
         return scores
