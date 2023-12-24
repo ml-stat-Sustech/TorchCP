@@ -59,7 +59,7 @@ class SplitPredictor(BasePredictor):
         qunatile_value = math.ceil(scores.shape[0] + 1) * (1 - alpha) / scores.shape[0]
         
         if qunatile_value > 1:
-            warnings.warn("The value of quantile exceed 1. It should be a value in (0,1). To avoid program crash, the threshold is set as torch.inf.")
+            warnings.warn("The value of quantile exceeds 1. It should be a value in (0,1). To avoid program crash, the threshold is set as torch.inf.")
             return torch.inf
         
         return torch.quantile(scores, qunatile_value).to(self._device)

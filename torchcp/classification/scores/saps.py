@@ -40,7 +40,7 @@ class SAPS(APS):
         else:
             ordered[...,1:] = self.__weight
         cumsum = torch.cumsum(ordered, dim=-1)
-        U = torch.rand(probs.shape)
+        U = torch.rand(probs.shape, device=logits.device)
         ordered_scores = cumsum - ordered * U
         _, sorted_indices = torch.sort(I, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)

@@ -47,7 +47,7 @@ TorchCP is developed with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simp
 ```
 pip install torchcp
 ```
-To install from Pypi-test server, run
+To install from TestPyPI server, run
 ```
 pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 ```
@@ -92,7 +92,7 @@ You may find more tutorials in [`examples`](https://github.com/ml-stat-Sustech/T
 
 ## Documentation
 
-The documentation webpage is on readthedocs  https://torchcp.readthedocs.io/en/latest/index.html.
+The documentation webpage is on readthedocs https://torchcp.readthedocs.io/en/latest/index.html.
 
 
 ## License

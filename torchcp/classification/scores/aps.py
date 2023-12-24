@@ -31,7 +31,7 @@ class APS(BaseScoreFunction):
     def predict(self, logits):
         probs = self.transform(logits)
         I, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(probs.shape)
+        U = torch.rand(probs.shape, device=logits.device)
         ordered_scores = cumsum - ordered * U
         _, sorted_indices = torch.sort(I, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)

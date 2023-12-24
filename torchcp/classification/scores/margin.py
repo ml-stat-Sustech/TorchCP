@@ -31,8 +31,9 @@ class Margin(BaseScoreFunction):
             second_highest_prob = torch.max(probs, dim=-1).values
             return second_highest_prob - target_prob
         elif len(logits.shape) == 2:
-            target_prob = probs[torch.arange(probs.size(0)), y].clone()
-            probs[torch.arange(probs.size(0)),y] = -1
+            row_indices = torch.arange(probs.size(0), device = logits.device)
+            target_prob = probs[row_indices, y].clone()
+            probs[row_indices, y] = -1
             second_highest_prob = torch.max(probs, dim=-1).values
             return second_highest_prob - target_prob
         else:

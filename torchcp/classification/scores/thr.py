@@ -34,7 +34,7 @@ class THR(BaseScoreFunction):
 
     def __call__(self, logits, y):
         if len(logits.shape) > 1:
-            return 1 - self.transform(logits)[torch.arange(y.shape[0]).to(logits.device), y]
+            return 1 - self.transform(logits)[torch.arange(y.shape[0], device = logits.device), y]
         else:
             return 1 - self.transform(logits)[y]
 

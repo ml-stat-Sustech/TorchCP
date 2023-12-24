@@ -80,6 +80,7 @@ if __name__ == '__main__':
         raise NotImplementedError
     print(f"The size of calibration set is {len(cal_dataset)}.")
     predictor.calibrate(cal_data_loader, alpha)
+    # predictor.evaluate(test_data_loader)
 
     # test examples
     print("Testing examples...")
