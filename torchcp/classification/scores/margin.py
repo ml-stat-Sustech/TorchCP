@@ -17,14 +17,14 @@ class Margin(BaseScoreFunction):
         """
         super().__init__()
 
-        self.transform = lambda x: torch.softmax(x, dim=len(x.shape) - 1)
 
     def _compute_score(self, probs, index):
         
         pass
 
     def __call__(self, logits, y):
-        probs = self.transform(logits)
+        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
+        probs = torch.softmax(logits, dim=-1)
         if len(logits.shape) == 1:
             target_prob = probs[y].clone()
             probs[y] = -1
@@ -36,14 +36,12 @@ class Margin(BaseScoreFunction):
             probs[row_indices, y] = -1
             second_highest_prob = torch.max(probs, dim=-1).values
             return second_highest_prob - target_prob
-        else:
-            raise RuntimeError(" The dimension of logits must be less than 2.")
             
 
-
     def predict(self, logits):
-        probs = self.transform(logits)
+        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
         
+        probs = torch.softmax(logits, dim=-1)
         if len(probs.shape) == 1:
             temp_probs = probs.repeat(logits.shape[0], 1)
             indices = torch.arange(logits.shape[0]).to(logits.device)
@@ -54,8 +52,6 @@ class Margin(BaseScoreFunction):
             indices = torch.arange(probs.shape[1]).to(logits.device)
             temp_probs[None, indices, indices] = torch.finfo(torch.float32).min
             scores = torch.max(temp_probs, dim=-1).values - probs
-        else:
-            raise RuntimeError(" The dimension of logits must be less than 2.")
         return scores
     
 

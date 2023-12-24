@@ -19,17 +19,16 @@ class APS(BaseScoreFunction):
     paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
     """
 
-    def __init__(self, ):
+    def __init__(self):
         super(APS, self).__init__()
-        self.transform = lambda x: torch.softmax(x, dim= - 1)
 
     def __call__(self, logits, y):
-        probs = self.transform(logits)
+        probs = torch.softmax(logits, dim=-1)
         indices, ordered, cumsum = self._sort_sum(probs)
         return self.__compute_score(indices, y, cumsum, ordered)
 
     def predict(self, logits):
-        probs = self.transform(logits)
+        probs = torch.softmax(logits, dim=-1)
         I, ordered, cumsum = self._sort_sum(probs)
         U = torch.rand(probs.shape, device=logits.device)
         ordered_scores = cumsum - ordered * U
@@ -46,20 +45,20 @@ class APS(BaseScoreFunction):
         return indices, ordered, cumsum
 
     def __compute_score(self, indices, y, cumsum, ordered):
-        if len(indices.shape) <= 2 :
-            if len(indices.shape) == 1:
-                idx = torch.where(indices == y)[0]
-                U = torch.rand(1).to(indices.device)
-                scores_first_rank  = U * cumsum[idx]
-                scores_usual  = U * ordered[idx] + cumsum[idx-1]
-                return torch.where(idx == 0, scores_first_rank, scores_usual)
-            else:
-                U = torch.rand(indices.shape[0], device = indices.device)
-                idx = torch.where(indices == y.view(-1, 1))
-                scores_first_rank  = U * cumsum[idx]
-                idx_minus_one = (idx[0], idx[1] - 1)
-                scores_usual  = U * ordered[idx] + cumsum[idx_minus_one]
-                return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
-            
+        assert len(indices.shape) <= 2, "The dimension of logits must be less than 2."
+
+        if len(indices.shape) == 1:
+            idx = torch.where(indices == y)[0]
+            U = torch.rand(1).to(indices.device)
+            scores_first_rank  = U * cumsum[idx]
+            scores_usual  = U * ordered[idx] + cumsum[idx-1]
+            return torch.where(idx == 0, scores_first_rank, scores_usual)
         else:
-            raise RuntimeError(" The dimension of logits must be less than 2.")
+            U = torch.rand(indices.shape[0], device = indices.device)
+            idx = torch.where(indices == y.view(-1, 1))
+            scores_first_rank  = U * cumsum[idx]
+            idx_minus_one = (idx[0], idx[1] - 1)
+            scores_usual  = U * ordered[idx] + cumsum[idx_minus_one]
+            return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
+            
+

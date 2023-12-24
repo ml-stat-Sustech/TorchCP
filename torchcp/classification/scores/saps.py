@@ -23,17 +23,17 @@ class SAPS(APS):
         """
         super(SAPS, self).__init__()
         if weight <= 0:
-            raise ValueError("param 'weight' must be a positive value.")
+            raise ValueError("The parameter 'weight' must be a positive value.")
         self.__weight = weight
 
     def __call__(self, logits, y):
-        probs = self.transform(logits)
+        probs = torch.softmax(logits, dim=-1)
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
         return self.__compute_score(indices, y, cumsum, ordered)
 
     def predict(self, logits):
-        probs = self.transform(logits)
+        probs = torch.softmax(logits, dim=-1)
         I, ordered, _ = self._sort_sum(probs)
         if len(logits.shape) == 1:
             ordered[1:] = self.__weight
@@ -47,19 +47,18 @@ class SAPS(APS):
         return scores
     
     def __compute_score(self, indices, y, cumsum, ordered):
-        if len(indices.shape) <= 2 :
-            if len(indices.shape) == 1:
-                idx = torch.where(indices == y)[0]
-                U = torch.rand(1).to(indices.device)
-                scores_first_rank  = U * cumsum[idx]
-                scores_usual  = self.__weight * (idx - U) + ordered[0]
-                return torch.where(idx == 0, scores_first_rank, scores_usual)
-            else:
-                U = torch.rand(indices.shape[0], device = indices.device)
-                idx = torch.where(indices == y.view(-1, 1))
-                scores_first_rank  = U * cumsum[idx] 
-                scores_usual  = self.__weight * (idx[1] - U) + ordered[:,0]
-                return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
-            
+        assert len(indices.shape) <= 2, "The dimension of logits must be less than 2."
+
+        if len(indices.shape) == 1:
+            idx = torch.where(indices == y)[0]
+            U = torch.rand(1).to(indices.device)
+            scores_first_rank  = U * cumsum[idx]
+            scores_usual  = self.__weight * (idx - U) + ordered[0]
+            return torch.where(idx == 0, scores_first_rank, scores_usual)
         else:
-            raise RuntimeError(" The dimension of logits must be less than 2.")
+            U = torch.rand(indices.shape[0], device = indices.device)
+            idx = torch.where(indices == y.view(-1, 1))
+            scores_first_rank  = U * cumsum[idx] 
+            scores_usual  = self.__weight * (idx[1] - U) + ordered[:,0]
+            return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
+

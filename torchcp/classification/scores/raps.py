@@ -26,17 +26,17 @@ class RAPS(APS):
         :param kreg : the rank of regularization which is an integer in [0,labels_num].
         """
         if penalty <= 0:
-            raise ValueError("param 'penalty' must be a positive value.")
+            raise ValueError("The parameter 'penalty' must be a positive value.")
         if kreg < 0:
-            raise ValueError("param 'kreg' must be a nonnegative value.")
+            raise ValueError("The parameter 'kreg' must be a nonnegative value.")
         if type(kreg) != int:
-            raise TypeError("param 'kreg' must be a integer.")
+            raise TypeError("The parameter 'kreg' must be a integer.")
         super(RAPS, self).__init__()
         self.__penalty = penalty
         self.__kreg = kreg
 
     def __call__(self, logits, y):
-        probs = self.transform(logits)
+        probs = torch.softmax(logits, dim=-1)
         # sorting probabilities
         indices, ordered, cumsum = self._sort_sum(probs)
         return self.__compute_score(indices, y, cumsum, ordered)
@@ -44,7 +44,7 @@ class RAPS(APS):
         
 
     def predict(self, logits):
-        probs = self.transform(logits)
+        probs = torch.softmax(logits, dim=-1)
         I, ordered, cumsum = self._sort_sum(probs)
         U = torch.rand(probs.shape, device = logits.device)
         reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1, device=logits.device) - self.__kreg),torch.tensor(0).to(logits.device))
@@ -56,23 +56,21 @@ class RAPS(APS):
 
     
     def __compute_score(self, indices, y, cumsum, ordered):
-        if len(indices.shape) <= 2 :
-            if len(indices.shape) == 1:
-                idx = torch.where(indices == y)[0]
-                U = torch.rand(1, device=indices.device)
-                reg = torch.maximum(self.__penalty * (idx + 1 - self.__kreg), torch.tensor(0).to(indices.device))
-                scores_first_rank  = U * ordered[idx] + reg
-                scores_usual  = U * ordered[idx] + cumsum[idx-1] + reg
-                return torch.where(idx == 0, scores_first_rank, scores_usual)
-            else:
-                U = torch.rand(indices.shape[0], device = indices.device)
-                
-                idx = torch.where(indices == y.view(-1, 1))
-                reg = torch.maximum(self.__penalty * (idx[1] + 1 - self.__kreg), torch.tensor(0).to(indices.device))
-                scores_first_rank  = U * ordered[idx] + reg
-                idx_minus_one = (idx[0], idx[1] - 1) 
-                scores_usual  = U * ordered[idx] + cumsum[idx_minus_one] + reg
-                return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
-            
+        assert len(indices.shape) <= 2, "The dimension of logits must be less than 2."
+        if len(indices.shape) == 1:
+            idx = torch.where(indices == y)[0]
+            U = torch.rand(1, device=indices.device)
+            reg = torch.maximum(self.__penalty * (idx + 1 - self.__kreg), torch.tensor(0).to(indices.device))
+            scores_first_rank  = U * ordered[idx] + reg
+            scores_usual  = U * ordered[idx] + cumsum[idx-1] + reg
+            return torch.where(idx == 0, scores_first_rank, scores_usual)
         else:
-            raise RuntimeError(" The dimension of logits must be less than 2.")
+            U = torch.rand(indices.shape[0], device = indices.device)
+            
+            idx = torch.where(indices == y.view(-1, 1))
+            reg = torch.maximum(self.__penalty * (idx[1] + 1 - self.__kreg), torch.tensor(0).to(indices.device))
+            scores_first_rank  = U * ordered[idx] + reg
+            idx_minus_one = (idx[0], idx[1] - 1) 
+            scores_usual  = U * ordered[idx] + cumsum[idx_minus_one] + reg
+            return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
+
