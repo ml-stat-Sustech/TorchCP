@@ -20,13 +20,14 @@ class ClusterPredictor(SplitPredictor):
     paper: https://arxiv.org/abs/2306.09335
     """
 
-    def __init__(self, score_function, model=None, ratio_clustering="auto", num_clusters="auto", split='random', temperature= 1):
+    def __init__(self, score_function, model=None, ratio_clustering="auto", num_clusters="auto", split='random',
+                 temperature=1):
         """
 
         :param score_function: score functions of CP
         :param model: a deep learning model
-        :param cluster_ratio: The ratio of examples in the calibration dataset used to cluster classes
-        :param cluster_num: The number of clusters. If cluster_ratio is "auto", the number of clusters is automatically computed.
+        :param ratio_clustering: The ratio of examples in the calibration dataset used to cluster classes
+        :param num_clusters: The number of clusters. If cluster_ratio is "auto", the number of clusters is automatically computed.
         :param split: The method to split the dataset into clustering dataset and calibration set. split: How to split data between clustering step and calibration step. Options are 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability)
         """
 
@@ -36,14 +37,14 @@ class ClusterPredictor(SplitPredictor):
         self.__split = split
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha>=1 or alpha<=0:
+        if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         self.num_classes = logits.shape[1]
-        scores = logits.new_zeros(logits.shape[0])
-        for index, (x, y) in enumerate(zip(logits, labels)):
-            scores[index] = self.score_function(x, y)
+        scores = self.score_function(logits, labels)
+    
+
 
         alpha = torch.tensor(alpha, device=self._device)
         classes_statistics = torch.tensor([torch.sum(labels == k).item() for k in range(self.num_classes)],
@@ -80,7 +81,8 @@ class ClusterPredictor(SplitPredictor):
             # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels)
             kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10).fit(X=embeddings.detach().cpu().numpy(),
-                                                                                sample_weight=np.sqrt(class_cts.detach().cpu().numpy()))
+                                                                                sample_weight=np.sqrt(
+                                                                                    class_cts.detach().cpu().numpy()))
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_, device=self._device)
 
             cluster_assignments = - torch.ones((self.num_classes,), dtype=torch.int32, device=self._device)
@@ -260,12 +262,11 @@ class ClusterPredictor(SplitPredictor):
         :param alpha: Desired coverage level.
         :param null_qhat: Only used if -1 appears in cal_true_labels. null_qhat is assigned to class/cluster -1.
 
-        :return: the conformal threshold of each class
+        :return: the threshold of each class
         '''
 
         q_hats = torch.zeros((num_classes,), device=self._device)  # q_hats[i] = quantile for class i
         for k in range(num_classes):
-
             # Only select data for which k is true class
             idx = (cal_true_labels == k)
             scores = cal_class_scores[idx]

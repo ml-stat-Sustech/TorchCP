@@ -1,7 +1,5 @@
-include tests/*.py
-include external_tests/*.py
-include deepcp/VERSION
+include torchcp/VERSION
 include pytest.ini
 include LICENSE
 include LICENSE.GPL
-include deepcp_examples/*.ipynb
+include examples/*.py

@@ -21,16 +21,18 @@ class ClassWisePredictor(SplitPredictor):
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha>=1 or alpha<=0:
+        if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
+        logits = logits.to(self._device)
+        labels = labels.to(self._device)
         # Count the number of classes
-        labels_num = logits.shape[1]
-        self.q_hat = torch.zeros(labels_num,device=self._device)
-        for label in range(labels_num):
+        num_classes = logits.shape[1]
+        self.q_hat = torch.zeros(num_classes, device=self._device)
+        for label in range(num_classes):
             x_cal_tmp = logits[labels == label]
             y_cal_tmp = labels[labels == label]
-            scores = logits.new_zeros(x_cal_tmp.shape[0])                
-            for index, (x, y) in enumerate(zip(x_cal_tmp, y_cal_tmp)):
-                scores[index] = self.score_function(x, y)
+            scores = logits.new_zeros(x_cal_tmp.shape[0])
+                
+            scores = self.score_function(x_cal_tmp, y_cal_tmp)
 
             self.q_hat[label] = self._calculate_conformal_value(scores, alpha)

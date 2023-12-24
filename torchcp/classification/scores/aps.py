@@ -10,36 +10,34 @@
 
 import torch
 
-from torchcp.classification.scores.base import BaseScoreFunction
+from torchcp.classification.scores.base import BaseScore
 
 
-class APS(BaseScoreFunction):
+class APS(BaseScore):
     """
     Adaptive Prediction Sets (Romano et al., 2020)
     paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
     """
 
-    def __init__(self, ):
+    def __init__(self):
         super(APS, self).__init__()
-        self.transform = lambda x: torch.softmax(x, dim=len(x.shape) - 1)
 
     def __call__(self, logits, y):
-        probs = self.transform(logits)
+        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
+        if len(logits) == 1:
+            logits = logits.unsqueeze(0)
+        probs = torch.softmax(logits, dim=-1)
         indices, ordered, cumsum = self._sort_sum(probs)
-        if len(probs.shape) == 1:
-            return self._compute_score(indices, y, cumsum, ordered)
-        else:
-            scores = torch.zeros(probs.shape[0]).to(logits.device)
-            for i in range(probs.shape[0]):
-                scores[i] = self._compute_score(indices[i, :], y[i], cumsum[i, :], ordered[i, :])
-            return scores
+        return self.__compute_score(indices, y, cumsum, ordered)
 
     def predict(self, logits):
-        probs = self.transform(logits)
+        probs = torch.softmax(logits, dim=-1)
         I, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(probs.shape)
+        U = torch.rand(probs.shape, device=logits.device)
         ordered_scores = cumsum - ordered * U
-        return ordered_scores[torch.sort(I, descending=False, dim=-1)[1]]
+        _, sorted_indices = torch.sort(I, descending=False, dim=-1)
+        scores = ordered_scores.gather(dim=-1, index=sorted_indices)
+        return scores
 
     def _sort_sum(self, probs):
         # ordered: the ordered probabilities in descending order
@@ -49,10 +47,12 @@ class APS(BaseScoreFunction):
         cumsum = torch.cumsum(ordered, dim=-1)
         return indices, ordered, cumsum
 
-    def _compute_score(self, indices, y, cumsum, ordered):
-        idx = torch.where(indices == y)[0][0]
-        U = torch.rand(1).to(indices.device)
-        if idx == torch.tensor(0).to(indices.device):
-            return U * cumsum[idx]
-        else:
-            return U * ordered[idx] + cumsum[idx - 1]
+    def __compute_score(self, indices, y, cumsum, ordered):
+        U = torch.rand(indices.shape[0], device = indices.device)
+        idx = torch.where(indices == y.view(-1, 1))
+        scores_first_rank  = U * cumsum[idx]
+        idx_minus_one = (idx[0], idx[1] - 1)
+        scores_usual  = U * ordered[idx] + cumsum[idx_minus_one]
+        return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
+            
+

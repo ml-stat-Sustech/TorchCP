@@ -16,15 +16,17 @@ class WeightedPredictor(SplitPredictor):
     paper : https://arxiv.org/abs/1904.06019
     """
 
-    def __init__(self, score_function, model, image_encoder, temperature):
+    def __init__(self, score_function, model, image_encoder, domain_classifier=None, temperature=1):
         super().__init__(score_function, model, temperature)
 
-        self.image_encoder = image_encoder
+        self.image_encoder = image_encoder.to(self._device)
         #  non-conformity scores
         self.scores = None
         # significance level
         self.alpha = None
-
+        # Domain Classifier
+        self.domain_classifier = domain_classifier
+        
     def calibrate(self, cal_dataloader, alpha):
         logits_list = []
         labels_list = []
@@ -38,18 +40,16 @@ class WeightedPredictor(SplitPredictor):
                 labels_list.append(tmp_labels)
             logits = torch.cat(logits_list).float()
             labels = torch.cat(labels_list)
-            cal_features = torch.cat(cal_features_list).float()
-        self.source_image_features = cal_features
+            self.source_image_features = torch.cat(cal_features_list).float()
 
         self.calculate_threshold(logits, labels, alpha)
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha>=1 or alpha<=0:
+        if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         self.alpha = alpha
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)
-        for index, (x, y) in enumerate(zip(logits, labels)):
-            self.scores[index] = self.score_function(x, y)
+        self.scores[:logits.shape[0]] = self.score_function(logits, labels)
         self.scores[logits.shape[0]] = torch.tensor(torch.inf).to(self._device)
         self.scores_sorted = self.scores.sort()[0]
 
@@ -68,10 +68,10 @@ class WeightedPredictor(SplitPredictor):
             q_hat_batch = self.scores_sorted.expand([bs, -1]).gather(1, i_T).detach()
 
         logits = self._model(x_batch.to(self._device)).float()
-        logits_batch = self._logits_transformation(logits).detach()
+        logits = self._logits_transformation(logits).detach()
         sets = []
-        for index, (logits, q_hat) in enumerate(zip(logits_batch, q_hat_batch)):
-            sets.append(self.predict_with_logits(logits, q_hat))
+        for index, (logits_instance, q_hat) in enumerate(zip(logits, q_hat_batch)):
+            sets.append(self.predict_with_logits(logits_instance, q_hat))
         return sets
 
     def evaluate(self, val_dataloader):
@@ -87,38 +87,39 @@ class WeightedPredictor(SplitPredictor):
             target_image_features = torch.cat(val_features_list).float()
 
         ###############################
-        # Train domain detector
+        # Training domain detector
         ###############################
-        source_labels = torch.zeros(self.source_image_features.shape[0]).to(self._device)
-        target_labels = torch.ones(target_image_features.shape[0]).to(self._device)
+        if self.domain_classifier == None:
+            source_labels = torch.zeros(self.source_image_features.shape[0]).to(self._device)
+            target_labels = torch.ones(target_image_features.shape[0]).to(self._device)
 
-        input = torch.cat((self.source_image_features, target_image_features))
-        labels = torch.cat((source_labels, target_labels))
-        dataset = torch.utils.data.TensorDataset(input.float(), labels.float().long())
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1024, shuffle=True, pin_memory=False)
+            input = torch.cat((self.source_image_features, target_image_features))
+            labels = torch.cat((source_labels, target_labels))
+            dataset = torch.utils.data.TensorDataset(input.float(), labels.float().long())
+            data_loader = torch.utils.data.DataLoader(dataset, batch_size=1024, shuffle=True, pin_memory=False)
 
-        domain_detecor = build_DomainDetecor(target_image_features.shape[1], 2, self._device)
+            self.domain_classifier = build_DomainDetecor(target_image_features.shape[1], 2, self._device)
 
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(domain_detecor.parameters(), lr=0.001)
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.Adam(self.domain_classifier.parameters(), lr=0.001)
 
-        epochs = 10
-        for epoch in range(epochs):
-            loss_log = 0
-            accuracy_log = 0
-            for X_train, y_train in data_loader:
-                y_train = y_train.to(self._device)
-                outputs = domain_detecor(X_train.to(self._device))
-                loss = criterion(outputs, y_train.view(-1))
-                loss_log += loss.item() / len(data_loader)
-                predictions = torch.argmax(outputs, dim=1)
-                accuracy = torch.sum((predictions == y_train.view(-1))).item() / len(y_train)
-                accuracy_log += accuracy / len(data_loader)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+            epochs = 5
+            for epoch in range(epochs):
+                loss_log = 0
+                accuracy_log = 0
+                for X_train, y_train in data_loader:
+                    y_train = y_train.to(self._device)
+                    outputs = self.domain_classifier(X_train.to(self._device))
+                    loss = criterion(outputs, y_train.view(-1))
+                    loss_log += loss.item() / len(data_loader)
+                    predictions = torch.argmax(outputs, dim=1)
+                    accuracy = torch.sum((predictions == y_train.view(-1))).item() / len(y_train)
+                    accuracy_log += accuracy / len(data_loader)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
 
-        self.IW = IW(domain_detecor).to(self._device)
+        self.IW = IW(self.domain_classifier).to(self._device)
         w_cal = self.IW(self.source_image_features.to(self._device))
         self.w_sorted = w_cal.sort(descending=False)[0]
 

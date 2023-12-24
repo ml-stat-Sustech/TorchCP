@@ -8,7 +8,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class BaseScoreFunction(object):
+class BaseScore(object):
     """
     Abstract base class for all score functions.
 

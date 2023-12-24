@@ -63,5 +63,5 @@ class BasePredictor(object):
         if len(scores.shape) == 1:
             return torch.argwhere(scores < q_hat).reshape(-1).tolist()
         else:
-            return torch.argwhere(scores < q_hat).tolist()
+            return [torch.argwhere(scores[i] < q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
 

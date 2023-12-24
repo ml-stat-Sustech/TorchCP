@@ -6,10 +6,10 @@
 #
 import torch
 
-from torchcp.classification.scores.base import BaseScoreFunction
+from torchcp.classification.scores.base import BaseScore
 
 
-class Margin(BaseScoreFunction):
+class Margin(BaseScore):
 
     def __init__(self, ) -> None:
         """
@@ -17,27 +17,31 @@ class Margin(BaseScoreFunction):
         """
         super().__init__()
 
-        self.transform = lambda x: torch.softmax(x, dim=len(x.shape) - 1)
-
-    def _compute_score(self, probs, index):
-        target_prob = probs[index].clone()
-        probs[index] = -1
-        second_highest_prob = torch.max(probs, dim=-1).values
-        return second_highest_prob - target_prob
 
     def __call__(self, logits, y):
-        probs = self.transform(logits)
-        if len(logits.shape) > 1:
-            scores = torch.zeros(logits.shape[0]).to(logits.device)
-            for i in range(logits.shape[0]):
-                scores[i] = self._compute_score(probs[i], y[i])
-            return scores
-        else:
-            return self._compute_score(probs, y)
+        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
+        if len(logits) == 1:
+            logits = logits.unsqueeze(0)
+        probs = torch.softmax(logits, dim=-1)
+
+        row_indices = torch.arange(probs.size(0), device = logits.device)
+        target_prob = probs[row_indices, y].clone()
+        probs[row_indices, y] = -1
+        second_highest_prob = torch.max(probs, dim=-1).values
+        return second_highest_prob - target_prob
+            
 
     def predict(self, logits):
-        probs = self.transform(logits)
-        temp_probs = probs.repeat(logits.shape[0], 1)
-        indices = torch.arange(logits.shape[0])
-        temp_probs[indices, indices] = torch.finfo(torch.float32).min
-        return torch.max(temp_probs, dim=1).values - probs
+        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
+        if len(logits) == 1:
+            logits = logits.unsqueeze(0)
+        probs = torch.softmax(logits, dim=-1)
+        temp_probs = probs.unsqueeze(1).repeat(1, probs.shape[1], 1)
+        indices = torch.arange(probs.shape[1]).to(logits.device)
+        temp_probs[None, indices, indices] = torch.finfo(torch.float32).min
+        scores = torch.max(temp_probs, dim=-1).values - probs
+        return scores
+    
+
+
+
