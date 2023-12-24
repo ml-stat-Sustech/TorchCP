@@ -104,7 +104,7 @@ if __name__ == '__main__':
     print(f"The size of calibration set is {cal_labels.shape[0]}.")
     predictor.calculate_threshold(cal_logits, cal_labels, alpha)
 
-    print("Testing examples...")
+    # print("Testing examples...")
     # prediction_sets = []
     # for index, ele in enumerate(test_logits):
     #     prediction_set = predictor.predict_with_logits(ele)

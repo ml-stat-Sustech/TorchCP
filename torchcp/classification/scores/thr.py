@@ -33,10 +33,11 @@ class THR(BaseScore):
             raise NotImplementedError
 
     def __call__(self, logits, y):
-        if len(logits.shape) > 1:
-            return 1 - torch.softmax(logits, dim=-1)[torch.arange(y.shape[0], device = logits.device), y]
-        else:
-            return 1 - torch.softmax(logits, dim=-1)[y]
+        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
+        if len(logits) == 1:
+            logits = logits.unsqueeze(0)
+        return 1 - torch.softmax(logits, dim=-1)[torch.arange(y.shape[0], device = logits.device), y]
+
 
     def predict(self, logits):
         return 1 - torch.softmax(logits, dim=-1)
