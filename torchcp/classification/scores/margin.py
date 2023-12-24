@@ -6,10 +6,10 @@
 #
 import torch
 
-from torchcp.classification.scores.base import BaseScoreFunction
+from torchcp.classification.scores.base import BaseScore
 
 
-class Margin(BaseScoreFunction):
+class Margin(BaseScore):
 
     def __init__(self, ) -> None:
         """

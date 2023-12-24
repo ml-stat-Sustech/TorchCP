@@ -6,10 +6,10 @@
 #
 import torch
 
-from torchcp.classification.scores.base import BaseScoreFunction
+from torchcp.classification.scores.base import BaseScore
 
 
-class THR(BaseScoreFunction):
+class THR(BaseScore):
     """
     Threshold conformal predictors (Sadinle et al., 2016)
     paper : https://arxiv.org/abs/1609.00451

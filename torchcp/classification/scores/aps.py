@@ -10,10 +10,10 @@
 
 import torch
 
-from torchcp.classification.scores.base import BaseScoreFunction
+from torchcp.classification.scores.base import BaseScore
 
 
-class APS(BaseScoreFunction):
+class APS(BaseScore):
     """
     Adaptive Prediction Sets (Romano et al., 2020)
     paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
