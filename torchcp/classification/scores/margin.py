@@ -14,14 +14,12 @@ class Margin(APS):
     def __init__(self, ) -> None:
         pass
 
-        
-    def _calculate_single_label(self, probs, y):
-        row_indices = torch.arange(probs.size(0), device = probs.device)
-        target_prob = probs[row_indices, y].clone()
-        probs[row_indices, y] = -1
+    def _calculate_single_label(self, probs, label):
+        row_indices = torch.arange(probs.size(0), device=probs.device)
+        target_prob = probs[row_indices, label].clone()
+        probs[row_indices, label] = -1
         second_highest_prob = torch.max(probs, dim=-1).values
         return second_highest_prob - target_prob
-            
 
     def _calculate_all_label(self, probs):
         temp_probs = probs.unsqueeze(1).repeat(1, probs.shape[1], 1)
@@ -29,7 +27,3 @@ class Margin(APS):
         temp_probs[None, indices, indices] = torch.finfo(torch.float32).min
         scores = torch.max(temp_probs, dim=-1).values - probs
         return scores
-    
-
-
-

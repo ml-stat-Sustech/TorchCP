@@ -19,10 +19,10 @@ class BaseScore(object):
         pass
 
     @abstractmethod
-    def __call__(self, logits, y=None):
+    def __call__(self, logits, labels=None):
         """Virtual method to compute scores for a data pair (x,y).
 
         :param logits: the logits for inputs.
-        :y : the labels.
+        :param labels : the labels.
         """
         raise NotImplementedError

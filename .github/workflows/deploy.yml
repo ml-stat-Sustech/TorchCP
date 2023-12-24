@@ -2,7 +2,7 @@ name: Publish Python 🐍 distributions 📦 to PyPI
 
 
 on:
-# automatically running github actions when push a tag
+  # automatically running github actions when push a tag
   push:
     tags:
       - '*'
@@ -20,27 +20,27 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - uses: actions/checkout@master
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10'
-    - name: Install pypa/setuptools
-      run: >-
-        python -m
-        pip install wheel
-        pip install readme_renderer[md]
-    - name: Build a binary wheel
-      run: >-
-        python setup.py sdist bdist_wheel
-#    - name: Publish distribution 📦 to TestPyPI
-#      uses: pypa/gh-action-pypi-publish@release/v1
-#      with:
-#        user: __token__
-#        password: ${{ secrets.jianguo_test_pypi_password }}
-#        repository_url: https://test.pypi.org/legacy/
-    - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        user: __token__
-        password: ${{ secrets.jianguo_pypi_password }}
+      - uses: actions/checkout@master
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Install pypa/setuptools
+        run: >-
+          python -m
+          pip install wheel
+          pip install readme_renderer[md]
+      - name: Build a binary wheel
+        run: >-
+          python setup.py sdist bdist_wheel
+      #    - name: Publish distribution 📦 to TestPyPI
+      #      uses: pypa/gh-action-pypi-publish@release/v1
+      #      with:
+      #        user: __token__
+      #        password: ${{ secrets.jianguo_test_pypi_password }}
+      #        repository_url: https://test.pypi.org/legacy/
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.jianguo_pypi_password }}

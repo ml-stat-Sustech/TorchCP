@@ -26,7 +26,7 @@ class WeightedPredictor(SplitPredictor):
         self.alpha = None
         # Domain Classifier
         self.domain_classifier = domain_classifier
-        
+
     def calibrate(self, cal_dataloader, alpha):
         logits_list = []
         labels_list = []

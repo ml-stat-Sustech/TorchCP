@@ -43,8 +43,6 @@ class ClusterPredictor(SplitPredictor):
         labels = labels.to(self._device)
         self.num_classes = logits.shape[1]
         scores = self.score_function(logits, labels)
-    
-
 
         alpha = torch.tensor(alpha, device=self._device)
         classes_statistics = torch.tensor([torch.sum(labels == k).item() for k in range(self.num_classes)],
