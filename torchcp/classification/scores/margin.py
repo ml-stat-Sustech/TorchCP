@@ -6,42 +6,24 @@
 #
 import torch
 
-from torchcp.classification.scores.base import BaseScore
+from torchcp.classification.scores.aps import APS
 
 
-class Margin(BaseScore):
+class Margin(APS):
 
     def __init__(self, ) -> None:
-        """
-        param score_type: either "softmax" "Identity", "log_softmax" or "log". Default: "softmax". A transformation for logits.
-        """
-        super().__init__()
+        pass
 
-
-    def __call__(self, logits, y):
-        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
-        if len(logits) == 1:
-            logits = logits.unsqueeze(0)
-        probs = torch.softmax(logits, dim=-1)
-
-        row_indices = torch.arange(probs.size(0), device = logits.device)
-        target_prob = probs[row_indices, y].clone()
-        probs[row_indices, y] = -1
+    def _calculate_single_label(self, probs, label):
+        row_indices = torch.arange(probs.size(0), device=probs.device)
+        target_prob = probs[row_indices, label].clone()
+        probs[row_indices, label] = -1
         second_highest_prob = torch.max(probs, dim=-1).values
         return second_highest_prob - target_prob
-            
 
-    def predict(self, logits):
-        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
-        if len(logits) == 1:
-            logits = logits.unsqueeze(0)
-        probs = torch.softmax(logits, dim=-1)
+    def _calculate_all_label(self, probs):
         temp_probs = probs.unsqueeze(1).repeat(1, probs.shape[1], 1)
-        indices = torch.arange(probs.shape[1]).to(logits.device)
+        indices = torch.arange(probs.shape[1]).to(probs.device)
         temp_probs[None, indices, indices] = torch.finfo(torch.float32).min
         scores = torch.max(temp_probs, dim=-1).values - probs
         return scores
-    
-
-
-

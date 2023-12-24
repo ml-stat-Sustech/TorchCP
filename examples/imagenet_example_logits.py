@@ -81,7 +81,8 @@ if __name__ == '__main__':
 
     num_classes = 1000
     alpha = args.alpha
-    print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
+    print(
+        f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
     if args.score == "THR":
         score_function = THR()
     elif args.score == "APS":
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         score_function = Margin()
     else:
         raise NotImplementedError
-    
+
     if args.predictor == "Standard":
         predictor = SplitPredictor(score_function, model=None)
     elif args.predictor == "ClassWise":
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     # for index, ele in enumerate(test_logits):
     #     prediction_set = predictor.predict_with_logits(ele)
     #     prediction_sets.append(prediction_set)
-        
+
     prediction_sets = predictor.predict_with_logits(test_logits)
 
     metrics = Metrics()

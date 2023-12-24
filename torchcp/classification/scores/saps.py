@@ -26,34 +26,20 @@ class SAPS(APS):
             raise ValueError("The parameter 'weight' must be a positive value.")
         self.__weight = weight
 
-    def __call__(self, logits, y):
-        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
-        if len(logits) == 1:
-            logits = logits.unsqueeze(0)
-        probs = torch.softmax(logits, dim=-1)
-        # sorting probabilities
+    def _calculate_all_label(self, probs):
         indices, ordered, cumsum = self._sort_sum(probs)
-        return self.__compute_score(indices, y, cumsum, ordered)
-
-    def predict(self, logits):
-        probs = torch.softmax(logits, dim=-1)
-        I, ordered, _ = self._sort_sum(probs)
-        if len(logits.shape) == 1:
-            ordered[1:] = self.__weight
-        else:
-            ordered[...,1:] = self.__weight
+        ordered[:, 1:] = self.__weight
         cumsum = torch.cumsum(ordered, dim=-1)
-        U = torch.rand(probs.shape, device=logits.device)
+        U = torch.rand(probs.shape, device=probs.device)
         ordered_scores = cumsum - ordered * U
-        _, sorted_indices = torch.sort(I, descending=False, dim=-1)
+        _, sorted_indices = torch.sort(indices, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)
         return scores
-    
-    def __compute_score(self, indices, y, cumsum, ordered):
-        
-        U = torch.rand(indices.shape[0], device = indices.device)
-        idx = torch.where(indices == y.view(-1, 1))
-        scores_first_rank  = U * cumsum[idx] 
-        scores_usual  = self.__weight * (idx[1] - U) + ordered[:,0]
-        return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
 
+    def _calculate_single_label(self, probs, label):
+        indices, ordered, cumsum = self._sort_sum(probs)
+        U = torch.rand(indices.shape[0], device=probs.device)
+        idx = torch.where(indices == label.view(-1, 1))
+        scores_first_rank = U * cumsum[idx]
+        scores_usual = self.__weight * (idx[1] - U) + ordered[:, 0]
+        return torch.where(idx[1] == 0, scores_first_rank, scores_usual)

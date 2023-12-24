@@ -1,11 +1,15 @@
-TorchCP is a Python toolbox for conformal prediction research on deep learning models, using PyTorch. Specifically, this toolbox has implemented some representative methods (including posthoc and training methods) for
-classification and regression tasks. We build the framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This codebase is still under construction. Comments, issues, contributions, and collaborations are all welcomed! 
-
-
+TorchCP is a Python toolbox for conformal prediction research on deep learning models, using PyTorch. Specifically, this
+toolbox has implemented some representative methods (including posthoc and training methods) for
+classification and regression tasks. We build the framework of TorchCP based
+on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This codebase is still under construction.
+Comments, issues, contributions, and collaborations are all welcomed!
 
 # Overview
+
 TorchCP has implemented the following methods:
+
 ## Classification
+
 | Year | Title                                                                                                                                            | Venue   | Code Link                                                                         |
 |------|--------------------------------------------------------------------------------------------------------------------------------------------------|---------|-----------------------------------------------------------------------------------|
 | 2023 | [**Class-Conditional Conformal Prediction with Many Classes**](https://arxiv.org/abs/2306.09335)                                                 | NeurIPS | [Link](https://github.com/tiffanyding/class-conditional-conformal)                |
@@ -18,15 +22,15 @@ TorchCP has implemented the following methods:
 | 2013 | [**Applications of Class-Conditional Conformal Predictor in Multi-Class Classification**](https://ieeexplore.ieee.org/document/6784618)          | ICMLA   |                                                                                   |
 
 ## Regression
+
 | Year | Title                                                                                                                                          | Venue   | Code Link                                            |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------|---------|------------------------------------------------------|
 | 2021 | [**Adaptive Conformal Inference Under Distribution Shift**](https://arxiv.org/abs/2106.00170)                                                  | NeurIPS | [Link](https://github.com/isgibbs/AdaptiveConformal) |
 | 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf) | NeurIPS | [Link](https://github.com/yromano/cqr)               |
 | 2016 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                  | JASA    | [Link](https://github.com/ryantibs/conformal)        |
 
-
-
 ## TODO
+
 TorchCP is still under active development. We will add the following features/items down the road:
 
 | Year | Title                                                                                                           | Venue   | Code Link                                                                  |
@@ -37,17 +41,16 @@ TorchCP is still under active development. We will add the following features/it
 | 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML    | [Link](https://github.com/ajfisch/conformal-fp)                            |
 | 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255) | Arxiv   |                                                                            |
 
-
-
-
-
 ## Installation
 
 TorchCP is developed with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
+
 ```
 pip install torchcp
 ```
+
 To install from TestPyPI server, run
+
 ```
 pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 ```
@@ -55,6 +58,7 @@ pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 ## Examples
 
 Here, we provide a simple example for a classification task, with THR score and SplitPredictor.
+
 ```python
 from torchcp.classification.scores import THR
 from torchcp.classification.predictors import SplitPredictor
@@ -88,19 +92,21 @@ result_dict = predictor.evaluate(test_dataloader)
 print(result_dict["Coverage_rate"], result_dict["Average_size"])
 
 ```
+
 You may find more tutorials in [`examples`](https://github.com/ml-stat-Sustech/TorchCP/tree/master/examples) folder.
 
 ## Documentation
 
 The documentation webpage is on readthedocs https://torchcp.readthedocs.io/en/latest/index.html.
 
-
 ## License
+
 This project is licensed under the LGPL. The terms and conditions can be found in the LICENSE and LICENSE.GPL files.
 
 ## Citation
 
-We will release the technical report of TorchCP recently. If you find our repository useful for your research, please consider citing our paper:
+We will release the technical report of TorchCP recently. If you find our repository useful for your research, please
+consider citing our paper:
 
 ```
 @article{huang2023conformal,
@@ -110,6 +116,7 @@ We will release the technical report of TorchCP recently. If you find our reposi
   year={2023}
 }
 ```
+
 ## Contributors
 
 * [Hongxin Wei](https://hongxin001.github.io/)

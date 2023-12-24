@@ -24,20 +24,26 @@ class THR(BaseScore):
         if score_type == "Identity":
             self.transform = lambda x: x
         elif score_type == "softmax":
-            self.transform = lambda x: torch.softmax(x, dim=len(x.shape) - 1)
+            self.transform = lambda x: torch.softmax(x, dim=- 1)
         elif score_type == "log_softmax":
-            self.transform = lambda x: torch.log_softmax(x, dim=len(x.shape) - 1)
+            self.transform = lambda x: torch.log_softmax(x, dim=-1)
         elif score_type == "log":
-            self.transform = lambda x: torch.log(x, dim=len(x.shape) - 1)
+            self.transform = lambda x: torch.log(x, dim=-1)
         else:
             raise NotImplementedError
 
-    def __call__(self, logits, y):
+    def __call__(self, logits, label=None):
         assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
         if len(logits) == 1:
             logits = logits.unsqueeze(0)
-        return 1 - torch.softmax(logits, dim=-1)[torch.arange(y.shape[0], device = logits.device), y]
+        temp_values = self.transform(logits)
+        if label is None:
+            return self.__calculate_all_label(temp_values)
+        else:
+            return self.__calculate_single_label(temp_values, label)
 
+    def __calculate_single_label(self, temp_values, label):
+        return 1 - temp_values[torch.arange(label.shape[0], device=temp_values.device), label]
 
-    def predict(self, logits):
-        return 1 - torch.softmax(logits, dim=-1)
+    def __calculate_all_label(self, temp_values):
+        return 1 - temp_values
