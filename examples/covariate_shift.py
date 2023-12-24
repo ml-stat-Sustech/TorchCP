@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 
 from dataset import build_dataset
-from torchcp.classification.predictors import WeightedPredictor
+from torchcp.classification.predictors import WeightedPredictor,SplitPredictor
 from torchcp.classification.scores import THR
 from torchcp.utils import fix_randomness
 
@@ -67,18 +67,18 @@ if __name__ == '__main__':
     score_function = THR()
     alpha = 0.1
 
+    print(f"Experiment--Source Data : imagenet, Target Data : imagenetv2, Model : {model_name}, Score : THR, Predictor : Standard, Alpha : {alpha}")
 
-    # predictors = StandardPredictor(score_function, model)
-    # predictors.calibrate(cal_data_loader, alpha)
-
-    # # test examples
-    # print("Testing examples...")
-    # print(predictors.evaluate(test_data_loader))
+    predictors = SplitPredictor(score_function, model)
+    predictors.calibrate(cal_data_loader, alpha)
+    # testing examples
+    print("Testing examples...")
+    print(predictors.evaluate(test_data_loader))
 
     ##################################
     # Invalid prediction sets
     ##################################
-
+    print(f"Experiment--Source Data : imagenet, Target Data : imagenetv2, Model : {model_name}, Score : THR, Predictor : WeightedPredictor, Alpha : {alpha}")
     class ImageEncoder(nn.Module):
         def __init__(self, model):
             super(ImageEncoder, self).__init__()
@@ -89,10 +89,12 @@ if __name__ == '__main__':
             image_features /= image_features.norm(dim=-1, keepdim=True)
             return image_features
 
-
     image_encoder = ImageEncoder(clip.eval().to(model_device))
 
+    
     predictor = WeightedPredictor(score_function, model, image_encoder)
+    # If you have prepared a domain classifier, you can pass it to WeightedPredictor.
+    # Otherwise, you can use following codes, it will automatically train a domain classifier.
     predictor.calibrate(cal_data_loader, alpha)
 
     # # test examples

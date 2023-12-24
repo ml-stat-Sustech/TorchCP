@@ -34,23 +34,23 @@ class FNN(nn.Module):
 
 
 class Linear(FNN):
-    def __init__(self, n_in, n_out, n_hiddens=None, path_pretrained=None):
-        super().__init__(n_in, n_out, n_hiddens, n_layers=0, path_pretrained=path_pretrained)
+    def __init__(self, n_in, n_out, n_hiddens=None):
+        super().__init__(n_in, n_out, n_hiddens, n_layers=0)
 
 
 class SmallFNN(FNN):
-    def __init__(self, n_in, n_out, n_hiddens=500, path_pretrained=None):
-        super().__init__(n_in, n_out, n_hiddens, n_layers=1, path_pretrained=path_pretrained)
+    def __init__(self, n_in, n_out, n_hiddens=500):
+        super().__init__(n_in, n_out, n_hiddens, n_layers=1)
 
 
 class MidFNN(FNN):
-    def __init__(self, n_in, n_out, n_hiddens=500, path_pretrained=None):
-        super().__init__(n_in, n_out, n_hiddens, n_layers=2, path_pretrained=path_pretrained)
+    def __init__(self, n_in, n_out, n_hiddens=500):
+        super().__init__(n_in, n_out, n_hiddens, n_layers=2)
 
 
 class BigFNN(FNN):
-    def __init__(self, n_in, n_out, n_hiddens=500, path_pretrained=None):
-        super().__init__(n_in, n_out, n_hiddens, n_layers=4, path_pretrained=path_pretrained)
+    def __init__(self, n_in, n_out, n_hiddens=500):
+        super().__init__(n_in, n_out, n_hiddens, n_layers=4)
 
 
 class IW(nn.Module):

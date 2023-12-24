@@ -34,7 +34,7 @@ class TS(nn.Module):
 
     def __init__(self, temperature=1) -> None:
         super().__init__()
-        self.temperature = nn.Parameter(torch.tensor(temperature))
+        self.temperature = nn.Parameter(torch.tensor(temperature, dtype=torch.float32))
 
     def forward(self, batch_logits):
         return batch_logits / self.temperature
