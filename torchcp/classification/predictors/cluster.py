@@ -26,8 +26,8 @@ class ClusterPredictor(SplitPredictor):
 
         :param score_function: score functions of CP
         :param model: a deep learning model
-        :param cluster_ratio: The ratio of examples in the calibration dataset used to cluster classes
-        :param cluster_num: The number of clusters. If cluster_ratio is "auto", the number of clusters is automatically computed.
+        :param ratio_clustering: The ratio of examples in the calibration dataset used to cluster classes
+        :param num_clusters: The number of clusters. If cluster_ratio is "auto", the number of clusters is automatically computed.
         :param split: The method to split the dataset into clustering dataset and calibration set. split: How to split data between clustering step and calibration step. Options are 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability)
         """
 
