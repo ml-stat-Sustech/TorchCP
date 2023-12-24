@@ -42,7 +42,7 @@ class SplitPredictor(object):
         self.calculate_threshold(predicts, y_truth, alpha)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
-        if alpha>=1 or alpha<=0:
+        if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         self.scores = torch.abs(predicts.reshape(-1) - y_truth)
         quantile = math.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]

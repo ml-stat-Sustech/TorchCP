@@ -4,9 +4,11 @@ Thank you considering contributing to TorchCP!
 
 This document provides brief guidelines for potential contributors.
 
-Please use pull requests for new features, bug fixes, new examples, etc. If you work on something with significant efforts, please mention it in early stage using issues.
+Please use pull requests for new features, bug fixes, new examples, etc. If you work on something with significant
+efforts, please mention it in early stage using issues.
 
-We ask that you follow the `PEP8` coding style in your pull requests, [`flake8`](http://flake8.pycqa.org/) is used in continuous integration to enforce this.
+We ask that you follow the `PEP8` coding style in your pull requests, [`flake8`](http://flake8.pycqa.org/) is used in
+continuous integration to enforce this.
 
 ---
 

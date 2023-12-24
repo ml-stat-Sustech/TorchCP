@@ -32,7 +32,7 @@ class ClassWisePredictor(SplitPredictor):
             x_cal_tmp = logits[labels == label]
             y_cal_tmp = labels[labels == label]
             scores = logits.new_zeros(x_cal_tmp.shape[0])
-                
+
             scores = self.score_function(x_cal_tmp, y_cal_tmp)
 
             self.q_hat[label] = self._calculate_conformal_value(scores, alpha)

@@ -22,15 +22,15 @@ class APS(BaseScore):
     def __init__(self):
         pass
 
-    def __call__(self, logits, y=None):
+    def __call__(self, logits, label=None):
         assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
         if len(logits) == 1:
             logits = logits.unsqueeze(0)
         probs = torch.softmax(logits, dim=-1)
-        if y is None:
+        if label is None:
             return self._calculate_all_label(probs)
         else:
-            return self._calculate_single_label(probs, y)
+            return self._calculate_single_label(probs, label)
 
     def _calculate_all_label(self, probs):
         indices, ordered, cumsum = self._sort_sum(probs)
@@ -48,13 +48,11 @@ class APS(BaseScore):
         cumsum = torch.cumsum(ordered, dim=-1)
         return indices, ordered, cumsum
 
-    def _calculate_single_label(self, probs, y):
+    def _calculate_single_label(self, probs, label):
         indices, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(indices.shape[0], device = indices.device)
-        idx = torch.where(indices == y.view(-1, 1))
-        scores_first_rank  = U * cumsum[idx]
+        U = torch.rand(indices.shape[0], device=probs.device)
+        idx = torch.where(indices == label.view(-1, 1))
+        scores_first_rank = U * cumsum[idx]
         idx_minus_one = (idx[0], idx[1] - 1)
-        scores_usual  = U * ordered[idx] + cumsum[idx_minus_one]
+        scores_usual = U * ordered[idx] + cumsum[idx_minus_one]
         return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
-            
-
