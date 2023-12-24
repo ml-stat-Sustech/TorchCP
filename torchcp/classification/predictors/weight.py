@@ -19,7 +19,7 @@ class WeightedPredictor(SplitPredictor):
     def __init__(self, score_function, model, image_encoder, temperature):
         super().__init__(score_function, model, temperature)
 
-        self.image_encoder = image_encoder
+        self.image_encoder = image_encoder.to(self._device)
         #  non-conformity scores
         self.scores = None
         # significance level
@@ -38,13 +38,12 @@ class WeightedPredictor(SplitPredictor):
                 labels_list.append(tmp_labels)
             logits = torch.cat(logits_list).float()
             labels = torch.cat(labels_list)
-            cal_features = torch.cat(cal_features_list).float()
-        self.source_image_features = cal_features
+            self.source_image_feature = torch.cat(cal_features_list).float()
 
         self.calculate_threshold(logits, labels, alpha)
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha>=1 or alpha<=0:
+        if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         self.alpha = alpha
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)
