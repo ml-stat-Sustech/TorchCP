@@ -24,12 +24,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--alpha', default=0.1, type=float)
-    parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
-    parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
-    parser.add_argument('--penalty', default=1, type=float)
-    parser.add_argument('--kreg', default=0, type=int)
-    parser.add_argument('--weight', default=0.2, type=int)
-    parser.add_argument('--split', default="random", type=str, help="proportional | doubledip | random")
     args = parser.parse_args()
 
     fix_randomness(seed=args.seed)
@@ -62,28 +56,9 @@ if __name__ == '__main__':
     # A standard process of conformal prediction
     #######################################    
     alpha = args.alpha
-    print(
-        f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
-    num_classes = 1000
-    if args.score == "THR":
-        score_function = THR()
-    elif args.score == "APS":
-        score_function = APS()
-    elif args.score == "RAPS":
-        score_function = RAPS(args.penalty, args.kreg)
-    elif args.score == "SAPS":
-        score_function = SAPS(weight=args.weight)
-    else:
-        raise NotImplementedError
-
-    if args.predictor == "Standard":
-        predictor = SplitPredictor(score_function, model)
-    elif args.predictor == "ClassWise":
-        predictor = ClassWisePredictor(score_function, model)
-    elif args.predictor == "Cluster":
-        predictor = ClusterPredictor(score_function, model, args.seed)
-    else:
-        raise NotImplementedError
+    print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : THR, Predictor : SplitPredictor, Alpha : {alpha}")
+    score_function = THR()
+    predictor = SplitPredictor(score_function, model)
     print(f"The size of calibration set is {len(cal_dataset)}.")
     predictor.calibrate(cal_data_loader, alpha)
     predictor.evaluate(test_data_loader)
