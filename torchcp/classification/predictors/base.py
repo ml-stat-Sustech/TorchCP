@@ -17,18 +17,16 @@ from torchcp.utils.common import get_device
 
 class BasePredictor(object):
     """
-    Abstract base class for all predictors classes.
+    Abstract base class for all conformal predictors.
+        
+    :param score_function: non-conformity score function.
+    :param model: a pytorch model.
+    :param temperature: the temperature of Temperature Scaling.
     """
 
     __metaclass__ = ABCMeta
 
     def __init__(self, score_function, model=None, temperature=1):
-        """
-        Abstract base class for all conformal predictors.
-        
-        :param score_function: non-conformity score function.
-        :param model: a deep learning model.
-        """
 
         self.score_function = score_function
         self._model = model
@@ -49,7 +47,7 @@ class BasePredictor(object):
     @abstractmethod
     def predict(self, x_batch):
         """
-        Generate prediction sets for  test examples.
+        Generate prediction sets for the test examples.
         
         :param x_batch: a batch of input.
         """

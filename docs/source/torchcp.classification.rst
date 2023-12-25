@@ -27,7 +27,7 @@ Predictors
     WeightedPredictor
 
 .. automodule:: torchcp.classification.loss
-Predictors
+Loss functions
 -------
 
 ..  autosummary::

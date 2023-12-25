@@ -12,6 +12,14 @@ Predictors
     cqr
     ACI
 
+Loss functions
+-------
+
+..  autosummary::
+    :nosignatures:
+
+    QuantileLoss
+
 
 Detailed description
 --------------------
@@ -24,3 +32,7 @@ Detailed description
 
 ..  autoclass:: ACI
     :members:
+
+..  autoclass:: QuantileLoss
+    :members:
+    

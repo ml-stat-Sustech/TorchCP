@@ -17,6 +17,8 @@ class SplitPredictor(object):
     """
     Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
     paper: https://arxiv.org/abs/1604.04173
+    
+    :param model: a pytorch model for regression.
     """
 
     def __init__(self, model):

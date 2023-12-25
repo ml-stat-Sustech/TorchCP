@@ -22,9 +22,14 @@ from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 
 
+transform = trn.Compose([trn.Resize(256),
+                        trn.CenterCrop(224),
+                        trn.ToTensor(),
+                        trn.Normalize(mean=[0.485, 0.456, 0.406],
+                                    std=[0.229, 0.224, 0.225])
+                        ])
 
-
-def test_imagenet():
+def test_imagenet_logits():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
@@ -36,13 +41,6 @@ def test_imagenet():
             dataset = pickle.load(handle)
 
     else:
-        # load dataset
-        transform = trn.Compose([trn.Resize(256),
-                                trn.CenterCrop(224),
-                                trn.ToTensor(),
-                                trn.Normalize(mean=[0.485, 0.456, 0.406],
-                                            std=[0.229, 0.224, 0.225])
-                                ])
         usr_dir = os.path.expanduser('~')
         data_dir = os.path.join(usr_dir, "data")
         dataset = dset.ImageFolder(data_dir + "/imagenet/val",
@@ -98,3 +96,39 @@ def test_imagenet():
             print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
             print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+            
+            
+            
+
+            
+def test_imagenet():
+    fix_randomness(seed=0)
+    #######################################
+    # Loading ImageNet dataset and a pytorch model
+    #######################################
+    model_name = 'ResNet101'
+    model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    usr_dir = os.path.expanduser('~')
+    data_dir = os.path.join(usr_dir, "data")
+    dataset = dset.ImageFolder(data_dir + "/imagenet/val", transform)
+
+    cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
+    cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
+    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
+        
+    #######################################
+    # A standard process of conformal prediction
+    #######################################
+    alpha = 0.1
+    predictors = [SplitPredictor, ClassWisePredictor, ClusterPredictor]
+    score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
+    for score in score_functions: 
+        for class_predictor in predictors:
+            predictor = class_predictor(score, model)
+            predictor.calibrate(cal_data_loader, alpha)
+            print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+            print(predictor.evaluate(test_data_loader))
+
+

@@ -11,14 +11,14 @@ from torchcp.classification.scores.base import BaseScore
 
 class THR(BaseScore):
     """
-    Threshold conformal predictors (Sadinle et al., 2016)
-    paper : https://arxiv.org/abs/1609.00451
+    Threshold conformal predictors (Sadinle et al., 2016).
+    paper : https://arxiv.org/abs/1609.00451.
+    
+    param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "Identity", "log_softmax" or "log". 
     """
 
     def __init__(self, score_type="softmax") -> None:
-        """
-        param score_type: either "softmax" "Identity", "log_softmax" or "log". Default: "softmax". A transformation for logits.
-        """
+        
         super().__init__()
         self.score_type = score_type
         if score_type == "Identity":
