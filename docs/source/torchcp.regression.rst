@@ -12,6 +12,7 @@ Predictors
     cqr
     ACI
 
+.. automodule:: torchcp.regression.loss
 Loss functions
 -------
 
