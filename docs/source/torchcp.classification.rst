@@ -26,6 +26,14 @@ Predictors
     ClusterPredictor
     WeightedPredictor
 
+.. automodule:: torchcp.classification.loss
+Predictors
+-------
+
+..  autosummary::
+    :nosignatures:
+
+    ConfTr
 
 Detailed description
 --------------------
@@ -57,4 +65,7 @@ Detailed description
     :members:
 
 ..  autoclass:: WeightedPredictor
+    :members:
+
+..  autoclass:: ConfTr
     :members:

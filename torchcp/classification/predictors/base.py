@@ -24,6 +24,8 @@ class BasePredictor(object):
 
     def __init__(self, score_function, model=None, temperature=1):
         """
+        Abstract base class for all conformal predictors.
+        
         :param score_function: non-conformity score function.
         :param model: a deep learning model.
         """
