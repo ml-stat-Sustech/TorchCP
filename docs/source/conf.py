@@ -110,7 +110,7 @@ def linkcode_resolve(domain, info):
     except Exception:
         filename = info['module'].replace('.', '/') + '.py'
     tag = 'development'
-    url = "https://github.com/ml-stat-Sustech/TorchCP/blob/%s/%s"
+    url = "https://github.com/ml-stat-Sustech/TorchCP/%s/%s"
     return url % (tag, filename)
 
 # -- Options for HTML output -------------------------------------------------
