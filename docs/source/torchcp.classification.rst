@@ -69,3 +69,4 @@ Detailed description
 
 ..  autoclass:: ConfTr
     :members:
+
