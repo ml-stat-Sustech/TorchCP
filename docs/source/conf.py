@@ -78,7 +78,15 @@ source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
+# This pattern also affects html_static_path and html_extra_path.
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'sphinx'
+
+todo_include_todos = False
 
 # Resolve function for the linkcode extension.
 def linkcode_resolve(domain, info):
@@ -98,7 +106,7 @@ def linkcode_resolve(domain, info):
     if domain != 'py' or not info['module']:
         return None
     try:
-        filename = 'advertorch/%s#L%d-L%d' % find_source()
+        filename = 'torchcp/%s#L%d-L%d' % find_source()
     except Exception:
         filename = info['module'].replace('.', '/') + '.py'
     tag = 'master'
