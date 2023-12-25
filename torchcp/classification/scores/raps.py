@@ -19,7 +19,7 @@ class RAPS(APS):
     paper : https://arxiv.org/abs/2009.14193
     
     :param penalty: the weight of regularization. When penalty = 0, RAPS=APS.
-    :param kreg : the rank of regularization which is an integer in [0,labels_num].
+    :param kreg: the rank of regularization which is an integer in [0,labels_num].
     """
 
     def __init__(self, penalty, kreg=0):
