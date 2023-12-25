@@ -3,16 +3,18 @@ import torch.nn as nn
 
 __all__ = ["QuantileLoss"]
 
+
 class QuantileLoss(nn.Module):
-    """ Pinball loss function
+    """
+    Pinball loss function (Romano et al., 2019)
+    Paper: https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf
+
+    :param quantiles: a list of quantiles, such as $[\frac{alpha}{2}, 1-\frac{alpha}{2}]$.
     """
 
     def __init__(self, quantiles):
         """
-        A loss to training a quantile-regression model (Romano et al., 2019).
-        Paper: https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf.
-        
-        :param quantiles: a list of quantiles, such as $[\frac{alpha}{2}, 1-\frac{alpha}{2}]$.
+
         """
         super().__init__()
         self.quantiles = quantiles
@@ -30,7 +32,7 @@ class QuantileLoss(nn.Module):
         losses = preds.new_zeros(len(self.quantiles))
 
         for i, q in enumerate(self.quantiles):
-            errors = target - preds[:, i:i+1]
+            errors = target - preds[:, i:i + 1]
             losses[i] = torch.sum(torch.max((q - 1) * errors, q * errors).squeeze(1))
         loss = torch.mean(losses)
         return loss

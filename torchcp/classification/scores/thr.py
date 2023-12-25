@@ -14,7 +14,7 @@ class THR(BaseScore):
     Threshold conformal predictors (Sadinle et al., 2016).
     paper : https://arxiv.org/abs/1609.00451.
     
-    param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "Identity", "log_softmax" or "log". 
+    :param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "Identity", "log_softmax" or "log".
     """
 
     def __init__(self, score_type="softmax") -> None:

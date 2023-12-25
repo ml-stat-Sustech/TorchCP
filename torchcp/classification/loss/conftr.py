@@ -17,11 +17,11 @@ class ConfTr(nn.Module):
     Paper: https://arxiv.org/abs/2110.09192.
     
     
-    :param weights: the weight of each loss function
+    :param weight: the weight of each loss function
     :param predictor: the CP predictors
     :param alpha: the significance level for each training batch
     :param fraction: the fraction of the calibration set in each training batch
-    :param loss_types: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
+    :param loss_type: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
     :param target_size: Optional: 0 | 1.
     :param loss_transform: a transform for loss
     :param base_loss_fn: a base loss function. For example, cross entropy in classification.
