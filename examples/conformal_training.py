@@ -72,7 +72,7 @@ if __name__ == '__main__':
         
     fix_randomness(seed=0)
     ##################################
-    # Training a pyotrch model
+    # Training a pytorch model
     ##################################
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_dataset = build_dataset("mnist")

@@ -13,7 +13,7 @@ def build_dataset(dataset_name, transform=None, mode="train"):
     data_dir = os.path.join(usr_dir, "data")
 
     if dataset_name == 'imagenet':
-        if transform == None:
+        if transform is None:
             transform = trn.Compose([
                 trn.Resize(256),
                 trn.CenterCrop(224),
@@ -25,7 +25,7 @@ def build_dataset(dataset_name, transform=None, mode="train"):
         dataset = dset.ImageFolder(data_dir + "/imagenet/val",
                                    transform)
     elif dataset_name == 'imagenetv2':
-        if transform == None:
+        if transform is None:
             transform = trn.Compose([
                 trn.Resize(256),
                 trn.CenterCrop(224),
@@ -38,7 +38,7 @@ def build_dataset(dataset_name, transform=None, mode="train"):
                                     transform)
 
     elif dataset_name == 'mnist':
-        if transform == None:
+        if transform is None:
             transform = trn.Compose([
                 trn.ToTensor(),
                 trn.Normalize((0.1307,), (0.3081,))

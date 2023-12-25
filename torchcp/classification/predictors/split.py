@@ -118,7 +118,6 @@ class SplitPredictor(BasePredictor):
                 labels_list.append(tmp_label)
         val_labels = torch.cat(labels_list)
 
-        res_dict = {}
-        res_dict["Coverage_rate"] = self._metric('coverage_rate')(prediction_sets, val_labels)
-        res_dict["Average_size"] = self._metric('average_size')(prediction_sets, val_labels)
+        res_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, val_labels),
+                    "Average_size": self._metric('average_size')(prediction_sets, val_labels)}
         return res_dict

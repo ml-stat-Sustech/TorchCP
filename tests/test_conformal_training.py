@@ -77,7 +77,7 @@ def test_training():
         for seed in range(num_trials):
             fix_randomness(seed=seed)
             ##################################
-            # Training a pyotrch model
+            # Training a pytorch model
             ##################################
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             train_dataset = build_dataset("mnist")

@@ -123,6 +123,6 @@ def test_time_series():
             predicts[i, :] = tmp_prediction_intervals
 
     metrics = Metrics()
-    print("Etestuating prediction sets...")
+    print("Evaluating prediction sets...")
     print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}")
     print(f"Average_size: {metrics('average_size')(predicts)}")

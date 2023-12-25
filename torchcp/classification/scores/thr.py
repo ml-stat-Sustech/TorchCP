@@ -28,7 +28,7 @@ class THR(BaseScore):
         elif score_type == "log_softmax":
             self.transform = lambda x: torch.log_softmax(x, dim=-1)
         elif score_type == "log":
-            self.transform = lambda x: torch.log(x, dim=-1)
+            self.transform = lambda x: torch.log(x)
         else:
             raise NotImplementedError
 
