@@ -109,7 +109,7 @@ def linkcode_resolve(domain, info):
         filename = 'torchcp/%s#L%d-L%d' % find_source()
     except Exception:
         filename = info['module'].replace('.', '/') + '.py'
-    tag = 'master'
+    tag = 'development'
     url = "https://github.com/ml-stat-Sustech/TorchCP/blob/%s/%s"
     return url % (tag, filename)
 
