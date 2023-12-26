@@ -14,6 +14,12 @@ class WeightedPredictor(SplitPredictor):
     """
     Conformal Prediction Under Covariate Shift (Tibshirani et al., 2019)
     paper : https://arxiv.org/abs/1904.06019
+    
+    :param score_function: non-conformity score function.
+    :param model: a pytorch model.
+    :param image_encoder: a pytorch model to generate the embedding feature of a input image.
+    :param domain_classifier: a pytorch model (a binary classifier ) to predict the probability that a embedding feature comes from the source domain.
+    :param temperature: the temperature of Temperature Scaling.
     """
 
     def __init__(self, score_function, model, image_encoder, domain_classifier=None, temperature=1):
@@ -133,7 +139,6 @@ class WeightedPredictor(SplitPredictor):
                 labels_list.append(tmp_label)
         val_labels = torch.cat(labels_list)
 
-        res_dict = {}
-        res_dict["Coverage_rate"] = self._metric('coverage_rate')(prediction_sets, val_labels)
-        res_dict["Average_size"] = self._metric('average_size')(prediction_sets, val_labels)
-        return res_dict
+        result_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, val_labels),
+                       "Average_size": self._metric('average_size')(prediction_sets, val_labels)}
+        return result_dict

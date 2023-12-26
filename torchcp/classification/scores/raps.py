@@ -17,14 +17,13 @@ class RAPS(APS):
     """
     Regularized Adaptive Prediction Sets (Angelopoulos et al., 2020)
     paper : https://arxiv.org/abs/2009.14193
+    
+    :param penalty: the weight of regularization. When penalty = 0, RAPS=APS.
+    :param kreg: the rank of regularization which is an integer in [0,labels_num].
     """
 
     def __init__(self, penalty, kreg=0):
-        """
-        when penalty = 0, RAPS=APS.
-
-        :param kreg : the rank of regularization which is an integer in [0,labels_num].
-        """
+        
         if penalty <= 0:
             raise ValueError("The parameter 'penalty' must be a positive value.")
         if kreg < 0:
@@ -44,7 +43,7 @@ class RAPS(APS):
         _, sorted_indices = torch.sort(indices, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)
         return scores
-
+    
     def _calculate_single_label(self, probs, label):
         indices, ordered, cumsum = self._sort_sum(probs)
         U = torch.rand(indices.shape[0], device=probs.device)

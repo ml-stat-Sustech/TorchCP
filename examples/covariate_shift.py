@@ -19,7 +19,7 @@ from torchcp.classification.scores import THR
 from torchcp.utils import fix_randomness
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Covariate shift')
+    parser = argparse.ArgumentParser(description='Coveriate shift')
     parser.add_argument('--seed', default=0, type=int)
     args = parser.parse_args()
 

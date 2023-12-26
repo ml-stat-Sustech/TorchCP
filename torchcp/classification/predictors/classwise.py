@@ -14,6 +14,10 @@ class ClassWisePredictor(SplitPredictor):
 
     Applications of Class-Conditional Conformal Predictor in Multi-Class Classification (Shi et al., 2013)
     paper: https://ieeexplore.ieee.org/document/6784618
+    
+        
+    :param score_function: non-conformity score function.
+    :param model: a pytorch model.
     """
 
     def __init__(self, score_function, model=None):

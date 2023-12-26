@@ -15,7 +15,8 @@ class ACI(SplitPredictor):
     Adaptive conformal inference (Gibbs et al., 2021)
     paper: https://arxiv.org/abs/2106.00170
 
-    :param model: a deep learning model that can output alpha/2 and 1-alpha/2 quantile regression.
+    :param model: a pytorch model that can output the values of different quantiles.
+    :param gamma: a step size parameter.
     """
 
     def __init__(self, model, gamma):

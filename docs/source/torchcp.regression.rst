@@ -12,6 +12,15 @@ Predictors
     cqr
     ACI
 
+.. automodule:: torchcp.regression.loss
+Loss functions
+-------
+
+..  autosummary::
+    :nosignatures:
+
+    QuantileLoss
+
 
 Detailed description
 --------------------
@@ -24,3 +33,7 @@ Detailed description
 
 ..  autoclass:: ACI
     :members:
+
+..  autoclass:: QuantileLoss
+    :members:
+    
