@@ -34,7 +34,7 @@ class THR(BaseScore):
 
     def __call__(self, logits, label=None):
         assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
-        if len(logits) == 1:
+        if len(logits.shape) == 1:
             logits = logits.unsqueeze(0)
         temp_values = self.transform(logits)
         if label is None:
