@@ -39,11 +39,11 @@ class ClusterPredictor(SplitPredictor):
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         logits = logits.to(self._device)
         labels = labels.to(self._device)
-        self.num_classes = logits.shape[1]
+        num_classes = logits.shape[1]
         scores = self.score_function(logits, labels)
 
         alpha = torch.tensor(alpha, device=self._device)
-        classes_statistics = torch.tensor([torch.sum(labels == k).item() for k in range(self.num_classes)],
+        classes_statistics = torch.tensor([torch.sum(labels == k).item() for k in range(num_classes)],
                                           device=self._device)
 
         # 1) Choose necessary parameters for Cluster algorithm
@@ -66,10 +66,10 @@ class ClusterPredictor(SplitPredictor):
                                                                                          classes_statistics)
 
         # 3)  Filter "rare" classes
-        rare_classes = self.__get_rare_classes(clustering_labels, alpha, self.num_classes)
+        rare_classes = self.__get_rare_classes(clustering_labels, alpha, num_classes)
 
         # 4) Run clustering
-        if (self.num_classes - len(rare_classes) > self.__num_clusters) and (self.__num_clusters > 1):
+        if (num_classes - len(rare_classes) > self.__num_clusters) and (self.__num_clusters > 1):
             # Filter out rare classes and re-index
             remaining_idx, filtered_labels, class_remapping = self.__remap_classes(clustering_labels, rare_classes)
             filtered_scores = clustering_scores[remaining_idx]
@@ -81,27 +81,28 @@ class ClusterPredictor(SplitPredictor):
                                                                                     class_cts.detach().cpu().numpy()))
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_, device=self._device)
 
-            cluster_assignments = - torch.ones((self.num_classes,), dtype=torch.int32, device=self._device)
+            cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)
 
             for cls, remapped_cls in class_remapping.items():
                 cluster_assignments[cls] = nonrare_class_cluster_assignments[remapped_cls]
         else:
-            cluster_assignments = - torch.ones((self.num_classes,), dtype=torch.int32, device=self._device)
+            cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)
 
         # 5) Compute qhats for each cluster
 
         self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments,
                                                            cal_scores,
                                                            cal_labels,
-                                                           alpha=alpha)
+                                                           alpha)
 
     def __split_data(self, scores, labels, classes_statistics):
         if self.__split == 'proportional':
             # Split dataset along with fraction "frac_clustering"
-            n_k = torch.tensor([self.__ratio_clustering * classes_statistics[k] for k in range(self.num_classes)],
+            num_classes = classes_statistics.shape[0]
+            n_k = torch.tensor([self.__ratio_clustering * classes_statistics[k] for k in range(num_classes)],
                                device=self._device, dtype=torch.int32)
             idx1 = torch.zeros(labels.shape, dtype=torch.bool, device=self._device)
-            for k in range(self.num_classes):
+            for k in range(num_classes):
                 # Randomly select n instances of class k
                 idx = torch.argwhere(labels == k).flatten()
                 random_indices = torch.randint(0, classes_statistics[k], (n_k[k],), device=self._device)
@@ -218,56 +219,46 @@ class ClusterPredictor(SplitPredictor):
         :param cal_class_scores:  cal_class_scores[i] is the score for instance i.
         :param cal_true_labels:  true class labels for instances
         :param alpha: Desired coverage level
-        :param null_qhat: For classes that do not appear in cal_true_labels, the class specific qhat is set to null_qhat.
-        
+
 
         :return : num_classes length array where entry i is the quantile correspond to the cluster that class i belongs to.
         '''
 
-        # Compute quantile q_hat that will result in marginal coverage of (1-alpha)
-        null_qhat = torch.quantile(cal_class_scores,
-                                   torch.ceil((len(cal_true_labels) + 1) * (1 - alpha)) / len(cal_true_labels))
-
-        # Edge case: all cluster_assignments are -1.
-        if torch.all(cluster_assignments == -1):
-            return null_qhat * torch.ones(cluster_assignments.shape, device=self._device)
-
         # Map true class labels to clusters
         cal_true_clusters = torch.tensor([cluster_assignments[label] for label in cal_true_labels], device=self._device)
 
-        cluster_qhats = self.__compute_class_specific_qhats(
-            cal_class_scores,
-            cal_true_clusters,
-            alpha=alpha,
-            num_classes=torch.max(cluster_assignments) + 1,
-            null_qhat=null_qhat,
-        )
+        cluster_qhats = self.__compute_class_specific_qhats(cal_class_scores, cal_true_clusters, alpha)
         # Map cluster qhats back to classes
         num_classes = len(cluster_assignments)
-        class_qhats = torch.tensor([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)],
+        qhats_class = torch.tensor([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)],
                                    device=self._device)
 
-        return class_qhats
+        return qhats_class
 
-    def __compute_class_specific_qhats(self, cal_class_scores, cal_true_labels, num_classes, alpha, null_qhat):
+    def __compute_class_specific_qhats(self, cal_class_scores, cal_true_clusters, alpha):
         '''
         Computes class-specific quantiles (one for each class) that will result in marginal coverage of (1-alpha)
         
         :param cal_class_scores: num_instances-length array where cal_class_scores[i] is the score for instance i
-        :param cal_true_labels: num_instances-length array of true class labels. If class -1 appears, it will be assigned the null_qhat value. It is appended as an extra entry of the returned q_hats so that q_hats[-1] = null_qhat.
+        :param cal_true_clusters: num_instances-length array of true class labels. If class -1 appears, it will be assigned the null_qhat value. It is appended as an extra entry of the returned q_hats so that q_hats[-1] = null_qhat.
         :param alpha: Desired coverage level.
-        :param null_qhat: Only used if -1 appears in cal_true_labels. null_qhat is assigned to class/cluster -1.
 
         :return: the threshold of each class
         '''
 
-        q_hats = torch.zeros((num_classes,), device=self._device)  # q_hats[i] = quantile for class i
-        for k in range(num_classes):
+        # the number of clusters.
+        num_clusters = torch.max(cal_true_clusters) + 1
+
+        # Compute quantile q_hat that will result in marginal coverage of (1-alpha)
+        null_qhat = self._calculate_conformal_value(cal_class_scores, alpha)
+
+        q_hats = torch.zeros((num_clusters,), device=self._device)  # q_hats[i] = quantile for class i
+        for k in range(num_clusters):
             # Only select data for which k is true class
-            idx = (cal_true_labels == k)
+            idx = (cal_true_clusters == k)
             scores = cal_class_scores[idx]
             q_hats[k] = self._calculate_conformal_value(scores, alpha)
-        if -1 in cal_true_labels:
+        if -1 in cal_true_clusters:
             q_hats = torch.concatenate((q_hats, torch.tensor([null_qhat], device=self._device)))
 
         return q_hats

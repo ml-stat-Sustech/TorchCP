@@ -19,12 +19,9 @@ class APS(BaseScore):
     paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
     """
 
-    def __init__(self):
-        pass
-
     def __call__(self, logits, label=None):
         assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
-        if len(logits) == 1:
+        if len(logits.shape) == 1:
             logits = logits.unsqueeze(0)
         probs = torch.softmax(logits, dim=-1)
         if label is None:

@@ -10,21 +10,21 @@ import torch
 
 from torchcp.utils.registry import Registry
 
-METRICS_REGISTRY = Registry("METRICS")
+METRICS_REGISTRY_REGRESSION = Registry("METRICS")
 
 
-@METRICS_REGISTRY.register()
+@METRICS_REGISTRY_REGRESSION.register()
 def coverage_rate(prediction_intervals, y_truth):
     return ((y_truth >= prediction_intervals[:, 0]) & (y_truth <= prediction_intervals[:, 1])).float().mean().item()
 
 
-@METRICS_REGISTRY.register()
+@METRICS_REGISTRY_REGRESSION.register()
 def average_size(prediction_intervals):
     return torch.abs(prediction_intervals[:, 1] - prediction_intervals[:, 0]).mean().item()
 
 
 class Metrics:
     def __call__(self, metric) -> Any:
-        if metric not in METRICS_REGISTRY.registered_names():
+        if metric not in METRICS_REGISTRY_REGRESSION.registered_names():
             raise NameError(f"The metric: {metric} is not defined in TorchCP.")
-        return METRICS_REGISTRY.get(metric)
+        return METRICS_REGISTRY_REGRESSION.get(metric)
