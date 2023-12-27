@@ -16,7 +16,7 @@ class CQR(SplitPredictor):
     Conformalized Quantile Regression (Romano et al., 2019)
     paper: https://arxiv.org/abs/1905.03222
 
-    :param model: a deep learning model that can output alpha/2 and 1-alpha/2 quantile regression.
+    :param model: a pytorch model that can output alpha/2 and 1-alpha/2 quantile regression.
     """
 
     def __init__(self, model):

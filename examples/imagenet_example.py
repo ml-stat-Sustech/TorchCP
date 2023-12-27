@@ -24,18 +24,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--alpha', default=0.1, type=float)
-    parser.add_argument('--predictor', default="Standard", help="Standard | ClassWise | Cluster")
-    parser.add_argument('--score', default="THR", help="THR | APS | SAPS")
-    parser.add_argument('--penalty', default=1, type=float)
-    parser.add_argument('--kreg', default=0, type=int)
-    parser.add_argument('--weight', default=0.2, type=int)
-    parser.add_argument('--split', default="random", type=str, help="proportional | doubledip | random")
     args = parser.parse_args()
 
     fix_randomness(seed=args.seed)
 
+    #######################################
+    # Loading ImageNet dataset and a pytorch model
+    #######################################
     model_name = 'ResNet101'
-    # load model
     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
     model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(model_device)
@@ -55,47 +51,14 @@ if __name__ == '__main__':
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
 
+    
+    #######################################
+    # A standard process of conformal prediction
+    #######################################    
     alpha = args.alpha
-    print(
-        f"Experiment--Data : ImageNet, Model : {model_name}, Score : {args.score}, Predictor : {args.predictor}, Alpha : {alpha}")
-    num_classes = 1000
-    if args.score == "THR":
-        score_function = THR()
-    elif args.score == "APS":
-        score_function = APS()
-    elif args.score == "RAPS":
-        score_function = RAPS(args.penalty, args.kreg)
-    elif args.score == "SAPS":
-        score_function = SAPS(weight=args.weight)
-    else:
-        raise NotImplementedError
-
-    if args.predictor == "Standard":
-        predictor = SplitPredictor(score_function, model)
-    elif args.predictor == "ClassWise":
-        predictor = ClassWisePredictor(score_function, model)
-    elif args.predictor == "Cluster":
-        predictor = ClusterPredictor(score_function, model, args.seed)
-    else:
-        raise NotImplementedError
+    print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : THR, Predictor : SplitPredictor, Alpha : {alpha}")
+    score_function = THR()
+    predictor = SplitPredictor(score_function, model)
     print(f"The size of calibration set is {len(cal_dataset)}.")
     predictor.calibrate(cal_data_loader, alpha)
-    # predictor.evaluate(test_data_loader)
-
-    # test examples
-    print("Testing examples...")
-    prediction_sets = []
-    labels_list = []
-    with torch.no_grad():
-        for examples in tqdm(test_data_loader):
-            tmp_x, tmp_label = examples[0], examples[1]
-            prediction_sets_batch = predictor.predict(tmp_x)
-            prediction_sets.extend(prediction_sets_batch)
-            labels_list.append(tmp_label)
-    test_labels = torch.cat(labels_list)
-
-    metrics = Metrics()
-    print("Etestuating prediction sets...")
-    print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
-    print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
-    print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+    predictor.evaluate(test_data_loader)

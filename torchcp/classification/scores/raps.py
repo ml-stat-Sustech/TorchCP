@@ -17,14 +17,13 @@ class RAPS(APS):
     """
     Regularized Adaptive Prediction Sets (Angelopoulos et al., 2020)
     paper : https://arxiv.org/abs/2009.14193
+    
+    :param penalty: the weight of regularization. When penalty = 0, RAPS=APS.
+    :param kreg: the rank of regularization which is an integer in [0,labels_num].
     """
 
     def __init__(self, penalty, kreg=0):
-        """
-        when penalty = 0, RAPS=APS.
-
-        :param kreg : the rank of regularization which is an integer in [0,labels_num].
-        """
+        
         if penalty <= 0:
             raise ValueError("The parameter 'penalty' must be a positive value.")
         if kreg < 0:

@@ -4,6 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
+__all__ = ["ConfTr"]
+
 
 import torch
 
@@ -12,48 +14,50 @@ import torch.nn.functional as F
 
 
 class ConfTr(nn.Module):
-    def __init__(self, weights, predictor, alpha, fraction, loss_types="valid", target_size=1,
+    """
+    Conformal Training (Stutz et al., 2021).
+    Paper: https://arxiv.org/abs/2110.09192
+
+    :param weight: the weight of each loss function
+    :param predictor: the CP predictors
+    :param alpha: the significance level for each training batch
+    :param fraction: the fraction of the calibration set in each training batch
+    :param loss_type: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
+    :param target_size: Optional: 0 | 1.
+    :param loss_transform: a transform for loss
+    :param base_loss_fn: a base loss function. For example, cross entropy in classification.
+    """
+    def __init__(self, weight, predictor, alpha, fraction, loss_type="valid", target_size=1,
                  loss_transform="square", base_loss_fn=None):
-        """
-        :param weights: the weight of each loss function
-        :param predictor: the CP predictors
-        :param alpha: the significance level for each training batch
-        :param fraction: the fraction of the calibration set in each training batch
-        :param loss_types: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
-        :param target_size:
-        :param loss_transform: a transform for loss
-        :param base_loss_fn: a base loss function, such as cross entropy for classification
-        """
+        
         super(ConfTr, self).__init__()
-        self.weight = weights
+        assert weight>0, "weight must be greater than 0."
+        assert (0 < fraction < 1), "fraction should be a value in (0,1)."
+        assert loss_type in ["valid", "classification",  "probs", "coverage"], ('loss_type should be a value in ['
+                                                                                '"valid", "classification",  "probs", '
+                                                                                '"coverage"].')
+        assert target_size==0 or target_size ==1, "target_size should be 0 or 1."
+        assert loss_transform in ["square", "abs", "log"], ('loss_transform should be a value in ["square", "abs", '
+                                                            '"log"].')
+        self.weight = weight
         self.predictor = predictor
         self.alpha = alpha
         self.fraction = fraction
-        self.base_loss_fn = base_loss_fn
-
+        self.loss_type =  loss_type
         self.target_size = target_size
+        self.base_loss_fn = base_loss_fn
+        
         if loss_transform == "square":
             self.transform = torch.square
         elif loss_transform == "abs":
             self.transform = torch.abs
         elif loss_transform == "log":
             self.transform = torch.log
-        else:
-            raise NotImplementedError
         self.loss_functions_dict = {"valid": self.__compute_hinge_size_loss,
                                     "probs": self.__compute_probabilistic_size_loss,
                                     "coverage": self.__compute_coverage_loss,
-                                    "classification": self.__compute_classification_loss}
-
-        if type(loss_types) == set:
-            if type(weights) != set:
-                raise TypeError("weights must be a set.")
-        elif type(loss_types) == str:
-            if type(weights) != float and type(weights) != int:
-                raise TypeError("weights must be a float or a int.")
-        else:
-            raise TypeError("types must be a set or a string.")
-        self.loss_types = loss_types
+                                    "classification": self.__compute_classification_loss
+                                    }
 
     def forward(self, logits, labels):
         # Compute Size Loss
@@ -65,15 +69,10 @@ class ConfTr(nn.Module):
 
         self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
         tau = self.predictor.q_hat
-        test_scores = self.predictor.score_function.predict(test_logits)
+        test_scores = self.predictor.score_function(test_logits)
+        # Computing the probability of each label contained in the prediction set.
         pred_sets = torch.sigmoid(tau - test_scores)
-
-        if type(self.loss_types) == set:
-            loss = torch.tensor(0).to(logits.device)
-            for i in range(len(self.loss_types)):
-                loss += self.weight[i] * self.loss_functions_dict[self.loss_types[i]](pred_sets, test_labels)
-        else:
-            loss = self.weight * self.loss_functions_dict[self.loss_types](pred_sets, test_labels)
+        loss = self.weight * self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
 
         if self.base_loss_fn is not None:
             loss += self.base_loss_fn(logits, labels).float()
@@ -109,13 +108,13 @@ class ConfTr(nn.Module):
     def __compute_classification_loss(self, pred_sets, labels):
         # Convert labels to one-hot encoding
         one_hot_labels = F.one_hot(labels, num_classes=pred_sets.shape[1]).float()
-        loss_matrix = torch.eye(pred_sets.shape[1]).to(pred_sets.device)
+        loss_matrix = torch.eye(pred_sets.shape[1], device=pred_sets.device)
         # Calculate l1 and l2 losses
         l1 = (1 - pred_sets) * one_hot_labels * loss_matrix[labels]
         l2 = pred_sets * (1 - one_hot_labels) * loss_matrix[labels]
 
         # Calculate the total loss
-        loss = torch.sum(torch.maximum(l1 + l2, torch.zeros_like(l1).to(pred_sets.device)), dim=1)
+        loss = torch.sum(torch.maximum(l1 + l2, torch.zeros_like(l1, device=pred_sets.device)), dim=1)
 
         # Return the mean loss
         return torch.mean(loss)

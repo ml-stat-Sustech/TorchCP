@@ -9,7 +9,7 @@ We developed TorchCP under Python 3.9 and PyTorch 2.0.1. To install TorchCP, sim
 
 .. code-block:: bash
 
-   pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
+   pip install torchcp
 
 or clone the repo and run
 

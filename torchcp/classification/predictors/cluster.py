@@ -17,19 +17,17 @@ from torchcp.utils.common import DimensionError
 class ClusterPredictor(SplitPredictor):
     """
     Class-Conditional Conformal Prediction with Many Classes (Ding et al., 2023).
-    paper: https://arxiv.org/abs/2306.09335
+    paper: https://arxiv.org/abs/2306.09335.
+    
+    :param score_function: a non-conformity score function.
+    :param model: a pytorch model.
+    :param ratio_clustering: the ratio of examples in the calibration dataset used to cluster classes.
+    :param num_clusters: the number of clusters. If ratio_clustering is "auto", the number of clusters is automatically computed.
+    :param split: the method to split the dataset into clustering dataset and calibration set. Options are 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability).
     """
 
     def __init__(self, score_function, model=None, ratio_clustering="auto", num_clusters="auto", split='random',
                  temperature=1):
-        """
-
-        :param score_function: score functions of CP
-        :param model: a deep learning model
-        :param ratio_clustering: The ratio of examples in the calibration dataset used to cluster classes
-        :param num_clusters: The number of clusters. If cluster_ratio is "auto", the number of clusters is automatically computed.
-        :param split: The method to split the dataset into clustering dataset and calibration set. split: How to split data between clustering step and calibration step. Options are 'proportional' (sample proportional to distribution such that rarest class has n_clustering example), 'doubledip' (don't split and use all data for both steps, or 'random' (each example is assigned to clustering step with some fixed probability)
-        """
 
         super(ClusterPredictor, self).__init__(score_function, model, temperature)
         self.__ratio_clustering = ratio_clustering

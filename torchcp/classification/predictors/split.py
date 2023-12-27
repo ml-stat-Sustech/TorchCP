@@ -12,6 +12,14 @@ from torchcp.classification.predictors.base import BasePredictor
 
 
 class SplitPredictor(BasePredictor):
+    """
+    Split Conformal Prediction (Vovk et a., 2005).
+    Book: https://link.springer.com/book/10.1007/978-3-031-06649-8.
+    
+    :param score_function: non-conformity score function.
+    :param model: a pytorch model.
+    :param temperature: the temperature of Temperature Scaling.
+    """
     def __init__(self, score_function, model=None, temperature=1):
         super().__init__(score_function, model, temperature)
 
@@ -110,7 +118,6 @@ class SplitPredictor(BasePredictor):
                 labels_list.append(tmp_label)
         val_labels = torch.cat(labels_list)
 
-        res_dict = {}
-        res_dict["Coverage_rate"] = self._metric('coverage_rate')(prediction_sets, val_labels)
-        res_dict["Average_size"] = self._metric('average_size')(prediction_sets, val_labels)
+        res_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, val_labels),
+                    "Average_size": self._metric('average_size')(prediction_sets, val_labels)}
         return res_dict

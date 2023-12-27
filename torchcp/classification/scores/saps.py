@@ -15,12 +15,12 @@ class SAPS(APS):
     """
     Sorted Adaptive Prediction Sets (Huang et al., 2023)
     paper: https://arxiv.org/abs/2310.06430
+    
+    :param weight: the weight of label ranking.
     """
 
     def __init__(self, weight):
-        """
-        :param weight: the weigth of label ranking.
-        """
+
         super(SAPS, self).__init__()
         if weight <= 0:
             raise ValueError("The parameter 'weight' must be a positive value.")
