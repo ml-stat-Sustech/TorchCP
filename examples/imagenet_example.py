@@ -19,6 +19,7 @@ from torchcp.classification.predictors import ClusterPredictor, ClassWisePredict
 from torchcp.classification.scores import THR, APS, SAPS, RAPS
 from torchcp.classification import Metrics
 from torchcp.utils import fix_randomness
+from examples.common.dataset import build_dataset
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
@@ -36,16 +37,8 @@ if __name__ == '__main__':
     model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(model_device)
 
-    # load dataset
-    transform = trn.Compose([trn.Resize(256),
-                             trn.CenterCrop(224),
-                             trn.ToTensor(),
-                             trn.Normalize(mean=[0.485, 0.456, 0.406],
-                                           std=[0.229, 0.224, 0.225])
-                             ])
-    usr_dir = os.path.expanduser('~')
-    data_dir = os.path.join(usr_dir, "data")
-    dataset = dset.ImageFolder(data_dir + "/imagenet/val", transform)
+
+    dataset = build_dataset('imagenet')
 
     cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
