@@ -1,12 +1,11 @@
 import torch
 from torch.utils.data import TensorDataset
-from tqdm import tqdm
 
 from torchcp.regression import Metrics
 from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictors import ACI, CQR
 from torchcp.utils import fix_randomness
-from utils import build_reg_data, build_regression_model
+from examples.common.utils import build_reg_data, build_regression_model
 from regression import train
 
 
@@ -48,7 +47,7 @@ if __name__ == '__main__':
     cal_dataset = TensorDataset(torch.from_numpy(X[0:T0, :]), torch.from_numpy(y[0:T0]))
     test_dataset = TensorDataset(torch.from_numpy(X[T0:, :]), torch.from_numpy(y[T0:]))
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
-    test_data_loader =  torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
+    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))      
 

@@ -2,14 +2,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset
-from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
 
 
 from torchcp.regression.predictors import SplitPredictor,CQR
 from torchcp.regression.loss import QuantileLoss 
 from torchcp.utils import fix_randomness
-from utils import build_reg_data, build_regression_model
+from examples.common.utils import build_reg_data
+from examples.common.utils import build_regression_model
 
 
 def train(model, device, epoch, train_data_loader, criterion, optimizer):

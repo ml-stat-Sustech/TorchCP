@@ -16,18 +16,15 @@
 #
 
 
-import argparse
-import itertools
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from dataset import build_dataset
+from examples.common.dataset import build_dataset
 from torchcp.classification.loss import ConfTr
-from torchcp.classification.predictors import SplitPredictor, ClusterPredictor, ClassWisePredictor
-from torchcp.classification.scores import THR, APS, SAPS, RAPS
+from torchcp.classification.predictors import SplitPredictor
+from torchcp.classification.scores import THR
 from torchcp.utils import fix_randomness
 
 
