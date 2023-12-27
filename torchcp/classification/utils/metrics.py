@@ -10,14 +10,14 @@ import numpy as np
 
 from torchcp.utils.registry import Registry
 
-METRICS_REGISTRY = Registry("METRICS")
+METRICS_REGISTRY_CLASSIFICATION = Registry("METRICS")
 
 
 #########################################
 # Marginal coverage metric
 #########################################
 
-@METRICS_REGISTRY.register()
+@METRICS_REGISTRY_CLASSIFICATION.register()
 def coverage_rate(prediction_sets, labels):
     cvg = 0
     for index, ele in enumerate(zip(prediction_sets, labels)):
@@ -26,7 +26,7 @@ def coverage_rate(prediction_sets, labels):
     return cvg / len(prediction_sets)
 
 
-@METRICS_REGISTRY.register()
+@METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels):
     avg_size = 0
     for index, ele in enumerate(prediction_sets):
@@ -38,7 +38,7 @@ def average_size(prediction_sets, labels):
 # Conditional coverage metric
 #########################################
 
-@METRICS_REGISTRY.register()
+@METRICS_REGISTRY_CLASSIFICATION.register()
 def CovGap(prediction_sets, labels, alpha, num_classes):
     rate_classes = []
     for k in range(num_classes):
@@ -50,7 +50,7 @@ def CovGap(prediction_sets, labels, alpha, num_classes):
     return np.mean(np.abs(rate_classes - (1 - alpha))) * 100
 
 
-@METRICS_REGISTRY.register()
+@METRICS_REGISTRY_CLASSIFICATION.register()
 def VioClasses(prediction_sets, labels, alpha, num_classes):
     violation_nums = 0
     for k in range(num_classes):
@@ -64,7 +64,7 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
     return violation_nums
 
 
-@METRICS_REGISTRY.register()
+@METRICS_REGISTRY_CLASSIFICATION.register()
 def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
     strata_diff = [[1, 1], [2, 3], [4, 6], [7, 10], [11, 100], [101, 1000]]
     correct_array = np.zeros(len(labels))
@@ -109,8 +109,8 @@ def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
     return diff_violation, diff_violation_one, ccss_diff
 
 
-@METRICS_REGISTRY.register()
-def SSCV(logits, prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3], [4, 10], [11, 100], [101, 1000]]):
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def SSCV(prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3], [4, 10], [11, 100], [101, 1000]]):
     """Size-stratified coverage violation (SSCV)
 
     """
@@ -132,6 +132,6 @@ def SSCV(logits, prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3]
 class Metrics:
 
     def __call__(self, metric) -> Any:
-        if metric not in METRICS_REGISTRY.registered_names():
+        if metric not in METRICS_REGISTRY_CLASSIFICATION.registered_names():
             raise NameError(f"The metric: {metric} is not defined in TorchCP.")
-        return METRICS_REGISTRY.get(metric)
+        return METRICS_REGISTRY_CLASSIFICATION.get(metric)

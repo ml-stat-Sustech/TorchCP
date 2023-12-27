@@ -5,7 +5,8 @@ from torchcp.regression import Metrics
 from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictors import ACI, CQR
 from torchcp.utils import fix_randomness
-from examples.common.utils import build_reg_data, build_regression_model
+from examples.common.dataset import build_reg_data
+from examples.common.utils import build_regression_model
 from regression import train
 
 
