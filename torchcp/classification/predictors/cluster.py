@@ -226,8 +226,9 @@ class ClusterPredictor(SplitPredictor):
 
         # Map true class labels to clusters
         cal_true_clusters = torch.tensor([cluster_assignments[label] for label in cal_true_labels], device=self._device)
-
-        cluster_qhats = self.__compute_class_specific_qhats(cal_class_scores, cal_true_clusters, alpha)
+        num_clusters = torch.max(cluster_assignments) + 1
+        
+        cluster_qhats = self.__compute_class_specific_qhats(cal_class_scores, cal_true_clusters, num_clusters, alpha)
         # Map cluster qhats back to classes
         num_classes = len(cluster_assignments)
         qhats_class = torch.tensor([cluster_qhats[cluster_assignments[k]] for k in range(num_classes)],
@@ -235,19 +236,17 @@ class ClusterPredictor(SplitPredictor):
 
         return qhats_class
 
-    def __compute_class_specific_qhats(self, cal_class_scores, cal_true_clusters, alpha):
+    def __compute_class_specific_qhats(self, cal_class_scores, cal_true_clusters, num_clusters, alpha):
         '''
         Computes class-specific quantiles (one for each class) that will result in marginal coverage of (1-alpha)
         
         :param cal_class_scores: num_instances-length array where cal_class_scores[i] is the score for instance i
         :param cal_true_clusters: num_instances-length array of true class labels. If class -1 appears, it will be assigned the null_qhat value. It is appended as an extra entry of the returned q_hats so that q_hats[-1] = null_qhat.
+        :param num_clusters: the number of clusters.
         :param alpha: Desired coverage level.
 
         :return: the threshold of each class
         '''
-
-        # the number of clusters.
-        num_clusters = torch.max(cal_true_clusters) + 1
 
         # Compute quantile q_hat that will result in marginal coverage of (1-alpha)
         null_qhat = self._calculate_conformal_value(cal_class_scores, alpha)
