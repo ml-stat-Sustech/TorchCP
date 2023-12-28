@@ -21,7 +21,7 @@ METRICS_REGISTRY_CLASSIFICATION = Registry("METRICS")
 def coverage_rate(prediction_sets, labels):
     cvg = 0
     for index, ele in enumerate(zip(prediction_sets, labels)):
-        if ele[1].item() in ele[0]:
+        if ele[1] in ele[0]:
             cvg += 1
     return cvg / len(prediction_sets)
 
