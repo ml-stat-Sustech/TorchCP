@@ -107,7 +107,7 @@ def test_time_series():
     # Adaptive Conformal Inference,
     ##################################      
     print("########################## ACI ###########################")
-    predictor = ACI(model, 0.0001)
+    predictor = ACI(model, 0.005)
     test_y = torch.from_numpy(y[T0:num_examples]).to(device)
     predicts = torch.zeros((num_examples - T0, 2)).to(device)
     for i in range(num_examples - T0):

@@ -7,10 +7,10 @@
 
 import torch
 
-from torchcp.regression.predictors.split import SplitPredictor
+from torchcp.regression.predictors.cqr import CQR
 
 
-class ACI(SplitPredictor):
+class ACI(CQR):
     """
     Adaptive conformal inference (Gibbs et al., 2021)
     paper: https://arxiv.org/abs/2106.00170
@@ -23,14 +23,12 @@ class ACI(SplitPredictor):
         super().__init__(model)
         self.__gamma = gamma
         self.alpha_t = None
-
+        
     def calculate_threshold(self, predicts, y_truth, alpha):
-        if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in (0,1).")
-        self.scores = torch.maximum(predicts[:, 0] - y_truth, y_truth - predicts[:, 1])
+        self.scores = self.calculate_score(predicts, y_truth)
         self.alpha = alpha
-        if self.alpha_t is None:
-            self.alpha_t = alpha
+        self.alpha_t =  alpha
+        self.q_hat = self._calculate_conformal_value(self.scores, alpha)
 
     def predict(self, x, y_t=None, pred_interval_t=None):
         """
@@ -42,6 +40,9 @@ class ACI(SplitPredictor):
         self._model.eval()
         x = x.to(self._device)
 
+        #######################
+        # Count the error rate in the previous steps
+        #######################
         if y_t is None:
             err_t = self.alpha
         else:
@@ -56,12 +57,11 @@ class ACI(SplitPredictor):
                 for i in range(steps_t):
                     err[i] = 1 if (y_t[i] >= pred_interval_t[i][0]) & (y_t[i] <= pred_interval_t[i][1]) else 0
                 err_t = torch.sum(w * err)
+                
+        # Adaptive adjust the value of alpha
         self.alpha_t = self.alpha_t + self.__gamma * (self.alpha - err_t)
         predicts_batch = self._model(x.to(self._device)).float()
-        quantile = (1 - self.alpha_t) * (1 + 1 / self.scores.shape[0])
-        if quantile > 1:
-            quantile = 1
-        q_hat = torch.quantile(self.scores, quantile)
+        q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
         prediction_intervals = x.new_zeros(2)
         prediction_intervals[0] = predicts_batch[0] - q_hat
         prediction_intervals[1] = predicts_batch[1] + q_hat

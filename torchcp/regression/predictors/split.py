@@ -11,6 +11,7 @@ import torch
 
 from torchcp.regression.utils.metrics import Metrics
 from torchcp.utils.common import get_device
+from torchcp.utils.common import calculate_conformal_value
 
 
 class SplitPredictor(object):
@@ -25,9 +26,9 @@ class SplitPredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
-        self.q_hat = None
-        self.scores = None
-        self.alpha = None
+        
+    def calculate_score(self, predicts, y_truth):
+        return torch.abs(predicts.reshape(-1) - y_truth)
 
     def calibrate(self, cal_dataloader, alpha):
         self._model.eval()
@@ -44,13 +45,11 @@ class SplitPredictor(object):
         self.calculate_threshold(predicts, y_truth, alpha)
 
     def calculate_threshold(self, predicts, y_truth, alpha):
-        if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in (0,1).")
-        self.scores = torch.abs(predicts.reshape(-1) - y_truth)
-        quantile = math.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
-        if quantile > 1:
-            quantile = 1
-        self.q_hat = torch.quantile(self.scores, quantile)
+        scores = self.calculate_score(predicts, y_truth)
+        self.q_hat = self._calculate_conformal_value(scores, alpha)
+        
+    def _calculate_conformal_value(self, scores, alpha):
+        return calculate_conformal_value(scores, alpha)
 
     def predict(self, x_batch):
         self._model.eval()

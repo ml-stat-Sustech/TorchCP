@@ -9,6 +9,7 @@ import math
 import torch
 
 from torchcp.classification.predictors.base import BasePredictor
+from torchcp.utils.common import calculate_conformal_value
 
 
 class SplitPredictor(BasePredictor):
@@ -49,26 +50,7 @@ class SplitPredictor(BasePredictor):
         self.q_hat = self._calculate_conformal_value(scores, alpha)
 
     def _calculate_conformal_value(self, scores, alpha):
-        """
-        Calculate the 1-alpha quantile of scores.
-        
-        :param scores: non-conformity scores.
-        :param alpha: a significance level.
-        
-        :return: the threshold which is use to construct prediction sets.
-        """
-        if len(scores) == 0:
-            warnings.warn(
-                "The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as torch.inf.")
-            return torch.inf
-        qunatile_value = math.ceil(scores.shape[0] + 1) * (1 - alpha) / scores.shape[0]
-
-        if qunatile_value > 1:
-            warnings.warn(
-                "The value of quantile exceeds 1. It should be a value in (0,1). To avoid program crash, the threshold is set as torch.inf.")
-            return torch.inf
-
-        return torch.quantile(scores, qunatile_value).to(self._device)
+        return calculate_conformal_value(scores, alpha)
 
     #############################
     # The prediction process

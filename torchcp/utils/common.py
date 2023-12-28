@@ -7,6 +7,8 @@
 
 
 import random
+import math
+import warnings
 
 import numpy as np
 import torch
@@ -47,3 +49,28 @@ def get_device(model):
     else:
         device = next(model.parameters()).device
     return device
+
+
+def calculate_conformal_value(scores, alpha):
+    """
+    Calculate the 1-alpha quantile of scores.
+    
+    :param scores: non-conformity scores.
+    :param alpha: a significance level.
+    
+    :return: the threshold which is use to construct prediction sets.
+    """
+    if alpha >= 1 or alpha <= 0:
+            raise ValueError("Significance level 'alpha' must be in (0,1).")
+    if len(scores) == 0:
+        warnings.warn(
+            "The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as torch.inf.")
+        return torch.inf
+    qunatile_value = math.ceil(scores.shape[0] + 1) * (1 - alpha) / scores.shape[0]
+
+    if qunatile_value > 1:
+        warnings.warn(
+            "The value of quantile exceeds 1. It should be a value in (0,1). To avoid program crash, the threshold is set as torch.inf.")
+        return torch.inf
+
+    return torch.quantile(scores, qunatile_value).to(scores.device)
