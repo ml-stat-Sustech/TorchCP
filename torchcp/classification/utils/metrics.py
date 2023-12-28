@@ -118,7 +118,7 @@ def SSCV(prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3], [4, 10
     correct_array = np.zeros(len(labels))
     for index, ele in enumerate(prediction_sets):
         size_array[index] = len(ele)
-        correct_array[index] = 1 if labels[index] in prediction_sets[index] else 0
+        correct_array[index] = 1 if labels[index] in ele else 0
 
     sscv = -1
     for stratum in stratified_size:
