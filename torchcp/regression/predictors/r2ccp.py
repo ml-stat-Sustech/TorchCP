@@ -44,18 +44,22 @@ class R2CCP(SplitPredictor):
                     elif predicts_batch[i, k] <= self.q_hat and predicts_batch[i, k + 1] <= self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k + 1]
                         prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                    elif predicts_batch[i, k] <= self.q_hat and predicts_batch[i, k + 1] >= self.q_hat:
-                        prediction_intervals[i, 2 * k] = midpoints[k] + (midpoints[k + 1] - midpoints[k]) * \
-                                (self.q_hat - predicts_batch[i, k]) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
+                    elif predicts_batch[i, k] < self.q_hat and predicts_batch[i, k + 1] > self.q_hat:
+                        prediction_intervals[i, 2 * k] = midpoints[k+1] - (midpoints[k + 1] - midpoints[k]) * \
+                                (predicts_batch[i, k+1] - self.q_hat) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
                         prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                    else:
+                    elif predicts_batch[i, k] > self.q_hat and predicts_batch[i, k + 1] < self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k]
                         prediction_intervals[i, 2 * k + 1] = midpoints[k] - (midpoints[k + 1] - midpoints[k]) * \
                                 (predicts_batch[i, k] - self.q_hat) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
+                        
         return prediction_intervals
     
     def __find_interval(self, midpoints, y_truth):
-        interval = torch.zeros_like(y_truth, dtype=torch.long)
+        '''
+        midpoints[interval[i]] <= y_truth[i] < midpoints[interval[i+1]]
+        '''
+        interval = torch.zeros_like(y_truth, dtype=torch.long).to(self._device)
 
         for i in range(len(midpoints)):
             if i == 0:
@@ -71,7 +75,7 @@ class R2CCP(SplitPredictor):
 
     
     def __calculate_linear_interpolation(self, interval, predicts, y_truth, midpoints):
-        scores = torch.zeros_like(y_truth, dtype=torch.float32)
+        scores = torch.zeros_like(y_truth, dtype=torch.float32).to(self._device)
         
         for i in range(len(y_truth)):
             k = interval[i]
