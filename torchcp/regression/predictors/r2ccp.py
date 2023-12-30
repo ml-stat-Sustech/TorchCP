@@ -77,7 +77,7 @@ class R2CCP(SplitPredictor):
                 interval[mask] = 0
             elif i < len(midpoints):
                 mask = (y_truth >= midpoints[i-1]) & (y_truth < midpoints[i])
-                interval[mask] = i
+                interval[mask] = i-1
             else:
                 mask = y_truth >= midpoints[-1]
                 interval[mask] = len(midpoints)
