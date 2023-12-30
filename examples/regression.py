@@ -49,36 +49,36 @@ if __name__ == '__main__':
     ##################################
     # Split Conformal Prediction
     ##################################
-    print("########################## SplitPredictor ###########################")
-    model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    # print("########################## SplitPredictor ###########################")
+    # model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
+    # criterion = nn.MSELoss()
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader, criterion, optimizer)
+    # for epoch in range(epochs):
+    #     train(model, device, epoch, train_data_loader, criterion, optimizer)
 
-    model.eval()
-    predictor = SplitPredictor(model)
-    predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader)) 
+    # model.eval()
+    # predictor = SplitPredictor(model)
+    # predictor.calibrate(cal_data_loader, alpha)
+    # print(predictor.evaluate(test_data_loader)) 
 
     ##################################
     # Conformal Quantile Regression
     ##################################
-    print("########################## CQR ###########################")
+    # print("########################## CQR ###########################")
 
-    quantiles = [alpha / 2, 1 - alpha / 2]
-    model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
-    criterion = QuantileLoss(quantiles)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    # quantiles = [alpha / 2, 1 - alpha / 2]
+    # model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
+    # criterion = QuantileLoss(quantiles)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader, criterion, optimizer)
+    # for epoch in range(epochs):
+    #     train(model, device, epoch, train_data_loader, criterion, optimizer)
 
-    model.eval()
-    predictor = CQR(model)
-    predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader))
+    # model.eval()
+    # predictor = CQR(model)
+    # predictor.calibrate(cal_data_loader, alpha)
+    # print(predictor.evaluate(test_data_loader))
 
     ##################################
     # Conformal Prediction via Regression-as-Classification

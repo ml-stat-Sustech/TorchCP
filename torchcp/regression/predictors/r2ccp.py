@@ -27,6 +27,10 @@ class R2CCP(SplitPredictor):
         interval = self.__find_interval(self.midpoints, y_truth)
         scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, self.midpoints)
         return scores
+    
+    def calculate_threshold(self, predicts, y_truth, alpha):
+        scores = self.calculate_score(predicts, y_truth)
+        self.q_hat = self._calculate_conformal_value(scores, 1-alpha)
 
     def predict(self, x_batch):
         self._model.eval()
@@ -42,17 +46,16 @@ class R2CCP(SplitPredictor):
                         prediction_intervals[i, 2 * k] = midpoints[k]
                         prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
                     elif predicts_batch[i, k] <= self.q_hat and predicts_batch[i, k + 1] <= self.q_hat:
-                        prediction_intervals[i, 2 * k] = midpoints[k + 1]
-                        prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                    elif predicts_batch[i, k] <= self.q_hat and predicts_batch[i, k + 1] >= self.q_hat:
+                        prediction_intervals[i, 2 * k] = 0
+                        prediction_intervals[i, 2 * k + 1] = 0
+                    elif predicts_batch[i, k] < self.q_hat and predicts_batch[i, k + 1] > self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k+1] - (midpoints[k + 1] - midpoints[k]) * \
                                 (predicts_batch[i, k+1] - self.q_hat) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
                         prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                    elif predicts_batch[i, k] >= self.q_hat and predicts_batch[i, k + 1] <= self.q_hat:
+                    elif predicts_batch[i, k] > self.q_hat and predicts_batch[i, k + 1] < self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k]
                         prediction_intervals[i, 2 * k + 1] = midpoints[k] - (midpoints[k + 1] - midpoints[k]) * \
                                 (predicts_batch[i, k] - self.q_hat) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
-                        
         return prediction_intervals
     
     def __find_interval(self, midpoints, y_truth):
@@ -61,10 +64,10 @@ class R2CCP(SplitPredictor):
         '''
         interval = torch.zeros_like(y_truth, dtype=torch.long).to(self._device)
 
-        for i in range(len(midpoints)):
+        for i in range(len(midpoints)+1):
             if i == 0:
                 mask = y_truth < midpoints[i]
-                interval[mask] = 0  
+                interval[mask] = 0
             elif i < len(midpoints):
                 mask = (y_truth >= midpoints[i-1]) & (y_truth < midpoints[i])
                 interval[mask] = i-1
@@ -76,11 +79,15 @@ class R2CCP(SplitPredictor):
     
     def __calculate_linear_interpolation(self, interval, predicts, y_truth, midpoints):
         scores = torch.zeros_like(y_truth, dtype=torch.float32).to(self._device)
-        
         for i in range(len(y_truth)):
             k = interval[i]
-            score = (predicts[i,k+1] - y_truth[i]) * predicts[i,k] / (midpoints[k+1] - midpoints[k]) \
-                + (y_truth[i] - predicts[i,k]) * predicts[i,k+1] / (midpoints[k+1] - midpoints[k])
-            scores[i] = score
-            
+            if (k == 0):
+                scores[i] = predicts[i,k]
+            elif (k == len(midpoints)):
+                scores[i] = predicts[i,k-1]
+            else:
+                score = (midpoints[k+1] - y_truth[i]) * predicts[i,k] / (midpoints[k+1] - midpoints[k]) \
+                    + (y_truth[i] - midpoints[k]) * predicts[i,k+1] / (midpoints[k+1] - midpoints[k])
+                scores[i] = score
+                        
         return scores
