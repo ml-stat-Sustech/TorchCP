@@ -12,11 +12,12 @@ class R2ccpLoss(nn.Module):
     :param K: number of bins.
     """
 
-    def __init__(self, p, tau, K):
+    def __init__(self, p, tau, K, midpoints):
         super().__init__()
         self.p = p
         self.tau = tau
         self.K = K
+        self.midpoints = midpoints
 
     def forward(self, preds, target):
         """ 
@@ -27,15 +28,15 @@ class R2ccpLoss(nn.Module):
         """
         assert not target.requires_grad
         if preds.size(0) != target.size(0):
-            raise IndexError(f"Shape of preds must be equal to shape of target.")
-        losses = preds.new_zeros(len(target))
-
-        errors = torch.abs(target - preds)
-        cross_entropy = torch.sum(errors ** self.p * target, dim=1)
-        shannon_entropy = torch.sum(preds * torch.log(preds.clamp_min(1e-10)), dim=1)
-        losses = cross_entropy - self.tau * shannon_entropy
+            raise IndexError(f"Batch size of preds must be equal to the batch size of target.")
         
+        target = target.view(-1, 1)
+        abs_diff = torch.abs(target - self.midpoints.view(1, -1))
+        cross_entropy = torch.sum((abs_diff ** self.p) * preds, dim=1)
+        shannon_entropy = torch.sum(preds * torch.log(preds.clamp_min(1e-10)), dim=1)
+        
+        losses = cross_entropy - self.tau * shannon_entropy
         loss = losses.sum()
-        # print(loss)
+        
         return loss
     

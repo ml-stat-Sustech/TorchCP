@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     midpoints = calculate_midpoints(train_data_loader_r2ccp, cal_data_loader_r2ccp, K)
     model = build_regression_model("Softmax")(X.shape[1], K, 1000, 0).to(device)
-    criterion = R2ccpLoss(p, tau, K)
+    criterion = R2ccpLoss(p, tau, K, midpoints)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
     for epoch in range(epochs):
