@@ -44,11 +44,11 @@ class R2CCP(SplitPredictor):
                     elif predicts_batch[i, k] <= self.q_hat and predicts_batch[i, k + 1] <= self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k + 1]
                         prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                    elif predicts_batch[i, k] < self.q_hat and predicts_batch[i, k + 1] > self.q_hat:
+                    elif predicts_batch[i, k] <= self.q_hat and predicts_batch[i, k + 1] >= self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k+1] - (midpoints[k + 1] - midpoints[k]) * \
                                 (predicts_batch[i, k+1] - self.q_hat) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
                         prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                    elif predicts_batch[i, k] > self.q_hat and predicts_batch[i, k + 1] < self.q_hat:
+                    elif predicts_batch[i, k] >= self.q_hat and predicts_batch[i, k + 1] <= self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k]
                         prediction_intervals[i, 2 * k + 1] = midpoints[k] - (midpoints[k + 1] - midpoints[k]) * \
                                 (predicts_batch[i, k] - self.q_hat) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
@@ -64,7 +64,7 @@ class R2CCP(SplitPredictor):
         for i in range(len(midpoints)):
             if i == 0:
                 mask = y_truth < midpoints[i]
-                interval[mask] = 0
+                interval[mask] = 0  
             elif i < len(midpoints):
                 mask = (y_truth >= midpoints[i-1]) & (y_truth < midpoints[i])
                 interval[mask] = i-1
