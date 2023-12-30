@@ -7,11 +7,8 @@
 
 import math
 import torch
-import torch.nn.functional as F
 
 from torchcp.regression.predictors.split import SplitPredictor
-from torchcp.regression.utils.metrics import Metrics
-from torchcp.utils.common import get_device, calculate_conformal_value
 
 class R2CCP(SplitPredictor):
     """

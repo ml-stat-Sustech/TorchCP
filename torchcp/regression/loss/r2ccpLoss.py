@@ -12,11 +12,10 @@ class R2ccpLoss(nn.Module):
     :param K: number of bins.
     """
 
-    def __init__(self, p, tau, K, midpoints):
+    def __init__(self, p, tau, midpoints):
         super().__init__()
         self.p = p
         self.tau = tau
-        self.K = K
         self.midpoints = midpoints
 
     def forward(self, preds, target):
