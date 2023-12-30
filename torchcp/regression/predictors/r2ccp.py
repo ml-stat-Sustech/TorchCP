@@ -22,7 +22,7 @@ class R2CCP(SplitPredictor):
     :param K: number of bins.
     """
     
-    def __init__(self, model, K):
+    def __init__(self, model, K, midpoints):
         super().__init__(model)
         self._model = model
         self._device = get_device(model)
@@ -30,35 +30,23 @@ class R2CCP(SplitPredictor):
         self.q_hat = None
         self.alpha = None
         self.K = K
-        
-    def calibrate(self, cal_dataloader, alpha, midpoints):
-        self._model.eval()
-        self.alpha = alpha
-        predicts_list = []
-        y_truth_list = []
-        with torch.no_grad():
-            for examples in cal_dataloader:
-                tmp_x, tmp_labels = examples[0].to(self._device), examples[1].to(self._device)
-                tmp_predicts = self._model(tmp_x).detach()
-                predicts_list.append(tmp_predicts)
-                y_truth_list.append(tmp_labels)
-            predicts = torch.cat(predicts_list).float().to(self._device)
-            y_truth = torch.cat(y_truth_list).to(self._device)
-        self.calculate_threshold(predicts, y_truth, alpha, midpoints)
+        self.midpoints = midpoints
 
-    def calculate_threshold(self, predicts, y_truth, alpha, midpoints):
+    def calculate_threshold(self, predicts, y_truth, alpha):
         if alpha >= 1 or alpha <= 0:
             raise ValueError("Significance level 'alpha' must be in (0,1).")
         
         # linear interpolation of softmax probabilities
-        interval = self.__find_interval(midpoints, y_truth)
-        scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, midpoints)
+        interval = self.__find_interval(self.midpoints, y_truth)
+        scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, self.midpoints)
         # scores = F.interpolate(y.unsqueeze(0), new_x.view(1, -1), mode='linear', align_corners=False)
 
         self.q_hat = calculate_conformal_value(scores, alpha)
 
-    def predict(self, x_batch, midpoints):
+    def predict(self, x_batch):
         self._model.eval()
+        midpoints = self.midpoints
+
         predicts_batch = self._model(x_batch.to(self._device)).float()
         prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2*(self.K-1)))
         with torch.no_grad():
@@ -79,23 +67,6 @@ class R2CCP(SplitPredictor):
                         prediction_intervals[i, 2 * k + 1] = midpoints[k] - (midpoints[k + 1] - midpoints[k]) * \
                                 (predicts_batch[i, k] - self.q_hat) / (predicts_batch[i, k + 1] - predicts_batch[i, k])
         return prediction_intervals
-
-    def evaluate(self, data_loader, midpoints):
-        y_list = []
-        predict_list = []
-        with torch.no_grad():
-            for examples in data_loader:
-                tmp_x, tmp_y = examples[0].to(self._device), examples[1].to(self._device)
-                tmp_prediction_intervals = self.predict(tmp_x, midpoints)
-                y_list.append(tmp_y)
-                predict_list.append(tmp_prediction_intervals)
-
-        predicts = torch.cat(predict_list).float().to(self._device)
-        test_y = torch.cat(y_list).to(self._device)
-
-        res_dict = {"Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
-                    "Average_size": self._metric('average_size')(predicts)}
-        return res_dict
     
     def __find_interval(self, midpoints, y_truth):
         interval = torch.zeros_like(y_truth, dtype=torch.long)

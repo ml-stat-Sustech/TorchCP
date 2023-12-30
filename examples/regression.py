@@ -101,6 +101,6 @@ if __name__ == '__main__':
         train(model, device, epoch, train_data_loader, criterion, optimizer)
 
     model.eval()
-    predictor = R2CCP(model, K)
-    predictor.calibrate(cal_data_loader, alpha, midpoints)
-    print(predictor.evaluate(test_data_loader, midpoints))
+    predictor = R2CCP(model, K, midpoints)
+    predictor.calibrate(cal_data_loader, alpha)
+    print(predictor.evaluate(test_data_loader))
