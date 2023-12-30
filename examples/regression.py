@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset
+from torch.utils.data import TensorDataset, ConcatDataset
 from sklearn.preprocessing import StandardScaler
 
 from torchcp.regression.predictors import SplitPredictor, CQR, R2CCP
@@ -19,16 +19,9 @@ def train(model, device, epoch, train_data_loader, criterion, optimizer):
         loss.backward()
         optimizer.step()
         
-def calculate_midpoints(train_loader, cal_loader, K):
-    all_data = []
-    for loader in [train_loader, cal_loader]:
-        for data in loader:
-            all_data.append(data[0])
-    all_data_tensor = torch.cat(all_data, dim=0)
-
-    min_value = torch.min(all_data_tensor)
-    max_value = torch.max(all_data_tensor)
-    midpoints = torch.linspace(min_value, max_value, steps=K)
+def calculate_midpoints(data_loader, K):
+    data_tensor = torch.cat([data[0] for data in data_loader], dim=0)
+    midpoints = torch.linspace(data_tensor.min(), data_tensor.max(), steps=K)
 
     return midpoints
 
@@ -96,23 +89,22 @@ if __name__ == '__main__':
     ##################################
     print("########################## R2CCP ###########################")
 
-    train_data_loader_r2ccp = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True, pin_memory=True)
-    cal_data_loader_r2ccp = torch.utils.data.DataLoader(cal_dataset, batch_size=32, shuffle=False, pin_memory=True)
-    test_data_loader_r2ccp = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False, pin_memory=True)
-
     p = 0.5
     tau = 0.2
     K = 50
 
-    midpoints = calculate_midpoints(train_data_loader_r2ccp, cal_data_loader_r2ccp, K)
+    train_and_cal_dataset = ConcatDataset([train_dataset, cal_dataset])
+    train_and_cal_data_loader = torch.utils.data.DataLoader(train_and_cal_dataset, batch_size=100, shuffle=True, pin_memory=True)
+    midpoints = calculate_midpoints(train_and_cal_data_loader, K)
+    
     model = build_regression_model("Softmax")(X.shape[1], K, 1000, 0).to(device)
     criterion = R2ccpLoss(p, tau, K, midpoints)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
     for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader_r2ccp, criterion, optimizer)
+        train(model, device, epoch, train_data_loader, criterion, optimizer)
 
     model.eval()
     predictor = R2CCP(model, K)
-    predictor.calibrate(cal_data_loader_r2ccp, alpha, midpoints)
-    print(predictor.evaluate(test_data_loader_r2ccp, midpoints))
+    predictor.calibrate(cal_data_loader, alpha, midpoints)
+    print(predictor.evaluate(test_data_loader, midpoints))
