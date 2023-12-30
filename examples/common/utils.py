@@ -26,7 +26,7 @@ def build_regression_model(model_name):
 
         return NonLinearNet
     
-    elif model_name == "Softmax":
+    elif model_name == "NonLinearNet_with_Softmax":
         class Softmax(nn.Module):
             def __init__(self, in_shape, out_shape, hidden_size, dropout):
                 super(Softmax, self).__init__()

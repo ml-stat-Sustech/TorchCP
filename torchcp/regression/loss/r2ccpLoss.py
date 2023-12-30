@@ -9,7 +9,7 @@ class R2ccpLoss(nn.Module):
 
     :param p: norm of distance measure.
     :param tau: weighting term of the regularization.
-    :param K: number of bins.
+    :param midpoints: the midpoint of each bin.
     """
 
     def __init__(self, p, tau, midpoints):
@@ -31,7 +31,6 @@ class R2ccpLoss(nn.Module):
         
         target = target.view(-1, 1)
         abs_diff = torch.abs(target - self.midpoints.to(preds.device).unsqueeze(0))
-        # abs_diff = torch.abs(target - self.midpoints.to(preds.device).view(1, -1))
         cross_entropy = torch.sum((abs_diff ** self.p) * preds, dim=1)
         shannon_entropy = torch.sum(preds * torch.log(preds.clamp_min(1e-10)), dim=1)
         
