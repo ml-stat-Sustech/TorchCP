@@ -19,25 +19,14 @@ class R2CCP(SplitPredictor):
     :param K: number of bins.
     """
     
-    def __init__(self, model, K, midpoints):
+    def __init__(self, model, midpoints):
         super().__init__(model)
-        self._model = model
-        self._device = get_device(model)
-        self._metric = Metrics()
-        self.q_hat = None
-        self.alpha = None
         self.midpoints = midpoints
 
-    def calculate_threshold(self, predicts, y_truth, alpha):
-        if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in (0,1).")
-        
-        # linear interpolation of softmax probabilities
+    def calculate_score(self, predicts, y_truth):
         interval = self.__find_interval(self.midpoints, y_truth)
         scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, self.midpoints)
-        # scores = F.interpolate(y.unsqueeze(0), new_x.view(1, -1), mode='linear', align_corners=False)
-
-        self.q_hat = calculate_conformal_value(scores, alpha)
+        return scores
 
     def predict(self, x_batch):
         self._model.eval()

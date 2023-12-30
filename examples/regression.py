@@ -19,7 +19,7 @@ def train(model, device, epoch, train_data_loader, criterion, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+    # print(loss)
 
 if __name__ == '__main__':
     ##################################
@@ -50,35 +50,35 @@ if __name__ == '__main__':
     # Split Conformal Prediction
     ##################################
     print("########################## SplitPredictor ###########################")
-    model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    # model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
+    # criterion = nn.MSELoss()
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader, criterion, optimizer)
+    # for epoch in range(epochs):
+    #     train(model, device, epoch, train_data_loader, criterion, optimizer)
 
-    model.eval()
-    predictor = SplitPredictor(model)
-    predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader)) 
+    # model.eval()
+    # predictor = SplitPredictor(model)
+    # predictor.calibrate(cal_data_loader, alpha)
+    # print(predictor.evaluate(test_data_loader)) 
 
     ##################################
     # Conformal Quantile Regression
     ##################################
     print("########################## CQR ###########################")
 
-    quantiles = [alpha / 2, 1 - alpha / 2]
-    model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
-    criterion = QuantileLoss(quantiles)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    # quantiles = [alpha / 2, 1 - alpha / 2]
+    # model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
+    # criterion = QuantileLoss(quantiles)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader, criterion, optimizer)
+    # for epoch in range(epochs):
+    #     train(model, device, epoch, train_data_loader, criterion, optimizer)
 
-    model.eval()
-    predictor = CQR(model)
-    predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader))
+    # model.eval()
+    # predictor = CQR(model)
+    # predictor.calibrate(cal_data_loader, alpha)
+    # print(predictor.evaluate(test_data_loader))
 
     ##################################
     # Conformal Prediction via Regression-as-Classification
@@ -94,13 +94,13 @@ if __name__ == '__main__':
     midpoints = calculate_midpoints(train_and_cal_data_loader, K)
     
     model = build_regression_model("Softmax")(X.shape[1], K, 1000, 0).to(device)
-    criterion = R2ccpLoss(p, tau, K, midpoints)
+    criterion = R2ccpLoss(p, tau, midpoints)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
     for epoch in range(epochs):
         train(model, device, epoch, train_data_loader, criterion, optimizer)
 
     model.eval()
-    predictor = R2CCP(model, K, midpoints)
+    predictor = R2CCP(model, midpoints)
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))
