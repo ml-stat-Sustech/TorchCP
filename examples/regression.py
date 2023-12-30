@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from torchcp.regression.predictors import SplitPredictor, CQR, R2CCP
 from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.utils import fix_randomness
-from torchcp.regression.utils.utils import calculate_midpoints
+from torchcp.regression.utils import calculate_midpoints
 from examples.common.dataset import build_reg_data
 from examples.common.utils import build_regression_model
 

@@ -9,10 +9,11 @@ import math
 import torch
 import torch.nn.functional as F
 
+from torchcp.regression.predictors.split import SplitPredictor
 from torchcp.regression.utils.metrics import Metrics
-from torchcp.utils.common import get_device
+from torchcp.utils.common import get_device, calculate_conformal_value
 
-class R2CCP(object):
+class R2CCP(SplitPredictor):
     """
     Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2021)
     paper: https://neurips.cc/virtual/2023/80610
@@ -22,11 +23,11 @@ class R2CCP(object):
     """
     
     def __init__(self, model, K):
+        super().__init__(model)
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
         self.q_hat = None
-        self.scores = None
         self.alpha = None
         self.K = K
         
@@ -51,15 +52,10 @@ class R2CCP(object):
         
         # linear interpolation of softmax probabilities
         interval = self.__find_interval(midpoints, y_truth)
-        self.scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, midpoints)
-        # self.scores = F.interpolate(y.unsqueeze(0), new_x.view(1, -1), mode='linear', align_corners=False)
-        
-        quantile = math.ceil((self.scores.shape[0] + 1) * (1 - alpha)) / self.scores.shape[0]
-        if quantile > 1:
-            quantile = 1
+        scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, midpoints)
+        # scores = F.interpolate(y.unsqueeze(0), new_x.view(1, -1), mode='linear', align_corners=False)
 
-        self.scores = self.scores.to(torch.float32)
-        self.q_hat = torch.quantile(self.scores, quantile)
+        self.q_hat = calculate_conformal_value(scores, alpha)
 
     def predict(self, x_batch, midpoints):
         self._model.eval()
@@ -115,15 +111,6 @@ class R2CCP(object):
                 mask = y_truth >= midpoints[-1]
                 interval[mask] = len(midpoints)
         return interval
-    
-    # def __find_interval(self, midpoints, y_truth):
-    #     # Use searchsorted to find the insertion indices
-    #     interval = torch.searchsorted(midpoints, y_truth)
-
-    #     # Adjust indices for edge cases
-    #     interval[interval == len(midpoints)] -= 1
-
-    #     return interval
 
     
     def __calculate_linear_interpolation(self, interval, predicts, y_truth, midpoints):
