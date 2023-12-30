@@ -27,8 +27,7 @@ class QuantileLoss(nn.Module):
         :param target: the truth values. The shape is batch x 1.
         """
         assert not target.requires_grad
-        if preds.size(0) != target.size(0):
-            raise IndexError(f"Shape of preds must be equal to shape of target.")
+        assert preds.size(0) == target.size(0), "the batch size of preds must be equal to the batch size of target."
         losses = preds.new_zeros(len(self.quantiles))
 
         for i, q in enumerate(self.quantiles):

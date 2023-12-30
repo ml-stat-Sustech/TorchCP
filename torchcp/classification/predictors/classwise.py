@@ -25,8 +25,6 @@ class ClassWisePredictor(SplitPredictor):
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in (0,1).")
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         # Count the number of classes

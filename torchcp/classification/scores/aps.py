@@ -20,7 +20,7 @@ class APS(BaseScore):
     """
 
     def __call__(self, logits, label=None):
-        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
+        assert len(logits.shape) <= 2, "dimension of logits are at most 2."
         if len(logits.shape) == 1:
             logits = logits.unsqueeze(0)
         probs = torch.softmax(logits, dim=-1)

@@ -42,8 +42,6 @@ class SplitPredictor(BasePredictor):
         self.calculate_threshold(logits, labels, alpha)
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in (0,1).")
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         scores = self.score_function(logits, labels)
