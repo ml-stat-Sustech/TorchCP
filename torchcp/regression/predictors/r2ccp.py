@@ -29,7 +29,6 @@ class R2CCP(SplitPredictor):
         self._metric = Metrics()
         self.q_hat = None
         self.alpha = None
-        self.K = K
         self.midpoints = midpoints
 
     def calculate_threshold(self, predicts, y_truth, alpha):
@@ -46,12 +45,13 @@ class R2CCP(SplitPredictor):
     def predict(self, x_batch):
         self._model.eval()
         midpoints = self.midpoints
+        K = len(midpoints)
 
         predicts_batch = self._model(x_batch.to(self._device)).float()
-        prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2*(self.K-1)))
+        prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2*(K-1))).to(self._device)
         with torch.no_grad():
             for i in range(len(x_batch)):
-                for k in range(self.K-1):
+                for k in range(K-1):
                     if predicts_batch[i, k] >= self.q_hat and predicts_batch[i, k + 1] >= self.q_hat:
                         prediction_intervals[i, 2 * k] = midpoints[k]
                         prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
