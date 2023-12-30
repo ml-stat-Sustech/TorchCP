@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from torchcp.regression.predictors import SplitPredictor, CQR, R2CCP
 from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.utils import fix_randomness
+from torchcp.regression.utils.utils import calculate_midpoints
 from examples.common.dataset import build_reg_data
 from examples.common.utils import build_regression_model
 
@@ -18,12 +19,7 @@ def train(model, device, epoch, train_data_loader, criterion, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
-def calculate_midpoints(data_loader, K):
-    data_tensor = torch.cat([data[0] for data in data_loader], dim=0)
-    midpoints = torch.linspace(data_tensor.min(), data_tensor.max(), steps=K)
 
-    return midpoints
 
 if __name__ == '__main__':
     ##################################
