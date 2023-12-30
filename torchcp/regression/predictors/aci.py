@@ -21,13 +21,14 @@ class ACI(CQR):
 
     def __init__(self, model, gamma):
         super().__init__(model)
+        assert gamma > 0, "gamma must be greater than 0."
         self.__gamma = gamma
         self.alpha_t = None
-        
+
     def calculate_threshold(self, predicts, y_truth, alpha):
         self.scores = self.calculate_score(predicts, y_truth)
         self.alpha = alpha
-        self.alpha_t =  alpha
+        self.alpha_t = alpha
         self.q_hat = self._calculate_conformal_value(self.scores, alpha)
 
     def predict(self, x, y_t=None, pred_interval_t=None):
@@ -35,7 +36,7 @@ class ACI(CQR):
         
         :param x: input features at the time t+1.
         :param y_t: the truth value at the time t.
-        :param pred_interval_t: the prediction interval for the time t.
+        :param pred_interval_t: the prediction interval at the time t.
         """
         self._model.eval()
         x = x.to(self._device)
@@ -57,7 +58,7 @@ class ACI(CQR):
                 for i in range(steps_t):
                     err[i] = 1 if (y_t[i] >= pred_interval_t[i][0]) & (y_t[i] <= pred_interval_t[i][1]) else 0
                 err_t = torch.sum(w * err)
-                
+
         # Adaptive adjust the value of alpha
         self.alpha_t = self.alpha_t + self.__gamma * (self.alpha - err_t)
         predicts_batch = self._model(x.to(self._device)).float()
