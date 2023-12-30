@@ -124,7 +124,7 @@ def SSCV(prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3], [4, 10
     for stratum in stratified_size:
         temp_index = np.argwhere((size_array >= stratum[0]) & (size_array <= stratum[1]))
         if len(temp_index) > 0:
-            stratum_violation = max(0, (1 - alpha) - np.mean(correct_array[temp_index]))
+            stratum_violation = abs((1 - alpha) - np.mean(correct_array[temp_index]))
             sscv = max(sscv, stratum_violation)
     return sscv
 
