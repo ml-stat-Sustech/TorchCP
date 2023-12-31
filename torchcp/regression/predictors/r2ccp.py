@@ -38,29 +38,32 @@ class R2CCP(SplitPredictor):
         K = predicts_batch.shape[1]
         N = predicts_batch.shape[0]
         midpoints_expanded = self.midpoints.unsqueeze(0).expand(N, K)
-        q_hat_expanded = torch.full_like(predicts_batch, self.q_hat)
+        left_points = midpoints_expanded[:, :-1]
+        right_points = midpoints_expanded[:, 1:]
+        left_predicts = predicts_batch[:, :-1]
+        right_predicts = predicts_batch[:, 1:]
+        q_hat_expanded = torch.ones((predicts_batch.shape[0], predicts_batch.shape[1]-1), device=self._device)* self.q_hat
 
-        mask1 = (predicts_batch[:, :-1] >= q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] >= q_hat_expanded[:, 1:])
-        mask2 = (predicts_batch[:, :-1] <= q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] <= q_hat_expanded[:, 1:])
-        mask3 = (predicts_batch[:, :-1] < q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] > q_hat_expanded[:, 1:])
-        mask4 = (predicts_batch[:, :-1] > q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] < q_hat_expanded[:, 1:])
+        mask1 = (left_predicts >= q_hat_expanded) & (right_predicts >= q_hat_expanded)
+        mask2 = (left_predicts <= q_hat_expanded) & (right_predicts <= q_hat_expanded)
+        mask3 = (left_predicts < q_hat_expanded) & (right_predicts > q_hat_expanded)
+        mask4 = (left_predicts > q_hat_expanded) & (right_predicts < q_hat_expanded)
+        
         prediction_intervals = torch.zeros((N, 2 * (K - 1)), device=self._device)
-
-        prediction_intervals[:, 0::2][mask1] = midpoints_expanded[:, :-1][mask1]
-        prediction_intervals[:, 1::2][mask1] = midpoints_expanded[:, 1:][mask1]
+        prediction_intervals[:, 0::2][mask1] = left_points[mask1]
+        prediction_intervals[:, 1::2][mask1] =right_points[mask1]
         prediction_intervals[:, 0::2][mask2] = 0
         prediction_intervals[:, 1::2][mask2] = 0
 
-        delta_midpoints = midpoints_expanded[:, 1:] - midpoints_expanded[:, :-1]
-        prediction_intervals[:, 0::2][mask3] = midpoints_expanded[:, 1:][mask3] - delta_midpoints[mask3] * \
-            (predicts_batch[:, 1:][mask3] - q_hat_expanded[:, 1:][mask3]) / (predicts_batch[:, 1:][mask3] - predicts_batch[:, :-1][mask3])
-        prediction_intervals[:, 1::2][mask3] = midpoints_expanded[:, 1:][mask3]
+        delta_midpoints =right_points - left_points
+        prediction_intervals[:, 0::2][mask3] =right_points[mask3] - delta_midpoints[mask3] * \
+            (right_predicts[mask3] - q_hat_expanded[mask3]) / (right_predicts[mask3] - left_predicts[mask3])
+        prediction_intervals[:, 1::2][mask3] =right_points[mask3]
 
-        prediction_intervals[:, 0::2][mask4] = midpoints_expanded[:, :-1][mask4]
-        prediction_intervals[:, 1::2][mask4] = midpoints_expanded[:, :-1][mask4] - delta_midpoints[mask4] * \
-            (predicts_batch[:, :-1][mask4] - q_hat_expanded[:, :-1][mask4]) / (predicts_batch[:, 1:][mask4] - predicts_batch[:, :-1][mask4])
+        prediction_intervals[:, 0::2][mask4] = left_points[mask4]
+        prediction_intervals[:, 1::2][mask4] = left_points[mask4] - delta_midpoints[mask4] * \
+            (left_predicts[mask4] - q_hat_expanded[mask4]) / (right_predicts[mask4] - left_predicts[mask4])
 
-        assert prediction_intervals.shape == (N, 2 * (K - 1))
         return prediction_intervals
 
     def __find_interval(self, midpoints, y_truth):

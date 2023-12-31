@@ -22,6 +22,9 @@ def train(model, device, epoch, train_data_loader, criterion, optimizer):
         optimizer.step()
 
 def test_SplitPredictor():
+    print("##########################################")
+    print("######## Testing on a regression problem")
+    print("##########################################")
     ##################################
     # Preparing dataset
     ##################################
@@ -90,6 +93,9 @@ def test_SplitPredictor():
 
 
 def test_time_series():
+    print("##########################################")
+    print("######## Testing on a time series problem")
+    print("##########################################")
     ##################################
     # Preparing dataset
     ##################################
