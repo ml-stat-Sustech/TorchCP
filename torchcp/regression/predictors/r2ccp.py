@@ -16,12 +16,12 @@ class R2CCP(SplitPredictor):
     paper: https://neurips.cc/virtual/2023/80610
 
     :param model: a pytorch model that can output probabilities for different bins.
-    :param midpoints: the midpoint of each bin.
+    :param midpoints: the midpoints of the equidistant bins.
     """
 
     def __init__(self, model, midpoints):
         super().__init__(model)
-        self.midpoints = midpoints
+        self.midpoints = midpoints.to(self._device)
 
     def calculate_score(self, predicts, y_truth):
         interval = self.__find_interval(self.midpoints, y_truth)
@@ -33,30 +33,34 @@ class R2CCP(SplitPredictor):
         self.q_hat = self._calculate_conformal_value(scores, 1 - alpha)
 
     def predict(self, x_batch):
-        self._model.eval()
-        midpoints = self.midpoints
-        K = len(midpoints)
-
+        self._model.eval()        
         predicts_batch = self._model(x_batch.to(self._device)).float()
-        prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2 * (K - 1))).to(self._device)
-        for i in range(len(x_batch)):
-            for k in range(K - 1):
-                if predicts_batch[i, k] >= self.q_hat and predicts_batch[i, k + 1] >= self.q_hat:
-                    prediction_intervals[i, 2 * k] = midpoints[k]
-                    prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                elif predicts_batch[i, k] <= self.q_hat and predicts_batch[i, k + 1] <= self.q_hat:
-                    prediction_intervals[i, 2 * k] = 0
-                    prediction_intervals[i, 2 * k + 1] = 0
-                elif predicts_batch[i, k] < self.q_hat and predicts_batch[i, k + 1] > self.q_hat:
-                    prediction_intervals[i, 2 * k] = midpoints[k + 1] - (midpoints[k + 1] - midpoints[k]) * \
-                                                     (predicts_batch[i, k + 1] - self.q_hat) / (
-                                                                 predicts_batch[i, k + 1] - predicts_batch[i, k])
-                    prediction_intervals[i, 2 * k + 1] = midpoints[k + 1]
-                elif predicts_batch[i, k] > self.q_hat and predicts_batch[i, k + 1] < self.q_hat:
-                    prediction_intervals[i, 2 * k] = midpoints[k]
-                    prediction_intervals[i, 2 * k + 1] = midpoints[k] - (midpoints[k + 1] - midpoints[k]) * \
-                                                         (predicts_batch[i, k] - self.q_hat) / (
-                                                                     predicts_batch[i, k + 1] - predicts_batch[i, k])
+        K = predicts_batch.shape[1]
+        N = predicts_batch.shape[0]
+        midpoints_expanded = self.midpoints.unsqueeze(0).expand(N, K)
+        q_hat_expanded = torch.full_like(predicts_batch, self.q_hat)
+
+        mask1 = (predicts_batch[:, :-1] >= q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] >= q_hat_expanded[:, 1:])
+        mask2 = (predicts_batch[:, :-1] <= q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] <= q_hat_expanded[:, 1:])
+        mask3 = (predicts_batch[:, :-1] < q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] > q_hat_expanded[:, 1:])
+        mask4 = (predicts_batch[:, :-1] > q_hat_expanded[:, :-1]) & (predicts_batch[:, 1:] < q_hat_expanded[:, 1:])
+        prediction_intervals = torch.zeros((N, 2 * (K - 1)), device=self._device)
+
+        prediction_intervals[:, 0::2][mask1] = midpoints_expanded[:, :-1][mask1]
+        prediction_intervals[:, 1::2][mask1] = midpoints_expanded[:, 1:][mask1]
+        prediction_intervals[:, 0::2][mask2] = 0
+        prediction_intervals[:, 1::2][mask2] = 0
+
+        delta_midpoints = midpoints_expanded[:, 1:] - midpoints_expanded[:, :-1]
+        prediction_intervals[:, 0::2][mask3] = midpoints_expanded[:, 1:][mask3] - delta_midpoints[mask3] * \
+            (predicts_batch[:, 1:][mask3] - q_hat_expanded[:, 1:][mask3]) / (predicts_batch[:, 1:][mask3] - predicts_batch[:, :-1][mask3])
+        prediction_intervals[:, 1::2][mask3] = midpoints_expanded[:, 1:][mask3]
+
+        prediction_intervals[:, 0::2][mask4] = midpoints_expanded[:, :-1][mask4]
+        prediction_intervals[:, 1::2][mask4] = midpoints_expanded[:, :-1][mask4] - delta_midpoints[mask4] * \
+            (predicts_batch[:, :-1][mask4] - q_hat_expanded[:, :-1][mask4]) / (predicts_batch[:, 1:][mask4] - predicts_batch[:, :-1][mask4])
+
+        assert prediction_intervals.shape == (N, 2 * (K - 1))
         return prediction_intervals
 
     def __find_interval(self, midpoints, y_truth):
@@ -67,15 +71,12 @@ class R2CCP(SplitPredictor):
         :param y_truth: the truth values
         :return:
         """
-        '''
-        
-        '''
         interval = torch.zeros_like(y_truth, dtype=torch.long).to(self._device)
 
         for i in range(len(midpoints) + 1):
             if i == 0:
                 mask = y_truth < midpoints[i]
-                interval[mask] = 0
+                interval[mask] = -1
             elif i < len(midpoints):
                 mask = (y_truth >= midpoints[i - 1]) & (y_truth < midpoints[i])
                 interval[mask] = i - 1
@@ -85,15 +86,17 @@ class R2CCP(SplitPredictor):
         return interval
 
     def __calculate_linear_interpolation(self, interval, predicts, y_truth, midpoints):
-        midpoints_diff = midpoints[1:] - midpoints[:-1]
+        
+        midpoints = midpoints.repeat((y_truth.shape[0],1))
+        left_points = midpoints[torch.arange(y_truth.shape[0]), (interval)%midpoints.shape[1]]
+        right_points = midpoints[torch.arange(y_truth.shape[0]), (interval+1)%midpoints.shape[1]]
+        
+        left_predicts = predicts[torch.arange(y_truth.shape[0]), (interval)%midpoints.shape[1]]
+        right_predicts = predicts[torch.arange(y_truth.shape[0]), (interval+1)%midpoints.shape[1]]
 
-        y_truth_expanded = y_truth.unsqueeze(1)
-        midpoints_expanded = midpoints[:-1].unsqueeze(0)
-        scores = ((midpoints[1:].unsqueeze(0) - y_truth_expanded) * predicts[:, :-1] +
-                  (y_truth_expanded - midpoints_expanded) * predicts[:, 1:]) / midpoints_diff
-        scores = scores.squeeze(1)
-
-        scores = torch.where(interval == 0, scores, predicts[0])
-        scores = torch.where(interval == len(midpoints), scores, predicts[-1])
+        scores = ((y_truth-left_points)*right_predicts+(right_points - y_truth)*left_predicts)/(right_points-left_points)
+        scores = torch.where(interval == -1, predicts[:,0], scores)
+        scores = torch.where(interval == len(midpoints), predicts[:,-1], scores)
 
         return scores
+
