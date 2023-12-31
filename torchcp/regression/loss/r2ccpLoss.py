@@ -5,10 +5,10 @@ import torch.nn as nn
 class R2ccpLoss(nn.Module):
     """
     Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2023).
-    Paper: https://dev.neurips.cc/virtual/2023/80610
+    Paper: https://neurips.cc/virtual/2023/80610
 
     :param p: norm of distance measure.
-    :param tau: weighting term of the regularization.
+    :param tau: weight of the regularization term.
     :param midpoints: the midpoint of each bin.
     """
 
