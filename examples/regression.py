@@ -1,13 +1,13 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset
+from torch.utils.data import TensorDataset, ConcatDataset
 from sklearn.preprocessing import StandardScaler
 
-
-from torchcp.regression.predictors import SplitPredictor,CQR
-from torchcp.regression.loss import QuantileLoss 
+from torchcp.regression.predictors import SplitPredictor, CQR, R2CCP
+from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.utils import fix_randomness
+from torchcp.regression.utils import calculate_midpoints
 from examples.common.dataset import build_reg_data
 from examples.common.utils import build_regression_model
 
@@ -59,13 +59,12 @@ if __name__ == '__main__':
     model.eval()
     predictor = SplitPredictor(model)
     predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader))
+    print(predictor.evaluate(test_data_loader)) 
 
     ##################################
     # Conformal Quantile Regression
     ##################################
     print("########################## CQR ###########################")
-
 
     quantiles = [alpha / 2, 1 - alpha / 2]
     model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
@@ -77,5 +76,30 @@ if __name__ == '__main__':
 
     model.eval()
     predictor = CQR(model)
+    predictor.calibrate(cal_data_loader, alpha)
+    print(predictor.evaluate(test_data_loader))
+
+    ##################################
+    # Conformal Prediction via Regression-as-Classification
+    ##################################
+    print("########################## R2CCP ###########################")
+
+    p = 0.5
+    tau = 0.2
+    K = 50
+
+    train_and_cal_dataset = ConcatDataset([train_dataset, cal_dataset])
+    train_and_cal_data_loader = torch.utils.data.DataLoader(train_and_cal_dataset, batch_size=100, shuffle=True, pin_memory=True)
+    midpoints = calculate_midpoints(train_and_cal_data_loader, K)
+    
+    model = build_regression_model("NonLinearNet_with_Softmax")(X.shape[1], K, 1000, 0).to(device)
+    criterion = R2ccpLoss(p, tau, midpoints)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
+
+    for epoch in range(epochs):
+        train(model, device, epoch, train_data_loader, criterion, optimizer)
+
+    model.eval()
+    predictor = R2CCP(model, midpoints)
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))
