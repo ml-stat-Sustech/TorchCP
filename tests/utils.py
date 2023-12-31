@@ -81,5 +81,18 @@ def build_regression_model(model_name="NonLinearNet"):
                 return self.base_model(x)
 
         return NonLinearNet
+    elif model_name == "NonLinearNet_with_Softmax":
+        class Softmax(nn.Module):
+            def __init__(self, in_shape, out_shape, hidden_size, dropout):
+                super(Softmax, self).__init__()
+                self.base_model = nn.Sequential(
+                    NonLinearNet(in_shape, out_shape, hidden_size, dropout),
+                    nn.Softmax(dim=1),
+                )
+
+            def forward(self, x):
+                return self.base_model(x)
+
+        return Softmax
     else:
         raise NotImplementedError

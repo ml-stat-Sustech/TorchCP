@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-__all__ = ["QuantileLoss", "R2ccpLoss"]
+__all__ = ["QuantileLoss"]
 
 
 class QuantileLoss(nn.Module):
