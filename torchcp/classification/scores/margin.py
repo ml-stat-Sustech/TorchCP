@@ -10,7 +10,11 @@ from torchcp.classification.scores.aps import APS
 
 
 class Margin(APS):
+    """
+    Bias reduction through conditional conformal prediction (Löfström et al., 2015)
 
+    paper:https://dl.acm.org/doi/abs/10.3233/IDA-150786
+    """
     def __init__(self, ) -> None:
         pass
 
