@@ -43,7 +43,7 @@ class THR(BaseScore):
             return self.__calculate_single_label(temp_values, label)
 
     def __calculate_single_label(self, temp_values, label):
-        return 1 - temp_values[torch.arange(label.shape[0], device=temp_values.device), label]
+        return 1 - temp_values[torch.arange(temp_values.shape[0], device=temp_values.device), label]
 
     def __calculate_all_label(self, temp_values):
         return 1 - temp_values
