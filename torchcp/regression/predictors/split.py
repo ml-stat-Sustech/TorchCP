@@ -50,8 +50,6 @@ class SplitPredictor(object):
     def calculate_threshold(self, predicts, y_truth, alpha):
         scores = self.calculate_score(predicts, y_truth)
         self.q_hat = self._calculate_conformal_value(scores, alpha)
-        print(self.q_hat)
-        self.out_dim = self.q_hat.shape[0]
 
         
     def _calculate_conformal_value(self, scores, alpha):
@@ -62,10 +60,10 @@ class SplitPredictor(object):
         x_batch.to(self._device)
         with torch.no_grad():
             predicts_batch = self._model(x_batch)
-            prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0],self.out_dim , 2))
+            prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0],self.q_hat.shape[0] , 2))
 
-            prediction_intervals[..., 0] = predicts_batch - self.q_hat.view(1, self.out_dim)
-            prediction_intervals[..., 1] = predicts_batch + self.q_hat.view(1, self.out_dim)
+            prediction_intervals[..., 0] = predicts_batch - self.q_hat.view(1, self.q_hat.shape[0])
+            prediction_intervals[..., 1] = predicts_batch + self.q_hat.view(1, self.q_hat.shape[0])
 
         return prediction_intervals
 

@@ -36,7 +36,7 @@ class CQR(SplitPredictor):
         predicts_batch = self._model(x_batch.to(self._device)).float()
         if len(predicts_batch.shape) ==2:
             predicts_batch = predicts_batch.unsqueeze(1)
-        prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0],self.out_dim , 2))
-        prediction_intervals[..., 0] = predicts_batch[..., 0] - self.q_hat.view(1, self.out_dim,1)
-        prediction_intervals[..., 1] = predicts_batch[..., 1] + self.q_hat.view(1, self.out_dim,1)
+        prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0],self.q_hat.shape[0] , 2))
+        prediction_intervals[..., 0] = predicts_batch[..., 0] - self.q_hat.view(1, self.q_hat.shape[0], 1)
+        prediction_intervals[..., 1] = predicts_batch[..., 1] + self.q_hat.view(1, self.q_hat.shape[0], 1)
         return prediction_intervals
