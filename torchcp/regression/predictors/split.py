@@ -26,9 +26,12 @@ class SplitPredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
+        self.out_dim = 1
         
     def calculate_score(self, predicts, y_truth):
-        return torch.abs(predicts.reshape(-1) - y_truth)
+        if len(y_truth.shape) == 1:
+            y_truth = y_truth.unsqueeze(1)
+        return torch.abs(predicts - y_truth)
 
     def calibrate(self, cal_dataloader, alpha):
         self._model.eval()
@@ -47,6 +50,9 @@ class SplitPredictor(object):
     def calculate_threshold(self, predicts, y_truth, alpha):
         scores = self.calculate_score(predicts, y_truth)
         self.q_hat = self._calculate_conformal_value(scores, alpha)
+        print(self.q_hat)
+        self.out_dim = self.q_hat.shape[0]
+
         
     def _calculate_conformal_value(self, scores, alpha):
         return calculate_conformal_value(scores, alpha)
@@ -55,10 +61,11 @@ class SplitPredictor(object):
         self._model.eval()
         x_batch.to(self._device)
         with torch.no_grad():
-            predicts_batch = self._model(x_batch).float().reshape(-1)
-            prediction_intervals = x_batch.new_zeros((x_batch.shape[0], 2))
-            prediction_intervals[:, 0] = predicts_batch - self.q_hat
-            prediction_intervals[:, 1] = predicts_batch + self.q_hat
+            predicts_batch = self._model(x_batch)
+            prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0],self.out_dim , 2))
+
+            prediction_intervals[..., 0] = predicts_batch - self.q_hat.view(1, self.out_dim)
+            prediction_intervals[..., 1] = predicts_batch + self.q_hat.view(1, self.out_dim)
 
         return prediction_intervals
 
@@ -71,9 +78,12 @@ class SplitPredictor(object):
                 tmp_prediction_intervals = self.predict(tmp_x)
                 y_list.append(tmp_y)
                 predict_list.append(tmp_prediction_intervals)
+                
+        
 
-        predicts = torch.cat(predict_list).float().to(self._device)
+        predicts = torch.cat(predict_list,dim=0).to(self._device)
         test_y = torch.cat(y_list).to(self._device)
+
 
         res_dict = {"Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
                     "Average_size": self._metric('average_size')(predicts)}

@@ -73,4 +73,4 @@ def calculate_conformal_value(scores, alpha):
             "The value of quantile exceeds 1. It should be a value in (0,1). To avoid program crash, the threshold is set as torch.inf.")
         return torch.inf
 
-    return torch.quantile(scores, qunatile_value).to(scores.device)
+    return torch.quantile(scores, qunatile_value, dim=0).to(scores.device)
