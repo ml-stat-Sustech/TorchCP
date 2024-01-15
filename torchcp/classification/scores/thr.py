@@ -17,7 +17,7 @@ class THR(BaseScore):
     :param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "Identity", "log_softmax" or "log".
     """
 
-    def __init__(self, score_type="softmax") -> None:
+    def __init__(self, score_type="softmax"):
         
         super().__init__()
         self.score_type = score_type

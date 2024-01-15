@@ -76,11 +76,15 @@ class SplitPredictor(BasePredictor):
 
         :return: prediction sets
         """
+        
+            
         scores = self.score_function(logits).to(self._device)
         if q_hat is None:
-            S = self._generate_prediction_set(scores, self.q_hat)
-        else:
-            S = self._generate_prediction_set(scores, q_hat)
+            q_hat = self.q_hat
+
+        
+        S = self._generate_prediction_set(scores, q_hat)
+        
         return S
 
     #############################

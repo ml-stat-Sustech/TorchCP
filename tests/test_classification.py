@@ -46,9 +46,9 @@ def test_imagenet_logits():
         dataset = dset.ImageFolder(data_dir + "/imagenet/val",
                                 transform)
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
-
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # load model
-        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
+        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True).to(device)
 
         logits_list = []
         labels_list = []
@@ -84,11 +84,6 @@ def test_imagenet_logits():
             predictor = class_predictor(score)
             predictor.calculate_threshold(cal_logits, cal_labels, alpha)
             print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
-            # print("Testing examples...")
-            # prediction_sets = []
-            # for index, ele in enumerate(test_logits):
-            #     prediction_set = predictor.predict_with_logits(ele)
-            #     prediction_sets.append(prediction_set)
             prediction_sets = predictor.predict_with_logits(test_logits)
 
             metrics = Metrics()
@@ -115,20 +110,20 @@ def test_imagenet():
     dataset = dset.ImageFolder(data_dir + "/imagenet/val", transform)
 
     cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
-    cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
-    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
+    cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, num_workers=4, pin_memory=True)
+    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, num_workers=4, pin_memory=True)
         
     #######################################
     # A standard process of conformal prediction
     #######################################
     alpha = 0.1
     predictors = [SplitPredictor, ClassWisePredictor, ClusterPredictor]
-    score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
+    # score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
+    score_functions = [Margin()]
     for score in score_functions: 
         for class_predictor in predictors:
             predictor = class_predictor(score, model)
             predictor.calibrate(cal_data_loader, alpha)
             print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
             print(predictor.evaluate(test_data_loader))
-
 

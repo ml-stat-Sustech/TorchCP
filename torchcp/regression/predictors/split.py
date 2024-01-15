@@ -26,7 +26,6 @@ class SplitPredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
-        self.out_dim = 1
         
     def calculate_score(self, predicts, y_truth):
         if len(y_truth.shape) == 1:
