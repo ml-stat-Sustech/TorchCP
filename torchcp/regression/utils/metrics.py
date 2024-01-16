@@ -15,7 +15,6 @@ METRICS_REGISTRY_REGRESSION = Registry("METRICS")
 
 @METRICS_REGISTRY_REGRESSION.register()
 def coverage_rate(prediction_intervals, y_truth):
-    print(prediction_intervals.shape, y_truth.shape)
     num_columns = prediction_intervals.shape[-1]
     assert num_columns % 2 == 0, f"The number of columns in prediction_intervals must be even, but got {num_columns}"
     
