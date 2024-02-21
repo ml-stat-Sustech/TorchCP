@@ -13,7 +13,6 @@ def build_reg_data(data_name="community"):
         data = data.drop(columns=['state', 'county',
                                   'community', 'communityname',
                                   'fold'], axis=1)
-
         data = data.replace('?', np.nan)
 
         # Impute mean values for samples with missing values

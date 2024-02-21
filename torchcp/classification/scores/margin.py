@@ -26,8 +26,12 @@ class Margin(APS):
         return second_highest_prob - target_prob
 
     def _calculate_all_label(self, probs):
-        temp_probs = probs.unsqueeze(1).repeat(1, probs.shape[1], 1)
-        indices = torch.arange(probs.shape[1]).to(probs.device)
-        temp_probs[:, indices, indices] = torch.max(temp_probs, dim=-1).values
+        _, num_labels = probs.shape
+        temp_probs = probs.unsqueeze(1).repeat(1, num_labels, 1)
+        indices = torch.arange(num_labels).to(probs.device)
+        
+        temp_probs[:, indices, indices] = -1
+
+        # torch.max(temp_probs, dim=-1) are the second highest probabilities 
         scores = torch.max(temp_probs, dim=-1).values - probs
         return scores

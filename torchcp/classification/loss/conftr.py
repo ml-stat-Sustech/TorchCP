@@ -33,12 +33,9 @@ class ConfTr(nn.Module):
         super(ConfTr, self).__init__()
         assert weight>0, "weight must be greater than 0."
         assert (0 < fraction < 1), "fraction should be a value in (0,1)."
-        assert loss_type in ["valid", "classification",  "probs", "coverage"], ('loss_type should be a value in ['
-                                                                                '"valid", "classification",  "probs", '
-                                                                                '"coverage"].')
+        assert loss_type in ["valid", "classification",  "probs", "coverage"], ('loss_type should be a value in ["valid", "classification",  "probs", "coverage"].')
         assert target_size==0 or target_size ==1, "target_size should be 0 or 1."
-        assert loss_transform in ["square", "abs", "log"], ('loss_transform should be a value in ["square", "abs", '
-                                                            '"log"].')
+        assert loss_transform in ["square", "abs", "log"], ('loss_transform should be a value in ["square", "abs","log"].')
         self.weight = weight
         self.predictor = predictor
         self.alpha = alpha

@@ -108,15 +108,32 @@ This project is licensed under the LGPL. The terms and conditions can be found i
 
 ## Citation
 
-We will release the technical report of TorchCP recently. If you find our repository useful for your research, please
-consider citing our paper:
+If you find our repository useful for your research, please consider citing the following [technical report](https://arxiv.org/abs/2402.12683):
 
+```
+@misc{wei2024torchcp,
+      title={TorchCP: A Library for Conformal Prediction based on PyTorch}, 
+      author={Hongxin Wei and Jianguo Huang},
+      year={2024},
+      eprint={2402.12683},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+We welcome you to cite the following article:
 ```
 @article{huang2023conformal,
   title={Conformal Prediction for Deep Classifier via Label Ranking},
   author={Huang, Jianguo and Xi, Huajun and Zhang, Linjun and Yao, Huaxiu and Qiu, Yue and Wei, Hongxin},
   journal={arXiv preprint arXiv:2310.06430},
   year={2023}
+}
+
+@article{xi2024does,
+  title={Does Confidence Calibration Help Conformal Prediction?},
+  author={Xi, Huajun and Huang, Jianguo and Feng, Lei and Wei, Hongxin},
+  journal={arXiv preprint arXiv:2402.04344},
+  year={2024}
 }
 ```
 
