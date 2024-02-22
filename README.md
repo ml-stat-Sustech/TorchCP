@@ -120,7 +120,7 @@ If you find our repository useful for your research, please consider citing the 
       primaryClass={cs.LG}
 }
 ```
-We welcome you to cite the following article:
+We welcome you to cite the following works:
 ```
 @article{huang2023conformal,
   title={Conformal Prediction for Deep Classifier via Label Ranking},
