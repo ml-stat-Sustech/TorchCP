@@ -1,16 +1,16 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset
-from tqdm import tqdm
+from torch.utils.data import TensorDataset, ConcatDataset
 from sklearn.preprocessing import StandardScaler
 
 
-from torchcp.regression.predictors import SplitPredictor,CQR,ACI
-from torchcp.regression.loss import QuantileLoss 
+from torchcp.regression.predictors import SplitPredictor, CQR, ACI, R2CCP
+from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.regression import Metrics 
 from torchcp.utils import fix_randomness
 from utils import build_reg_data, build_regression_model
+from torchcp.regression.utils import calculate_midpoints
 
 
 def train(model, device, epoch, train_data_loader, criterion, optimizer):
@@ -22,6 +22,9 @@ def train(model, device, epoch, train_data_loader, criterion, optimizer):
         optimizer.step()
 
 def test_SplitPredictor():
+    print("##########################################")
+    print("######## Testing on a regression problem")
+    print("##########################################")
     ##################################
     # Preparing dataset
     ##################################
@@ -62,8 +65,37 @@ def test_SplitPredictor():
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))
 
+    ##################################
+    # Conformal Prediction via Regression-as-Classification
+    ##################################
+    print("########################## R2CCP ###########################")
+
+    p = 0.5
+    tau = 0.2
+    K = 50
+
+    train_and_cal_dataset = ConcatDataset([train_dataset, cal_dataset])
+    train_and_cal_data_loader = torch.utils.data.DataLoader(train_and_cal_dataset, batch_size=100, shuffle=True,
+                                                            pin_memory=True)
+    midpoints = calculate_midpoints(train_and_cal_data_loader, K)
+
+    model = build_regression_model("NonLinearNet_with_Softmax")(X.shape[1], K, 1000, 0).to(device)
+    criterion = R2ccpLoss(p, tau, midpoints)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
+
+    for epoch in range(epochs):
+        train(model, device, epoch, train_data_loader, criterion, optimizer)
+
+    model.eval()
+    predictor = R2CCP(model, midpoints)
+    predictor.calibrate(cal_data_loader, alpha)
+    print(predictor.evaluate(test_data_loader))
+
 
 def test_time_series():
+    print("##########################################")
+    print("######## Testing on a time series problem")
+    print("##########################################")
     ##################################
     # Preparing dataset
     ##################################
@@ -74,10 +106,6 @@ def test_time_series():
     T0 = int(num_examples * 0.4)
     train_dataset = TensorDataset(torch.from_numpy(X[:T0, :]), torch.from_numpy(y[:T0]))
     train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True, pin_memory=True)
-
-
-
-
 
     alpha = 0.1
     quantiles = [alpha / 2, 1 - alpha / 2]
@@ -107,9 +135,9 @@ def test_time_series():
     # Adaptive Conformal Inference,
     ##################################      
     print("########################## ACI ###########################")
-    predictor = ACI(model, 0.0001)
+    predictor = ACI(model, 0.005)
     test_y = torch.from_numpy(y[T0:num_examples]).to(device)
-    predicts = torch.zeros((num_examples - T0, 2)).to(device)
+    predicts = torch.zeros((num_examples - T0,1, 2)).to(device)
     for i in range(num_examples - T0):
         with torch.no_grad():
             cal_dataset = TensorDataset(torch.from_numpy(X[i:(T0 + i), :]), torch.from_numpy(y[i:(T0 + i)]))
@@ -126,3 +154,5 @@ def test_time_series():
     print("Evaluating prediction sets...")
     print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}")
     print(f"Average_size: {metrics('average_size')(predicts)}")
+
+

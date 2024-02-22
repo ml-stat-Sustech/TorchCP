@@ -19,15 +19,17 @@ METRICS_REGISTRY_CLASSIFICATION = Registry("METRICS")
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def coverage_rate(prediction_sets, labels):
+    labels = labels.cpu()
     cvg = 0
     for index, ele in enumerate(zip(prediction_sets, labels)):
-        if ele[1].item() in ele[0]:
+        if ele[1] in ele[0]:
             cvg += 1
     return cvg / len(prediction_sets)
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels):
+    labels = labels.cpu()
     avg_size = 0
     for index, ele in enumerate(prediction_sets):
         avg_size += len(ele)
@@ -40,6 +42,7 @@ def average_size(prediction_sets, labels):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def CovGap(prediction_sets, labels, alpha, num_classes):
+    labels = labels.cpu()
     rate_classes = []
     for k in range(num_classes):
         idx = np.where(labels == k)[0]
@@ -52,6 +55,7 @@ def CovGap(prediction_sets, labels, alpha, num_classes):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def VioClasses(prediction_sets, labels, alpha, num_classes):
+    labels = labels.cpu()
     violation_nums = 0
     for k in range(num_classes):
         if len(labels[labels == k]) == 0:
@@ -66,6 +70,7 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
+    labels = labels.cpu()
     strata_diff = [[1, 1], [2, 3], [4, 6], [7, 10], [11, 100], [101, 1000]]
     correct_array = np.zeros(len(labels))
     size_array = np.zeros(len(labels))
@@ -111,20 +116,21 @@ def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def SSCV(prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3], [4, 10], [11, 100], [101, 1000]]):
-    """Size-stratified coverage violation (SSCV)
-
     """
+    Size-stratified coverage violation (SSCV)
+    """
+    labels = labels.cpu()
     size_array = np.zeros(len(labels))
     correct_array = np.zeros(len(labels))
     for index, ele in enumerate(prediction_sets):
         size_array[index] = len(ele)
-        correct_array[index] = 1 if labels[index] in prediction_sets[index] else 0
+        correct_array[index] = 1 if labels[index] in ele else 0
 
     sscv = -1
     for stratum in stratified_size:
         temp_index = np.argwhere((size_array >= stratum[0]) & (size_array <= stratum[1]))
         if len(temp_index) > 0:
-            stratum_violation = max(0, (1 - alpha) - np.mean(correct_array[temp_index]))
+            stratum_violation = abs((1 - alpha) - np.mean(correct_array[temp_index]))
             sscv = max(sscv, stratum_violation)
     return sscv
 

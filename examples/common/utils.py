@@ -2,9 +2,7 @@
 import torch.nn as nn
 
 
-
-
-def build_regression_model(model_name="NonLinearNet"):
+def build_regression_model(model_name):
     if model_name == "NonLinearNet":
         class NonLinearNet(nn.Module):
             def __init__(self, in_shape, out_shape, hidden_size, dropout):

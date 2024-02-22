@@ -24,5 +24,4 @@ _tutorials/
 .coverage
 *.xml
 .history
-docs/build
-examples/clip
+docs/buildA

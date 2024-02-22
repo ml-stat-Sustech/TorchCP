@@ -17,7 +17,7 @@ class THR(BaseScore):
     :param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "Identity", "log_softmax" or "log".
     """
 
-    def __init__(self, score_type="softmax") -> None:
+    def __init__(self, score_type="softmax"):
         
         super().__init__()
         self.score_type = score_type
@@ -33,7 +33,7 @@ class THR(BaseScore):
             raise NotImplementedError
 
     def __call__(self, logits, label=None):
-        assert len(logits.shape) <= 2, "The dimension of logits must be less than 2."
+        assert len(logits.shape) <= 2, "dimension of logits are at most 2."
         if len(logits.shape) == 1:
             logits = logits.unsqueeze(0)
         temp_values = self.transform(logits)
@@ -43,7 +43,7 @@ class THR(BaseScore):
             return self.__calculate_single_label(temp_values, label)
 
     def __calculate_single_label(self, temp_values, label):
-        return 1 - temp_values[torch.arange(label.shape[0], device=temp_values.device), label]
+        return 1 - temp_values[torch.arange(temp_values.shape[0], device=temp_values.device), label]
 
     def __calculate_all_label(self, temp_values):
         return 1 - temp_values

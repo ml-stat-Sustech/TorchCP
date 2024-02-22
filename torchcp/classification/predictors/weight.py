@@ -51,8 +51,6 @@ class WeightedPredictor(SplitPredictor):
         self.calculate_threshold(logits, labels, alpha)
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in (0,1).")
         self.alpha = alpha
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)
         self.scores[:logits.shape[0]] = self.score_function(logits, labels)

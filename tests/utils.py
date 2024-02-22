@@ -13,7 +13,6 @@ def build_reg_data(data_name="community"):
         data = data.drop(columns=['state', 'county',
                                   'community', 'communityname',
                                   'fold'], axis=1)
-
         data = data.replace('?', np.nan)
 
         # Impute mean values for samples with missing values
@@ -58,9 +57,7 @@ def build_reg_data(data_name="community"):
     return X, y
 
 
-def build_regression_model(model_name="NonLinearNet"):
-    if model_name == "NonLinearNet":
-        class NonLinearNet(nn.Module):
+class NonLinearNet(nn.Module):
             def __init__(self, in_shape, out_shape, hidden_size, dropout):
                 super(NonLinearNet, self).__init__()
                 self.hidden_size = hidden_size
@@ -79,7 +76,24 @@ def build_regression_model(model_name="NonLinearNet"):
 
             def forward(self, x):
                 return self.base_model(x)
+            
+class Softmax(nn.Module):
+        def __init__(self, in_shape, out_shape, hidden_size, dropout):
+            super(Softmax, self).__init__()
+            self.base_model = nn.Sequential(
+                NonLinearNet(in_shape, out_shape, hidden_size, dropout),
+                nn.Softmax(dim=1),
+            )
 
+        def forward(self, x):
+            return self.base_model(x)
+
+def build_regression_model(model_name="NonLinearNet"):
+    if model_name == "NonLinearNet":
         return NonLinearNet
+    elif model_name == "NonLinearNet_with_Softmax":
+        
+
+        return Softmax
     else:
         raise NotImplementedError

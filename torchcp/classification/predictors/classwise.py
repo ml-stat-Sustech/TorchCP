@@ -20,13 +20,11 @@ class ClassWisePredictor(SplitPredictor):
     :param model: a pytorch model.
     """
 
-    def __init__(self, score_function, model=None):
-        super(ClassWisePredictor, self).__init__(score_function, model)
+    def __init__(self, score_function, model=None, temperature=1):
+        super(ClassWisePredictor, self).__init__(score_function, model, temperature)
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):
-        if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in (0,1).")
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         # Count the number of classes

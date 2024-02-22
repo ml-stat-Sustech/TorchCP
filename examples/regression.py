@@ -4,9 +4,8 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset
 from sklearn.preprocessing import StandardScaler
 
-
-from torchcp.regression.predictors import SplitPredictor,CQR
-from torchcp.regression.loss import QuantileLoss 
+from torchcp.regression.predictors import SplitPredictor, CQR
+from torchcp.regression.loss import QuantileLoss
 from torchcp.utils import fix_randomness
 from examples.common.dataset import build_reg_data
 from examples.common.utils import build_regression_model
@@ -59,13 +58,12 @@ if __name__ == '__main__':
     model.eval()
     predictor = SplitPredictor(model)
     predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader))
+    print(predictor.evaluate(test_data_loader)) 
 
     ##################################
     # Conformal Quantile Regression
     ##################################
     print("########################## CQR ###########################")
-
 
     quantiles = [alpha / 2, 1 - alpha / 2]
     model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
@@ -79,3 +77,4 @@ if __name__ == '__main__':
     predictor = CQR(model)
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))
+
