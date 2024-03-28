@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 import torch
-
+import warnings
 from torchcp.classification.predictors.split import SplitPredictor
 
 
@@ -25,13 +25,16 @@ class ClassWisePredictor(SplitPredictor):
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):
+        alpha = torch.tensor(alpha, device=self._device)
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         # Count the number of classes
         num_classes = logits.shape[1]
         self.q_hat = torch.zeros(num_classes, device=self._device)
+        scores = self.score_function(logits, labels)
+        marginal_q_hat = self._calculate_conformal_value(scores, alpha)
         for label in range(num_classes):
-            x_cal_tmp = logits[labels == label]
-            y_cal_tmp = labels[labels == label]
-            scores = self.score_function(x_cal_tmp, y_cal_tmp)
-            self.q_hat[label] = self._calculate_conformal_value(scores, alpha)
+            temp_scores = scores[labels == label]
+            self.q_hat[label] = self._calculate_conformal_value(temp_scores, alpha, marginal_q_hat)
+                
+

@@ -10,11 +10,11 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 
-from torchcp.classification.predictors.split import SplitPredictor
+from torchcp.classification.predictors.classwise import ClassWisePredictor
 from torchcp.utils.common import DimensionError
 
 
-class ClusterPredictor(SplitPredictor):
+class ClusterPredictor(ClassWisePredictor):
     """
     Class-Conditional Conformal Prediction with Many Classes (Ding et al., 2023).
     paper: https://arxiv.org/abs/2306.09335.
@@ -136,6 +136,7 @@ class ClusterPredictor(SplitPredictor):
             n += 1
         return n
 
+
     def __get_rare_classes(self, labels, alpha, num_classes):
         """
         Choose classes whose number is less than or equal to .
@@ -255,6 +256,7 @@ class ClusterPredictor(SplitPredictor):
             idx = (cal_true_clusters == k)
             scores = cal_class_scores[idx]
             q_hats[k] = self._calculate_conformal_value(scores, alpha)
+        # print(torch.argwhere(cal_true_clusters==-1))
         if -1 in cal_true_clusters:
             q_hats = torch.concatenate((q_hats, torch.tensor([null_qhat], device=self._device)))
 

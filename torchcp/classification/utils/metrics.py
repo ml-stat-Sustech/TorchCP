@@ -19,6 +19,8 @@ METRICS_REGISTRY_CLASSIFICATION = Registry("METRICS")
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def coverage_rate(prediction_sets, labels):
+    if len(prediction_sets) == 0:
+        return 0
     labels = labels.cpu()
     cvg = 0
     for index, ele in enumerate(zip(prediction_sets, labels)):
@@ -29,6 +31,8 @@ def coverage_rate(prediction_sets, labels):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels):
+    if len(prediction_sets) == 0:
+        return 0
     labels = labels.cpu()
     avg_size = 0
     for index, ele in enumerate(prediction_sets):
@@ -42,6 +46,8 @@ def average_size(prediction_sets, labels):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def CovGap(prediction_sets, labels, alpha, num_classes):
+    if len(prediction_sets) == 0:
+        return (1 - alpha) * 100
     labels = labels.cpu()
     rate_classes = []
     for k in range(num_classes):
@@ -70,6 +76,9 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def DiffViolation(logits, prediction_sets, labels, alpha, num_classes):
+    """
+    Difficulty-stratified coverage violation
+    """
     labels = labels.cpu()
     strata_diff = [[1, 1], [2, 3], [4, 6], [7, 10], [11, 100], [101, 1000]]
     correct_array = np.zeros(len(labels))
