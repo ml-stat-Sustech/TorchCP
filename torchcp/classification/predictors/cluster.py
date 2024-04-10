@@ -14,7 +14,7 @@ from torchcp.classification.predictors.classwise import ClassWisePredictor
 from torchcp.utils.common import DimensionError
 
 
-class ClusterPredictor(ClassWisePredictor):
+class ClusteredPredictor(ClassWisePredictor):
     """
     Class-Conditional Conformal Prediction with Many Classes (Ding et al., 2023).
     paper: https://arxiv.org/abs/2306.09335.
@@ -29,7 +29,7 @@ class ClusterPredictor(ClassWisePredictor):
     def __init__(self, score_function, model=None, ratio_clustering="auto", num_clusters="auto", split='random',
                  temperature=1):
 
-        super(ClusterPredictor, self).__init__(score_function, model, temperature)
+        super(ClusteredPredictor, self).__init__(score_function, model, temperature)
         self.__ratio_clustering = ratio_clustering
         self.__num_clusters = num_clusters
         self.__split = split

@@ -15,7 +15,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as trn
 from tqdm import tqdm
 
-from torchcp.classification.predictors import ClusterPredictor, ClassWisePredictor, SplitPredictor
+from torchcp.classification.predictors import ClusteredPredictor, ClassWisePredictor, SplitPredictor
 from torchcp.classification.scores import THR, APS, SAPS, RAPS
 from torchcp.classification import Metrics
 from torchcp.utils import fix_randomness

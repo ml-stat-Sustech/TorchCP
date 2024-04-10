@@ -23,7 +23,7 @@ Predictors
 
     SplitPredictor
     ClassWisePredictor
-    ClusterPredictor
+    ClusteredPredictor
     WeightedPredictor
 
 .. automodule:: torchcp.classification.loss
@@ -61,7 +61,7 @@ Detailed description
 ..  autoclass:: ClassWisePredictor
     :members:
 
-..  autoclass:: ClusterPredictor
+..  autoclass:: ClusteredPredictor
     :members:
 
 ..  autoclass:: WeightedPredictor

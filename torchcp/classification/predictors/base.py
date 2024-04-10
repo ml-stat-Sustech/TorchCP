@@ -62,4 +62,4 @@ class BasePredictor(object):
         :param q_hat : the calibrated threshold.
         """
         
-        return [torch.argwhere(scores[i] < q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
+        return [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]

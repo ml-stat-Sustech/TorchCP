@@ -16,7 +16,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as trn
 from tqdm import tqdm
 
-from torchcp.classification.predictors import SplitPredictor, ClusterPredictor, ClassWisePredictor
+from torchcp.classification.predictors import SplitPredictor, ClusteredPredictor, ClassWisePredictor
 from torchcp.classification.scores import THR, APS, SAPS, RAPS, Margin
 from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
@@ -77,7 +77,7 @@ def test_imagenet_logits():
     # A standard process of conformal prediction
     #######################################
     alpha = 0.1
-    predictors = [SplitPredictor, ClassWisePredictor, ClusterPredictor]
+    predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
     score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
     for score in score_functions: 
         for class_predictor in predictors:
@@ -117,15 +117,17 @@ def test_imagenet():
     # A standard process of conformal prediction
     #######################################
     alpha = 0.1
-    predictors = [SplitPredictor, ClassWisePredictor, ClusterPredictor]
+    predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
     # score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
-    score_functions = [Margin()]
+    score_functions = [APS()]
     for score in score_functions: 
         for class_predictor in predictors:
-            predictor = class_predictor(score, model)
+            predictor = class_predictor(score, model, temperature=1)
             predictor.calibrate(cal_data_loader, alpha)
             print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
             print(predictor.evaluate(test_data_loader))
+
+
 
 def test_calibration():
     #######################################
@@ -175,7 +177,7 @@ def test_calibration():
     # A standard process of conformal prediction
     #######################################
     alpha = 0.1
-    predictors = [SplitPredictor, ClassWisePredictor, ClusterPredictor]
+    predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
     score = SAPS(0.2)
     temperatures = [0.5, 1, 1.5]
     for temperature in temperatures:
@@ -190,3 +192,6 @@ def test_calibration():
             print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
             print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+            
+            
+test_imagenet()

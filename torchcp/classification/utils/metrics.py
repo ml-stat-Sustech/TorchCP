@@ -18,21 +18,46 @@ METRICS_REGISTRY_CLASSIFICATION = Registry("METRICS")
 #########################################
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def coverage_rate(prediction_sets, labels):
-    if len(prediction_sets) == 0:
-        return 0
+def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes = None):
+    """The metric for coverage.
+
+    Args:
+        prediction_sets (List): _description_
+        labels (list): _description_
+        coverage_type (str, optional): the type of coverage rate. Defaults to "default". Options are 'default' (the marginal coverage rate), 'macro' (the average coverage rate of all classes).
+        num_classes (_type_, optional): the number of classes. When coverage_type == 'macro", you must define the number of classes.
+
+    Returns:
+        float: the empirical coverage rate.
+    """
+    assert len(prediction_sets)>0, "The number of prediction set must be greater than 0."
     labels = labels.cpu()
     cvg = 0
-    for index, ele in enumerate(zip(prediction_sets, labels)):
-        if ele[1] in ele[0]:
-            cvg += 1
-    return cvg / len(prediction_sets)
+    
+    if coverage_type == "macro":
+        assert (num_classes!=None), "Macro Coverage metric needs the number of classes."
+        rate_classes = []
+        for k in range(num_classes):
+            idx = np.where(labels == k)[0]
+            selected_preds = [prediction_sets[i] for i in idx]
+            if len(labels[labels == k]) != 0:
+                rate_classes.append(coverage_rate(selected_preds, labels[labels == k]))
+            else:
+                # If there is no the "k" class in the "labels", we skip the calculation of this class.
+                continue
+        cvg = np.mean(rate_classes)
+    else:
+        for index, ele in enumerate(zip(prediction_sets, labels)):
+            if ele[1] in ele[0]:
+                cvg += 1
+        cvg = cvg / len(prediction_sets)
+    return cvg
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels):
-    if len(prediction_sets) == 0:
-        return 0
+    assert len(prediction_sets)>0, "The number of prediction set must be greater than 0."
+
     labels = labels.cpu()
     avg_size = 0
     for index, ele in enumerate(prediction_sets):
@@ -46,8 +71,7 @@ def average_size(prediction_sets, labels):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def CovGap(prediction_sets, labels, alpha, num_classes):
-    if len(prediction_sets) == 0:
-        return (1 - alpha) * 100
+    assert len(prediction_sets)>0, "The number of prediction set must be greater than 0."
     labels = labels.cpu()
     rate_classes = []
     for k in range(num_classes):

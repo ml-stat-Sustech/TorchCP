@@ -75,7 +75,7 @@ model = ...
 model.eval()
 
 # Options of score function: THR, APS, SAPS, RAPS
-# Define a conformal prediction algorithm. Optional: SplitPredictor, ClusterPredictor, ClassWisePredictor
+# Define a conformal prediction algorithm. Optional: SplitPredictor, ClusteredPredictor, ClassWisePredictor
 predictor = SplitPredictor(score_function=THR(), model=model)
 
 # Calibrating the predictor with significance level as 0.1
