@@ -75,7 +75,7 @@ class WeightedPredictor(SplitPredictor):
         logits = self._logits_transformation(logits).detach()
         sets = []
         for index, (logits_instance, q_hat) in enumerate(zip(logits, q_hat_batch)):
-            sets.append(self.predict_with_logits(logits_instance, q_hat))
+            sets.extend(self.predict_with_logits(logits_instance, q_hat))
         return sets
 
     def evaluate(self, val_dataloader):
