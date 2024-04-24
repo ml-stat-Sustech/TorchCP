@@ -70,17 +70,31 @@ def average_size(prediction_sets, labels):
 #########################################
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def CovGap(prediction_sets, labels, alpha, num_classes):
+def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx = None):
     assert len(prediction_sets)>0, "The number of prediction set must be greater than 0."
     labels = labels.cpu()
-    rate_classes = []
+    cls_coverage = []
     for k in range(num_classes):
         idx = np.where(labels == k)[0]
         selected_preds = [prediction_sets[i] for i in idx]
+        
         if len(labels[labels == k]) != 0:
-            rate_classes.append(coverage_rate(selected_preds, labels[labels == k]))
-    rate_classes = np.array(rate_classes)
-    return np.mean(np.abs(rate_classes - (1 - alpha))) * 100
+            the_coverage = coverage_rate(selected_preds, labels[labels == k])
+        else:
+            the_coverage = 0
+        cls_coverage.append(the_coverage)
+            
+    cls_coverage = np.array(cls_coverage)
+    overall_covgap = np.mean(np.abs(cls_coverage - (1 - alpha))) * 100
+    
+    if shot_idx == None:
+        return overall_covgap
+    covgaps = [overall_covgap]
+    for shot in shot_idx:
+        shot_covgap =  np.mean(np.abs(cls_coverage[shot] - (1 - alpha))) * 100
+        covgaps.append(shot_covgap)
+       
+    return covgaps
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
