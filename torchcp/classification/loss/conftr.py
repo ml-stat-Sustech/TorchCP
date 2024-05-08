@@ -8,9 +8,11 @@ __all__ = ["ConfTr"]
 
 
 import torch
-
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
+
+import numpy as np
 
 
 class ConfTr(nn.Module):
@@ -64,8 +66,11 @@ class ConfTr(nn.Module):
         test_logits = logits[val_split:]
         test_labels = labels[val_split:]
 
-        self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
-        tau = self.predictor.q_hat
+        cal_scores = self.predictor.score_function(cal_logits,cal_labels)
+        # self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
+        # tau = self.predictor.q_hat
+        tau = self.__soft_quantile(cal_scores,self.alpha)
+        # breakpoint()
         test_scores = self.predictor.score_function(test_logits)
         # Computing the probability of each label contained in the prediction set.
         pred_sets = torch.sigmoid(tau - test_scores)
@@ -115,3 +120,72 @@ class ConfTr(nn.Module):
 
         # Return the mean loss
         return torch.mean(loss)
+
+
+
+    def __neural_sort(self,
+        scores: Tensor,
+        tau: float = 0.1,
+    ) -> Tensor:
+        """
+        Soft sorts scores (descending) along last dimension
+        Follows implementation form
+        https://github.com/ermongroup/neuralsort/blob/master/pytorch/neuralsort.py
+        
+        Grover, Wang et al., Stochastic Optimization of Sorting Networks via Continuous Relaxations
+
+        Args:
+            scores (Tensor): scores to sort
+            tau (float, optional): smoothness factor. Defaults to 0.01.
+        Returns:
+            Tensor: permutation matrix such that sorted_scores = P @ scores 
+        """
+        pairwise_abs_diffs = (scores[...,:,None]-scores[...,None,:]).abs()
+        n = scores.shape[-1]
+        
+        pairwise_abs_diffs_sum = pairwise_abs_diffs @ torch.ones(n,1, device=pairwise_abs_diffs.device)
+        scores_diffs = scores[...,:,None] * (n - 1 - 2*torch.arange(n, device=pairwise_abs_diffs.device, dtype=torch.float))
+        P_scores = (scores_diffs-pairwise_abs_diffs_sum).transpose(-2,-1)
+        P_hat = torch.softmax(P_scores / tau, dim=-1)
+        
+        return P_hat
+
+    def __soft_quantile(self, scores: Tensor,
+        q: float,
+        dim=-1,
+        **kwargs
+    ) -> Tensor:
+        # swap requested dim with final dim
+        dims = list(range(len(scores.shape)))
+        dims[-1], dims[dim] = dims[dim], dims[-1]
+        scores = scores.permute(*dims)
+        # normalize scores on last dimension
+        # scores_norm = (scores - scores.mean()) / 3.*scores.std()
+        # obtain permutation matrix for scores
+        P_hat = self.__neural_sort(scores, **kwargs)
+        # use permutation matrix to sort scores
+        sorted_scores = (P_hat @ scores[...,None])[...,0]
+        # turn quantiles into indices to select
+        n = scores.shape[-1]
+        squeeze = False
+        if isinstance(q, float):
+            squeeze = True
+            q = [q]
+        q = torch.tensor(q, dtype=torch.float, device=scores.device)
+        indices = (1-q)*(n+1) - 1
+        indices_low = torch.floor(indices).long()
+        indices_frac = indices - indices_low
+        indices_high = indices_low + 1
+        # select quantiles from computed scores:
+        
+        quantiles = sorted_scores[...,torch.cat([indices_low,indices_high])]
+        quantiles = quantiles[...,:q.shape[0]] + indices_frac*(quantiles[...,q.shape[0]:]-quantiles[...,:q.shape[0]])
+        # restore dimension order
+        if len(dims) > 1:
+            quantiles = quantiles.permute(*dims)
+            
+        if squeeze:
+            quantiles = quantiles.squeeze(dim)
+        
+        return quantiles
+    

@@ -22,8 +22,10 @@ class Margin(APS):
         row_indices = torch.arange(probs.size(0), device=probs.device)
         target_prob = probs[row_indices, label].clone()
         probs[row_indices, label] = -1
-        second_highest_prob = torch.max(probs, dim=-1).values
-        return second_highest_prob - target_prob
+
+        # the largest probs except for the correct labels
+        largest_probs_ex_correct_labels = torch.max(probs, dim=-1).values
+        return largest_probs_ex_correct_labels - target_prob
 
     def _calculate_all_label(self, probs):
         _, num_labels = probs.shape
@@ -32,6 +34,6 @@ class Margin(APS):
         
         temp_probs[:, indices, indices] = -1
 
-        # torch.max(temp_probs, dim=-1) are the second highest probabilities 
+        # torch.max(temp_probs, dim=-1) are the largest probs except for the current labels
         scores = torch.max(temp_probs, dim=-1).values - probs
         return scores

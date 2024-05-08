@@ -54,40 +54,47 @@ def train(model, device, train_loader,criterion,  optimizer, epoch):
 
 if __name__ == '__main__':
     alpha = 0.01
-    num_trials = 5
-    loss = "ConfTr"
-    result = {}
-    print(f"############################## {loss} #########################")
-    
-    predictor = SplitPredictor(score_function=THR(score_type="log_softmax"))
-    criterion = ConfTr(weight=0.01,
-                        predictor=predictor,
-                        alpha=0.05,
-                        fraction=0.5,
-                        loss_type="valid",
-                        base_loss_fn=nn.CrossEntropyLoss())
+    losses = ["CE", "ConfTr"]
+    for loss in losses:
+        result = {}
+        print(f"############################## {loss} #########################")
         
-    fix_randomness(seed=0)
-    ##################################
-    # Training a pytorch model
-    ##################################
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_dataset = build_dataset("mnist")
-    train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True, pin_memory=True)
-    test_dataset = build_dataset("mnist", mode='test')
-    cal_dataset, test_dataset = torch.utils.data.random_split(test_dataset, [5000, 5000])
-    cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1600, shuffle=False, pin_memory=True)
-    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1600, shuffle=False, pin_memory=True)
-    
-    model = Net().to(device)
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
-    for epoch in range(1, 10):
-        train(model, device, train_data_loader, criterion, optimizer, epoch)
+        predictor = SplitPredictor(score_function=THR(score_type="log_softmax"))
+        if loss == "CE":
+             criterion = nn.CrossEntropyLoss()
+        elif loss == "ConfTr":
+            criterion = ConfTr(weight=0.01,
+                            predictor=predictor,
+                            alpha=0.1,
+                            fraction=0.5,
+                            loss_type="valid",
+                            base_loss_fn=nn.CrossEntropyLoss())
+        else:
+            NotImplementedError
+            
+        fix_randomness(seed=0)
+        ##################################
+        # Training a pytorch model
+        ##################################
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        train_dataset = build_dataset("mnist")
+        train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True, pin_memory=True)
+        test_dataset = build_dataset("mnist", mode='test')
+        cal_dataset, test_dataset = torch.utils.data.random_split(test_dataset, [5000, 5000])
+        cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1600, shuffle=False, pin_memory=True)
+        test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1600, shuffle=False, pin_memory=True)
         
-    
-    score_function = THR()
+        model = Net().to(device)
+        optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
-    predictor = SplitPredictor(score_function, model)
-    predictor.calibrate(cal_data_loader, alpha)                
-    result = predictor.evaluate(test_data_loader)
-    print(f"Result--Coverage_rate: {result['Coverage_rate']}, Average_size: {result['Average_size']}")
+        print(f"Starting to train the model ...")
+        for epoch in range(1, 10):
+            train(model, device, train_data_loader, criterion, optimizer, epoch)
+            
+        
+        score_function = THR()
+
+        predictor = SplitPredictor(score_function, model)
+        predictor.calibrate(cal_data_loader, alpha)                
+        result = predictor.evaluate(test_data_loader)
+        print(f"Result--Coverage_rate: {result['Coverage_rate']}, Average_size: {result['Average_size']}")
