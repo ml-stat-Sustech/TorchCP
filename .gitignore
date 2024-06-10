@@ -25,3 +25,5 @@ _tutorials/
 *.xml
 .history
 docs/buildA
+tests/__pycache__/
+examples/__pycache__/

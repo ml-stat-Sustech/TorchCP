@@ -91,6 +91,8 @@ def test_imagenet_logits():
             print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
             print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+            print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
+            print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
             
             
             
@@ -194,4 +196,4 @@ def test_calibration():
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
             
             
-test_imagenet()
+test_imagenet_logits()
