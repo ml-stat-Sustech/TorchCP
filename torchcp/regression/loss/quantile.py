@@ -28,10 +28,11 @@ class QuantileLoss(nn.Module):
         """
         assert not target.requires_grad
         assert preds.size(0) == target.size(0), "the batch size of preds must be equal to the batch size of target."
-        losses = preds.new_zeros(len(self.quantiles))
+        losses = []
 
         for i, q in enumerate(self.quantiles):
-            errors = target - preds[:, i:i + 1]
-            losses[i] = torch.sum(torch.max((q - 1) * errors, q * errors).squeeze(1))
-        loss = torch.mean(losses)
+            errors = target - preds[:, i]
+            losses.append(torch.max((q-1) * errors, q * errors).unsqueeze(1))
+    
+        loss = torch.mean(torch.sum(torch.cat(losses, dim=1), dim=1))
         return loss

@@ -12,11 +12,10 @@ from torchcp.utils import fix_randomness
 from utils import build_reg_data, build_regression_model
 from torchcp.regression.utils import calculate_midpoints
 
-
 def train(model, device, epoch, train_data_loader, criterion, optimizer):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader):
         outputs = model(tmp_x.to(device))
-        loss = criterion(outputs, tmp_y.unsqueeze(dim=1).to(device))
+        loss = criterion(outputs, tmp_y.to(device))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -154,5 +153,3 @@ def test_time_series():
     print("Evaluating prediction sets...")
     print(f"Coverage_rate: {metrics('coverage_rate')(predicts, test_y)}")
     print(f"Average_size: {metrics('average_size')(predicts)}")
-
-
