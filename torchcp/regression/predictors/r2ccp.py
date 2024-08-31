@@ -7,7 +7,7 @@
 
 import torch
 
-from torchcp.regression.predictors.split import SplitPredictor
+from .split import SplitPredictor
 
 
 class R2CCP(SplitPredictor):

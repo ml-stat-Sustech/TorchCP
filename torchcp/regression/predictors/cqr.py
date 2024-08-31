@@ -8,7 +8,7 @@
 import math
 import torch
 
-from torchcp.regression.predictors.split import SplitPredictor
+from .split import SplitPredictor
 
 
 class CQR(SplitPredictor):

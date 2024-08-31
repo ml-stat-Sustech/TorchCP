@@ -8,7 +8,7 @@ import warnings
 import math
 import torch
 
-from torchcp.classification.predictors.base import BasePredictor
+from .base import BasePredictor
 from torchcp.utils.common import calculate_conformal_value
 
 

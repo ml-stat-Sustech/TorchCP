@@ -6,7 +6,7 @@
 #
 import torch
 
-from torchcp.classification.scores.aps import APS
+from .aps import APS
 
 
 class Margin(APS):

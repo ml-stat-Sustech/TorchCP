@@ -7,7 +7,7 @@
 
 import torch
 
-from torchcp.regression.predictors.cqr import CQR
+from .cqr import CQR
 
 
 class ACI(CQR):

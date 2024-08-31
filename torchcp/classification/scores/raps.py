@@ -10,7 +10,7 @@
 
 import torch
 
-from torchcp.classification.scores.aps import APS
+from .aps import APS
 
 
 class RAPS(APS):

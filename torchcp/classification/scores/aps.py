@@ -10,7 +10,7 @@
 
 import torch
 
-from torchcp.classification.scores.base import BaseScore
+from .base import BaseScore
 
 
 class APS(BaseScore):

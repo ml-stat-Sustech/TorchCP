@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 
-from torchcp.classification.predictors.classwise import ClassWisePredictor
+from .classwise import ClassWisePredictor
 from torchcp.utils.common import DimensionError
 
 

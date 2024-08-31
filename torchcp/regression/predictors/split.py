@@ -9,7 +9,7 @@
 import math
 import torch
 
-from torchcp.regression.utils.metrics import Metrics
+from ..utils.metrics import Metrics
 from torchcp.utils.common import get_device
 from torchcp.utils.common import calculate_conformal_value
 

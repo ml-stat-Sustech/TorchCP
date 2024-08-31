@@ -6,7 +6,7 @@
 #
 import torch
 
-from torchcp.classification.scores.base import BaseScore
+from .base import BaseScore
 
 
 class THR(BaseScore):

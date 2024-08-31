@@ -6,8 +6,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torchcp.classification.predictors.split import SplitPredictor
-from torchcp.classification.predictors.utils import build_DomainDetecor, IW
+from .split import SplitPredictor
+from .utils import build_DomainDetecor, IW
 
 
 class WeightedPredictor(SplitPredictor):
