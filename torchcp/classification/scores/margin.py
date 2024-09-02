@@ -15,8 +15,8 @@ class Margin(APS):
 
     paper:https://dl.acm.org/doi/abs/10.3233/IDA-150786
     """
-    def __init__(self, ) -> None:
-        pass
+    def __init__(self, score_type="softmax"):
+        super().__init__(score_type)
 
     def _calculate_single_label(self, probs, label):
         row_indices = torch.arange(probs.size(0), device=probs.device)

@@ -6,10 +6,8 @@
 *.png
 .ipynb_checkpoints/
 .idea/
-__pycache__/
 *.pdf
 *.npz
-torchcp/__pycache__/
 deepcp.egg-info
 data/
 .pytest_cache/
@@ -25,5 +23,4 @@ _tutorials/
 *.xml
 .history
 docs/buildA
-tests/__pycache__/
-examples/__pycache__/
+**/__pycache__/

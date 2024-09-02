@@ -10,24 +10,14 @@
 
 import torch
 
-from .base import BaseScore
+from .thr import THR
 
 
-class APS(BaseScore):
+class APS(THR):
     """
     Adaptive Prediction Sets (Romano et al., 2020)
     paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
     """
-
-    def __call__(self, logits, label=None):
-        assert len(logits.shape) <= 2, "dimension of logits are at most 2."
-        if len(logits.shape) == 1:
-            logits = logits.unsqueeze(0)
-        probs = torch.softmax(logits, dim=-1)
-        if label is None:
-            return self._calculate_all_label(probs)
-        else:
-            return self._calculate_single_label(probs, label)
 
     def _calculate_all_label(self, probs):
         indices, ordered, cumsum = self._sort_sum(probs)

@@ -15,7 +15,7 @@ from torchcp.regression.utils import calculate_midpoints
 def train(model, device, epoch, train_data_loader, criterion, optimizer):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader):
         outputs = model(tmp_x.to(device))
-        loss = criterion(outputs, tmp_y.to(device))
+        loss = criterion(outputs, tmp_y.reshape(-1,1).to(device))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()

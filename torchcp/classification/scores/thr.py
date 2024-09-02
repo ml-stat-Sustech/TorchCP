@@ -36,14 +36,14 @@ class THR(BaseScore):
         assert len(logits.shape) <= 2, "dimension of logits are at most 2."
         if len(logits.shape) == 1:
             logits = logits.unsqueeze(0)
-        temp_values = self.transform(logits)
+        probs = self.transform(logits)
         if label is None:
-            return self.__calculate_all_label(temp_values)
+            return self.__calculate_all_label(probs)
         else:
-            return self.__calculate_single_label(temp_values, label)
+            return self.__calculate_single_label(probs, label)
 
-    def __calculate_single_label(self, temp_values, label):
-        return 1 - temp_values[torch.arange(temp_values.shape[0], device=temp_values.device), label]
+    def __calculate_single_label(self, probs, label):
+        return 1 - probs[torch.arange(probs.shape[0], device=probs.device), label]
 
-    def __calculate_all_label(self, temp_values):
-        return 1 - temp_values
+    def __calculate_all_label(self, probs):
+        return 1 - probs

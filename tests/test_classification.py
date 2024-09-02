@@ -9,6 +9,7 @@
 import argparse
 import os
 import pickle
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 import torch
 import torchvision
@@ -194,6 +195,4 @@ def test_calibration():
             print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
             print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
-            
-            
-test_imagenet_logits()
+        

@@ -19,9 +19,8 @@ class SAPS(APS):
     :param weight: the weight of label ranking.
     """
 
-    def __init__(self, weight):
-
-        super(SAPS, self).__init__()
+    def __init__(self, weight, score_type="softmax"):
+        super().__init__(score_type)
         if weight <= 0:
             raise ValueError("The parameter 'weight' must be a positive value.")
         self.__weight = weight

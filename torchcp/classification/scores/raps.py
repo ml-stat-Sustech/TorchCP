@@ -22,8 +22,8 @@ class RAPS(APS):
     :param kreg: the rank of regularization which is an integer in [0,labels_num].
     """
 
-    def __init__(self, penalty, kreg=0):
-        
+    def __init__(self, penalty, kreg=0, score_type="softmax"):
+        super().__init__(score_type)
         if penalty <= 0:
             raise ValueError("The parameter 'penalty' must be a positive value.")
         if kreg < 0:
