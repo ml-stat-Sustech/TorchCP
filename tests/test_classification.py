@@ -245,21 +245,19 @@ def test_imagenet_logits_types():
     # A standard process of conformal prediction
     #######################################
     alpha = 0.1
-    predictors = [SplitPredictor]
     
     tranformation_types = ["identity", "softmax", "log_softmax", "log"]
     for tranformation_type in tranformation_types: 
         score_function = APS(score_type = tranformation_type)
-        for class_predictor in predictors:
-            predictor = class_predictor(score_function)
-            predictor.calculate_threshold(cal_logits, cal_labels, alpha)
-            print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}, Score_type: {tranformation_type}")
-            prediction_sets = predictor.predict_with_logits(test_logits)
+        predictor = SplitPredictor(score_function)
+        predictor.calculate_threshold(cal_logits, cal_labels, alpha)
+        print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}, Score_type: {tranformation_type}")
+        prediction_sets = predictor.predict_with_logits(test_logits)
 
-            metrics = Metrics()
-            print("Evaluating prediction sets...")
-            print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
-            print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
-            print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
-            print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
-            print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
+        metrics = Metrics()
+        print("Evaluating prediction sets...")
+        print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+        print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+        print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
