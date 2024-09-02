@@ -45,11 +45,11 @@ class ACI(CQR):
         #######################
         if y_t is None:
             err_t = self.alpha
-        else:   
+        else:
             if y_t.dim() == 0:
                 y_t = torch.tensor([y_t.item()]).to(self._device)
             if len(y_t.shape) == 0:
-                err_t =  ((y_t >= pred_interval_t[...,0]) & (y_t <= pred_interval_t[...,1])).int()
+                err_t = ((y_t >= pred_interval_t[..., 0]) & (y_t <= pred_interval_t[..., 1])).int()
             else:
                 steps_t = len(y_t)
                 w = torch.arange(steps_t).to(self._device)
@@ -57,7 +57,7 @@ class ACI(CQR):
                 w = w / torch.sum(w)
                 err = x.new_zeros(steps_t, self.q_hat.shape[0])
                 for i in range(steps_t):
-                    err[i] = ((y_t >= pred_interval_t[...,0]) & (y_t <= pred_interval_t[...,1])).int()
+                    err[i] = ((y_t >= pred_interval_t[..., 0]) & (y_t <= pred_interval_t[..., 1])).int()
                 err_t = torch.sum(w * err)
 
         # Adaptive adjust the value of alpha
@@ -66,7 +66,7 @@ class ACI(CQR):
         if len(predicts_batch.shape) == 1:
             predicts_batch = predicts_batch.unsqueeze(0)
         q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
-        prediction_intervals = x.new_zeros(self.q_hat.shape[0],2)
-        prediction_intervals[:,0] = predicts_batch[:,0] - q_hat.view(self.q_hat.shape[0], 1)
-        prediction_intervals[:,1] = predicts_batch[:,1] + q_hat.view(self.q_hat.shape[0], 1)
+        prediction_intervals = x.new_zeros(self.q_hat.shape[0], 2)
+        prediction_intervals[:, 0] = predicts_batch[:, 0] - q_hat.view(self.q_hat.shape[0], 1)
+        prediction_intervals[:, 1] = predicts_batch[:, 1] + q_hat.view(self.q_hat.shape[0], 1)
         return prediction_intervals

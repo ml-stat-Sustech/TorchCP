@@ -15,6 +15,7 @@ class Margin(APS):
 
     paper:https://dl.acm.org/doi/abs/10.3233/IDA-150786
     """
+
     def __init__(self, score_type="softmax"):
         super().__init__(score_type)
 
@@ -31,7 +32,7 @@ class Margin(APS):
         _, num_labels = probs.shape
         temp_probs = probs.unsqueeze(1).repeat(1, num_labels, 1)
         indices = torch.arange(num_labels).to(probs.device)
-        
+
         temp_probs[:, indices, indices] = -1
 
         # torch.max(temp_probs, dim=-1) are the largest probs except for the current labels

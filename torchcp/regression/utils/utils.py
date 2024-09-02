@@ -11,5 +11,5 @@ import torch
 def calculate_midpoints(data_loader, K):
     data_tensor = torch.cat([data[1] for data in data_loader], dim=0)
     midpoints = torch.linspace(data_tensor.min(), data_tensor.max(), steps=K)
-    
+
     return midpoints

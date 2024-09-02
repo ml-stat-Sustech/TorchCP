@@ -4,9 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-from typing import Any
-
 import numpy as np
+from typing import Any
 
 from torchcp.utils.registry import Registry
 
@@ -18,7 +17,7 @@ METRICS_REGISTRY_CLASSIFICATION = Registry("METRICS")
 #########################################
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes = None):
+def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=None):
     """
     The metric for empirical coverage.
     
@@ -34,12 +33,12 @@ def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes 
     Returns:
         float: the empirical coverage rate.
     """
-    assert len(prediction_sets)>0, "The number of prediction set must be greater than 0."
+    assert len(prediction_sets) > 0, "The number of prediction set must be greater than 0."
     labels = labels.cpu()
     cvg = 0
-    
+
     if coverage_type == "macro":
-        assert (num_classes!=None), "Macro Coverage metric needs the number of classes."
+        assert (num_classes != None), "Macro Coverage metric needs the number of classes."
         rate_classes = []
         for k in range(num_classes):
             idx = np.where(labels == k)[0]
@@ -60,7 +59,7 @@ def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels):
-    assert len(prediction_sets)>0, "The number of prediction set must be greater than 0."
+    assert len(prediction_sets) > 0, "The number of prediction set must be greater than 0."
 
     labels = labels.cpu()
     avg_size = 0
@@ -74,7 +73,7 @@ def average_size(prediction_sets, labels):
 #########################################
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx = None):
+def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx=None):
     """
     Computing the average class-conditional coverage gap.
 
@@ -91,30 +90,30 @@ def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx = None):
     Returns:
         Float: the average class-conditional coverage gap.
     """
-    assert len(prediction_sets)>0, "The number of prediction sets must be greater than 0."
-    
+    assert len(prediction_sets) > 0, "The number of prediction sets must be greater than 0."
+
     labels = labels.cpu()
     cls_coverage = []
     for k in range(num_classes):
         idx = np.where(labels == k)[0]
         selected_preds = [prediction_sets[i] for i in idx]
-        
+
         if len(labels[labels == k]) != 0:
             the_coverage = coverage_rate(selected_preds, labels[labels == k])
         else:
             the_coverage = 0
         cls_coverage.append(the_coverage)
-            
+
     cls_coverage = np.array(cls_coverage)
     overall_covgap = np.mean(np.abs(cls_coverage - (1 - alpha))) * 100
-    
+
     if shot_idx == None:
         return overall_covgap
     covgaps = [overall_covgap]
     for shot in shot_idx:
-        shot_covgap =  np.mean(np.abs(cls_coverage[shot] - (1 - alpha))) * 100
+        shot_covgap = np.mean(np.abs(cls_coverage[shot] - (1 - alpha))) * 100
         covgaps.append(shot_covgap)
-       
+
     return covgaps
 
 
@@ -149,7 +148,8 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def DiffViolation(logits, prediction_sets, labels, alpha, strata_diff = [[1, 1], [2, 3], [4, 6], [7, 10], [11, 100], [101, 1000]]):
+def DiffViolation(logits, prediction_sets, labels, alpha,
+                  strata_diff=[[1, 1], [2, 3], [4, 6], [7, 10], [11, 100], [101, 1000]]):
     """
     Difficulty-stratified coverage violation
 
@@ -168,7 +168,7 @@ def DiffViolation(logits, prediction_sets, labels, alpha, strata_diff = [[1, 1],
         2-tuple: (the difficulty-stratified coverage violation, the number of samples, the empirical coverage and size of each difficulty).
     """
     assert isinstance(strata_diff, list), "strata_diff must be a list."
-    
+
     labels = labels.cpu()
     logits = logits.cpu()
     correct_array = np.zeros(len(labels))

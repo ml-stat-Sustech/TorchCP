@@ -43,7 +43,7 @@ class RAPS(APS):
         _, sorted_indices = torch.sort(indices, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)
         return scores
-    
+
     def _calculate_single_label(self, probs, label):
         indices, ordered, cumsum = self._sort_sum(probs)
         U = torch.rand(indices.shape[0], device=probs.device)

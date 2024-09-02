@@ -1,15 +1,13 @@
 import torch
 from torch.utils.data import TensorDataset
 
+from examples.common.dataset import build_reg_data
+from examples.common.utils import build_regression_model
+from regression import train
 from torchcp.regression import Metrics
 from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictors import ACI, CQR
 from torchcp.utils import fix_randomness
-from examples.common.dataset import build_reg_data
-from examples.common.utils import build_regression_model
-from regression import train
-
-
 
 if __name__ == '__main__':
 
@@ -24,10 +22,6 @@ if __name__ == '__main__':
     train_dataset = TensorDataset(torch.from_numpy(X[:T0, :]), torch.from_numpy(y[:T0]))
     train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True, pin_memory=True)
 
-
-
-
-
     alpha = 0.1
     quantiles = [alpha / 2, 1 - alpha / 2]
     model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
@@ -37,8 +31,8 @@ if __name__ == '__main__':
     epochs = 10
     for epoch in range(epochs):
         train(model, device, epoch, train_data_loader, criterion, optimizer)
-            
-    model.eval()        
+
+    model.eval()
     ##################################
     # Conformal Quantile Regression
     ##################################
@@ -50,7 +44,7 @@ if __name__ == '__main__':
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
     predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader))      
+    print(predictor.evaluate(test_data_loader))
 
     ##################################
     # Adaptive Conformal Inference,

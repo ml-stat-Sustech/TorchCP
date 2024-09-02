@@ -1,24 +1,25 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset, ConcatDataset
 from sklearn.preprocessing import StandardScaler
+from torch.utils.data import TensorDataset, ConcatDataset
 
-
-from torchcp.regression.predictors import SplitPredictor, CQR, ACI, R2CCP
+from torchcp.regression import Metrics
 from torchcp.regression.loss import QuantileLoss, R2ccpLoss
-from torchcp.regression import Metrics 
+from torchcp.regression.predictors import SplitPredictor, CQR, ACI, R2CCP
+from torchcp.regression.utils import calculate_midpoints
 from torchcp.utils import fix_randomness
 from utils import build_reg_data, build_regression_model
-from torchcp.regression.utils import calculate_midpoints
+
 
 def train(model, device, epoch, train_data_loader, criterion, optimizer):
     for index, (tmp_x, tmp_y) in enumerate(train_data_loader):
         outputs = model(tmp_x.to(device))
-        loss = criterion(outputs, tmp_y.reshape(-1,1).to(device))
+        loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
 
 def test_SplitPredictor():
     print("##########################################")
@@ -115,8 +116,8 @@ def test_time_series():
     epochs = 10
     for epoch in range(epochs):
         train(model, device, epoch, train_data_loader, criterion, optimizer)
-            
-    model.eval()        
+
+    model.eval()
     ##################################
     # Conformal Quantile Regression
     ##################################
@@ -126,9 +127,9 @@ def test_time_series():
     cal_dataset = TensorDataset(torch.from_numpy(X[0:T0, :]), torch.from_numpy(y[0:T0]))
     test_dataset = TensorDataset(torch.from_numpy(X[T0:, :]), torch.from_numpy(y[T0:]))
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
-    test_data_loader =  torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
+    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
     predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader))      
+    print(predictor.evaluate(test_data_loader))
 
     ##################################
     # Adaptive Conformal Inference,
@@ -136,7 +137,7 @@ def test_time_series():
     print("########################## ACI ###########################")
     predictor = ACI(model, 0.005)
     test_y = torch.from_numpy(y[T0:num_examples]).to(device)
-    predicts = torch.zeros((num_examples - T0,1, 2)).to(device)
+    predicts = torch.zeros((num_examples - T0, 1, 2)).to(device)
     for i in range(num_examples - T0):
         with torch.no_grad():
             cal_dataset = TensorDataset(torch.from_numpy(X[i:(T0 + i), :]), torch.from_numpy(y[i:(T0 + i)]))

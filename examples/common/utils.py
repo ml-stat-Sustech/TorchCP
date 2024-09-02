@@ -1,4 +1,3 @@
-
 import torch.nn as nn
 
 
@@ -27,6 +26,3 @@ def build_regression_model(model_name):
         return NonLinearNet
     else:
         raise NotImplementedError
-
-
-

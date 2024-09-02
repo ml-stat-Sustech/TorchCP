@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 
 __all__ = ["R2ccpLoss"]
+
+
 class R2ccpLoss(nn.Module):
     """
     Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2023).
@@ -28,14 +30,13 @@ class R2ccpLoss(nn.Module):
         assert not target.requires_grad
         if preds.size(0) != target.size(0):
             raise IndexError(f"Batch size of preds must be equal to the batch size of target.")
-        
+
         target = target.view(-1, 1)
         abs_diff = torch.abs(target - self.midpoints.to(preds.device).unsqueeze(0))
         cross_entropy = torch.sum((abs_diff ** self.p) * preds, dim=1)
         shannon_entropy = torch.sum(preds * torch.log(preds.clamp_min(1e-10)), dim=1)
-        
+
         losses = cross_entropy - self.tau * shannon_entropy
         loss = losses.sum()
-        
+
         return loss
-    

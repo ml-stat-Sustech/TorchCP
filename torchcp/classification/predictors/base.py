@@ -6,10 +6,8 @@
 #
 
 
-from abc import ABCMeta, abstractmethod
-
 import torch
-
+from abc import ABCMeta, abstractmethod
 
 from torchcp.classification.utils import ConfCalibrator
 from torchcp.classification.utils.metrics import Metrics
@@ -28,7 +26,6 @@ class BasePredictor(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, score_function, model=None, temperature=1):
-
         self.score_function = score_function
         self._model = model
         self._device = get_device(model)
@@ -61,5 +58,5 @@ class BasePredictor(object):
         :param scores : The non-conformity scores of {(x,y_1),..., (x,y_K)}
         :param q_hat : the calibrated threshold.
         """
-        
+
         return [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]

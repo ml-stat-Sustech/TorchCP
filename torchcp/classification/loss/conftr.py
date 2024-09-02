@@ -6,13 +6,11 @@
 #
 __all__ = ["ConfTr"]
 
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-
-import numpy as np
 
 
 class ConfTr(nn.Module):
@@ -29,23 +27,26 @@ class ConfTr(nn.Module):
     :param loss_transform: a transform for loss
     :param base_loss_fn: a base loss function. For example, cross entropy in classification.
     """
+
     def __init__(self, weight, predictor, alpha, fraction, loss_type="valid", target_size=1,
                  loss_transform="square", base_loss_fn=None):
-        
+
         super(ConfTr, self).__init__()
-        assert weight>0, "weight must be greater than 0."
+        assert weight > 0, "weight must be greater than 0."
         assert (0 < fraction < 1), "fraction should be a value in (0,1)."
-        assert loss_type in ["valid", "classification",  "probs", "coverage"], ('loss_type should be a value in ["valid", "classification",  "probs", "coverage"].')
-        assert target_size==0 or target_size ==1, "target_size should be 0 or 1."
-        assert loss_transform in ["square", "abs", "log"], ('loss_transform should be a value in ["square", "abs","log"].')
+        assert loss_type in ["valid", "classification", "probs", "coverage"], (
+            'loss_type should be a value in ["valid", "classification",  "probs", "coverage"].')
+        assert target_size == 0 or target_size == 1, "target_size should be 0 or 1."
+        assert loss_transform in ["square", "abs", "log"], (
+            'loss_transform should be a value in ["square", "abs","log"].')
         self.weight = weight
         self.predictor = predictor
         self.alpha = alpha
         self.fraction = fraction
-        self.loss_type =  loss_type
+        self.loss_type = loss_type
         self.target_size = target_size
         self.base_loss_fn = base_loss_fn
-        
+
         if loss_transform == "square":
             self.transform = torch.square
         elif loss_transform == "abs":
@@ -66,10 +67,10 @@ class ConfTr(nn.Module):
         test_logits = logits[val_split:]
         test_labels = labels[val_split:]
 
-        cal_scores = self.predictor.score_function(cal_logits,cal_labels)
+        cal_scores = self.predictor.score_function(cal_logits, cal_labels)
         # self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
         # tau = self.predictor.q_hat
-        tau = self.__soft_quantile(cal_scores,self.alpha)
+        tau = self.__soft_quantile(cal_scores, self.alpha)
         # breakpoint()
         test_scores = self.predictor.score_function(test_logits)
         # Computing the probability of each label contained in the prediction set.
@@ -121,12 +122,10 @@ class ConfTr(nn.Module):
         # Return the mean loss
         return torch.mean(loss)
 
-
-
     def __neural_sort(self,
-        scores: Tensor,
-        tau: float = 0.1,
-    ) -> Tensor:
+                      scores: Tensor,
+                      tau: float = 0.1,
+                      ) -> Tensor:
         """
         Soft sorts scores (descending) along last dimension
         Follows implementation form
@@ -140,21 +139,22 @@ class ConfTr(nn.Module):
         Returns:
             Tensor: permutation matrix such that sorted_scores = P @ scores 
         """
-        pairwise_abs_diffs = (scores[...,:,None]-scores[...,None,:]).abs()
+        pairwise_abs_diffs = (scores[..., :, None] - scores[..., None, :]).abs()
         n = scores.shape[-1]
-        
-        pairwise_abs_diffs_sum = pairwise_abs_diffs @ torch.ones(n,1, device=pairwise_abs_diffs.device)
-        scores_diffs = scores[...,:,None] * (n - 1 - 2*torch.arange(n, device=pairwise_abs_diffs.device, dtype=torch.float))
-        P_scores = (scores_diffs-pairwise_abs_diffs_sum).transpose(-2,-1)
+
+        pairwise_abs_diffs_sum = pairwise_abs_diffs @ torch.ones(n, 1, device=pairwise_abs_diffs.device)
+        scores_diffs = scores[..., :, None] * (
+                n - 1 - 2 * torch.arange(n, device=pairwise_abs_diffs.device, dtype=torch.float))
+        P_scores = (scores_diffs - pairwise_abs_diffs_sum).transpose(-2, -1)
         P_hat = torch.softmax(P_scores / tau, dim=-1)
-        
+
         return P_hat
 
     def __soft_quantile(self, scores: Tensor,
-        q: float,
-        dim=-1,
-        **kwargs
-    ) -> Tensor:
+                        q: float,
+                        dim=-1,
+                        **kwargs
+                        ) -> Tensor:
         # swap requested dim with final dim
         dims = list(range(len(scores.shape)))
         dims[-1], dims[dim] = dims[dim], dims[-1]
@@ -164,7 +164,7 @@ class ConfTr(nn.Module):
         # obtain permutation matrix for scores
         P_hat = self.__neural_sort(scores, **kwargs)
         # use permutation matrix to sort scores
-        sorted_scores = (P_hat @ scores[...,None])[...,0]
+        sorted_scores = (P_hat @ scores[..., None])[..., 0]
         # turn quantiles into indices to select
         n = scores.shape[-1]
         squeeze = False
@@ -172,20 +172,20 @@ class ConfTr(nn.Module):
             squeeze = True
             q = [q]
         q = torch.tensor(q, dtype=torch.float, device=scores.device)
-        indices = (1-q)*(n+1) - 1
+        indices = (1 - q) * (n + 1) - 1
         indices_low = torch.floor(indices).long()
         indices_frac = indices - indices_low
         indices_high = indices_low + 1
         # select quantiles from computed scores:
-        
-        quantiles = sorted_scores[...,torch.cat([indices_low,indices_high])]
-        quantiles = quantiles[...,:q.shape[0]] + indices_frac*(quantiles[...,q.shape[0]:]-quantiles[...,:q.shape[0]])
+
+        quantiles = sorted_scores[..., torch.cat([indices_low, indices_high])]
+        quantiles = quantiles[..., :q.shape[0]] + indices_frac * (
+                quantiles[..., q.shape[0]:] - quantiles[..., :q.shape[0]])
         # restore dimension order
         if len(dims) > 1:
             quantiles = quantiles.permute(*dims)
-            
+
         if squeeze:
             quantiles = quantiles.squeeze(dim)
-        
+
         return quantiles
-    

@@ -88,6 +88,7 @@ pygments_style = 'sphinx'
 
 todo_include_todos = False
 
+
 # Resolve function for the linkcode extension.
 def linkcode_resolve(domain, info):
     def find_source():
@@ -113,6 +114,7 @@ def linkcode_resolve(domain, info):
     url = "https://github.com/ml-stat-Sustech/TorchCP/blob/%s/%s"
     return url % (tag, filename)
 
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -130,5 +132,3 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
-

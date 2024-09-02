@@ -10,8 +10,8 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 
-from .classwise import ClassWisePredictor
 from torchcp.utils.common import DimensionError
+from .classwise import ClassWisePredictor
 
 
 class ClusteredPredictor(ClassWisePredictor):
@@ -136,7 +136,6 @@ class ClusteredPredictor(ClassWisePredictor):
             n += 1
         return n
 
-
     def __get_rare_classes(self, labels, alpha, num_classes):
         """
         Choose classes whose number is less than or equal to .
@@ -226,7 +225,7 @@ class ClusteredPredictor(ClassWisePredictor):
         # Map true class labels to clusters
         cal_true_clusters = torch.tensor([cluster_assignments[label] for label in cal_true_labels], device=self._device)
         num_clusters = torch.max(cluster_assignments) + 1
-        
+
         cluster_qhats = self.__compute_class_specific_qhats(cal_class_scores, cal_true_clusters, num_clusters, alpha)
         # Map cluster qhats back to classes
         num_classes = len(cluster_assignments)

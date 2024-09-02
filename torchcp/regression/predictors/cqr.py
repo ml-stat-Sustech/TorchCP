@@ -21,11 +21,11 @@ class CQR(SplitPredictor):
 
     def __init__(self, model):
         super().__init__(model)
-        
+
     def calculate_score(self, predicts, y_truth):
-        if len(predicts.shape) ==2:
+        if len(predicts.shape) == 2:
             predicts = predicts.unsqueeze(1)
-        if len(y_truth.shape) ==1:
+        if len(y_truth.shape) == 1:
             y_truth = y_truth.unsqueeze(1)
         return torch.maximum(predicts[..., 0] - y_truth, y_truth - predicts[..., 1])
 
@@ -34,9 +34,9 @@ class CQR(SplitPredictor):
         if len(x_batch.shape) == 1:
             x_batch = x_batch.unsqueeze(0)
         predicts_batch = self._model(x_batch.to(self._device)).float()
-        if len(predicts_batch.shape) ==2:
+        if len(predicts_batch.shape) == 2:
             predicts_batch = predicts_batch.unsqueeze(1)
-        prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0],self.q_hat.shape[0] , 2))
+        prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0], self.q_hat.shape[0], 2))
         prediction_intervals[..., 0] = predicts_batch[..., 0] - self.q_hat.view(1, self.q_hat.shape[0], 1)
         prediction_intervals[..., 1] = predicts_batch[..., 1] + self.q_hat.view(1, self.q_hat.shape[0], 1)
         return prediction_intervals

@@ -1,14 +1,14 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset
 from sklearn.preprocessing import StandardScaler
+from torch.utils.data import TensorDataset
 
-from torchcp.regression.predictors import SplitPredictor, CQR
-from torchcp.regression.loss import QuantileLoss
-from torchcp.utils import fix_randomness
 from examples.common.dataset import build_reg_data
 from examples.common.utils import build_regression_model
+from torchcp.regression.loss import QuantileLoss
+from torchcp.regression.predictors import SplitPredictor, CQR
+from torchcp.utils import fix_randomness
 
 
 def train(model, device, epoch, train_data_loader, criterion, optimizer):
@@ -18,6 +18,7 @@ def train(model, device, epoch, train_data_loader, criterion, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
 
 if __name__ == '__main__':
     ##################################
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     model.eval()
     predictor = SplitPredictor(model)
     predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader)) 
+    print(predictor.evaluate(test_data_loader))
 
     ##################################
     # Conformal Quantile Regression
@@ -77,4 +78,3 @@ if __name__ == '__main__':
     predictor = CQR(model)
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))
-

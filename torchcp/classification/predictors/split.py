@@ -4,12 +4,12 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-import warnings
 import math
 import torch
+import warnings
 
-from .base import BasePredictor
 from torchcp.utils.common import calculate_conformal_value
+from .base import BasePredictor
 
 
 class SplitPredictor(BasePredictor):
@@ -21,6 +21,7 @@ class SplitPredictor(BasePredictor):
     :param model: a pytorch model.
     :param temperature: the temperature of Temperature Scaling.
     """
+
     def __init__(self, score_function, model=None, temperature=1):
         super().__init__(score_function, model, temperature)
 
@@ -47,7 +48,7 @@ class SplitPredictor(BasePredictor):
         scores = self.score_function(logits, labels)
         self.q_hat = self._calculate_conformal_value(scores, alpha)
 
-    def _calculate_conformal_value(self, scores, alpha, marginal_q_hat = torch.inf):
+    def _calculate_conformal_value(self, scores, alpha, marginal_q_hat=torch.inf):
         return calculate_conformal_value(scores, alpha, marginal_q_hat)
 
     #############################
@@ -76,15 +77,13 @@ class SplitPredictor(BasePredictor):
 
         :return: prediction sets
         """
-        
-            
+
         scores = self.score_function(logits).to(self._device)
         if q_hat is None:
             q_hat = self.q_hat
 
-        
         S = self._generate_prediction_set(scores, q_hat)
-        
+
         return S
 
     #############################

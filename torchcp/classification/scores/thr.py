@@ -18,7 +18,7 @@ class THR(BaseScore):
     """
 
     def __init__(self, score_type="softmax"):
-        
+
         super().__init__()
         self.score_type = score_type
         if score_type == "identity":

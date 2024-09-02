@@ -6,6 +6,7 @@
 #
 import torch
 import warnings
+
 from .split import SplitPredictor
 
 
@@ -36,5 +37,3 @@ class ClassWisePredictor(SplitPredictor):
         for label in range(num_classes):
             temp_scores = scores[labels == label]
             self.q_hat[label] = self._calculate_conformal_value(temp_scores, alpha, marginal_q_hat)
-                
-

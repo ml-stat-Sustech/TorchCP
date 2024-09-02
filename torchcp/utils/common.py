@@ -6,12 +6,11 @@
 #
 
 
-import random
 import math
-import warnings
-
 import numpy as np
+import random
 import torch
+import warnings
 
 __all__ = ["fix_randomness", "DimensionError", "get_device"]
 
@@ -51,7 +50,7 @@ def get_device(model):
     return device
 
 
-def calculate_conformal_value(scores, alpha, default_q_hat = torch.inf):
+def calculate_conformal_value(scores, alpha, default_q_hat=torch.inf):
     """
     Calculate the 1-alpha quantile of scores.
     
@@ -63,7 +62,7 @@ def calculate_conformal_value(scores, alpha, default_q_hat = torch.inf):
     if default_q_hat == "max":
         default_q_hat = torch.max(scores)
     if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in [0,1].")
+        raise ValueError("Significance level 'alpha' must be in [0,1].")
     if len(scores) == 0:
         warnings.warn(
             f"The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as {default_q_hat}.")

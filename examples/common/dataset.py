@@ -1,6 +1,5 @@
-import os
-
 import numpy as np
+import os
 import pandas as pd
 import torchvision.datasets as dset
 import torchvision.transforms as trn
@@ -78,6 +77,3 @@ def build_reg_data(data_name="community"):
     y = y.astype(np.float32)
 
     return X, y
-
-
-

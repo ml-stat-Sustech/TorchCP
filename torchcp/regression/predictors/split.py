@@ -9,9 +9,9 @@
 import math
 import torch
 
-from ..utils.metrics import Metrics
-from torchcp.utils.common import get_device
 from torchcp.utils.common import calculate_conformal_value
+from torchcp.utils.common import get_device
+from ..utils.metrics import Metrics
 
 
 class SplitPredictor(object):
@@ -26,7 +26,7 @@ class SplitPredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
-        
+
     def calculate_score(self, predicts, y_truth):
         if len(y_truth.shape) == 1:
             y_truth = y_truth.unsqueeze(1)
@@ -50,7 +50,6 @@ class SplitPredictor(object):
         scores = self.calculate_score(predicts, y_truth)
         self.q_hat = self._calculate_conformal_value(scores, alpha)
 
-        
     def _calculate_conformal_value(self, scores, alpha):
         return calculate_conformal_value(scores, alpha)
 
@@ -59,7 +58,7 @@ class SplitPredictor(object):
         x_batch.to(self._device)
         with torch.no_grad():
             predicts_batch = self._model(x_batch)
-            prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0],self.q_hat.shape[0] , 2))
+            prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0], self.q_hat.shape[0], 2))
 
             prediction_intervals[..., 0] = predicts_batch - self.q_hat.view(1, self.q_hat.shape[0])
             prediction_intervals[..., 1] = predicts_batch + self.q_hat.view(1, self.q_hat.shape[0])
@@ -75,12 +74,9 @@ class SplitPredictor(object):
                 tmp_prediction_intervals = self.predict(tmp_x)
                 y_list.append(tmp_y)
                 predict_list.append(tmp_prediction_intervals)
-                
-        
 
-        predicts = torch.cat(predict_list,dim=0).to(self._device)
+        predicts = torch.cat(predict_list, dim=0).to(self._device)
         test_y = torch.cat(y_list).to(self._device)
-
 
         res_dict = {"Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
                     "Average_size": self._metric('average_size')(predicts)}
