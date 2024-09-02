@@ -6,21 +6,25 @@
 #
 
 
-import argparse
 import os
 import pickle
+import random
 os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
 import torchvision
 import torchvision.datasets as dset
 import torchvision.transforms as trn
 from tqdm import tqdm
+import numpy as np
 
 from torchcp.classification.predictors import SplitPredictor, ClusteredPredictor, ClassWisePredictor
 from torchcp.classification.scores import THR, APS, SAPS, RAPS, Margin
 from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
+from torchcp.classification.utils import OrdinalClassifier
 
 
 transform = trn.Compose([trn.Resize(256),
@@ -254,6 +258,107 @@ def test_imagenet_logits_types():
         print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}, Score_type: {tranformation_type}")
         prediction_sets = predictor.predict_with_logits(test_logits)
 
+        metrics = Metrics()
+        print("Evaluating prediction sets...")
+        print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+        print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+        print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
+        
+        
+def test_ordinal_classification():
+    fix_randomness(seed=0)
+    
+
+    num_classes = 10
+    num_per_class = 2000
+    cov_scale = 1.2
+    means = [[i, i] for i in range(num_classes)]
+    covs = [np.random.rand(2,2)*cov_scale for i in range(num_classes)]
+
+    labels = np.array([item for sublist in [[i]* num_per_class for i in range(num_classes)] for item in sublist]) 
+
+    x = np.array([np.random.multivariate_normal(means[i], covs[i], num_per_class) for i in range(num_classes)])
+    x = x.reshape((num_classes * num_per_class, 2))
+    
+    shuffled_indices = [i for i in range(num_classes * num_per_class)]
+    random.shuffle(shuffled_indices)
+    x = x[shuffled_indices, :]
+
+    labels = labels[shuffled_indices]
+
+    train_ratio = 0.2
+    train_num = int(train_ratio * num_classes * num_per_class)
+
+    x_tr = x[:train_num, :]
+    labels_tr = labels[:train_num]
+    x_rest = x[train_num:, :]
+    labels_rest = labels[train_num:]
+    
+    class Data(Dataset):
+        def __init__(self, x_train, y_train):
+            self.x=torch.from_numpy(x_train)
+            self.y=torch.from_numpy(y_train)
+            self.len=self.x.shape[0]
+            
+        def __getitem__(self,index):      
+            return self.x[index], self.y[index]
+        
+        def __len__(self):
+            return self.len
+    
+    train_dataset = Data(x_tr, labels_tr)    
+    trainloader=DataLoader(dataset=train_dataset,batch_size=64)
+    
+    class MultiClassModel(nn.Module):
+        def __init__(self,D_in,H,D_out):
+            super(MultiClassModel,self).__init__()
+            self.linear1=nn.Linear(D_in,H)
+            self.linear2=nn.Linear(H,D_out)
+
+            
+        def forward(self,x):
+            x=torch.sigmoid(self.linear1(x.float()))  
+            x=self.linear2(x)  
+            return x
+        
+    
+    labels_rest = torch.from_numpy(labels_rest).cuda()
+    mask = torch.rand_like(labels_rest, dtype=torch.float32) > 0.5
+    cal_labels = labels_rest[mask]
+    test_labels = labels_rest[~mask]
+    
+    for phi in ["abs", "square"]:
+        print(f"Experiment--Data : ImageNet, phi : {phi}.")
+        base_model = MultiClassModel(2, 50, num_classes)
+        model = OrdinalClassifier(base_model, phi)
+        model.cuda()
+        
+        criterion= nn.CrossEntropyLoss()
+        learning_rate=0.05
+        optimizer=torch.optim.SGD(model.parameters(), lr=learning_rate)
+        
+        n_epochs= 100
+        for epoch in range(n_epochs):
+            for x, y in trainloader:       
+                optimizer.zero_grad()
+                z=model(x.cuda())
+                loss=criterion(z,y.cuda())
+                loss.backward()
+                optimizer.step()
+            if epoch%100 == 0:
+                print('epoch {}, loss {}'.format(epoch, loss.item()))
+                
+        logits_rest = model(torch.from_numpy(x_rest).cuda())
+        cal_logits = logits_rest[mask,:]
+        test_logits = logits_rest[~mask]
+        
+        alpha = 0.1
+        
+        predictor = SplitPredictor(APS())
+        predictor.calculate_threshold(cal_logits, cal_labels, alpha)
+        prediction_sets = predictor.predict_with_logits(test_logits)
         metrics = Metrics()
         print("Evaluating prediction sets...")
         print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")

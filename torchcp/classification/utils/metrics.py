@@ -170,6 +170,7 @@ def DiffViolation(logits, prediction_sets, labels, alpha, strata_diff = [[1, 1],
     assert isinstance(strata_diff, list), "strata_diff must be a list."
     
     labels = labels.cpu()
+    logits = logits.cpu()
     correct_array = np.zeros(len(labels))
     size_array = np.zeros(len(labels))
     topk = []
