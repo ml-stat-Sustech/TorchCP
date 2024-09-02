@@ -196,3 +196,70 @@ def test_calibration():
             print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
         
+        
+def test_imagenet_logits_types():
+    #######################################
+    # Loading ImageNet dataset and a pytorch model
+    #######################################
+    fix_randomness(seed=0)
+    model_name = 'ResNet101'
+    fname = ".cache/" + model_name + ".pkl"
+    if os.path.exists(fname):
+        with open(fname, 'rb') as handle:
+            dataset = pickle.load(handle)
+
+    else:
+        usr_dir = os.path.expanduser('~')
+        data_dir = os.path.join(usr_dir, "data")
+        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
+                                transform)
+        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # load model
+        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True).to(device)
+
+        logits_list = []
+        labels_list = []
+        with torch.no_grad():
+            for examples in tqdm(data_loader):
+                tmp_x, tmp_label = examples[0], examples[1]
+                tmp_logits = model(tmp_x)
+                logits_list.append(tmp_logits)
+                labels_list.append(tmp_label)
+        logits = torch.cat(logits_list)
+        labels = torch.cat(labels_list)
+        dataset = torch.utils.data.TensorDataset(logits, labels.long())
+        with open(fname, 'wb') as handle:
+            pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
+    cal_logits = torch.stack([sample[0] for sample in cal_data])
+    cal_labels = torch.stack([sample[1] for sample in cal_data])
+
+    test_logits = torch.stack([sample[0] for sample in val_data])
+    test_labels = torch.stack([sample[1] for sample in val_data])
+    
+    num_classes = 1000
+    
+    #######################################
+    # A standard process of conformal prediction
+    #######################################
+    alpha = 0.1
+    predictors = [SplitPredictor]
+    
+    tranformation_types = ["identity", "softmax", "log_softmax", "log"]
+    for tranformation_type in tranformation_types: 
+        score_function = APS(score_type = tranformation_type)
+        for class_predictor in predictors:
+            predictor = class_predictor(score_function)
+            predictor.calculate_threshold(cal_logits, cal_labels, alpha)
+            print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}, Score_type: {tranformation_type}")
+            prediction_sets = predictor.predict_with_logits(test_logits)
+
+            metrics = Metrics()
+            print("Evaluating prediction sets...")
+            print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+            print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+            print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+            print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
+            print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")

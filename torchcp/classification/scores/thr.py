@@ -14,14 +14,14 @@ class THR(BaseScore):
     Threshold conformal predictors (Sadinle et al., 2016).
     paper : https://arxiv.org/abs/1609.00451.
     
-    :param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "Identity", "log_softmax" or "log".
+    :param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "identity", "log_softmax" or "log".
     """
 
     def __init__(self, score_type="softmax"):
         
         super().__init__()
         self.score_type = score_type
-        if score_type == "Identity":
+        if score_type == "identity":
             self.transform = lambda x: x
         elif score_type == "softmax":
             self.transform = lambda x: torch.softmax(x, dim=- 1)
