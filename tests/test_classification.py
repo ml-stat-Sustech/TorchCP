@@ -366,3 +366,108 @@ def test_ordinal_classification():
         print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
         print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
         print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
+
+
+def test_KNN_Score():
+    import torch.optim as optim
+    
+    fix_randomness(seed=0)
+    data_dir = os.path.join(os.path.expanduser('~'),'data')
+    mean = (0.492, 0.482, 0.446)
+    std = (0.247, 0.244, 0.262)
+    cifar10_train_transform = trn.Compose([trn.RandomHorizontalFlip(), 
+                                trn.RandomCrop(32, padding=4),
+                                trn.ToTensor(), 
+                                trn.Normalize(mean, std)])
+    train_dataset = dset.CIFAR10(root=data_dir, train = True, download=False, transform=cifar10_train_transform)
+    train_labels = torch.stack([torch.tensor(sample[1]) for sample in train_dataset])
+    cifar10_test_transform = trn.Compose([trn.ToTensor(), 
+                                trn.Normalize(mean, std)])
+    test_dataset = dset.CIFAR10(root=data_dir, train = False, download=False, transform=cifar10_test_transform)
+    test_labels = torch.stack([torch.tensor(sample[1]) for sample in test_dataset])
+            
+    num_classes = 10
+    num_epochs = 10
+    batch_size = 1024
+    lr = 0.001
+    
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+        
+    model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
+    in_features = model.fc.in_features
+    model.fc = nn.Linear(in_features, num_classes)
+    model.cuda()
+        
+    model_pkl_path = ".cache/resnet101_cifar10.pth"
+    if os.path.exists(model_pkl_path):
+            pretrained_dict = torch.load(model_pkl_path)
+            model.load_state_dict(pretrained_dict)
+    else:
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+        for epoch in range(num_epochs):
+            model.train()
+            running_loss = 0.0
+            pre_acc=0
+            for inputs, labels in train_dataloader:
+                labels= labels.cuda()
+                inputs= inputs.cuda()
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                
+                pre_acc += torch.sum(torch.argmax(outputs,axis=1)== labels)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item()
+            print(f"Epoch {epoch + 1}, Loss: {running_loss / len(train_dataloader)},ACC.: {pre_acc / len(train_dataset)}")
+
+        torch.save(model.state_dict(), model_pkl_path)
+        
+    model.eval()
+    
+    def get_features(dataloader, the_model):
+        the_features = []
+        def hook_fn(module, input, output):
+                the_features.append(output.clone())
+        layer = the_model.avgpool
+        layer.register_forward_hook(hook_fn)
+        outputsize = 2048
+        with torch.no_grad():
+            for x, targets in tqdm(dataloader):
+                batch_logits = the_model(x.cuda())
+        features = torch.reshape(torch.cat(the_features, dim=0),(-1,outputsize)).detach()
+        return features
+    
+    train_features = get_features(train_dataloader, model)
+    test_features  = get_features(test_dataloader, model)
+    
+    from torchcp.classification.scores import KNN
+    score = KNN(train_features,train_labels,10,k=2, p="cosine")
+    
+    mask = torch.rand_like(test_labels, dtype=torch.float32) > 0.5
+    cal_features = test_features[mask]
+    test_features = test_features[~mask]
+    cal_labels = test_labels[mask]
+    test_labels = test_labels[~mask]
+    
+
+
+    #######################################
+    # A standard process of conformal prediction
+    #######################################
+    alpha = 0.1
+
+    predictor = SplitPredictor(score)
+    predictor.calculate_threshold(cal_features, cal_labels, alpha)
+    print(
+        f"Experiment--Data : ImageNet, Model : ResNet101, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+    prediction_sets = predictor.predict_with_logits(test_features)
+
+    metrics = Metrics()
+    print("Evaluating prediction sets...")
+    print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+    print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+    print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+    print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")

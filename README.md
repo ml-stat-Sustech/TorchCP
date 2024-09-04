@@ -23,6 +23,8 @@ TorchCP has implemented the following methods:
 | 2016 | [**Least Ambiguous Set-Valued Classifiers with Bounded Error Levels**](https://arxiv.org/abs/1609.00451)                                                                     | JASA               |                                                                                   | classification.scores.thr           |
 | 2015 | [**Bias reduction through conditional conformal prediction**](https://dl.acm.org/doi/abs/10.3233/IDA-150786)                                                                 | Intell. Data Anal. |                                                                                   | classification.scores.margin        |
 | 2013 | [**Applications of Class-Conditional Conformal Predictor in Multi-Class Classification**](https://ieeexplore.ieee.org/document/6784618)                                      | ICMLA              |                                                                                   | classification.predictors.classwise |
+| 2007 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                                                               | The Computer Journal |                                                                            | classification.score.knn |
+
 
 ## Regression
 
@@ -51,7 +53,7 @@ TorchCP is still under active development. We will add the following features/it
 | 2023 | [**A comparison of some conformal quantile regression methods**](https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261)                                                                               | Stat, 2020           | [Link](https://github.com/soroushzargar/DAPS)                              |
 | 2023 | [**Conformal Prediction with Large Language Models for Multi-Choice Question Answering**](https://arxiv.org/abs/2305.18404)                                                                               | Arxiv                | [Link](https://github.com/bhaweshiitk/ConformalLLM/tree/main)              |
 | 2023 | [**Conformal Language Modeling**](https://openreview.net/forum?id=pzUhfQ74c5)                                                                                                                             | Arxiv                | [Link](https://github.com/Varal7/conformal-language-modeling)              |
-| 2007 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                                                               | The Computer Journal |                                                                            |
+
 
 ## Installation
 
