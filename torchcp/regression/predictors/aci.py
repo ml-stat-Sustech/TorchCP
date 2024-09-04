@@ -12,7 +12,7 @@ from .cqr import CQR
 
 class ACI(CQR):
     """
-    Adaptive conformal inference (Gibbs et al., 2021)
+    Adaptive conformal inference Under Distribution Shift(Gibbs et al., 2021)
     paper: https://arxiv.org/abs/2106.00170
 
     :param model: a pytorch model that can output the values of different quantiles.
