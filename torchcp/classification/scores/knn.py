@@ -7,6 +7,7 @@
 import torch
 from .base import BaseScore
 
+
 # K-Nearest Neighbor non-conformity score
 class KNN(BaseScore):
     """
@@ -20,6 +21,7 @@ class KNN(BaseScore):
     :param p: p value for the p-norm distance to calculate between each vector pair. Default: "2. Optional: float  or "cosine".
     
     """
+
     def __init__(self, features, labels, num_classes, k=1, p=2):
         super().__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -37,6 +39,7 @@ class KNN(BaseScore):
                 dot_product = torch.mm(A, B_T)
                 cosine_sim = dot_product / (norm_A * norm_B.t())
                 return cosine_sim
+
             self.transform = cosine_similarity_custom
         else:
             self.transform = lambda x1, x2: torch.cdist(x1, x2, p=self.p)
@@ -72,4 +75,3 @@ class KNN(BaseScore):
             label_tensor = torch.full((distances.shape[0],), label, dtype=torch.long, device=self.device)
             scores[:, label] = self.__calculate_single_label(distances, label_tensor)
         return scores
-
