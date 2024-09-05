@@ -45,7 +45,7 @@ class CQR(SplitPredictor):
 class CQRR(CQR):
     """
     A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
-    paper: https://arxiv.org/abs/1909.05433
+    paper: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
 
     :param model: a pytorch model that can output alpha/2 and 1-alpha/2 quantile regression.
     """
@@ -77,8 +77,8 @@ class CQRR(CQR):
 
 class CQRM(CQR):
     """
-    Adaptive, Distribution-Free Prediction Intervals for Deep Networks (Kivaranovic et al., 2019)
-    paper: https://arxiv.org/abs/1905.10634
+    A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
+    paper: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
 
     :param model: a pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
     """
