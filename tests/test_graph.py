@@ -34,7 +34,7 @@ def test_graph():
             x = F.dropout(x, p=self.__p_dropout, training=self.training)
             x = self.conv2(x, edge_index, edge_weight)
             return x
-    
+
     #######################################
     # Loading dataset and a model
     #######################################
@@ -59,8 +59,8 @@ def test_graph():
         split_points = [ntrain_per_class for s in shuffled_classes]
 
         train_idx = torch.concat([s[: split_points[i_s]] for i_s, s in enumerate(shuffled_classes)])
-        val_idx = torch.concat([s[split_points[i_s]: 2*s[split_points[i_s]]] for i_s, s in enumerate(shuffled_classes)])
-        test_idx = torch.concat([2*s[split_points[i_s]: ] for i_s, s in enumerate(shuffled_classes)])
+        val_idx = torch.concat([s[split_points[i_s]: (2*split_points[i_s])] for i_s, s in enumerate(shuffled_classes)])
+        test_idx = torch.concat([s[(2*split_points[i_s]): ] for i_s, s in enumerate(shuffled_classes)])
 
         new_train_perm = torch.randperm(train_idx.shape[0])
         new_val_perm = torch.randperm(val_idx.shape[0])
@@ -71,7 +71,7 @@ def test_graph():
         test_idx = test_idx[new_test_perm]
     else:
         raise NotImplementedError(f"The dataset {dataset_name} has not been implemented!")
-    
+
     in_channels = dataset.x.shape[1]
     hidden_channels = 64
     out_channels = dataset.y.max().item() + 1
@@ -80,7 +80,7 @@ def test_graph():
     learning_rate = 0.01
     weight_decay = 0.001
 
-    model = GCN(in_channels, hidden_channels, out_channels, p_dropout)
+    model = GCN(in_channels, hidden_channels, out_channels, p_dropout).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
     #######################################
@@ -119,16 +119,18 @@ def test_graph():
         torch.save(model, cache_model_path)
     else:
         model = torch.load(cache_model_path)
-    
+
     #######################################
     # Test the model
     #######################################
 
     model.eval()
-    pred = model(dataset.x, dataset.edge_index)[test_idx]
+    embeddings = model(dataset.x, dataset.edge_index)
+
+    pred = embeddings.argmax(dim=1).detach()
 
     accuracy = accuracy_score(
         y_true=dataset.y[test_idx].cpu().numpy(),
-        y_pred=pred.cpu().numpy()
+        y_pred=pred[test_idx].cpu().numpy()
     )
     print(accuracy)
