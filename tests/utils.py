@@ -98,13 +98,14 @@ def build_reg_data(data_name="community"):
         X = data.iloc[:, 0:100].values
         y = data.iloc[:, 100].values
     elif data_name == "synthetic":
-        X = np.random.rand(500, 5)
-        y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + \
-            20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
-        eplison = np.zeros(500)
+
+        n = 10000
+        X = np.random.rand(n, 5)
+        y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + 20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
+        eplison = np.zeros(n)
         phi = theta = 0.8
         delta_t_1 = np.random.randn()
-        for i in range(1, 500):
+        for i in range(1, n):
             delta_t = np.random.randn()
             eplison[i] = phi * eplison[i - 1] + delta_t_1 + theta * delta_t
             delta_t_1 = delta_t
