@@ -8,6 +8,6 @@
 # @Time : 15/12/2023  17:34
 
 from .aci import ACI
-from .cqr import CQR, CQRR, CQRM
+from .cqr import CQR, CQRR, CQRM, CQRFM
 from .r2ccp import R2CCP
 from .split import SplitPredictor
