@@ -22,8 +22,8 @@ class SplitPredictor(BasePredictor):
     :param temperature: the temperature of Temperature Scaling.
     """
 
-    def __init__(self, score_function, model=None, temperature=1):
-        super().__init__(score_function, model, temperature)
+    def __init__(self, score_function, model=None):
+        super().__init__(score_function, model)
 
     #############################
     # The calibration process
@@ -42,11 +42,13 @@ class SplitPredictor(BasePredictor):
             labels = torch.cat(labels_list)
         self.calculate_threshold(logits, labels, alpha)
 
-    def calculate_threshold(self, logits, labels, alpha):
-        logits = logits.to(self._device)
+    def calculate_threshold(self, base_scores, labels, alpha, cal_idx, edge_index, edge_weight=None):
+        base_scores = base_scores.to(self._device)
         labels = labels.to(self._device)
-        scores = self.score_function(logits, labels)
-        self.q_hat = self._calculate_conformal_value(scores, alpha)
+        scores = self.score_function(base_scores, edge_index, edge_weight)
+        cal_scores = scores[cal_idx][labels[cal_idx]]
+
+        self.q_hat = self._calculate_conformal_value(cal_scores, alpha)
 
     def _calculate_conformal_value(self, scores, alpha, marginal_q_hat=torch.inf):
         return calculate_conformal_value(scores, alpha, marginal_q_hat)
@@ -84,6 +86,13 @@ class SplitPredictor(BasePredictor):
 
         S = self._generate_prediction_set(scores, q_hat)
 
+        return S
+    
+    def predict_with_scores(self, scores, q_hat=None):
+        if q_hat is None:
+            q_hat = self.q_hat
+
+        S = self._generate_prediction_set(scores, q_hat)
         return S
 
     #############################
