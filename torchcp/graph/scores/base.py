@@ -8,6 +8,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any
 
+
 class BaseScore(object):
     """
     Abstract base class for all graph score functions.
@@ -18,7 +19,7 @@ class BaseScore(object):
         pass
 
     @abstractmethod
-    def __call__(self, base_scores, edge_index, edge_weights=None):
+    def __call__(self, base_scores, n_vertices, edge_index, edge_weights=None):
         """Virtual method to compute scores for a data pair (x,y).
 
         :param base_scores: the basic scores for inputs.

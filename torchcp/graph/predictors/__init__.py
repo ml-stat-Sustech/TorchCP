@@ -1,1 +1,1 @@
-from .split import SplitPredictor
+from .split import GraphSplitPredictor
