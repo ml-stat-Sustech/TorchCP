@@ -6,6 +6,7 @@
 #
 
 import os
+import copy
 
 import torch
 import torch.nn as nn
@@ -17,9 +18,10 @@ from torch_geometric.datasets import CitationFull
 
 from torchcp.classification.scores import APS
 from torchcp.graph.scores import DAPS
-from torchcp.graph.predictors import SplitPredictor
+from torchcp.graph.predictors import GraphSplitPredictor
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
+
 
 class GCN(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, p_dropout):
@@ -29,11 +31,11 @@ class GCN(nn.Module):
         self.__p_dropout = p_dropout
 
     def forward(self, x, edge_index, edge_weight=None):
-        # x = F.dropout(x, p=0.5, training=self.training)
         x = self.conv1(x, edge_index, edge_weight).relu()
         x = F.dropout(x, p=self.__p_dropout, training=self.training)
         x = self.conv2(x, edge_index, edge_weight)
         return x
+
 
 def test_graph():
     fix_randomness(seed=0)
@@ -45,36 +47,32 @@ def test_graph():
 
     dataset_name = 'cora_ml'
     ntrain_per_class = 20
-    nval_per_class = 20
 
     if dataset_name in ['cora_ml']:
         usr_dir = os.path.expanduser('~')
         data_dir = os.path.join(usr_dir, "data")
-        data = CitationFull(data_dir, dataset_name)
-        dataset = data[0].to(device)
+        dataset = CitationFull(data_dir, dataset_name)[0].to(device)
+        label_mask = F.one_hot(dataset.y).bool()
 
         #######################################
-        # training/validation/test data split
+        # training/validation/test data random split
+        # 20 per class for training/validation, left for test
         #######################################
 
-        classes = dataset.y.unique()
-        classes_idx_set = [(dataset.y == cls_val).nonzero(as_tuple=True)[0] for cls_val in classes]
-        shuffled_classes = [s[torch.randperm(s.shape[0])] for s in classes_idx_set]
-        split_points = [ntrain_per_class for s in shuffled_classes]
+        classes_idx_set = [(dataset.y == cls_val).nonzero(
+            as_tuple=True)[0] for cls_val in dataset.y.unique()]
+        shuffled_classes = [
+            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
 
-        train_idx = torch.concat([s[: split_points[i_s]] for i_s, s in enumerate(shuffled_classes)])
-        val_idx = torch.concat([s[split_points[i_s]: (2*split_points[i_s])] for i_s, s in enumerate(shuffled_classes)])
-        test_idx = torch.concat([s[(2*split_points[i_s]): ] for i_s, s in enumerate(shuffled_classes)])
-
-        new_train_perm = torch.randperm(train_idx.shape[0])
-        new_val_perm = torch.randperm(val_idx.shape[0])
-        new_test_perm = torch.randperm(test_idx.shape[0])
-
-        train_idx = train_idx[new_train_perm]
-        val_idx = val_idx[new_val_perm]
-        test_idx = test_idx[new_test_perm]
+        train_idx = torch.concat([s[: ntrain_per_class]
+                                 for s in shuffled_classes])
+        val_idx = torch.concat(
+            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
+        test_idx = torch.concat([s[2 * ntrain_per_class:]
+                                for s in shuffled_classes])
     else:
-        raise NotImplementedError(f"The dataset {dataset_name} has not been implemented!")
+        raise NotImplementedError(
+            f"The dataset {dataset_name} has not been implemented!")
 
     in_channels = dataset.x.shape[1]
     hidden_channels = 64
@@ -84,86 +82,75 @@ def test_graph():
     learning_rate = 0.01
     weight_decay = 0.001
 
-    model = GCN(in_channels, hidden_channels, out_channels, p_dropout).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    model = GCN(in_channels, hidden_channels,
+                out_channels, p_dropout).to(device)
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
     #######################################
     # Training the model
     #######################################
 
-    cache_model_path = ".cache/best_model.pt"
-
     n_epochs = 1000
     min_validation_loss = 100.
+    patience = 50
     bad_counter = 0
-    saved_flag = False
-    for epoch in range(n_epochs):
+    best_model = None
+
+    for _ in range(n_epochs):
         model.train()
         optimizer.zero_grad()
-
-        pred = model(dataset.x, dataset.edge_index)
-        training_loss = F.cross_entropy(pred[train_idx], dataset.y[train_idx])
-        validation_loss = F.cross_entropy(pred[val_idx], dataset.y[val_idx])
-
+        out = model(dataset.x, dataset.edge_index)
+        training_loss = F.cross_entropy(out[train_idx], dataset.y[train_idx])
+        validation_loss = F.cross_entropy(
+            out[val_idx], dataset.y[val_idx]).detach().item()
         training_loss.backward()
         optimizer.step()
 
-        if validation_loss.detach().item() <= min_validation_loss:
-            torch.save(model, cache_model_path)
-            min_validation_loss = validation_loss.detach().item()
-            saved_flag = True
+        if validation_loss <= min_validation_loss:
+            min_validation_loss = validation_loss
+            best_model = copy.deepcopy(model)
             bad_counter = 0
         else:
             bad_counter += 1
-        
-        if bad_counter == 50:
+
+        if bad_counter >= patience:
             break
 
-    if saved_flag is False:
-        torch.save(model, cache_model_path)
-    else:
-        model = torch.load(cache_model_path)
+    if best_model is None:
+        best_model = copy.deepcopy(model)
 
     #######################################
-    # Test the model
+    # Testing the model
     #######################################
 
-    model.eval()
-    logits = model(dataset.x, dataset.edge_index)
+    best_model.eval()
+    embeddings = best_model(dataset.x, dataset.edge_index)
+    y_pred = embeddings.argmax(dim=1).detach()
 
-    pred = logits.argmax(dim=1).detach()
-
-    accuracy = accuracy_score(
-        y_true=dataset.y[test_idx].cpu().numpy(),
-        y_pred=pred[test_idx].cpu().numpy()
-    )
-    print(accuracy)
+    test_accuracy = (y_pred[test_idx] == dataset.y[test_idx]
+                     ).sum().item() / test_idx.shape[0]
+    print(f"Model Accuracy: {test_accuracy}")
 
     #######################################
-    # A standard process of conformal prediction
+    # A standard process of split conformal prediction
     #######################################
-
-    perm = torch.randperm(test_idx.shape[0])
-    cal_perm = perm[: 500]
-    eval_perm = perm[500: ]
-    cal_idx = test_idx[cal_perm]
-    eval_idx = test_idx[eval_perm]
-    
-    label_mask = F.one_hot(dataset.y).bool()
-
 
     alpha = 0.05
+    n_calib = 500
 
-    basic_score_function = APS(score_type="softmax")
-    base_scores = basic_score_function(logits)
+    perm = torch.randperm(test_idx.shape[0])
+    cal_idx = test_idx[perm[: n_calib]]
+    eval_idx = test_idx[perm[n_calib:]]
 
-    score_function = DAPS(neigh_coef=0.5, n_vertices=dataset.x.shape[0])
-    daps_scores = score_function(base_scores, dataset.edge_index)
+    base_score_function = APS(score_type="softmax")
+    graph_score_function = DAPS(neigh_coef=0.5)
 
-    predictor = SplitPredictor(score_function)
-    predictor.calculate_threshold(base_scores, label_mask, alpha, cal_idx, dataset.edge_index)
-
-    prediction_sets = predictor.predict_with_scores(daps_scores[eval_idx])
+    predictor = GraphSplitPredictor(base_score_function, graph_score_function)
+    predictor.calculate_threshold(
+        embeddings, cal_idx, label_mask, alpha, dataset.x.shape[0], dataset.edge_index)
+    prediction_sets = predictor.predict_with_logits(
+        embeddings, eval_idx, dataset.x.shape[0], dataset.edge_index)
     # print(prediction_sets)
     metrics = Metrics()
     print("Evaluating prediction sets...")
