@@ -95,7 +95,6 @@ def build_regression_model(model_name="NonLinearNet"):
     if model_name == "NonLinearNet":
         return NonLinearNet
     elif model_name == "NonLinearNet_with_Softmax":
-
         return Softmax
     else:
         raise NotImplementedError
