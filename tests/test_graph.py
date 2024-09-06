@@ -15,25 +15,29 @@ from sklearn.metrics import accuracy_score
 from torch_geometric.nn import GCNConv
 from torch_geometric.datasets import CitationFull
 
+from torchcp.classification.scores import APS
+from torchcp.graph.scores import DAPS
+from torchcp.graph.predictors import SplitPredictor
+from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
+
+class GCN(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, p_dropout):
+        super().__init__()
+        self.conv1 = GCNConv(in_channels, hidden_channels, normalize=True)
+        self.conv2 = GCNConv(hidden_channels, out_channels, normalize=True)
+        self.__p_dropout = p_dropout
+
+    def forward(self, x, edge_index, edge_weight=None):
+        # x = F.dropout(x, p=0.5, training=self.training)
+        x = self.conv1(x, edge_index, edge_weight).relu()
+        x = F.dropout(x, p=self.__p_dropout, training=self.training)
+        x = self.conv2(x, edge_index, edge_weight)
+        return x
 
 def test_graph():
     fix_randomness(seed=0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    class GCN(torch.nn.Module):
-        def __init__(self, in_channels, hidden_channels, out_channels, p_dropout):
-            super().__init__()
-            self.conv1 = GCNConv(in_channels, hidden_channels, normalize=True)
-            self.conv2 = GCNConv(hidden_channels, out_channels, normalize=True)
-            self.__p_dropout = p_dropout
-
-        def forward(self, x, edge_index, edge_weight=None):
-            # x = F.dropout(x, p=0.5, training=self.training)
-            x = self.conv1(x, edge_index, edge_weight).relu()
-            x = F.dropout(x, p=self.__p_dropout, training=self.training)
-            x = self.conv2(x, edge_index, edge_weight)
-            return x
 
     #######################################
     # Loading dataset and a model
@@ -125,12 +129,43 @@ def test_graph():
     #######################################
 
     model.eval()
-    embeddings = model(dataset.x, dataset.edge_index)
+    logits = model(dataset.x, dataset.edge_index)
 
-    pred = embeddings.argmax(dim=1).detach()
+    pred = logits.argmax(dim=1).detach()
 
     accuracy = accuracy_score(
         y_true=dataset.y[test_idx].cpu().numpy(),
         y_pred=pred[test_idx].cpu().numpy()
     )
     print(accuracy)
+
+    #######################################
+    # A standard process of conformal prediction
+    #######################################
+
+    perm = torch.randperm(test_idx.shape[0])
+    cal_perm = perm[: 500]
+    eval_perm = perm[500: ]
+    cal_idx = test_idx[cal_perm]
+    eval_idx = test_idx[eval_perm]
+    
+    label_mask = F.one_hot(dataset.y).bool()
+
+
+    alpha = 0.05
+
+    basic_score_function = APS(score_type="softmax")
+    base_scores = basic_score_function(logits)
+
+    score_function = DAPS(neigh_coef=0.5, n_vertices=dataset.x.shape[0])
+    daps_scores = score_function(base_scores, dataset.edge_index)
+
+    predictor = SplitPredictor(score_function)
+    predictor.calculate_threshold(base_scores, label_mask, alpha, cal_idx, dataset.edge_index)
+
+    prediction_sets = predictor.predict_with_scores(daps_scores[eval_idx])
+    # print(prediction_sets)
+    metrics = Metrics()
+    print("Evaluating prediction sets...")
+    print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
+    print(f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")

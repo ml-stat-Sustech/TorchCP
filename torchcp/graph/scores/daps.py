@@ -32,6 +32,8 @@ class DAPS(BaseScore):
 
     def __call__(self, base_scores, edge_index, edge_weights=None):
         if isinstance(edge_index, Tensor):
+            if edge_weights is None:
+                edge_weights = torch.ones(edge_index.shape[1]).to(edge_index.device)
             adj = torch.sparse.FloatTensor(
                 edge_index,
                 edge_weights,
@@ -42,7 +44,7 @@ class DAPS(BaseScore):
             adj = edge_index
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
-        diffusion_scores = torch.lianlg.matmul(adj, base_scores) * (1 / (degs + 1e-10))[:, None]
+        diffusion_scores = torch.linalg.matmul(adj, base_scores) * (1 / (degs + 1e-10))[:, None]
 
         scores = self.__neigh_coef * diffusion_scores + (1 - self.__neigh_coef) * base_scores
 
