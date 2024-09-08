@@ -242,7 +242,7 @@ import torch
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def WSC(X, S, y, delta=0.1, M=1000, test_size=0.75, random_state=2020, verbose=True):
     """
-    WSC
+    Worst-Slice Coverage (WSC).
     
      Classification with Valid and Adaptive Coverage (Romano et al., 2020)
      paper : https://proceedings.neurips.cc/paper/2020/hash/244edd7e85dc81602b7615cd705545f5-Abstract.html
