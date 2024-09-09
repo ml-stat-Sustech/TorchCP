@@ -8,6 +8,8 @@
 
 import math
 import torch
+import torch.nn as nn
+import torch.optim as optim
 
 from torchcp.utils.common import calculate_conformal_value
 from torchcp.utils.common import get_device
@@ -26,6 +28,31 @@ class SplitPredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
+        
+    def train(self, epochs, train_dataloader, criterion, optimizer):
+        self._model.train()
+        for epoch in range(epochs):
+            running_loss = 0.0
+            for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
+                outputs = self._model(tmp_x.to(self._device))
+                loss = criterion(outputs, tmp_y.reshape(-1, 1).to(self._device))
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item()
+
+            print(f"Epoch {epoch} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
+
+        print("Finish training!")
+        self._model.eval()
+        
+    def fit(self, train_dataloader, **kwargs):
+        epochs = kwargs.get('epochs', 100)
+        criterion = kwargs.get('criterion', nn.MSELoss())
+        lr = kwargs.get('lr', 0.01)
+        optimizer = kwargs.get('optimizer', optim.Adam(self._model.parameters(), lr=lr))
+        
+        self.train(epochs, train_dataloader, criterion, optimizer)
 
     def calculate_score(self, predicts, y_truth):
         if len(y_truth.shape) == 1:
