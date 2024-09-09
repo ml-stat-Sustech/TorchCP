@@ -27,31 +27,31 @@ TorchCP has implemented the following methods:
 
 ## Regression
 
-| Year | Title                                                                                                                                           | Venue                | Code Link                                              | Implementation              |
-|------|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------------------------------------------------------|-----------------------------|
-| 2023 | [**Conformal Prediction via Regression-as-Classification**](http://etash.me/papers/Bayesian_Conformal_Prediction_through_Memory_Adaptation.pdf) | RegML @ NeurIPS 2023 | [link](https://github.com/EtashGuha/R2CCP/tree/master) | regression.predictors.r2ccp |
-| 2021 | [**Adaptive Conformal Inference Under Distribution Shift**](https://arxiv.org/abs/2106.00170)                                                   | NeurIPS              | [Link](https://github.com/isgibbs/AdaptiveConformal)   | regression.predictors.aci   |
-| 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS              | [Link](https://github.com/yromano/cqr)                 | regression.predictors.cqr   |
-| 2016 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                   | JASA                 | [Link](https://github.com/ryantibs/conformal)          | regression.predictors.split |
+| Year | Title                                                                                                                                           | Venue                | Code Link                                              | Implementation              | Time Series |
+|------|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------------------------------------------------------|-----------------------------|-------------|
+| 2023 | [**Conformal Prediction via Regression-as-Classification**](http://etash.me/papers/Bayesian_Conformal_Prediction_through_Memory_Adaptation.pdf) | RegML @ NeurIPS 2023 | [link](https://github.com/EtashGuha/R2CCP/tree/master) | regression.predictors.r2ccp |             |
+| 2021 | [**Adaptive Conformal Inference Under Distribution Shift**](https://arxiv.org/abs/2106.00170)                                                   | NeurIPS              | [Link](https://github.com/isgibbs/AdaptiveConformal)   | regression.predictors.aci   | ✅           |
+| 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS              | [Link](https://github.com/yromano/cqr)                 | regression.predictors.cqr   |             |
+| 2016 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                   | JASA                 | [Link](https://github.com/ryantibs/conformal)          | regression.predictors.split |             |
 
 ## TODO
 
 TorchCP is still under active development. We will add the following features/items down the road:
 
-| Year | Title                                                                                                                                                                                                      | Venue      | Code Link                                                                  |
-|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|----------------------------------------------------------------------------|
-| 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878)                                                                                            | NeurIPS    | [Link](https://github.com/bat-sheva/conformal-learning)                    |
-| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                                                                                                                     | ICML       | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
-| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                                                                                                                     | ICML       | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
-| 2020 | [**Conformal Prediction Interval for Dynamic Time-Series**](https://proceedings.mlr.press/v139/xu21h)                                                                                                      | NeurIPS'21 | [Link](https://github.com/AlvinWen428/FeatureCP)                           |
-| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                                                                                                             | ICML       | [Link](https://github.com/ajfisch/conformal-fp)                            |
-| 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255)                                                                                            | Arxiv      |                                                                            |
-| 2023 | [**Uncertainty Quantification over Graph with Conformalized Graph Neural Networks**](https://proceedings.neurips.cc/paper_files/paper/2023/hash/54a1495b06c4ee2f07184afb9a37abda-Abstract-Conference.html) | NeurIPS'23 | [Link](https://github.com/snap-stanford/conformalized-gnn)                 |
-| 2023 | [**Distribution Free Prediction Sets for Node Classification**](https://proceedings.mlr.press/v202/clarkson23a)                                                                                            | ICML'23    | [Link](https://github.com/jase-clarkson/graph_cp)                          |
-| 2023 | [**Conformal Prediction Sets for Graph Neural Networks**](https://proceedings.mlr.press/v202/h-zargarbashi23a.html)                                                                                        | ICML'23    | [Link](https://github.com/soroushzargar/DAPS)                              |
-| 2023 | [**A comparison of some conformal quantile regression methods**](https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261)                                                                                | Stat, 2020 | [Link](https://github.com/soroushzargar/DAPS)                              |
-| 2023 | [**Conformal Prediction with Large Language Models for Multi-Choice Question Answering**](https://arxiv.org/abs/2305.18404)                                                                                | Arxiv      | [Link](https://github.com/bhaweshiitk/ConformalLLM/tree/main)              |
-| 2023 | [**Conformal Language Modeling**](https://openreview.net/forum?id=pzUhfQ74c5)                                                                                                                              | Arxiv      | [Link](https://github.com/Varal7/conformal-language-modeling)              |
+| Year | Title                                                                                                                                                                                                      | Venue      | Code Link                                                                       |
+|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|---------------------------------------------------------------------------------|
+| 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878)                                                                                            | NeurIPS    | [Link](https://github.com/bat-sheva/conformal-learning)                         |
+| 2022 | [**Ensemble Conformalized Quantile Regression for Probabilistic Time Series Forecasting**](https://ieeexplore.ieee.org/abstract/document/9940232/)                                                         | TNNLS      | [Link](https://github.com/FilippoMB/Ensemble-Conformalized-Quantile-Regression) |
+| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                                                                                                                     | ICML       | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries)      |
+| 2020 | [**Conformal Prediction Interval for Dynamic Time-Series**](https://proceedings.mlr.press/v139/xu21h)                                                                                                      | NeurIPS'21 | [Link](https://github.com/AlvinWen428/FeatureCP)                                |
+| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                                                                                                             | ICML       | [Link](https://github.com/ajfisch/conformal-fp)                                 |
+| 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255)                                                                                            | Arxiv      |                                                                                 |
+| 2023 | [**Uncertainty Quantification over Graph with Conformalized Graph Neural Networks**](https://proceedings.neurips.cc/paper_files/paper/2023/hash/54a1495b06c4ee2f07184afb9a37abda-Abstract-Conference.html) | NeurIPS'23 | [Link](https://github.com/snap-stanford/conformalized-gnn)                      |
+| 2023 | [**Distribution Free Prediction Sets for Node Classification**](https://proceedings.mlr.press/v202/clarkson23a)                                                                                            | ICML'23    | [Link](https://github.com/jase-clarkson/graph_cp)                               |
+| 2023 | [**Conformal Prediction Sets for Graph Neural Networks**](https://proceedings.mlr.press/v202/h-zargarbashi23a.html)                                                                                        | ICML'23    | [Link](https://github.com/soroushzargar/DAPS)                                   |
+| 2023 | [**A comparison of some conformal quantile regression methods**](https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261)                                                                                | Stat, 2020 | [Link](https://github.com/soroushzargar/DAPS)                                   |
+| 2023 | [**Conformal Prediction with Large Language Models for Multi-Choice Question Answering**](https://arxiv.org/abs/2305.18404)                                                                                | Arxiv      | [Link](https://github.com/bhaweshiitk/ConformalLLM/tree/main)                   |
+| 2023 | [**Conformal Language Modeling**](https://openreview.net/forum?id=pzUhfQ74c5)                                                                                                                              | Arxiv      | [Link](https://github.com/Varal7/conformal-language-modeling)                   |
 
 ## Installation
 
@@ -134,11 +134,10 @@ following [technical report](https://arxiv.org/abs/2402.12683):
 We welcome you to cite the following works:
 
 ```
-@article{huang2023conformal,
+@inproceedings{huangconformal,
   title={Conformal Prediction for Deep Classifier via Label Ranking},
-  author={Huang, Jianguo and Xi, Huajun and Zhang, Linjun and Yao, Huaxiu and Qiu, Yue and Wei, Hongxin},
-  journal={arXiv preprint arXiv:2310.06430},
-  year={2023}
+  author={Huang, Jianguo and Xi, HuaJun and Zhang, Linjun and Yao, Huaxiu and Qiu, Yue and Wei, Hongxin},
+  booktitle={Forty-first International Conference on Machine Learning}
 }
 
 @article{xi2024does,
