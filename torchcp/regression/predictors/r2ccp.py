@@ -6,9 +6,12 @@
 #
 
 import torch
+import torch.nn as nn
+import torch.optim as optim
+
 
 from .split import SplitPredictor
-
+from ..loss import R2ccpLoss
 
 class R2CCP(SplitPredictor):
     """
@@ -22,6 +25,17 @@ class R2CCP(SplitPredictor):
     def __init__(self, model, midpoints):
         super().__init__(model)
         self.midpoints = midpoints.to(self._device)
+        
+    def fit(self, train_dataloader, **kwargs):
+        epochs = kwargs.get('epochs', 100)
+        p = kwargs.get('p', 0.5)
+        tau = kwargs.get('tau', 0.2)
+        criterion = kwargs.get('criterion', R2ccpLoss(p, tau, self.midpoints))
+        lr = kwargs.get('lr', 1e-4)
+        weight_decay = kwargs.get('weight_decay', 1e-4)
+        optimizer = kwargs.get('optimizer', optim.AdamW(self._model.parameters(), lr=lr, weight_decay=weight_decay))
+        
+        self.train(epochs, train_dataloader, criterion, optimizer)
 
     def calculate_score(self, predicts, y_truth):
         interval = self.__find_interval(self.midpoints, y_truth)

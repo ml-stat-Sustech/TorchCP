@@ -7,8 +7,10 @@
 
 import math
 import torch
+import torch.optim as optim
 
 from .split import SplitPredictor
+from ..loss import QuantileLoss
 
 
 class CQR(SplitPredictor):
@@ -21,6 +23,22 @@ class CQR(SplitPredictor):
 
     def __init__(self, model):
         super().__init__(model)
+        
+    def fit(self, train_dataloader, **kwargs):
+        criterion = kwargs.get('criterion', None)
+        
+        if criterion is None:
+            alpha = kwargs.get('alpha', None)
+            if alpha is None:
+                raise ValueError("When 'criterion' is not provided, 'alpha' must be specified.")
+            quantiles = [alpha / 2, 1 - alpha / 2]
+            criterion = QuantileLoss(quantiles)
+        
+        epochs = kwargs.get('epochs', 100)
+        lr = kwargs.get('lr', 0.01)
+        optimizer = kwargs.get('optimizer', optim.Adam(self._model.parameters(), lr=lr))
+        
+        self.train(epochs, train_dataloader, criterion, optimizer)
 
     def calculate_score(self, predicts, y_truth):
         if len(predicts.shape) == 2:
@@ -85,6 +103,16 @@ class CQRM(CQR):
 
     :param model: a pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
     """
+    
+    def fit(self, train_dataloader, **kwargs):
+        criterion = kwargs.pop('criterion', None)
+        if criterion is None:
+            alpha = kwargs.pop('alpha', None)
+            if alpha is None:
+                raise ValueError("When 'criterion' is not provided, 'alpha' must be specified.")
+            quantiles = [alpha / 2, 1 / 2, 1 - alpha / 2]
+            criterion = QuantileLoss(quantiles)
+        super().fit(train_dataloader, criterion=criterion, **kwargs)
 
     def calculate_score(self, predicts, y_truth):
         if len(predicts.shape) == 2:
@@ -116,7 +144,7 @@ class CQRM(CQR):
         return prediction_intervals
 
 
-class CQRFM(CQR):
+class CQRFM(CQRM):
     """
     Adaptive, Distribution-Free Prediction Intervals for Deep Networks (Kivaranovic et al., 2019)
     paper: https://proceedings.mlr.press/v108/kivaranovic20a.html
