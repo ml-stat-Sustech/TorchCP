@@ -17,18 +17,18 @@ class Ensemble(object):
 
     There are two main implementations for `score_predictor`:
     
-    1. **SplitPredictor** (Xu and Xie, 2020):
-       - Based on the paper "Conformal Prediction Interval for Dynamic Time-Series".
+    1. EnbPI (Xu and Xie, 2020):
+       - paper "Conformal Prediction Interval for Dynamic Time-Series".
        - Reference: https://proceedings.mlr.press/v139/xu21h/xu21h.pdf
     
-    2. **CQR (Conformalized Quantile Regression)** (Jensen et al., 2022):
-       - Based on the paper "Ensemble Conformalized Quantile Regression for 
+    2. EnCQR (Jensen et al., 2022):
+       - paper "Ensemble Conformalized Quantile Regression for 
          Probabilistic Time Series Forecasting".
        - Reference: https://ieeexplore.ieee.org/abstract/document/9940232
 
     :param model: The base model to be used in the ensemble.
     :param score_predictor: The method for calculating scores and prediction intervals. 
-                            Can be either `SplitPredictor` or `CQR`, based on the 
+                            Can be  SplitPredictor, CQR or other variants of CQR, based on the 
                             approach from the referenced papers.
     :param aggregation_function: A function to aggregate predictions from multiple 
                                  models in the ensemble.
