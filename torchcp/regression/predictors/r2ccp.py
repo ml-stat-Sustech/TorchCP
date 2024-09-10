@@ -27,15 +27,17 @@ class R2CCP(SplitPredictor):
         self.midpoints = midpoints.to(self._device)
         
     def fit(self, train_dataloader, **kwargs):
+        model = kwargs.get('model', self._model)
         epochs = kwargs.get('epochs', 100)
         p = kwargs.get('p', 0.5)
         tau = kwargs.get('tau', 0.2)
         criterion = kwargs.get('criterion', R2ccpLoss(p, tau, self.midpoints))
         lr = kwargs.get('lr', 1e-4)
         weight_decay = kwargs.get('weight_decay', 1e-4)
-        optimizer = kwargs.get('optimizer', optim.AdamW(self._model.parameters(), lr=lr, weight_decay=weight_decay))
-        
-        self.train(epochs, train_dataloader, criterion, optimizer)
+        optimizer = kwargs.get('optimizer', optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay))
+        verbose = kwargs.get('verbose', True)
+
+        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
 
     def calculate_score(self, predicts, y_truth):
         interval = self.__find_interval(self.midpoints, y_truth)
@@ -46,9 +48,7 @@ class R2CCP(SplitPredictor):
         scores = self.calculate_score(predicts, y_truth)
         self.q_hat = self._calculate_conformal_value(scores, 1 - alpha)
 
-    def predict(self, x_batch):
-        self._model.eval()
-        predicts_batch = self._model(x_batch.to(self._device)).float()
+    def generate_intervals(self, predicts_batch, q_hat):
         K = predicts_batch.shape[1]
         N = predicts_batch.shape[0]
         midpoints_expanded = self.midpoints.unsqueeze(0).expand(N, K)
@@ -57,7 +57,7 @@ class R2CCP(SplitPredictor):
         left_predicts = predicts_batch[:, :-1]
         right_predicts = predicts_batch[:, 1:]
         q_hat_expanded = torch.ones((predicts_batch.shape[0], predicts_batch.shape[1] - 1),
-                                    device=self._device) * self.q_hat
+                                    device=self._device) * q_hat
 
         mask1 = (left_predicts >= q_hat_expanded) & (right_predicts >= q_hat_expanded)
         mask2 = (left_predicts <= q_hat_expanded) & (right_predicts <= q_hat_expanded)
@@ -118,5 +118,8 @@ class R2CCP(SplitPredictor):
                 right_points - left_points)
         scores = torch.where(interval == -1, predicts[:, 0], scores)
         scores = torch.where(interval == len(midpoints), predicts[:, -1], scores)
+        
+        if len(scores.shape) == 1:
+            scores = scores.unsqueeze(-1)
 
         return scores
