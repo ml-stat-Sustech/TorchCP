@@ -24,6 +24,7 @@ class CQR(SplitPredictor):
         super().__init__(model)
         
     def fit(self, train_dataloader, **kwargs):
+        model = kwargs.get('model', self._model)
         criterion = kwargs.get('criterion', None)
         
         if criterion is None:
@@ -35,9 +36,10 @@ class CQR(SplitPredictor):
         
         epochs = kwargs.get('epochs', 100)
         lr = kwargs.get('lr', 0.01)
-        optimizer = kwargs.get('optimizer', optim.Adam(self._model.parameters(), lr=lr))
+        optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
+        verbose = kwargs.get('verbose', True)
         
-        self.train(epochs, train_dataloader, criterion, optimizer)
+        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
 
     def calculate_score(self, predicts, y_truth):
         if len(predicts.shape) == 2:
@@ -51,9 +53,13 @@ class CQR(SplitPredictor):
         if len(x_batch.shape) == 1:
             x_batch = x_batch.unsqueeze(0)
         predicts_batch = self._model(x_batch.to(self._device)).float()
+        
+        return self.generate_intervals(predicts_batch, self.q_hat)
+    
+    def generate_intervals(self, predicts_batch, q_hat):
         if len(predicts_batch.shape) == 2:
             predicts_batch = predicts_batch.unsqueeze(1)
-        prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0], self.q_hat.shape[0], 2))
-        prediction_intervals[..., 0] = predicts_batch[..., 0] - self.q_hat.view(1, self.q_hat.shape[0], 1)
-        prediction_intervals[..., 1] = predicts_batch[..., 1] + self.q_hat.view(1, self.q_hat.shape[0], 1)
+        prediction_intervals = predicts_batch.new_zeros((predicts_batch.shape[0], q_hat.shape[0], 2))
+        prediction_intervals[..., 0] = predicts_batch[..., 0] - q_hat.view(1, q_hat.shape[0], 1)
+        prediction_intervals[..., 1] = predicts_batch[..., 1] + q_hat.view(1, q_hat.shape[0], 1)
         return prediction_intervals

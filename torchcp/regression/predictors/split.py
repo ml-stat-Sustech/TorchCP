@@ -29,30 +29,34 @@ class SplitPredictor(object):
         self._device = get_device(model)
         self._metric = Metrics()
         
-    def train(self, epochs, train_dataloader, criterion, optimizer):
-        self._model.train()
+    def _train(self, model, epochs, train_dataloader, criterion, optimizer, device, verbose=True):
+        model.train()
+        device = get_device(model)
         for epoch in range(epochs):
             running_loss = 0.0
             for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
-                outputs = self._model(tmp_x.to(self._device))
-                loss = criterion(outputs, tmp_y.reshape(-1, 1).to(self._device))
+                outputs = model(tmp_x.to(device))
+                loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
 
-            print(f"Epoch {epoch} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
+            if verbose:
+                print(f"Epoch {epoch+1} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
 
         print("Finish training!")
-        self._model.eval()
+        model.eval()
         
     def fit(self, train_dataloader, **kwargs):
+        model = kwargs.get('model', self._model)
         epochs = kwargs.get('epochs', 100)
         criterion = kwargs.get('criterion', nn.MSELoss())
         lr = kwargs.get('lr', 0.01)
-        optimizer = kwargs.get('optimizer', optim.Adam(self._model.parameters(), lr=lr))
+        optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
+        verbose = kwargs.get('verbose', True)
         
-        self.train(epochs, train_dataloader, criterion, optimizer)
+        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
 
     def calculate_score(self, predicts, y_truth):
         if len(y_truth.shape) == 1:
@@ -85,11 +89,14 @@ class SplitPredictor(object):
         x_batch.to(self._device)
         with torch.no_grad():
             predicts_batch = self._model(x_batch)
-            prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0], self.q_hat.shape[0], 2))
+            return self.generate_intervals(predicts_batch, self.q_hat)
+    
+    def generate_intervals(self, predicts_batch, q_hat):
+        prediction_intervals = predicts_batch.new_zeros((predicts_batch.shape[0], q_hat.shape[0], 2))
 
-            prediction_intervals[..., 0] = predicts_batch - self.q_hat.view(1, self.q_hat.shape[0])
-            prediction_intervals[..., 1] = predicts_batch + self.q_hat.view(1, self.q_hat.shape[0])
-
+        prediction_intervals[..., 0] = predicts_batch - q_hat.view(1, q_hat.shape[0])
+        prediction_intervals[..., 1] = predicts_batch + q_hat.view(1, q_hat.shape[0])
+        
         return prediction_intervals
 
     def evaluate(self, data_loader):
