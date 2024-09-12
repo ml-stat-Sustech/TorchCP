@@ -15,11 +15,11 @@ class BaseScore(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, base_score_function) -> None:
+        self._base_score_function = base_score_function
 
     @abstractmethod
-    def __call__(self, base_scores, n_vertices, edge_index, edge_weights=None):
+    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, adj_knn=None, knn_weights=None):
         """Virtual method to compute scores for a data pair (x,y).
 
         :param base_scores: the basic scores for inputs.

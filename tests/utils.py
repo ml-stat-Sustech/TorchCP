@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
+
+import torch
 import torch.nn as nn
+
 import os
 from pathlib import Path
 import requests
@@ -11,6 +15,12 @@ import torchvision.datasets as dset
 import torchvision.transforms as trn
 from PIL import Image
 from torch.utils.data import Dataset
+
+import torch.nn.functional as F
+
+from sklearn.metrics.pairwise import cosine_similarity
+
+from torch_geometric.nn import GCNConv
 
 def get_dataset_dir():
     dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/datasets')
@@ -38,6 +48,9 @@ def download_github(url, save_path):
         print(f"Files already downloaded: {save_path}")
     else:
         print(f"Download failed: {response.status_code}")
+
+
+
 
 
 
@@ -148,6 +161,7 @@ def build_regression_model(model_name="NonLinearNet"):
 
 
 
+
 def build_dataset(dataset_name, data_mode= "train", transform_mode = "train"):    
 
     if dataset_name == 'imagenet':
@@ -239,3 +253,49 @@ class ImageNetV2Dataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
         return img, label
+
+class GCN(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, p_dropout):
+        super().__init__()
+        self.conv1 = GCNConv(in_channels, hidden_channels, normalize=True)
+        self.conv2 = GCNConv(hidden_channels, out_channels, normalize=True)
+        self.__p_dropout = p_dropout
+
+    def forward(self, x, edge_index, edge_weight=None):
+        x = self.conv1(x, edge_index, edge_weight).relu()
+        x = F.dropout(x, p=self.__p_dropout, training=self.training)
+        x = self.conv2(x, edge_index, edge_weight)
+        return x
+
+
+def sparse_mx_to_torch_sparse_tensor(sparse_mx):
+    """Convert a scipy sparse matrix to a torch sparse tensor."""
+    sparse_mx = sparse_mx.tocoo().astype(np.float32)
+    indices = torch.from_numpy(
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+    values = torch.from_numpy(sparse_mx.data)
+    shape = torch.Size(sparse_mx.shape)
+    return torch.sparse.FloatTensor(indices, values, shape)
+
+
+def compute_adj_knn(features, k=20):
+    features = np.copy(features.cpu())
+    features[features != 0] = 1
+    sims = cosine_similarity(features)
+    sims[(np.arange(len(sims)), np.arange(len(sims)))] = 0
+    
+    for i in range(len(sims)):
+        indices_argsort = np.argsort(sims[i])
+        sims[i, indices_argsort[:-k]] = 0
+    
+    A_feat = sp.coo_matrix(sims)
+    row_sum = np.array(A_feat.sum(1))
+    d_inv = np.power(row_sum, -1.0).flatten()
+    d_inv[np.isinf(d_inv)] = 0.
+    d_mat_inv = sp.diags(d_inv)
+    A_feat = d_mat_inv.dot(A_feat).tocoo()
+    
+    adj_knn_st = sparse_mx_to_torch_sparse_tensor(A_feat).float()
+    
+    return adj_knn_st
+
