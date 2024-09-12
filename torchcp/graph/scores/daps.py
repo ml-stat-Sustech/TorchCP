@@ -22,15 +22,16 @@ class DAPS(BaseScore):
     :param neigh_coef: the diffusion parameter which is a value in [0, 1].
     """
 
-    def __init__(self, neigh_coef):
+    def __init__(self, neigh_coef, base_score_function):
         if neigh_coef < 0 and neigh_coef > 1:
             raise ValueError(
                 "The parameter 'neigh_coef' must be a value between 0 and 1.")
-        super(DAPS, self).__init__()
+        super(DAPS, self).__init__(base_score_function)
 
         self.__neigh_coef = neigh_coef
 
-    def __call__(self, base_scores, n_vertices, edge_index, edge_weights=None):
+    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, adj_knn=None, knn_weights=None):
+        base_scores = self._base_score_function(logits)
         if isinstance(edge_index, Tensor):
             if edge_weights is None:
                 edge_weights = torch.ones(

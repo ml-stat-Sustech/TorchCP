@@ -22,9 +22,8 @@ class BaseGraphPredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, base_score_function, graph_score_function, model=None):
-        self.base_score_function = base_score_function
-        self.graph_score_function = graph_score_function
+    def __init__(self, score_function, model=None):
+        self.score_function = score_function
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()

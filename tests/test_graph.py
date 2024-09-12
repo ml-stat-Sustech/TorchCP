@@ -13,28 +13,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
 
-from torch_geometric.nn import GCNConv
 from torch_geometric.datasets import CitationFull
 
 from torchcp.classification.scores import APS
-from torchcp.graph.scores import DAPS
+from torchcp.graph.scores import DAPS, SNAPS
 from torchcp.graph.predictors import GraphSplitPredictor
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 
-
-class GCN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, p_dropout):
-        super().__init__()
-        self.conv1 = GCNConv(in_channels, hidden_channels, normalize=True)
-        self.conv2 = GCNConv(hidden_channels, out_channels, normalize=True)
-        self.__p_dropout = p_dropout
-
-    def forward(self, x, edge_index, edge_weight=None):
-        x = self.conv1(x, edge_index, edge_weight).relu()
-        x = F.dropout(x, p=self.__p_dropout, training=self.training)
-        x = self.conv2(x, edge_index, edge_weight)
-        return x
+from utils import GCN, compute_adj_knn
 
 
 def test_graph():
@@ -82,6 +69,7 @@ def test_graph():
     learning_rate = 0.01
     weight_decay = 0.001
 
+    model_name = 'GCN'
     model = GCN(in_channels, hidden_channels,
                 out_channels, p_dropout).to(device)
     optimizer = torch.optim.Adam(
@@ -125,12 +113,18 @@ def test_graph():
     #######################################
 
     best_model.eval()
-    embeddings = best_model(dataset.x, dataset.edge_index)
-    y_pred = embeddings.argmax(dim=1).detach()
+    logits = best_model(dataset.x, dataset.edge_index)
+    y_pred = logits.argmax(dim=1).detach()
 
     test_accuracy = (y_pred[test_idx] == dataset.y[test_idx]
                      ).sum().item() / test_idx.shape[0]
     print(f"Model Accuracy: {test_accuracy}")
+
+    #######################################
+    # The construction of k-NN similarity graph
+    #######################################
+
+    adj_knn, knn_weights = compute_adj_knn(dataset.x, k=20)
 
     #######################################
     # A standard process of split conformal prediction
@@ -143,16 +137,20 @@ def test_graph():
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
 
-    base_score_function = APS(score_type="softmax")
-    graph_score_function = DAPS(neigh_coef=0.5)
+    score_functions = [DAPS(neigh_coef=0.5, base_score_function=APS(score_type="softmax")), 
+                       SNAPS(lambda_val=1/3, mu_val=1/3, base_score_function=APS(score_type="softmax"))]
 
-    predictor = GraphSplitPredictor(base_score_function, graph_score_function)
-    predictor.calculate_threshold(
-        embeddings, cal_idx, label_mask, alpha, dataset.x.shape[0], dataset.edge_index)
-    prediction_sets = predictor.predict_with_logits(
-        embeddings, eval_idx, dataset.x.shape[0], dataset.edge_index)
-    # print(prediction_sets)
-    metrics = Metrics()
-    print("Evaluating prediction sets...")
-    print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
-    print(f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")
+    for score_function in score_functions:
+        predictor = GraphSplitPredictor(score_function)
+        predictor.calculate_threshold(
+        logits, cal_idx, label_mask, alpha, dataset.x.shape[0], dataset.edge_index)
+
+        print(f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+        prediction_sets = predictor.predict_with_logits(
+        logits, eval_idx, dataset.x.shape[0], dataset.edge_index)
+
+        # print(prediction_sets)
+        metrics = Metrics()
+        print("Evaluating prediction sets...")
+        print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
+        print(f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")
