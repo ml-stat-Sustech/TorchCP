@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import torch.nn as nn
-
+import os
 
 def check_path(path_with_file):
     folder_path = os.path.dirname(path_with_file)
@@ -16,9 +16,18 @@ def check_path(path_with_file):
     for folder in folder_path.split(os.sep):
         if folder:
             current_path = os.path.join(current_path, folder)
+            if os.path.exists(current_path):
+                print("exists")
+            if os.access(os.path.dirname(current_path), os.W_OK):
+                print("OK")
             if not os.path.exists(current_path):
+                print(current_path)
+                
                 missing_folders.append(current_path)
-                os.makedirs(current_path)
+                if os.access(os.path.dirname(current_path), os.W_OK):
+                    os.makedirs(current_path)
+                else:
+                    print(f"Permission denied: {os.path.dirname(current_path)}")
 
     if missing_folders:
         print(f"Created the following missing folders: {missing_folders}")
@@ -27,13 +36,14 @@ def check_path(path_with_file):
 
 
 
-base_path = "~/.cache/torchcp/datasets/"
-check_path(base_path)
+# base_path = "~/.cache/torchcp/datasets/"
+base_path = ".cache/datasets"
 
 
 def build_reg_data(data_name="community"):
     if data_name == "community":
         # https://github.com/vbordalo/Communities-Crime/blob/master/Crime_v1.ipynb
+        check_path(base_path)
         attrib = pd.read_csv(base_path + 'communities_attributes.csv', delim_whitespace=True)
         data = pd.read_csv(base_path + 'communities.data', names=attrib['attributes'])
         data = data.drop(columns=['state', 'county',

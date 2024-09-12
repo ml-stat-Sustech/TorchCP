@@ -27,7 +27,7 @@ from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 from torchcp.classification.utils import OrdinalClassifier
 
-from utils import *
+from .utils import *
 transform = trn.Compose([trn.Resize(256),
                          trn.CenterCrop(224),
                          trn.ToTensor(),
@@ -37,7 +37,8 @@ transform = trn.Compose([trn.Resize(256),
 
 
 def get_imagenet_logits(model_name):
-    fname = f"~/.cache/torchcp/models/{model_name}.pkl"
+    base_path = ".cache/models"
+    fname = f"{base_path}/{model_name}.pkl"
     check_path(fname)
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
@@ -57,7 +58,7 @@ def get_imagenet_logits(model_name):
         labels_list = []
         with torch.no_grad():
             for examples in tqdm(data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]
+                tmp_x, tmp_label = examples[0].to(device), examples[1].to(device)
                 tmp_logits = model(tmp_x)
                 logits_list.append(tmp_logits)
                 labels_list.append(tmp_label)
@@ -75,6 +76,8 @@ def get_imagenet_logits(model_name):
     test_labels = torch.stack([sample[1] for sample in val_data])
     num_classes = 1000
     return cal_logits, cal_labels, test_logits, test_labels, num_classes
+
+
 def test_imagenet_logits():
     #######################################
     # Loading ImageNet dataset and a pytorch model
