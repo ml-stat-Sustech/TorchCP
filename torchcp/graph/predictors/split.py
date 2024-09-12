@@ -4,9 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-import math
+
 import torch
-import warnings
 
 from torchcp.utils.common import calculate_conformal_value
 from .base import BaseGraphPredictor
@@ -17,15 +16,16 @@ class GraphSplitPredictor(BaseGraphPredictor):
     Split Conformal Prediction (Vovk et a., 2005).
     Book: https://link.springer.com/book/10.1007/978-3-031-06649-8.
 
-    :param base_score_function: basic non-conformity score function.
-    :param graph_score_function: graph non-conformity score function.
+    :param score_function: graph non-conformity score function.
+    :param model: a pytorch model.
     """
 
     def __init__(self, score_function, model=None):
         super().__init__(score_function, model)
 
-    def calculate_threshold(self, logits, cal_idx, label_mask, alpha, n_vertices, edge_index, edge_weight=None, adj_knn=None, knn_weights=None):
-        scores = self.score_function(logits, n_vertices, edge_index, edge_weight, adj_knn, knn_weights).to(self._device)
+    def calculate_threshold(self, logits, cal_idx, label_mask, alpha, n_vertices, edge_index, edge_weight=None, knn_edge=None, knn_weights=None):
+        scores = self.score_function(
+            logits, n_vertices, edge_index, edge_weight, knn_edge, knn_weights).to(self._device)
         label_mask = label_mask.to(self._device)
 
         cal_scores = scores[cal_idx][label_mask[cal_idx]]
@@ -34,17 +34,24 @@ class GraphSplitPredictor(BaseGraphPredictor):
     def _calculate_conformal_value(self, scores, alpha, marginal_q_hat=torch.inf):
         return calculate_conformal_value(scores, alpha, marginal_q_hat)
 
-    def predict_with_logits(self, logits, eval_idx, n_vertices, edge_index, edge_weight=None, adj_knn=None, knn_weights=None, q_hat=None):
+    def predict_with_logits(self, logits, eval_idx, n_vertices, edge_index, edge_weight=None, knn_edge=None, knn_weights=None, q_hat=None):
         """
         The input of score function is softmax probability.
         if q_hat is not given by the function 'self.calibrate', the construction progress of prediction set is a naive method.
 
         :param logits: model output before softmax.
+        :param eval_idx: indices of calibration set.
+        :param n_vertices: the number of the whole graph.
+        :param edge_index: the edge indices.
+        :param edge_weight: the edge weights.
+        :param knn_edge: the edge indices of the similarity-based graph, such as knn.
+        :param knn_weights: the edge weights of the similarity-based graph, such as knn.
         :param q_hat: the conformal threshold.
 
         :return: prediction sets
         """
-        scores = self.score_function(logits, n_vertices, edge_index, edge_weight, adj_knn, knn_weights).to(self._device)
+        scores = self.score_function(
+            logits, n_vertices, edge_index, edge_weight, knn_edge, knn_weights).to(self._device)
 
         eval_scores = scores[eval_idx]
         if q_hat is None:

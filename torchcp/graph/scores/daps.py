@@ -30,7 +30,7 @@ class DAPS(BaseScore):
 
         self.__neigh_coef = neigh_coef
 
-    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, adj_knn=None, knn_weights=None):
+    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, knn_edge=None, knn_weights=None):
         base_scores = self._base_score_function(logits)
         if isinstance(edge_index, Tensor):
             if edge_weights is None:

@@ -16,6 +16,9 @@ class SNAPS(BaseScore):
     """
     Similarity-Navigated Adaptive Prediction Sets (song et al., 2024)
     paper: https://arxiv.org/pdf/2405.14303
+
+    :param lambda_val: the parameter of neighborhood-based scores.
+    :param mu_val: the parameter of similarity-based scores.
     """
 
     def __init__(self, lambda_val, mu_val, base_score_function):
@@ -33,7 +36,7 @@ class SNAPS(BaseScore):
         self.__lambda_val = lambda_val
         self.__mu_val = mu_val
 
-    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, adj_knn=None, knn_weights=None):
+    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, knn_edge=None, knn_weights=None):
         base_scores = self._base_score_function(logits)
         if isinstance(edge_index, Tensor):
             if edge_weights is None:
@@ -49,24 +52,25 @@ class SNAPS(BaseScore):
             adj = edge_index
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
-        if adj_knn is not None:
-            if isinstance(adj_knn, Tensor):
+        similarity_scores = 0.
+        if knn_edge is not None:
+            if isinstance(knn_edge, Tensor):
                 if knn_weights is None:
                     knn_weights = torch.ones(
-                        adj_knn.shape[1]).to(edge_index.device)
+                        knn_edge.shape[1]).to(edge_index.device)
                 adj_knn = torch.sparse.FloatTensor(
-                    adj_knn,
+                    knn_edge,
                     knn_weights,
                     (n_vertices, n_vertices))
                 knn_degs = torch.matmul(adj_knn, torch.ones(
                     (adj_knn.shape[0])).to(adj_knn.device))
 
-            elif isinstance(adj_knn, SparseTensor):
+            elif isinstance(knn_edge, SparseTensor):
                 knn_degs = torch.matmul(adj_knn, torch.ones(
                     (adj_knn.shape[0])).to(adj_knn.device))
 
-        similarity_scores = torch.linalg.matmul(
-            adj_knn, base_scores) * (1 / (knn_degs + 1e-10))[:, None]
+            similarity_scores = torch.linalg.matmul(
+                adj_knn, base_scores) * (1 / (knn_degs + 1e-10))[:, None]
 
         neigh_scores = torch.linalg.matmul(
             adj, base_scores) * (1 / (degs + 1e-10))[:, None]
