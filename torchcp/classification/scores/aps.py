@@ -19,9 +19,16 @@ class APS(THR):
     paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
     """
 
+    def __init__(self, score_type="softmax", randomized=True):
+        super().__init__(score_type)
+        self.randomized = randomized
     def _calculate_all_label(self, probs):
         indices, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(probs.shape, device=probs.device)
+        if self.randomized:
+            U = torch.rand(probs.shape, device=probs.device)
+        else:
+            U = torch.ones_like(probs.shape)
+
         ordered_scores = cumsum - ordered * U
         _, sorted_indices = torch.sort(indices, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)
@@ -37,7 +44,10 @@ class APS(THR):
 
     def _calculate_single_label(self, probs, label):
         indices, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(indices.shape[0], device=probs.device)
+        if self.randomized:
+            U = torch.rand(indices.shape[0], device=probs.device)
+        else:
+            U = torch.ones(indices.shape[0], device=probs.device)
         idx = torch.where(indices == label.view(-1, 1))
         scores_first_rank = U * cumsum[idx]
         idx_minus_one = (idx[0], idx[1] - 1)
