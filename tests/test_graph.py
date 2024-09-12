@@ -9,9 +9,7 @@ import os
 import copy
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import accuracy_score
 
 from torch_geometric.datasets import CitationFull
 
@@ -21,7 +19,7 @@ from torchcp.graph.predictors import GraphSplitPredictor
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 
-from utils import GCN, compute_adj_knn
+from tests.utils import GCN, compute_adj_knn
 
 
 def test_graph():
@@ -124,7 +122,7 @@ def test_graph():
     # The construction of k-NN similarity graph
     #######################################
 
-    adj_knn, knn_weights = compute_adj_knn(dataset.x, k=20)
+    knn_edge, knn_weights = compute_adj_knn(dataset.x, k=20)
 
     #######################################
     # A standard process of split conformal prediction
@@ -137,20 +135,23 @@ def test_graph():
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
 
-    score_functions = [DAPS(neigh_coef=0.5, base_score_function=APS(score_type="softmax")), 
-                       SNAPS(lambda_val=1/3, mu_val=1/3, base_score_function=APS(score_type="softmax"))]
+    score_functions = [DAPS(neigh_coef=0.5, base_score_function=APS(score_type="softmax")),
+                       SNAPS(lambda_val=1 / 3, mu_val=1 / 3, base_score_function=APS(score_type="softmax"))]
 
     for score_function in score_functions:
         predictor = GraphSplitPredictor(score_function)
         predictor.calculate_threshold(
-        logits, cal_idx, label_mask, alpha, dataset.x.shape[0], dataset.edge_index)
+            logits, cal_idx, label_mask, alpha, dataset.x.shape[0], dataset.edge_index, None, knn_edge, knn_weights)
 
-        print(f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+        print(
+            f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
         prediction_sets = predictor.predict_with_logits(
-        logits, eval_idx, dataset.x.shape[0], dataset.edge_index)
+            logits, eval_idx, dataset.x.shape[0], dataset.edge_index, None, knn_edge, knn_weights)
 
         # print(prediction_sets)
         metrics = Metrics()
         print("Evaluating prediction sets...")
-        print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
-        print(f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")
+        print(
+            f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
+        print(
+            f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")
