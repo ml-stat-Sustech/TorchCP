@@ -27,6 +27,7 @@ from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 from torchcp.classification.utils import OrdinalClassifier
 
+from utils import *
 transform = trn.Compose([trn.Resize(256),
                          trn.CenterCrop(224),
                          trn.ToTensor(),
@@ -35,9 +36,9 @@ transform = trn.Compose([trn.Resize(256),
                          ])
 
 
-def get_imagenet_logits():
-    model_name = 'ResNet101'
-    fname = ".cache/" + model_name + ".pkl"
+def get_imagenet_logits(model_name):
+    fname = f"~/.cache/torchcp/models/{model_name}.pkl"
+    check_path(fname)
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)
@@ -79,7 +80,8 @@ def test_imagenet_logits():
     # Loading ImageNet dataset and a pytorch model
     #######################################
     fix_randomness(seed=0)
-    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits()
+    model_name = 'ResNet101'
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
     #######################################
     # A standard process of conformal prediction
@@ -109,7 +111,8 @@ def test_imagenet_logits_unrandomized():
     # Loading ImageNet dataset and a pytorch model
     #######################################
     fix_randomness(seed=0)
-    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits()
+    model_name = 'ResNet101'
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
     #######################################
     # A standard process of conformal prediction
@@ -170,44 +173,9 @@ def test_calibration():
     # Loading ImageNet dataset and a pytorch model
     #######################################
     fix_randomness(seed=0)
+
     model_name = 'ResNet101'
-    fname = ".cache/" + model_name + ".pkl"
-    if os.path.exists(fname):
-        with open(fname, 'rb') as handle:
-            dataset = pickle.load(handle)
-
-    else:
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data")
-        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
-                                   transform)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # load model
-        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True).to(device)
-
-        logits_list = []
-        labels_list = []
-        with torch.no_grad():
-            for examples in tqdm(data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]
-                tmp_logits = model(tmp_x)
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_label)
-        logits = torch.cat(logits_list)
-        labels = torch.cat(labels_list)
-        dataset = torch.utils.data.TensorDataset(logits, labels.long())
-        with open(fname, 'wb') as handle:
-            pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
-    cal_logits = torch.stack([sample[0] for sample in cal_data])
-    cal_labels = torch.stack([sample[1] for sample in cal_data])
-
-    test_logits = torch.stack([sample[0] for sample in val_data])
-    test_labels = torch.stack([sample[1] for sample in val_data])
-
-    num_classes = 1000
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
     #######################################
     # A standard process of conformal prediction
@@ -237,43 +205,7 @@ def test_imagenet_logits_types():
     #######################################
     fix_randomness(seed=0)
     model_name = 'ResNet101'
-    fname = ".cache/" + model_name + ".pkl"
-    if os.path.exists(fname):
-        with open(fname, 'rb') as handle:
-            dataset = pickle.load(handle)
-
-    else:
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data")
-        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
-                                   transform)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # load model
-        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True).to(device)
-
-        logits_list = []
-        labels_list = []
-        with torch.no_grad():
-            for examples in tqdm(data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]
-                tmp_logits = model(tmp_x)
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_label)
-        logits = torch.cat(logits_list)
-        labels = torch.cat(labels_list)
-        dataset = torch.utils.data.TensorDataset(logits, labels.long())
-        with open(fname, 'wb') as handle:
-            pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
-    cal_logits = torch.stack([sample[0] for sample in cal_data])
-    cal_labels = torch.stack([sample[1] for sample in cal_data])
-
-    test_logits = torch.stack([sample[0] for sample in val_data])
-    test_labels = torch.stack([sample[1] for sample in val_data])
-
-    num_classes = 1000
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
     #######################################
     # A standard process of conformal prediction
@@ -427,7 +359,7 @@ def test_KNN_Score():
     model.fc = nn.Linear(in_features, num_classes)
     model.cuda()
 
-    model_pkl_path = ".cache/resnet101_cifar10.pth"
+    model_pkl_path = "~/.cache/torchcp/models/resnet101_cifar10.pth"
     if os.path.exists(model_pkl_path):
         pretrained_dict = torch.load(model_pkl_path)
         model.load_state_dict(pretrained_dict)

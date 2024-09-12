@@ -2,7 +2,33 @@ import numpy as np
 import pandas as pd
 import torch.nn as nn
 
-base_path = ".cache/data/"
+
+def check_path(path_with_file):
+    folder_path = os.path.dirname(path_with_file)
+
+    if not folder_path:
+        print("No folder needs to be created.")
+        return
+
+    missing_folders = []
+    current_path = ""
+
+    for folder in folder_path.split(os.sep):
+        if folder:
+            current_path = os.path.join(current_path, folder)
+            if not os.path.exists(current_path):
+                missing_folders.append(current_path)
+                os.makedirs(current_path)
+
+    if missing_folders:
+        print(f"Created the following missing folders: {missing_folders}")
+    else:
+        print(f"All folders already exist for the path: {folder_path}")
+
+
+
+base_path = "~/.cache/torchcp/datasets/"
+check_path(base_path)
 
 
 def build_reg_data(data_name="community"):
