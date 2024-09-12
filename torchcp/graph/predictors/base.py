@@ -6,17 +6,17 @@
 #
 
 import torch
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils.common import get_device
+
 
 class BaseGraphPredictor(object):
     """
     Abstract base class for all conformal predictors in graph.
 
-    :param base_score_function: basic non-conformity score function.
-    :param graph_score_function: graph non-conformity score function.
+    :param score_function: graph non-conformity score function.
     :param model: a pytorch model.
     """
 
@@ -27,7 +27,7 @@ class BaseGraphPredictor(object):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
-    
+
     def _generate_prediction_set(self, scores, q_hat):
         """
         Generate the prediction set with the threshold q_hat.
@@ -37,5 +37,3 @@ class BaseGraphPredictor(object):
         """
 
         return [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
-
-    
