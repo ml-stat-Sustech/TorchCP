@@ -35,11 +35,7 @@ transform = trn.Compose([trn.Resize(256),
                          ])
 
 
-def test_imagenet_logits():
-    #######################################
-    # Loading ImageNet dataset and a pytorch model
-    #######################################
-    fix_randomness(seed=0)
+def get_imagenet_logits():
     model_name = 'ResNet101'
     fname = ".cache/" + model_name + ".pkl"
     if os.path.exists(fname):
@@ -76,8 +72,14 @@ def test_imagenet_logits():
 
     test_logits = torch.stack([sample[0] for sample in val_data])
     test_labels = torch.stack([sample[1] for sample in val_data])
-
     num_classes = 1000
+    return cal_logits, cal_labels, test_logits, test_labels, num_classes
+def test_imagenet_logits():
+    #######################################
+    # Loading ImageNet dataset and a pytorch model
+    #######################################
+    fix_randomness(seed=0)
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits()
 
     #######################################
     # A standard process of conformal prediction
@@ -86,8 +88,8 @@ def test_imagenet_logits():
     predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
     score_functions = [THR(), APS(), RAPS(1, 0), SAPS(0.2), Margin()]
     for score in score_functions:
-        for class_predictor in predictors:
-            predictor = class_predictor(score)
+        for the_predictor in predictors:
+            predictor = the_predictor(score)
             predictor.calculate_threshold(cal_logits, cal_labels, alpha)
             print(
                 f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
@@ -102,6 +104,32 @@ def test_imagenet_logits():
             print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
 
 
+def test_imagenet_logits_unrandomized():
+    #######################################
+    # Loading ImageNet dataset and a pytorch model
+    #######################################
+    fix_randomness(seed=0)
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits()
+
+    #######################################
+    # A standard process of conformal prediction
+    #######################################
+    alpha = 0.1
+    score_functions = [APS(randomized=False), RAPS(1, 0,randomized=False), SAPS(0.2,randomized=False)]
+    for score in score_functions:
+        predictor = SplitPredictor(score)
+        predictor.calculate_threshold(cal_logits, cal_labels, alpha)
+        print(
+            f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+        prediction_sets = predictor.predict_with_logits(test_logits)
+
+        metrics = Metrics()
+        print("Evaluating prediction sets...")
+        print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+        print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+        print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
 def test_imagenet():
     fix_randomness(seed=0)
     #######################################
