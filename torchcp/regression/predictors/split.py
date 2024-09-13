@@ -25,11 +25,12 @@ class SplitPredictor(object):
     """
 
     def __init__(self, model):
+        assert isinstance(model, nn.Module), "The model is not an instance of torch.nn.Module"
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
-        
-    def _train(self, model, epochs, train_dataloader, criterion, optimizer, device, verbose=True):
+
+    def _train(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
         model.train()
         device = get_device(model)
         for epoch in range(epochs):
@@ -43,11 +44,11 @@ class SplitPredictor(object):
                 running_loss += loss.item()
 
             if verbose:
-                print(f"Epoch {epoch+1} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
+                print(f"Epoch {epoch + 1} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
 
         print("Finish training!")
         model.eval()
-        
+
     def fit(self, train_dataloader, **kwargs):
         model = kwargs.get('model', self._model)
         epochs = kwargs.get('epochs', 100)
@@ -55,7 +56,7 @@ class SplitPredictor(object):
         lr = kwargs.get('lr', 0.01)
         optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
         verbose = kwargs.get('verbose', True)
-        
+
         self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
 
     def calculate_score(self, predicts, y_truth):
@@ -90,13 +91,13 @@ class SplitPredictor(object):
         with torch.no_grad():
             predicts_batch = self._model(x_batch)
             return self.generate_intervals(predicts_batch, self.q_hat)
-    
+
     def generate_intervals(self, predicts_batch, q_hat):
         prediction_intervals = predicts_batch.new_zeros((predicts_batch.shape[0], q_hat.shape[0], 2))
 
         prediction_intervals[..., 0] = predicts_batch - q_hat.view(1, q_hat.shape[0])
         prediction_intervals[..., 1] = predicts_batch + q_hat.view(1, q_hat.shape[0])
-        
+
         return prediction_intervals
 
     def evaluate(self, data_loader):
