@@ -9,7 +9,7 @@ from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.regression.predictors import SplitPredictor, CQR, CQRM, CQRR, CQRFM, ACI, R2CCP, Ensemble
 from torchcp.regression.utils import calculate_midpoints
 from torchcp.utils import fix_randomness
-from utils import build_reg_data, build_regression_model
+from .utils import build_reg_data, build_regression_model
 
 
 def test_regression():

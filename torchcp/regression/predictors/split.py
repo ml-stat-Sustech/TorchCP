@@ -6,7 +6,7 @@
 #
 
 
-import math
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -24,27 +24,48 @@ class SplitPredictor(object):
     :param model: a pytorch model for regression.
     """
 
-    def __init__(self, model):
-        assert isinstance(model, nn.Module), "The model is not an instance of torch.nn.Module"
+    def __init__(self, model =None):
         self._model = model
-        self._device = get_device(model)
+        if self._model != None:
+            assert isinstance(model, nn.Module), "The model is not an instance of torch.nn.Module"
+            self._device = get_device(model)
+        else:
+            self._device = None
         self._metric = Metrics()
 
     def _train(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
         model.train()
         device = get_device(model)
-        for epoch in range(epochs):
-            running_loss = 0.0
+        if verbose:
+            with tqdm(total=epochs, desc = "Epoch") as _tqdm:
+                for epoch in range(epochs):
+                    running_loss = 0.0
+                    for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
+                        outputs = model(tmp_x.to(device))
+                        loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
+                        optimizer.zero_grad()
+                        loss.backward()
+                        optimizer.step()
+                        running_loss = (running_loss*max(0,index) + loss.data.cpu().numpy())/(index+1)
+                        _tqdm.set_postfix({  "loss": '{:.6f}'.format(running_loss)})
+                    _tqdm.update(1)
+                
+        else:
             for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
                 outputs = model(tmp_x.to(device))
                 loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                running_loss += loss.item()
+                running_loss += loss.item() 
 
-            if verbose:
-                print(f"Epoch {epoch + 1} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
+
+                 
+        # else:
+            
+
+        #     if verbose:
+        #         print(f"Epoch {epoch + 1} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
 
         print("Finish training!")
         model.eval()
