@@ -10,6 +10,7 @@ import torch
 from .cqr import CQR
 from ..loss import QuantileLoss
 
+
 class CQRM(CQR):
     """
     A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
@@ -17,7 +18,7 @@ class CQRM(CQR):
 
     :param model: a pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
     """
-    
+
     def fit(self, train_dataloader, **kwargs):
         criterion = kwargs.pop('criterion', None)
         if criterion is None:
@@ -47,7 +48,7 @@ class CQRM(CQR):
         scaling_factor_lower = predicts_batch[..., 1] - predicts_batch[..., 0] + eps
         scaling_factor_upper = predicts_batch[..., 2] - predicts_batch[..., 1] + eps
         prediction_intervals[..., 0] = predicts_batch[..., 0] - \
-            q_hat.view(1, q_hat.shape[0], 1) * scaling_factor_lower
+                                       q_hat.view(1, q_hat.shape[0], 1) * scaling_factor_lower
         prediction_intervals[..., 1] = predicts_batch[..., 2] + \
-            q_hat.view(1, q_hat.shape[0], 1) * scaling_factor_upper
+                                       q_hat.view(1, q_hat.shape[0], 1) * scaling_factor_upper
         return prediction_intervals
