@@ -9,9 +9,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-
 from .split import SplitPredictor
 from ..loss import R2ccpLoss
+
 
 class R2CCP(SplitPredictor):
     """
@@ -25,7 +25,7 @@ class R2CCP(SplitPredictor):
     def __init__(self, model, midpoints):
         super().__init__(model)
         self.midpoints = midpoints.to(self._device)
-        
+
     def fit(self, train_dataloader, **kwargs):
         model = kwargs.get('model', self._model)
         epochs = kwargs.get('epochs', 100)
@@ -118,7 +118,7 @@ class R2CCP(SplitPredictor):
                 right_points - left_points)
         scores = torch.where(interval == -1, predicts[:, 0], scores)
         scores = torch.where(interval == len(midpoints), predicts[:, -1], scores)
-        
+
         if len(scores.shape) == 1:
             scores = scores.unsqueeze(-1)
 

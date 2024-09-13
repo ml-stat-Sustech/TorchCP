@@ -22,23 +22,23 @@ class CQR(SplitPredictor):
 
     def __init__(self, model):
         super().__init__(model)
-        
+
     def fit(self, train_dataloader, **kwargs):
         model = kwargs.get('model', self._model)
         criterion = kwargs.get('criterion', None)
-        
+
         if criterion is None:
             alpha = kwargs.get('alpha', None)
             if alpha is None:
                 raise ValueError("When 'criterion' is not provided, 'alpha' must be specified.")
             quantiles = [alpha / 2, 1 - alpha / 2]
             criterion = QuantileLoss(quantiles)
-        
+
         epochs = kwargs.get('epochs', 100)
         lr = kwargs.get('lr', 0.01)
         optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
         verbose = kwargs.get('verbose', True)
-        
+
         self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
 
     def calculate_score(self, predicts, y_truth):
@@ -53,9 +53,9 @@ class CQR(SplitPredictor):
         if len(x_batch.shape) == 1:
             x_batch = x_batch.unsqueeze(0)
         predicts_batch = self._model(x_batch.to(self._device)).float()
-        
+
         return self.generate_intervals(predicts_batch, self.q_hat)
-    
+
     def generate_intervals(self, predicts_batch, q_hat):
         if len(predicts_batch.shape) == 2:
             predicts_batch = predicts_batch.unsqueeze(1)

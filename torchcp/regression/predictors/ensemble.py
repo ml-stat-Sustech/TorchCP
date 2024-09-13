@@ -11,6 +11,7 @@ import torch
 from torchcp.utils.common import get_device
 from ..utils.metrics import Metrics
 
+
 class Ensemble(object):
     """
     Ensemble model for Conformal Prediction Interval in Time-Series Forecasting.
@@ -33,19 +34,22 @@ class Ensemble(object):
     :param aggregation_function: A function to aggregate predictions from multiple 
                                  models in the ensemble.
     """
-    
+
     def __init__(self, model, score_predictor, aggregation_function):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
         self.score_predictor = score_predictor
         self.aggregation_function = aggregation_function
-        
+
         self.model_list = []
         self.indices_list = []
         self.score = []
-    
+
     def fit(self, train_dataloader, ensemble_num, subset_num, **kwargs):
+        self.model_list = []
+        self.indices_list = []
+
         dataset = train_dataloader.dataset
         batch_size = train_dataloader.batch_size
         for i in range(ensemble_num):
@@ -56,7 +60,7 @@ class Ensemble(object):
             self.score_predictor.fit(subset_dataloader, model=model_copy, **kwargs)
             self.model_list.append(model_copy)
             self.indices_list.append(indices)
-        
+
         score_list = []
         dataset = train_dataloader.dataset
 
@@ -65,11 +69,12 @@ class Ensemble(object):
                 x, y_truth = dataset[idx]
                 x = x.unsqueeze(0).to(self._device)
                 y_truth = torch.tensor([y_truth], dtype=torch.float32).to(self._device)
-                
+
                 model_predict = [model(x)
-                    for i, model in enumerate(self.model_list)
-                    if idx not in self.indices_list[i]
-                ]
+                                 for i, model in enumerate(self.model_list)
+                                 if idx not in self.indices_list[i]
+                                 ]
+                torch.cuda.empty_cache()
 
                 if model_predict:
                     model_predict_tensor = torch.stack(model_predict)
@@ -77,28 +82,30 @@ class Ensemble(object):
                     score_list.append([self.score_predictor.calculate_score(aggregated_predict, y_truth)])
 
         self.scores = torch.tensor(score_list, dtype=torch.float32).to(self._device)
-    
+
     def predict(self, x_batch, alpha):
         self.q_hat = self.score_predictor._calculate_conformal_value(self.scores, alpha)
         x_batch = x_batch.to(self._device)
-        
+
         with torch.no_grad():
             model_predictions = [model(x_batch) for model in self.model_list]
-            
+        torch.cuda.empty_cache()
+
         predictions_tensor = torch.stack(model_predictions)
         predicts_batch = self.aggregation_function(predictions_tensor, dim=0)
         return self.score_predictor.generate_intervals(predicts_batch, self.q_hat)
-        
+
     def update(self, x_batch, y_batch):
         with torch.no_grad():
             model_predict = [model(x_batch) for model in self.model_list]
-            
+        torch.cuda.empty_cache()
+
         model_predict_tensor = torch.stack(model_predict)
         aggregated_predict = self.aggregation_function(model_predict_tensor, dim=0)
         update_scores = self.score_predictor.calculate_score(aggregated_predict, y_batch)
         self.scores = torch.cat([self.scores, update_scores], dim=0) if len(self.scores) > 0 else update_scores
         self.scores = self.scores[len(update_scores):]
-        
+
     def evaluate(self, data_loader, alpha, verbose=True):
         coverage_rates = []
         average_sizes = []
@@ -113,7 +120,8 @@ class Ensemble(object):
                 batch_average_size = self._metric('average_size')(prediction_intervals)
 
                 if verbose:
-                    print(f"Batch: {index+1}, Coverage rate: {batch_coverage_rate.item():.4f}, Average size: {batch_average_size.item():.4f}")
+                    print(
+                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate.item():.4f}, Average size: {batch_average_size.item():.4f}")
 
                 coverage_rates.append(batch_coverage_rate)
                 average_sizes.append(batch_average_size)
@@ -123,8 +131,8 @@ class Ensemble(object):
         avg_coverage_rate = sum(coverage_rates) / len(coverage_rates)
         avg_average_size = sum(average_sizes) / len(average_sizes)
 
-        res_dict = {"Total batches": index+1,
+        res_dict = {"Total batches": index + 1,
                     "Average coverage rate": avg_coverage_rate.item(),
                     "Average prediction interval size": avg_average_size.item()}
-        
+
         return res_dict
