@@ -29,22 +29,32 @@ class Ensemble(object):
 
     :param model: The base model to be used in the ensemble.
     :param score_predictor: The method for calculating scores and prediction intervals. 
-                            Can be  SplitPredictor, CQR or other variants of CQR, based on the 
+                            Can be SplitPredictor, CQR or other variants of CQR, based on the 
                             approach from the referenced papers.
     :param aggregation_function: A function to aggregate predictions from multiple 
-                                 models in the ensemble.
+                                 models in the ensemble. This function should take a tensor 
+                                 of predictions as input and return a single aggregated tensor. 
+                                 It can be one of the predefined functions or a custom function. 
+                                 Options include:
+                                 - 'mean': Computes the mean of the predictions.
+                                 - 'median': Computes the median of the predictions.
+                                 - A custom function: Should accept a tensor and a dimension as input, 
+                                   and return the aggregated result. For example, a function that 
+                                   computes the maximum value across predictions.
     """
 
-    def __init__(self, model, score_predictor, aggregation_function):
+    def __init__(self, model, score_predictor, aggregation_function='mean'):
         self._model = model
         self._device = get_device(model)
         self._metric = Metrics()
         self.score_predictor = score_predictor
-        self.aggregation_function = aggregation_function
-
-        self.model_list = []
-        self.indices_list = []
-        self.score = []
+        
+        if aggregation_function == 'mean':
+            self.aggregation_function = torch.mean
+        elif aggregation_function == 'median':
+            self.aggregation_function = torch.median
+        else:
+            self.aggregation_function = aggregation_function
 
     def fit(self, train_dataloader, ensemble_num, subset_num, **kwargs):
         self.model_list = []
@@ -83,7 +93,19 @@ class Ensemble(object):
 
         self.scores = torch.tensor(score_list, dtype=torch.float32).to(self._device)
 
-    def predict(self, x_batch, alpha):
+    def predict(self, alpha, x_batch, y_batch=None):
+        """
+        Generates prediction intervals for a given batch of data using the conformal prediction framework.
+        
+        Args:
+            alpha (float): The significance level for conformal prediction, controlling the size of the prediction intervals.
+            x_batch (torch.Tensor): The input batch of data for which predictions are to be generated.
+            y_batch (torch.Tensor, optional): The true labels corresponding to the input batch. 
+                    If provided, scores will be updated based on the true labels. Default is None.
+
+        Returns:
+            intervals (torch.Tensor): The generated prediction intervals for the input data based on the conformal prediction framework.
+        """
         self.q_hat = self.score_predictor._calculate_conformal_value(self.scores, alpha)
         x_batch = x_batch.to(self._device)
 
@@ -92,19 +114,14 @@ class Ensemble(object):
         torch.cuda.empty_cache()
 
         predictions_tensor = torch.stack(model_predictions)
-        predicts_batch = self.aggregation_function(predictions_tensor, dim=0)
-        return self.score_predictor.generate_intervals(predicts_batch, self.q_hat)
-
-    def update(self, x_batch, y_batch):
-        with torch.no_grad():
-            model_predict = [model(x_batch) for model in self.model_list]
-        torch.cuda.empty_cache()
-
-        model_predict_tensor = torch.stack(model_predict)
-        aggregated_predict = self.aggregation_function(model_predict_tensor, dim=0)
-        update_scores = self.score_predictor.calculate_score(aggregated_predict, y_batch)
-        self.scores = torch.cat([self.scores, update_scores], dim=0) if len(self.scores) > 0 else update_scores
-        self.scores = self.scores[len(update_scores):]
+        aggregated_predict = self.aggregation_function(predictions_tensor, dim=0)
+        
+        if y_batch:
+            update_scores = self.score_predictor.calculate_score(aggregated_predict, y_batch)
+            self.scores = torch.cat([self.scores, update_scores], dim=0) if len(self.scores) > 0 else update_scores
+            self.scores = self.scores[len(update_scores):]
+        
+        return self.score_predictor.generate_intervals(aggregated_predict, self.q_hat)
 
     def evaluate(self, data_loader, alpha, verbose=True):
         coverage_rates = []
@@ -113,8 +130,7 @@ class Ensemble(object):
         with torch.no_grad():
             for index, batch in enumerate(data_loader):
                 x_batch, y_batch = batch[0].to(self._device), batch[1].to(self._device)
-
-                prediction_intervals = self.predict(x_batch, alpha)
+                prediction_intervals = self.predict(alpha, x_batch, y_batch)
 
                 batch_coverage_rate = self._metric('coverage_rate')(prediction_intervals, y_batch)
                 batch_average_size = self._metric('average_size')(prediction_intervals)
@@ -125,8 +141,6 @@ class Ensemble(object):
 
                 coverage_rates.append(batch_coverage_rate)
                 average_sizes.append(batch_average_size)
-
-                self.update(x_batch, y_batch)
 
         avg_coverage_rate = sum(coverage_rates) / len(coverage_rates)
         avg_average_size = sum(average_sizes) / len(average_sizes)
