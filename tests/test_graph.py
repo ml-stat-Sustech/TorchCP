@@ -7,22 +7,25 @@
 
 import os
 import copy
+from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
 
-from torch_geometric.datasets import CitationFull
+from torch_geometric.loader import NeighborLoader
+from torch_geometric.transforms import RandomNodeSplit
+from torch_geometric.datasets import CitationFull, Amazon
 
 from torchcp.classification.scores import APS
-from torchcp.graph.scores import DAPS, SNAPS
+from torchcp.graph.scores import DAPS, SNAPS, NAPS
 from torchcp.graph.predictors import GraphSplitPredictor
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 
-from tests.utils import GCN, compute_adj_knn
+from tests.utils import GCN, SAGE, compute_adj_knn
 
 
-def test_graph():
+def test_transductive_graph():
     fix_randomness(seed=0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -109,9 +112,9 @@ def test_graph():
     #######################################
     # Testing the model
     #######################################
-
     best_model.eval()
-    logits = best_model(dataset.x, dataset.edge_index)
+    with torch.no_grad():
+        logits = best_model(dataset.x, dataset.edge_index)
     y_pred = logits.argmax(dim=1).detach()
 
     test_accuracy = (y_pred[test_idx] == dataset.y[test_idx]
@@ -155,3 +158,105 @@ def test_graph():
             f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
         print(
             f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")
+
+
+def test_inductive_graph():
+    fix_randomness(seed=0)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    #######################################
+    # Loading dataset and a model
+    #######################################
+
+    dataset_name = 'Computers'
+
+    usr_dir = os.path.expanduser('~')
+    data_dir = os.path.join(usr_dir, "data/Amazon")
+    dataset = Amazon(data_dir, 'Computers',
+                     pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=12000))
+    data = dataset[0].to(device, 'x', 'y')
+
+    kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
+    train_loader = NeighborLoader(data, input_nodes=data.train_mask,
+                                  num_neighbors=[25, 10], shuffle=True, **kwargs)
+    val_loader = NeighborLoader(copy.copy(data), input_nodes=data.val_mask,
+                                num_neighbors=[-1], shuffle=False, **kwargs)
+    subgraph_loader = NeighborLoader(copy.copy(data), input_nodes=None,
+                                     num_neighbors=[-1], shuffle=False, **kwargs)
+
+    del subgraph_loader.data.x, subgraph_loader.data.y
+    subgraph_loader.data.num_nodes = data.num_nodes
+    subgraph_loader.data.n_id = torch.arange(data.num_nodes)
+
+    hidden_channels = 64
+    learning_rate = 0.01
+
+    model = SAGE(dataset.num_features, hidden_channels,
+                 dataset.num_classes).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    #######################################
+    # Training the model
+    #######################################
+
+    n_epochs = 25
+    max_val_acc = 0.
+    patience = 5
+    bad_counter = 0
+    best_model = None
+
+    for _ in range(n_epochs):
+        model.train()
+        pbar = tqdm(total=int(len(train_loader.dataset)))
+
+        total_loss = total_correct = total_examples = 0
+        for batch in train_loader:
+            optimizer.zero_grad()
+            y = batch.y[:batch.batch_size]
+            y_hat = model(batch.x, batch.edge_index)[:batch.batch_size]
+            loss = F.cross_entropy(y_hat, y)
+            loss.backward()
+            optimizer.step()
+
+            total_loss += float(loss) * batch.batch_size
+            total_correct += int((y_hat.argmax(dim=-1) == y).sum())
+            total_examples += batch.batch_size
+            pbar.update(batch.batch_size)
+        pbar.close()
+
+        model.eval()
+        val_acc = val_correct = val_examples = 0.
+        with torch.no_grad():
+            for batch in val_loader:
+                y = batch.y[:batch.batch_size]
+                y_hat = model(batch.x, batch.edge_index)[:batch.batch_size]
+
+                val_correct += int((y_hat.argmax(dim=-1) == y).sum())
+                val_examples += batch.batch_size
+        val_acc = val_correct / val_examples
+
+        if val_acc >= max_val_acc:
+            max_val_acc = val_acc
+            best_model = copy.deepcopy(model)
+            bad_counter = 0
+        else:
+            bad_counter += 1
+
+        if bad_counter >= patience:
+            break
+
+    if best_model is None:
+        best_model = copy.deepcopy(model)
+
+    #######################################
+    # Testing the model
+    #######################################
+
+    best_model.eval()
+    with torch.no_grad():
+        logits = best_model.inference(data.x, subgraph_loader)
+    y_pred = logits.argmax(dim=1)
+
+    test_accuracy = (y_pred[data.test_mask] == data.y[data.test_mask]
+                     ).sum().item() / data.test_mask.shape[0]
+    print(f"Model Accuracy: {test_accuracy}")
