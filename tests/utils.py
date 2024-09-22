@@ -287,8 +287,7 @@ class SAGE(torch.nn.Module):
 
     @torch.no_grad()
     def inference(self, x_all, subgraph_loader):
-        pbar = tqdm(total=len(subgraph_loader.dataset) * len(self.convs))
-        pbar.set_description('Evaluating')
+        device = x_all.device
 
         # Compute representations of nodes layer by layer, using *all*
         # available edges. This leads to faster computation in contrast to
@@ -301,9 +300,7 @@ class SAGE(torch.nn.Module):
                 if i < len(self.convs) - 1:
                     x = x.relu_()
                 xs.append(x[:batch.batch_size].cpu())
-                pbar.update(batch.batch_size)
-            x_all = torch.cat(xs, dim=0)
-        pbar.close()
+            x_all = torch.cat(xs, dim=0).to(device)
         return x_all
 
 
