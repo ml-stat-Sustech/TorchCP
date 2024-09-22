@@ -172,7 +172,7 @@ def test_inductive_graph():
 
     usr_dir = os.path.expanduser('~')
     data_dir = os.path.join(usr_dir, "data/Amazon")
-    dataset = Amazon(data_dir, 'Computers',
+    dataset = Amazon(data_dir, dataset_name,
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=12000))
     data = dataset[0].to(device, 'x', 'y')
 
@@ -186,7 +186,7 @@ def test_inductive_graph():
 
     del subgraph_loader.data.x, subgraph_loader.data.y
     subgraph_loader.data.num_nodes = data.num_nodes
-    subgraph_loader.data.n_id = torch.arange(data.num_nodes)
+    subgraph_loader.data.n_id = torch.arange(data.num_nodes).to(device)
 
     hidden_channels = 64
     learning_rate = 0.01
@@ -207,7 +207,6 @@ def test_inductive_graph():
 
     for _ in range(n_epochs):
         model.train()
-        pbar = tqdm(total=int(len(train_loader.dataset)))
 
         total_loss = total_correct = total_examples = 0
         for batch in train_loader:
@@ -221,8 +220,6 @@ def test_inductive_graph():
             total_loss += float(loss) * batch.batch_size
             total_correct += int((y_hat.argmax(dim=-1) == y).sum())
             total_examples += batch.batch_size
-            pbar.update(batch.batch_size)
-        pbar.close()
 
         model.eval()
         val_acc = val_correct = val_examples = 0.
@@ -255,8 +252,8 @@ def test_inductive_graph():
     best_model.eval()
     with torch.no_grad():
         logits = best_model.inference(data.x, subgraph_loader)
-    y_pred = logits.argmax(dim=1)
+    y_pred = logits.argmax(dim=-1)
 
-    test_accuracy = (y_pred[data.test_mask] == data.y[data.test_mask]
-                     ).sum().item() / data.test_mask.shape[0]
+    test_accuracy = int((y_pred[data.test_mask] == data.y[data.test_mask]
+                     ).sum()) / int(data.test_mask.sum())
     print(f"Model Accuracy: {test_accuracy}")
