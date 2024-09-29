@@ -65,7 +65,7 @@ class ClusteredPredictor(ClassWisePredictor):
 
         # 3)  Filter "rare" classes
         rare_classes = self.__get_rare_classes(clustering_labels, alpha, num_classes)
-
+        self.num_clusters = self.__num_clusters
         # 4) Run clustering
         if (num_classes - len(rare_classes) > self.__num_clusters) and (self.__num_clusters > 1):
             # Filter out rare classes and re-index
@@ -74,9 +74,10 @@ class ClusteredPredictor(ClassWisePredictor):
 
             # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels)
-            kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10).fit(X=embeddings.detach().cpu().numpy(),
+            kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10,random_state = 2023).fit(X=embeddings.detach().cpu().numpy(),
                                                                                 sample_weight=np.sqrt(
-                                                                                    class_cts.detach().cpu().numpy()))
+                                                                                    class_cts.detach().cpu().numpy()),
+                                                                                )
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_, device=self._device)
 
             cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)
@@ -85,7 +86,7 @@ class ClusteredPredictor(ClassWisePredictor):
                 cluster_assignments[cls] = nonrare_class_cluster_assignments[remapped_cls]
         else:
             cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)
-
+        self.cluster_assignments =  cluster_assignments
         # 5) Compute qhats for each cluster
 
         self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments,
@@ -125,6 +126,7 @@ class ClusteredPredictor(ClassWisePredictor):
             cal_labels = labels[~idx1]
         else:
             raise Exception("Invalid split method. Options are 'proportional', 'doubledip', and 'random'")
+        self.idx1 = idx1
         return clustering_scores, clustering_labels, cal_scores, cal_labels
 
     def __get_quantile_minimum(self, alpha):

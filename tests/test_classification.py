@@ -350,7 +350,7 @@ def test_KNN_Score():
     test_labels = torch.stack([torch.tensor(sample[1]) for sample in test_dataset])
 
     num_classes = 10
-    num_epochs = 10
+    num_epochs = 30
     batch_size = 1024
     lr = 0.001
 
@@ -362,7 +362,7 @@ def test_KNN_Score():
     model.fc = nn.Linear(in_features, num_classes)
     model.cuda()
 
-    model_pkl_path = "~/.cache/torchcp/models/resnet101_cifar10.pth"
+    model_pkl_path = "./.cache/models/resnet101_cifar10.pth"
     if os.path.exists(model_pkl_path):
         pretrained_dict = torch.load(model_pkl_path)
         model.load_state_dict(pretrained_dict)
@@ -410,7 +410,7 @@ def test_KNN_Score():
     test_features = get_features(test_dataloader, model)
 
     from torchcp.classification.scores import KNN
-    score = KNN(train_features, train_labels, 10, k=2, p="cosine")
+    score = KNN(train_features, train_labels, 10, k=2, p=2)
 
     mask = torch.rand_like(test_labels, dtype=torch.float32) > 0.5
     cal_features = test_features[mask]
