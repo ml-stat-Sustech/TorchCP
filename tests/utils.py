@@ -2,50 +2,55 @@ import numpy as np
 import pandas as pd
 import torch.nn as nn
 import os
+from pathlib import Path
+import requests
 
-def check_path(path_with_file):
-    folder_path = os.path.dirname(path_with_file)
 
-    if not folder_path:
-        print("No folder needs to be created.")
-        return
+def get_dataset_dir():
+    dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/datasets')
+    path = Path(dataset_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    return dataset_dir
 
-    missing_folders = []
-    current_path = ""
 
-    for folder in folder_path.split(os.sep):
-        if folder:
-            current_path = os.path.join(current_path, folder)
-            if os.path.exists(current_path):
-                print("exists")
-            if os.access(os.path.dirname(current_path), os.W_OK):
-                print("OK")
-            if not os.path.exists(current_path):
-                print(current_path)
-                
-                missing_folders.append(current_path)
-                if os.access(os.path.dirname(current_path), os.W_OK):
-                    os.makedirs(current_path)
-                else:
-                    print(f"Permission denied: {os.path.dirname(current_path)}")
+def get_model_dir():
+    dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/models')
+    path = Path(dataset_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    return dataset_dir
 
-    if missing_folders:
-        print(f"Created the following missing folders: {missing_folders}")
+def download_github(url, save_path):
+    raw_url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+
+    response = requests.get(raw_url)
+
+    if response.status_code == 200:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+        with open(save_path, 'wb') as file:
+            file.write(response.content)
+        print(f"Files already downloaded: {save_path}")
     else:
-        print(f"All folders already exist for the path: {folder_path}")
+        print(f"Download failed: {response.status_code}")
 
 
-
-# base_path = "~/.cache/torchcp/datasets/"
-base_path = ".cache/datasets"
 
 
 def build_reg_data(data_name="community"):
     if data_name == "community":
         # https://github.com/vbordalo/Communities-Crime/blob/master/Crime_v1.ipynb
-        check_path(base_path)
-        attrib = pd.read_csv(base_path + 'communities_attributes.csv', delim_whitespace=True)
-        data = pd.read_csv(base_path + 'communities.data', names=attrib['attributes'])
+        dataset_dir = get_dataset_dir()
+        attrib_path = os.path.join(dataset_dir, 'communities_attributes.csv')
+        dataset_path = os.path.join(dataset_dir, 'communities.data')
+        if not os.path.exists(attrib_path):
+            attrib_github_url = "https://github.com/vbordalo/Communities-Crime/blob/master/attributes.csv"
+            
+            download_github(attrib_github_url, attrib_path)
+            attrib_github_url = "https://github.com/vbordalo/Communities-Crime/blob/master/communities.data"
+            download_github(attrib_github_url, dataset_path)
+
+        attrib = pd.read_csv(attrib_path, delim_whitespace=True)
+        data = pd.read_csv(dataset_path, names=attrib['attributes'])
         data = data.drop(columns=['state', 'county',
                                   'community', 'communityname',
                                   'fold'], axis=1)
