@@ -9,7 +9,6 @@
 import os
 import pickle
 import random
-
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
@@ -25,15 +24,8 @@ from torchcp.classification.scores import THR, APS, SAPS, RAPS, Margin
 from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 from torchcp.classification.utils import OrdinalClassifier
-
+from torchcp.classification.scores import KNN
 from .utils import *
-transform = trn.Compose([trn.Resize(256),
-                         trn.CenterCrop(224),
-                         trn.ToTensor(),
-                         trn.Normalize(mean=[0.485, 0.456, 0.406],
-                                       std=[0.229, 0.224, 0.225])
-                         ])
-
 
 dataset_dir = get_dataset_dir()
 model_dir = get_model_dir()
@@ -46,10 +38,7 @@ def get_imagenet_logits(model_name):
             dataset = pickle.load(handle)
 
     else:
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data/datasets")
-        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
-                                   transform)
+        dataset = build_dataset(dataset_name = "imagnet", data_mode= "test", transform_mode = "test")
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # load model
@@ -149,9 +138,7 @@ def test_imagenet():
     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
-    usr_dir = os.path.expanduser('~')
-    data_dir = os.path.join(usr_dir, "data")
-    dataset = dset.ImageFolder(data_dir + "/imagenet/val", transform)
+    dataset = build_dataset(dataset_name = "imagnet", data_mode= "test", transform_mode = "test")
 
     cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, num_workers=4,
@@ -336,21 +323,15 @@ def test_ordinal_classification():
 
 
 def test_KNN_Score():
-    
-
     fix_randomness(seed=0)
-    mean = (0.492, 0.482, 0.446)
-    std = (0.247, 0.244, 0.262)
-    cifar10_train_transform = trn.Compose([trn.RandomHorizontalFlip(),
-                                           trn.RandomCrop(32, padding=4),
-                                           trn.ToTensor(),
-                                           trn.Normalize(mean, std)])
-    train_dataset = dset.CIFAR10(root=dataset_dir, train=True, download=True, transform=cifar10_train_transform)
+    
+    
+    train_dataset = build_dataset("cifar10", "train", "train")
     
     
 
     num_classes = 10
-    num_epochs = 100
+    num_epochs = 30
     batch_size = 1024
     lr = 0.001
 
@@ -402,25 +383,20 @@ def test_KNN_Score():
                 batch_logits = the_model(x.cuda())
         features = torch.reshape(torch.cat(the_features, dim=0), (-1, outputsize)).detach()
         return features
-
-    
-    cifar10_test_transform = trn.Compose([trn.ToTensor(),
-                                          trn.Normalize(mean, std)])
     
     
-    
-    train_dataset = dset.CIFAR10(root=dataset_dir, train=True, download=True, transform=cifar10_test_transform)
+    train_dataset = build_dataset("cifar10", data_mode="train", transform_mode="test")
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
     train_labels = torch.stack([torch.tensor(sample[1]) for sample in train_dataset])
     
-    test_dataset = dset.CIFAR10(root=dataset_dir, train=False, download=True, transform=cifar10_test_transform)
+    test_dataset = build_dataset("cifar10", data_mode="test", transform_mode="test")
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     test_labels = torch.stack([torch.tensor(sample[1]) for sample in test_dataset])
         
     train_features = get_features(train_dataloader, model)
     test_features = get_features(test_dataloader, model)
 
-    from torchcp.classification.scores import KNN
+    
     score = KNN(train_features, train_labels, num_classes, k=2, p=2)
 
     mask = torch.rand_like(test_labels, dtype=torch.float32) > 0.5

@@ -4,7 +4,13 @@ import torch.nn as nn
 import os
 from pathlib import Path
 import requests
+import os
+import pathlib
 
+import torchvision.datasets as dset
+import torchvision.transforms as trn
+from PIL import Image
+from torch.utils.data import Dataset
 
 def get_dataset_dir():
     dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/datasets')
@@ -14,7 +20,7 @@ def get_dataset_dir():
 
 
 def get_model_dir():
-    dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/models')
+    dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/hub')
     path = Path(dataset_dir)
     path.mkdir(parents=True, exist_ok=True)
     return dataset_dir
@@ -139,3 +145,97 @@ def build_regression_model(model_name="NonLinearNet"):
         return Softmax
     else:
         raise NotImplementedError
+
+
+
+def build_dataset(dataset_name, data_mode= "train", transform_mode = "train"):    
+
+    if dataset_name == 'imagenet':
+        usr_dir = os.path.expanduser('~')
+        dataset_dir = os.path.join(usr_dir, "data")
+        if transform_mode == "test":
+            transform = trn.Compose([
+                trn.Resize(256),
+                trn.CenterCrop(224),
+                trn.ToTensor(),
+                trn.Normalize(mean=[0.485, 0.456, 0.406],
+                              std=[0.229, 0.224, 0.225])
+            ])
+        else:
+            raise NotImplementedError
+
+        if data_mode == "test":
+            dataset = dset.ImageFolder(dataset_dir + "/imagenet/val",transform)
+        else:
+            raise NotImplementedError
+        
+        
+    elif dataset_name == 'imagenetv2':
+        if transform == None:
+            transform = trn.Compose([
+                trn.Resize(256),
+                trn.CenterCrop(224),
+                trn.ToTensor(),
+                trn.Normalize(mean=[0.485, 0.456, 0.406],
+                              std=[0.229, 0.224, 0.225])
+            ])
+
+        dataset = ImageNetV2Dataset(os.path.join(dataset_dir, "imagenetv2/imagenetv2-matched-frequency-format-val"),
+                                    transform)
+
+    elif dataset_name == 'mnist':
+        dataset_dir = get_dataset_dir()
+        if transform == None:
+            transform = trn.Compose([
+                trn.ToTensor(),
+                trn.Normalize((0.1307,), (0.3081,))
+            ])
+        if data_mode == "train":
+            dataset = dset.MNIST(dataset_dir, train=True, download=True, transform=transform)
+        elif data_mode == "test":
+            dataset = dset.MNIST(dataset_dir, train=False, download=True, transform=transform)
+    elif dataset_name == 'cifar10':
+        dataset_dir = get_dataset_dir()
+        
+        mean = (0.492, 0.482, 0.446)
+        std = (0.247, 0.244, 0.262)
+        
+        if transform_mode == "train":
+            cifar10_transform = trn.Compose([trn.RandomHorizontalFlip(),
+                                           trn.RandomCrop(32, padding=4),
+                                           trn.ToTensor(),
+                                           trn.Normalize(mean, std)])
+        elif transform_mode == "test":
+            cifar10_transform = trn.Compose([trn.ToTensor(),
+                                          trn.Normalize(mean, std)])
+        else:
+            raise NotImplementedError
+        
+        if data_mode == "train":
+        
+            dataset = dset.CIFAR10(root=dataset_dir, train=True, download=True, transform=cifar10_transform)
+        elif data_mode == "test":
+            dataset = dset.CIFAR10(root=dataset_dir, train=False, download=True, transform=cifar10_transform)
+        else:
+            raise NotImplementedError
+        
+    else:
+        raise NotImplementedError
+
+    return dataset
+
+
+class ImageNetV2Dataset(Dataset):
+    def __init__(self, root, transform=None):
+        self.dataset_root = pathlib.Path(root)
+        self.fnames = list(self.dataset_root.glob("**/*.jpeg"))
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.fnames)
+
+    def __getitem__(self, i):
+        img, label = Image.open(self.fnames[i]), int(self.fnames[i].parent.name)
+        if self.transform is not None:
+            img = self.transform(img)
+        return img, label
