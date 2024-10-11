@@ -28,18 +28,18 @@ class DAPS(BaseScore):
                 "The parameter 'neigh_coef' must be a value between 0 and 1.")
         super(DAPS, self).__init__(base_score_function, graph_data)
 
-        self.__neigh_coef = neigh_coef
+        self._neigh_coef = neigh_coef
 
     def __call__(self, logits):
         base_scores = self._base_score_function(logits)
 
         if isinstance(self._edge_index, Tensor):
-            if self._edge_weights is None:
-                self._edge_weights = torch.ones(
+            if self._edge_weight is None:
+                self._edge_weight = torch.ones(
                     self._edge_index.shape[1]).to(self._edge_index.device)
             adj = torch.sparse.FloatTensor(
                 self._edge_index,
-                self._edge_weights,
+                self._edge_weight,
                 (self._n_vertices, self._n_vertices))
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
@@ -50,7 +50,7 @@ class DAPS(BaseScore):
         diffusion_scores = torch.linalg.matmul(
             adj, base_scores) * (1 / (degs + 1e-10))[:, None]
 
-        scores = self.__neigh_coef * diffusion_scores + \
-            (1 - self.__neigh_coef) * base_scores
+        scores = self._neigh_coef * diffusion_scores + \
+            (1 - self._neigh_coef) * base_scores
 
         return scores
