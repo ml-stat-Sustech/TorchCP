@@ -21,7 +21,7 @@ class SNAPS(BaseScore):
     :param mu_val: the parameter of similarity-based scores.
     """
 
-    def __init__(self, lambda_val, mu_val, base_score_function, graph_data, knn_edge=None, knn_weights=None):
+    def __init__(self, lambda_val, mu_val, base_score_function, graph_data, knn_edge=None, knn_weight=None):
         if lambda_val < 0 and lambda_val > 1:
             raise ValueError(
                 "The parameter 'lambda_val' must be a value between 0 and 1.")
@@ -36,18 +36,18 @@ class SNAPS(BaseScore):
         self._lambda_val = lambda_val
         self._mu_val = mu_val
         self._knn_edge = knn_edge
-        self._knn_weight = knn_weights
+        self._knn_weight = knn_weight
 
     def __call__(self, logits):
         base_scores = self._base_score_function(logits)
 
         if isinstance(self._edge_index, Tensor):
-            if self._edge_weights is None:
-                self._edge_weights = torch.ones(
+            if self._edge_weight is None:
+                self._edge_weight = torch.ones(
                     self._edge_index.shape[1]).to(self._edge_index.device)
             adj = torch.sparse.FloatTensor(
                 self._edge_index,
-                self._edge_weights,
+                self._edge_weight,
                 (self._n_vertices, self._n_vertices))
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
@@ -58,12 +58,12 @@ class SNAPS(BaseScore):
         similarity_scores = 0.
         if self._knn_edge is not None:
             if isinstance(self._knn_edge, Tensor):
-                if knn_weights is None:
-                    knn_weights = torch.ones(
+                if self._knn_weight is None:
+                    self._knn_weight = torch.ones(
                         self._knn_edge.shape[1]).to(self._edge_index.device)
                 adj_knn = torch.sparse.FloatTensor(
                     self._knn_edge,
-                    knn_weights,
+                    self._knn_weight,
                     (self._n_vertices, self._n_vertices))
                 knn_degs = torch.matmul(adj_knn, torch.ones(
                     (adj_knn.shape[0])).to(adj_knn.device))

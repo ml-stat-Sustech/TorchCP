@@ -125,7 +125,7 @@ def test_transductive_graph():
     # The construction of k-NN similarity graph
     #######################################
 
-    knn_edge, knn_weights = compute_adj_knn(dataset.x, k=20)
+    knn_edge, knn_weight = compute_adj_knn(dataset.x, k=20)
 
     #######################################
     # A standard process of split conformal prediction
@@ -146,16 +146,15 @@ def test_transductive_graph():
                              base_score_function=APS(score_type="softmax"),
                              graph_data=dataset,
                              knn_edge=knn_edge,
-                             knn_weights=knn_weights)]
+                             knn_weight=knn_weight)]
 
     for score_function in score_functions:
         predictor = GraphSplitPredictor(score_function)
-        predictor.calculate_threshold(logits)
+        predictor.calculate_threshold(logits, cal_idx, label_mask, alpha)
 
         print(
             f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
-        prediction_sets = predictor.predict_with_logits(
-            logits, eval_idx, dataset.x.shape[0], dataset.edge_index, None, knn_edge, knn_weights)
+        prediction_sets = predictor.predict_with_logits(logits, eval_idx)
 
         # print(prediction_sets)
         metrics = Metrics()
