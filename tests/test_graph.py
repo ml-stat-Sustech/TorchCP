@@ -13,14 +13,17 @@ import torch
 import torch.nn.functional as F
 
 from torch_geometric.loader import NeighborLoader
+from torch_geometric.utils.convert import to_networkx
 from torch_geometric.transforms import RandomNodeSplit
 from torch_geometric.datasets import CitationFull, Amazon
 
+
 from torchcp.classification.scores import APS
-from torchcp.graph.scores import DAPS, SNAPS, NAPS
-from torchcp.graph.predictors import GraphSplitPredictor
+from torchcp.graph.scores import DAPS, SNAPS
+from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
+
 
 from tests.utils import GCN, SAGE, compute_adj_knn
 
@@ -249,3 +252,27 @@ def test_inductive_graph():
     test_accuracy = int((y_pred[data.test_mask] == data.y[data.test_mask]
                          ).sum()) / int(data.test_mask.sum())
     print(f"Model Accuracy: {test_accuracy}")
+
+    #######################################
+    # conformal prediction for inductive setting
+    #######################################
+
+    alpha = 0.05
+
+    test_subgraph = data.subgraph(data.test_mask)
+    G = to_networkx(test_subgraph).to_undirected()
+
+    schemes = ["unif", "linear", "geom"]
+    score_functions = [APS(score_type="softmax")]
+
+    for scheme in schemes:
+        for score_function in score_functions:
+            predictor = NAPSSplitPredictor(score_function, k=2, scheme=scheme)
+            naps_sets = predictor.precompute_naps_sets(scheme)
+
+            metrics = Metrics()
+            print("Evaluating prediction sets...")
+            print(
+                f"Coverage_rate: {metrics('coverage_rate')(naps_sets, dataset.y[data.test_mask])}.")
+            print(
+                f"Average_size: {metrics('average_size')(naps_sets, dataset.y[data.test_mask])}.")
