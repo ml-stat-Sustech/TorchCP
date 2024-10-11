@@ -138,13 +138,19 @@ def test_transductive_graph():
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
 
-    score_functions = [DAPS(neigh_coef=0.5, base_score_function=APS(score_type="softmax")),
-                       SNAPS(lambda_val=1 / 3, mu_val=1 / 3, base_score_function=APS(score_type="softmax"))]
+    score_functions = [DAPS(neigh_coef=0.5,
+                            base_score_function=APS(score_type="softmax"),
+                            graph_data=dataset),
+                       SNAPS(lambda_val=1 / 3,
+                             mu_val=1 / 3,
+                             base_score_function=APS(score_type="softmax"),
+                             graph_data=dataset,
+                             knn_edge=knn_edge,
+                             knn_weights=knn_weights)]
 
     for score_function in score_functions:
         predictor = GraphSplitPredictor(score_function)
-        predictor.calculate_threshold(
-            logits, cal_idx, label_mask, alpha, dataset.x.shape[0], dataset.edge_index, None, knn_edge, knn_weights)
+        predictor.calculate_threshold(logits)
 
         print(
             f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
@@ -173,8 +179,8 @@ def test_inductive_graph():
     usr_dir = os.path.expanduser('~')
     data_dir = os.path.join(usr_dir, "data/Amazon")
     dataset = Amazon(data_dir, dataset_name,
-                     pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=12000))
-    data = dataset[0].to(device, 'x', 'y')
+                     pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=10000))
+    data = dataset[0].to(device)
 
     kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
     train_loader = NeighborLoader(data, input_nodes=data.train_mask,
@@ -255,5 +261,5 @@ def test_inductive_graph():
     y_pred = logits.argmax(dim=-1)
 
     test_accuracy = int((y_pred[data.test_mask] == data.y[data.test_mask]
-                     ).sum()) / int(data.test_mask.sum())
+                         ).sum()) / int(data.test_mask.sum())
     print(f"Model Accuracy: {test_accuracy}")

@@ -22,28 +22,29 @@ class DAPS(BaseScore):
     :param neigh_coef: the diffusion parameter which is a value in [0, 1].
     """
 
-    def __init__(self, neigh_coef, base_score_function):
+    def __init__(self, neigh_coef, base_score_function, graph_data):
         if neigh_coef < 0 and neigh_coef > 1:
             raise ValueError(
                 "The parameter 'neigh_coef' must be a value between 0 and 1.")
-        super(DAPS, self).__init__(base_score_function)
+        super(DAPS, self).__init__(base_score_function, graph_data)
 
         self.__neigh_coef = neigh_coef
 
-    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, knn_edge=None, knn_weights=None):
+    def __call__(self, logits):
         base_scores = self._base_score_function(logits)
-        if isinstance(edge_index, Tensor):
-            if edge_weights is None:
-                edge_weights = torch.ones(
-                    edge_index.shape[1]).to(edge_index.device)
+
+        if isinstance(self._edge_index, Tensor):
+            if self._edge_weights is None:
+                self._edge_weights = torch.ones(
+                    self._edge_index.shape[1]).to(self._edge_index.device)
             adj = torch.sparse.FloatTensor(
-                edge_index,
-                edge_weights,
-                (n_vertices, n_vertices))
+                self._edge_index,
+                self._edge_weights,
+                (self._n_vertices, self._n_vertices))
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
-        elif isinstance(edge_index, SparseTensor):
-            adj = edge_index
+        elif isinstance(self._edge_index, SparseTensor):
+            adj = self._edge_index
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
         diffusion_scores = torch.linalg.matmul(
