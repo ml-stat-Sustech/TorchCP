@@ -21,7 +21,7 @@ class SNAPS(BaseScore):
     :param mu_val: the parameter of similarity-based scores.
     """
 
-    def __init__(self, lambda_val, mu_val, base_score_function):
+    def __init__(self, lambda_val, mu_val, base_score_function, graph_data, knn_edge=None, knn_weights=None):
         if lambda_val < 0 and lambda_val > 1:
             raise ValueError(
                 "The parameter 'lambda_val' must be a value between 0 and 1.")
@@ -31,41 +31,44 @@ class SNAPS(BaseScore):
         if lambda_val + mu_val > 1:
             raise ValueError(
                 "The summation of 'lambda_val' and 'mu_val' must not be greater than 1.")
-        super(SNAPS, self).__init__(base_score_function)
+        super(SNAPS, self).__init__(base_score_function, graph_data)
 
-        self.__lambda_val = lambda_val
-        self.__mu_val = mu_val
+        self._lambda_val = lambda_val
+        self._mu_val = mu_val
+        self._knn_edge = knn_edge
+        self._knn_weight = knn_weights
 
-    def __call__(self, logits, n_vertices, edge_index, edge_weights=None, knn_edge=None, knn_weights=None):
+    def __call__(self, logits):
         base_scores = self._base_score_function(logits)
-        if isinstance(edge_index, Tensor):
-            if edge_weights is None:
-                edge_weights = torch.ones(
-                    edge_index.shape[1]).to(edge_index.device)
+
+        if isinstance(self._edge_index, Tensor):
+            if self._edge_weights is None:
+                self._edge_weights = torch.ones(
+                    self._edge_index.shape[1]).to(self._edge_index.device)
             adj = torch.sparse.FloatTensor(
-                edge_index,
-                edge_weights,
-                (n_vertices, n_vertices))
+                self._edge_index,
+                self._edge_weights,
+                (self._n_vertices, self._n_vertices))
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
-        elif isinstance(edge_index, SparseTensor):
-            adj = edge_index
+        elif isinstance(self._edge_index, SparseTensor):
+            adj = self._edge_index
             degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
 
         similarity_scores = 0.
-        if knn_edge is not None:
-            if isinstance(knn_edge, Tensor):
+        if self._knn_edge is not None:
+            if isinstance(self._knn_edge, Tensor):
                 if knn_weights is None:
                     knn_weights = torch.ones(
-                        knn_edge.shape[1]).to(edge_index.device)
+                        self._knn_edge.shape[1]).to(self._edge_index.device)
                 adj_knn = torch.sparse.FloatTensor(
-                    knn_edge,
+                    self._knn_edge,
                     knn_weights,
-                    (n_vertices, n_vertices))
+                    (self._n_vertices, self._n_vertices))
                 knn_degs = torch.matmul(adj_knn, torch.ones(
                     (adj_knn.shape[0])).to(adj_knn.device))
 
-            elif isinstance(knn_edge, SparseTensor):
+            elif isinstance(self._knn_edge, SparseTensor):
                 knn_degs = torch.matmul(adj_knn, torch.ones(
                     (adj_knn.shape[0])).to(adj_knn.device))
 
@@ -75,8 +78,8 @@ class SNAPS(BaseScore):
         neigh_scores = torch.linalg.matmul(
             adj, base_scores) * (1 / (degs + 1e-10))[:, None]
 
-        scores = (1 - self.__lambda_val - self.__mu_val) * base_scores + \
-            self.__lambda_val * similarity_scores + \
-            self.__mu_val * neigh_scores
+        scores = (1 - self._lambda_val - self._mu_val) * base_scores + \
+            self._lambda_val * similarity_scores + \
+            self._mu_val * neigh_scores
 
         return scores
