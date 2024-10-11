@@ -22,6 +22,7 @@ class SNAPS(BaseScore):
     """
 
     def __init__(self, lambda_val, mu_val, base_score_function, graph_data, knn_edge=None, knn_weight=None):
+        super(SNAPS, self).__init__(base_score_function, graph_data)
         if lambda_val < 0 and lambda_val > 1:
             raise ValueError(
                 "The parameter 'lambda_val' must be a value between 0 and 1.")
@@ -31,7 +32,6 @@ class SNAPS(BaseScore):
         if lambda_val + mu_val > 1:
             raise ValueError(
                 "The summation of 'lambda_val' and 'mu_val' must not be greater than 1.")
-        super(SNAPS, self).__init__(base_score_function, graph_data)
 
         self._lambda_val = lambda_val
         self._mu_val = mu_val

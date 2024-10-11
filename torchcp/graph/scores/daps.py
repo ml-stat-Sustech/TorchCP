@@ -23,10 +23,10 @@ class DAPS(BaseScore):
     """
 
     def __init__(self, neigh_coef, base_score_function, graph_data):
+        super(DAPS, self).__init__(base_score_function, graph_data)
         if neigh_coef < 0 and neigh_coef > 1:
             raise ValueError(
                 "The parameter 'neigh_coef' must be a value between 0 and 1.")
-        super(DAPS, self).__init__(base_score_function, graph_data)
 
         self._neigh_coef = neigh_coef
 
