@@ -138,7 +138,8 @@ def test_transductive_graph():
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
 
-    score_functions = [DAPS(neigh_coef=0.5,
+    score_functions = [APS(score_type="softmax"),
+                       DAPS(neigh_coef=0.5,
                             base_score_function=APS(score_type="softmax"),
                             graph_data=dataset),
                        SNAPS(lambda_val=1 / 3,
@@ -184,8 +185,6 @@ def test_inductive_graph():
     kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
     train_loader = NeighborLoader(data, input_nodes=data.train_mask,
                                   num_neighbors=[25, 10], shuffle=True, **kwargs)
-    val_loader = NeighborLoader(copy.copy(data), input_nodes=data.val_mask,
-                                num_neighbors=[-1], shuffle=False, **kwargs)
     subgraph_loader = NeighborLoader(copy.copy(data), input_nodes=None,
                                      num_neighbors=[-1], shuffle=False, **kwargs)
 
@@ -204,7 +203,7 @@ def test_inductive_graph():
     # Training the model
     #######################################
 
-    n_epochs = 25
+    n_epochs = 50
     max_val_acc = 0.
     patience = 5
     bad_counter = 0
@@ -213,7 +212,6 @@ def test_inductive_graph():
     for _ in range(n_epochs):
         model.train()
 
-        total_loss = total_correct = total_examples = 0
         for batch in train_loader:
             optimizer.zero_grad()
             y = batch.y[:batch.batch_size]
@@ -222,20 +220,9 @@ def test_inductive_graph():
             loss.backward()
             optimizer.step()
 
-            total_loss += float(loss) * batch.batch_size
-            total_correct += int((y_hat.argmax(dim=-1) == y).sum())
-            total_examples += batch.batch_size
-
         model.eval()
-        val_acc = val_correct = val_examples = 0.
-        with torch.no_grad():
-            for batch in val_loader:
-                y = batch.y[:batch.batch_size]
-                y_hat = model(batch.x, batch.edge_index)[:batch.batch_size]
-
-                val_correct += int((y_hat.argmax(dim=-1) == y).sum())
-                val_examples += batch.batch_size
-        val_acc = val_correct / val_examples
+        y_pred = model.inference(data.x, subgraph_loader).argmax(dim=-1)
+        val_acc = int((y_pred[data.val_mask] == data.y[data.val_mask]).sum()) / int(data.val_mask.sum())
 
         if val_acc >= max_val_acc:
             max_val_acc = val_acc
