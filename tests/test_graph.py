@@ -7,7 +7,8 @@
 
 import os
 import copy
-from tqdm import tqdm
+import pickle
+import pandas as pd
 
 import torch
 import torch.nn.functional as F
@@ -185,94 +186,101 @@ def test_inductive_graph():
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=10000))
     data = dataset[0].to(device)
 
-    kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
-    train_loader = NeighborLoader(data, input_nodes=data.train_mask,
-                                  num_neighbors=[25, 10], shuffle=True, **kwargs)
-    subgraph_loader = NeighborLoader(copy.copy(data), input_nodes=None,
-                                     num_neighbors=[-1], shuffle=False, **kwargs)
+    fname = '.cache/Computers_logits.pkl'
+    if os.path.exists(fname):
+        with open(fname, 'rb') as handle:
+            logits = pickle.load(handle)
+    else:
+        kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
+        train_loader = NeighborLoader(data, input_nodes=data.train_mask,
+                                    num_neighbors=[25, 10], shuffle=True, **kwargs)
+        subgraph_loader = NeighborLoader(copy.copy(data), input_nodes=None,
+                                        num_neighbors=[-1], shuffle=False, **kwargs)
 
-    del subgraph_loader.data.x, subgraph_loader.data.y
-    subgraph_loader.data.num_nodes = data.num_nodes
-    subgraph_loader.data.n_id = torch.arange(data.num_nodes).to(device)
+        del subgraph_loader.data.x, subgraph_loader.data.y
+        subgraph_loader.data.num_nodes = data.num_nodes
+        subgraph_loader.data.n_id = torch.arange(data.num_nodes).to(device)
 
-    hidden_channels = 64
-    learning_rate = 0.01
+        hidden_channels = 64
+        learning_rate = 0.01
 
-    model = SAGE(dataset.num_features, hidden_channels,
-                 dataset.num_classes).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        model = SAGE(dataset.num_features, hidden_channels,
+                    dataset.num_classes).to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    #######################################
-    # Training the model
-    #######################################
+        #######################################
+        # Training the model
+        #######################################
 
-    n_epochs = 50
-    max_val_acc = 0.
-    patience = 5
-    bad_counter = 0
-    best_model = None
+        n_epochs = 50
+        max_val_acc = 0.
+        patience = 5
+        bad_counter = 0
+        best_model = None
 
-    for _ in range(n_epochs):
-        model.train()
+        for _ in range(n_epochs):
+            model.train()
 
-        for batch in train_loader:
-            optimizer.zero_grad()
-            y = batch.y[:batch.batch_size]
-            y_hat = model(batch.x, batch.edge_index)[:batch.batch_size]
-            loss = F.cross_entropy(y_hat, y)
-            loss.backward()
-            optimizer.step()
+            for batch in train_loader:
+                optimizer.zero_grad()
+                y = batch.y[:batch.batch_size]
+                y_hat = model(batch.x, batch.edge_index)[:batch.batch_size]
+                loss = F.cross_entropy(y_hat, y)
+                loss.backward()
+                optimizer.step()
 
-        model.eval()
-        y_pred = model.inference(data.x, subgraph_loader).argmax(dim=-1)
-        val_acc = int((y_pred[data.val_mask] == data.y[data.val_mask]).sum()) / int(data.val_mask.sum())
+            model.eval()
+            y_pred = model.inference(data.x, subgraph_loader).argmax(dim=-1)
+            val_acc = int((y_pred[data.val_mask] == data.y[data.val_mask]).sum()) / int(data.val_mask.sum())
 
-        if val_acc >= max_val_acc:
-            max_val_acc = val_acc
+            if val_acc >= max_val_acc:
+                max_val_acc = val_acc
+                best_model = copy.deepcopy(model)
+                bad_counter = 0
+            else:
+                bad_counter += 1
+
+            if bad_counter >= patience:
+                break
+
+        if best_model is None:
             best_model = copy.deepcopy(model)
-            bad_counter = 0
-        else:
-            bad_counter += 1
 
-        if bad_counter >= patience:
-            break
+        #######################################
+        # Testing the model
+        #######################################
 
-    if best_model is None:
-        best_model = copy.deepcopy(model)
+        best_model.eval()
+        with torch.no_grad():
+            logits = F.softmax(best_model.inference(data.x, subgraph_loader), dim=-1)
+            with open(fname, 'wb') as handle:
+                pickle.dump(logits, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        y_pred = logits.argmax(dim=-1)
 
-    #######################################
-    # Testing the model
-    #######################################
-
-    best_model.eval()
-    with torch.no_grad():
-        logits = best_model.inference(data.x, subgraph_loader)
-    y_pred = logits.argmax(dim=-1)
-
-    test_accuracy = int((y_pred[data.test_mask] == data.y[data.test_mask]
-                         ).sum()) / int(data.test_mask.sum())
-    print(f"Model Accuracy: {test_accuracy}")
+        test_accuracy = int((y_pred[data.test_mask] == data.y[data.test_mask]
+                            ).sum()) / int(data.test_mask.sum())
+        print(f"Model Accuracy: {test_accuracy}")
 
     #######################################
     # conformal prediction for inductive setting
     #######################################
 
-    alpha = 0.05
+    alpha = 0.1
 
     test_subgraph = data.subgraph(data.test_mask)
     G = to_networkx(test_subgraph).to_undirected()
+    labels = pd.DataFrame(data.y[data.test_mask].cpu().numpy())
+    logits = pd.DataFrame(logits[data.test_mask].cpu().numpy())
 
     schemes = ["unif", "linear", "geom"]
+    # schemes = ["unif"]
     score_functions = [APS(score_type="softmax")]
 
     for scheme in schemes:
         for score_function in score_functions:
-            predictor = NAPSSplitPredictor(score_function, k=2, scheme=scheme)
-            naps_sets = predictor.precompute_naps_sets(scheme)
+            predictor = NAPSSplitPredictor(score_function, G, scheme=scheme)
+            naps_sets = predictor.precompute_naps_sets(logits, labels, alpha)
 
-            metrics = Metrics()
             print("Evaluating prediction sets...")
-            print(
-                f"Coverage_rate: {metrics('coverage_rate')(naps_sets, dataset.y[data.test_mask])}.")
-            print(
-                f"Average_size: {metrics('average_size')(naps_sets, dataset.y[data.test_mask])}.")
+            print(f"Coverage_rate: {naps_sets['covers'].mean()}")
+            print(f"Average_size: {naps_sets['set_size'].mean()}")
