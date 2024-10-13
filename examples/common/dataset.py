@@ -6,6 +6,10 @@ import torchvision.transforms as trn
 from PIL import Image
 from torch.utils.data import Dataset
 
+import torch
+import torch.nn.functional as F
+from torch_geometric.datasets import CitationFull
+
 
 def build_dataset(dataset_name, transform=None, mode='train'):
     #  path of usr
@@ -30,9 +34,11 @@ def build_dataset(dataset_name, transform=None, mode='train'):
                 trn.Normalize((0.1307,), (0.3081,))
             ])
         if mode == "train":
-            dataset = dset.MNIST(data_dir, train=True, download=True, transform=transform)
+            dataset = dset.MNIST(data_dir, train=True,
+                                 download=True, transform=transform)
         elif mode == "test":
-            dataset = dset.MNIST(data_dir, train=False, download=True, transform=transform)
+            dataset = dset.MNIST(data_dir, train=False,
+                                 download=True, transform=transform)
     else:
         raise NotImplementedError
 
@@ -45,8 +51,10 @@ base_path = "~/.cache/torchcp/datasets/"
 def build_reg_data(data_name="community"):
     if data_name == "community":
         # https://github.com/vbordalo/Communities-Crime/blob/master/Crime_v1.ipynb
-        attrib = pd.read_csv(base_path + 'communities_attributes.csv', delim_whitespace=True)
-        data = pd.read_csv(base_path + 'communities.data', names=attrib['attributes'])
+        attrib = pd.read_csv(
+            base_path + 'communities_attributes.csv', delim_whitespace=True)
+        data = pd.read_csv(base_path + 'communities.data',
+                           names=attrib['attributes'])
         data = data.drop(columns=['state', 'county',
                                   'community', 'communityname',
                                   'fold'], axis=1)
@@ -62,7 +70,8 @@ def build_reg_data(data_name="community"):
 
     elif data_name == "synthetic":
         X = np.random.rand(500, 5)
-        y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + 20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
+        y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + \
+            20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
         eplison = np.zeros(500)
         phi = theta = 0.8
         delta_t_1 = np.random.randn()
@@ -77,3 +86,37 @@ def build_reg_data(data_name="community"):
     y = y.astype(np.float32)
 
     return X, y
+
+
+def build_gnn_data(data_name, ntrain_per_class=20, n_calib=500):
+    usr_dir = os.path.expanduser('~')
+    data_dir = os.path.join(usr_dir, "data")
+
+    if data_name in ['cora_ml']:
+        dataset = CitationFull(data_dir, data_name)[0]
+        label_mask = F.one_hot(dataset.y).bool()
+
+        #######################################
+        # training/validation/test data random split
+        # ntrain_per_class per class for training/validation, left for test
+        #######################################
+
+        classes_idx_set = [(dataset.y == cls_val).nonzero(
+            as_tuple=True)[0] for cls_val in dataset.y.unique()]
+        shuffled_classes = [
+            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
+
+        train_idx = torch.concat([s[: ntrain_per_class]
+                                  for s in shuffled_classes])
+        val_idx = torch.concat(
+            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
+        test_idx = torch.concat([s[2 * ntrain_per_class:]
+                                for s in shuffled_classes])
+    else:
+        raise NotImplementedError(
+            f"The dataset {data_name} has not been implemented!")
+
+    perm = torch.randperm(test_idx.shape[0])
+    cal_idx = test_idx[perm[: n_calib]]
+    eval_idx = test_idx[perm[n_calib:]]
+    return dataset, label_mask, train_idx, cal_idx, eval_idx

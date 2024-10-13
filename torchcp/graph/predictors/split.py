@@ -20,8 +20,8 @@ class GraphSplitPredictor(BaseGraphPredictor):
     :param model: a pytorch model.
     """
 
-    def __init__(self, score_function, model=None):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model=None, graph_data=None):
+        super().__init__(score_function, model, graph_data)
 
     def calculate_threshold(self, logits, cal_idx, label_mask, alpha):
         scores = self.score_function(logits).to(self._device)
@@ -60,3 +60,19 @@ class GraphSplitPredictor(BaseGraphPredictor):
 
         S = self._generate_prediction_set(scores, q_hat)
         return S
+    
+    def calibrate(self, cal_idx, alpha):
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model(self._graph_data.x, self._graph_data.edge_index)
+        self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
+
+    def evaluate(self, eval_idx):
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model(self._graph_data.x, self._graph_data.edge_index)
+        prediction_sets = self.predict_with_logits(logits, eval_idx)
+
+        res_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, self._graph_data.y[eval_idx]),
+                    "Average_size": self._metric('average_size')(prediction_sets, self._graph_data.y[eval_idx])}
+        return res_dict

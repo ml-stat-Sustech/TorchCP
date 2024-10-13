@@ -212,7 +212,7 @@ def test_inductive_graph():
         # Training the model
         #######################################
 
-        n_epochs = 50
+        n_epochs = 25
         max_val_acc = 0.
         patience = 5
         bad_counter = 0
