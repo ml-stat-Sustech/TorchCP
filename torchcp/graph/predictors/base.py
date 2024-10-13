@@ -5,8 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import torch
 from abc import ABCMeta
+
+import torch
+import torch.nn.functional as F
 
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils.common import get_device
@@ -22,9 +24,11 @@ class BaseGraphPredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model=None):
+    def __init__(self, score_function, model=None, graph_data=None):
         self.score_function = score_function
         self._model = model
+        self._graph_data = graph_data
+        self._label_mask = F.one_hot(graph_data.y).bool()
         self._device = get_device(model)
         self._metric = Metrics()
 
