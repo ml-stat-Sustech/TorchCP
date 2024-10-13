@@ -6,12 +6,9 @@
 #
 
 import torch
-import numpy as np
 import pandas as pd
 import networkx as nx
-from functools import partial
 from scipy.optimize import brentq
-from tqdm.contrib.concurrent import process_map
 
 from .utils import ProbabilityAccumulator
 
@@ -22,8 +19,10 @@ class NAPSSplitPredictor(object):
     paper: https://proceedings.mlr.press/v202/clarkson23a/clarkson23a.pdf
     github: https://github.com/jase-clarkson/graph_cp/tree/master
 
-    :param score_function: basic non-conformity score function.
-    :param model: a pytorch model.
+    :param G: network of test graph data.
+    :param cutoff: nodes with at least 'cutoff' k-hop neighbors for test.
+    :param k: k-hop neighbors.
+    :param scheme: name of decay rate.
     """
 
     def __init__(self, G, cutoff=50, k=2, scheme="unif"):
@@ -38,6 +37,15 @@ class NAPSSplitPredictor(object):
         self._scheme = scheme
 
     def precompute_naps_sets(self, probs, labels, alpha):
+        """
+        :param probs: predicted probability.
+        :param labels: label of node.
+        :param alpha: pre-defined empirical marginal coverage 1 - alpha.
+
+        :return lcc_nodes: nodes with at least 'cutoff' k-hop neighbors for test
+        :return prediction_sets: lcc_nodes' prediction sets.
+        """
+
         self._device = probs.device
         quantiles_nb = []
         for node in list(self._G.nodes):
