@@ -43,11 +43,14 @@ if __name__ == '__main__':
     # Loading dataset and a model
     #######################################
 
-    dataset, label_mask, train_idx, cal_idx, eval_idx = build_gnn_data(args.data_name)
+    dataset, label_mask, train_idx, val_idx, test_idx = build_gnn_data(
+        args.data_name)
     dataset = dataset.to(device)
 
-    model = build_gnn_model('GCN')(dataset.x.shape[1], 64, dataset.y.max().item() + 1).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=0.001)
+    model = build_gnn_model('GCN')(
+        dataset.x.shape[1], 64, dataset.y.max().item() + 1).to(device)
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=0.01, weight_decay=0.001)
 
     n_epochs = 200
     #######################################
@@ -59,8 +62,13 @@ if __name__ == '__main__':
 
     model.eval()
     score_function = DAPS(neigh_coef=0.5,
-                            base_score_function=APS(score_type="softmax"),
-                            graph_data=dataset)
-    predictor = GraphSplitPredictor(score_function, model)
+                          base_score_function=APS(score_type="softmax"),
+                          graph_data=dataset)
+    predictor = GraphSplitPredictor(score_function, model, dataset)
+
+    n_calib = 500
+    perm = torch.randperm(test_idx.shape[0])
+    cal_idx = test_idx[perm[: n_calib]]
+    eval_idx = test_idx[perm[n_calib:]]
     predictor.calibrate(cal_idx, args.alpha)
-    print(predictor.evaluate())
+    print(predictor.evaluate(eval_idx))
