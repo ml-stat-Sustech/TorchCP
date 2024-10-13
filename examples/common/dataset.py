@@ -123,13 +123,13 @@ def build_transductive_gnn_data(data_name, ntrain_per_class=20):
     return graph_data, label_mask, train_idx, val_idx, test_idx
 
 
-def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000):
+def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
     usr_dir = os.path.expanduser('~')
-    data_dir = os.path.join(usr_dir, "data")
 
     if data_name in ['Computers']:
+        data_dir = os.path.join(usr_dir, "data/Amazon")
         graph_data = Amazon(data_dir, data_name,
-                     pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0]
+                     pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0].to(device)
         kwargs = {'batch_size': 512, 'num_workers': 6,
                   'persistent_workers': True}
         train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,
