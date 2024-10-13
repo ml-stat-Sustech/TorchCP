@@ -28,7 +28,8 @@ class BaseGraphPredictor(object):
         self.score_function = score_function
         self._model = model
         self._graph_data = graph_data
-        self._label_mask = F.one_hot(graph_data.y).bool()
+        if graph_data is not None:
+            self._label_mask = F.one_hot(graph_data.y).bool()
         self._device = get_device(model)
         self._metric = Metrics()
 
