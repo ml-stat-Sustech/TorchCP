@@ -92,12 +92,11 @@ if __name__ == '__main__':
 
     data_name = 'Computers'
     graph_data, train_loader, subgraph_loader = build_inductive_gnn_data(data_name)
-    graph_data = graph_data.to(device)
 
     model = build_gnn_model('SAGE')(graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    n_epochs = 20
+    n_epochs = 30
     print("########################## CP for Inductive ###########################")
     for _ in range(n_epochs):
         train_inductive(model, optimizer, train_loader)
