@@ -20,6 +20,7 @@ class BaseGraphPredictor(object):
 
     :param score_function: graph non-conformity score function.
     :param model: a pytorch model.
+    :param graph_data: PyG data of graph.
     """
 
     __metaclass__ = ABCMeta
