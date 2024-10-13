@@ -88,7 +88,7 @@ def build_reg_data(data_name="community"):
     return X, y
 
 
-def build_gnn_data(data_name, ntrain_per_class=20, n_calib=500):
+def build_gnn_data(data_name, ntrain_per_class=20):
     usr_dir = os.path.expanduser('~')
     data_dir = os.path.join(usr_dir, "data")
 
@@ -116,7 +116,4 @@ def build_gnn_data(data_name, ntrain_per_class=20, n_calib=500):
         raise NotImplementedError(
             f"The dataset {data_name} has not been implemented!")
 
-    perm = torch.randperm(test_idx.shape[0])
-    cal_idx = test_idx[perm[: n_calib]]
-    eval_idx = test_idx[perm[n_calib:]]
-    return dataset, label_mask, train_idx, cal_idx, eval_idx
+    return dataset, label_mask, train_idx, val_idx, test_idx

@@ -135,7 +135,7 @@ def test_transductive_graph():
     # A standard process of split conformal prediction
     #######################################
 
-    alpha = 0.05
+    alpha = 0.1
     n_calib = 500
 
     perm = torch.randperm(test_idx.shape[0])
