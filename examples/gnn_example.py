@@ -10,45 +10,58 @@ import argparse
 
 import torch
 import torch.nn.functional as F
+from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.scores import APS
 from torchcp.graph.scores import DAPS
-from torchcp.graph.predictors import GraphSplitPredictor
+from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
 from torchcp.utils import fix_randomness
 
+from torchcp.graph.utils.metrics import Metrics
 from examples.common.utils import build_gnn_model
-from examples.common.dataset import build_gnn_data
+from examples.common.dataset import build_transductive_gnn_data, build_inductive_gnn_data
 
 
-def train_transductive(model, optimizer, dataset, train_idx):
+def train_transductive(model, optimizer, graph_data, train_idx):
     model.train()
     optimizer.zero_grad()
-    out = model(dataset.x, dataset.edge_index)
-    training_loss = F.cross_entropy(out[train_idx], dataset.y[train_idx])
+    out = model(graph_data.x, graph_data.edge_index)
+    training_loss = F.cross_entropy(out[train_idx], graph_data.y[train_idx])
     training_loss.backward()
     optimizer.step()
+
+
+def train_inductive(model, optimizer, train_loader):
+    model.train()
+    for batch in train_loader:
+        optimizer.zero_grad()
+        y = batch.y[:batch.batch_size]
+        y_hat = model(batch.x, batch.edge_index)[:batch.batch_size]
+        loss = F.cross_entropy(y_hat, y)
+        loss.backward()
+        optimizer.step()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--alpha', default=0.1, type=float)
-    parser.add_argument('--data_name', default='cora_ml', type=str)
     args = parser.parse_args()
 
     fix_randomness(seed=args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #######################################
-    # Loading dataset and a model
+    # Loading dataset and a model for transductive
     #######################################
 
-    dataset, label_mask, train_idx, val_idx, test_idx = build_gnn_data(
-        args.data_name)
-    dataset = dataset.to(device)
+    data_name = 'cora_ml'
+    graph_data, label_mask, train_idx, val_idx, test_idx = build_transductive_gnn_data(
+        data_name)
+    graph_data = graph_data.to(device)
 
     model = build_gnn_model('GCN')(
-        dataset.x.shape[1], 64, dataset.y.max().item() + 1).to(device)
+        graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=0.01, weight_decay=0.001)
 
@@ -57,14 +70,14 @@ if __name__ == '__main__':
     # Split Conformal Prediction
     #######################################
     print("########################## CP for Transductive ###########################")
-    for epoch in range(n_epochs):
-        train_transductive(model, optimizer, dataset, train_idx)
+    for _ in range(n_epochs):
+        train_transductive(model, optimizer, graph_data, train_idx)
 
     model.eval()
     score_function = DAPS(neigh_coef=0.5,
                           base_score_function=APS(score_type="softmax"),
-                          graph_data=dataset)
-    predictor = GraphSplitPredictor(score_function, model, dataset)
+                          graph_data=graph_data)
+    predictor = GraphSplitPredictor(score_function, model, graph_data)
 
     n_calib = 500
     perm = torch.randperm(test_idx.shape[0])
@@ -72,3 +85,39 @@ if __name__ == '__main__':
     eval_idx = test_idx[perm[n_calib:]]
     predictor.calibrate(cal_idx, args.alpha)
     print(predictor.evaluate(eval_idx))
+
+    #######################################
+    # Loading dataset and a model for inductive
+    #######################################
+
+    data_name = 'Computers'
+    graph_data, train_loader, subgraph_loader = build_inductive_gnn_data(data_name)
+    graph_data = graph_data.to(device)
+
+    model = build_gnn_model('SAGE')(graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    n_epochs = 20
+    print("########################## CP for Inductive ###########################")
+    for _ in range(n_epochs):
+        train_inductive(model, optimizer, train_loader)
+    
+    model.eval()
+    with torch.no_grad():
+        probs = F.softmax(model.inference(
+                graph_data.x, subgraph_loader), dim=-1)
+
+    test_subgraph = graph_data.subgraph(graph_data.test_mask)
+    G = to_networkx(test_subgraph).to_undirected()
+    labels = graph_data.y[graph_data.test_mask]
+    probs = probs[graph_data.test_mask]
+
+    predictor = NAPSSplitPredictor(G)
+    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(probs, labels, args.alpha)
+
+    metrics = Metrics()
+    print("Evaluating prediction sets...")
+    print(
+        f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, labels[lcc_nodes])}.")
+    print(
+        f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
