@@ -6,9 +6,13 @@ import torchvision.transforms as trn
 from PIL import Image
 from torch.utils.data import Dataset
 
+import copy
 import torch
 import torch.nn.functional as F
-from torch_geometric.datasets import CitationFull
+
+from torch_geometric.loader import NeighborLoader
+from torch_geometric.transforms import RandomNodeSplit
+from torch_geometric.datasets import CitationFull, Amazon
 
 
 def build_dataset(dataset_name, transform=None, mode='train'):
@@ -88,21 +92,21 @@ def build_reg_data(data_name="community"):
     return X, y
 
 
-def build_gnn_data(data_name, ntrain_per_class=20):
+def build_transductive_gnn_data(data_name, ntrain_per_class=20):
     usr_dir = os.path.expanduser('~')
     data_dir = os.path.join(usr_dir, "data")
 
     if data_name in ['cora_ml']:
-        dataset = CitationFull(data_dir, data_name)[0]
-        label_mask = F.one_hot(dataset.y).bool()
+        graph_data = CitationFull(data_dir, data_name)[0]
+        label_mask = F.one_hot(graph_data.y).bool()
 
         #######################################
         # training/validation/test data random split
         # ntrain_per_class per class for training/validation, left for test
         #######################################
 
-        classes_idx_set = [(dataset.y == cls_val).nonzero(
-            as_tuple=True)[0] for cls_val in dataset.y.unique()]
+        classes_idx_set = [(graph_data.y == cls_val).nonzero(
+            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
         shuffled_classes = [
             s[torch.randperm(s.shape[0])] for s in classes_idx_set]
 
@@ -116,4 +120,28 @@ def build_gnn_data(data_name, ntrain_per_class=20):
         raise NotImplementedError(
             f"The dataset {data_name} has not been implemented!")
 
-    return dataset, label_mask, train_idx, val_idx, test_idx
+    return graph_data, label_mask, train_idx, val_idx, test_idx
+
+
+def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000):
+    usr_dir = os.path.expanduser('~')
+    data_dir = os.path.join(usr_dir, "data")
+
+    if data_name in ['Computers']:
+        graph_data = Amazon(data_dir, data_name,
+                     pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0]
+        kwargs = {'batch_size': 512, 'num_workers': 6,
+                  'persistent_workers': True}
+        train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,
+                                      num_neighbors=[25, 10], shuffle=True, **kwargs)
+        subgraph_loader = NeighborLoader(copy.copy(graph_data), input_nodes=None,
+                                         num_neighbors=[-1], shuffle=False, **kwargs)
+
+        del subgraph_loader.data.x, subgraph_loader.data.y
+        subgraph_loader.data.num_nodes = graph_data.num_nodes
+        subgraph_loader.data.n_id = torch.arange(graph_data.num_nodes)
+    else:
+        raise NotImplementedError(
+            f"The dataset {data_name} has not been implemented!")
+    
+    return graph_data, train_loader, subgraph_loader
