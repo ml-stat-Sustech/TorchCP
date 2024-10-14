@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import torch
 import numpy as np
 from typing import Any
 
@@ -71,10 +72,13 @@ def average_size(prediction_sets, labels):
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def singleton_hit_ratio(prediction_sets, labels):
     assert len(prediction_sets) > 0, "The number of prediction set must be greater than 0."
+    n = len(prediction_sets)
 
-    one_sized_pred = (prediction_sets.sum(axis=1) == 1)
-    result = prediction_sets[true_mask][one_sized_pred].sum().item() / prediction_sets.shape[0]
-    return result
+    one_size = 0
+    for index, ele in enumerate(prediction_sets):
+        if len(ele) == 1 and ele[0] == labels[index]:
+            one_size += 1
+    return one_size / n
 
 
 class Metrics:
