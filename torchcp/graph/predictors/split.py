@@ -23,6 +23,15 @@ class GraphSplitPredictor(BaseGraphPredictor):
     def __init__(self, score_function, model=None, graph_data=None):
         super().__init__(score_function, model, graph_data)
 
+    #############################
+    # The calibration process
+    ############################
+    def calibrate(self, cal_idx, alpha):
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model(self._graph_data.x, self._graph_data.edge_index)
+        self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
+
     def calculate_threshold(self, logits, cal_idx, label_mask, alpha):
         scores = self.score_function(logits).to(self._device)
         label_mask = label_mask.to(self._device)
@@ -32,6 +41,16 @@ class GraphSplitPredictor(BaseGraphPredictor):
 
     def _calculate_conformal_value(self, scores, alpha, marginal_q_hat=torch.inf):
         return calculate_conformal_value(scores, alpha, marginal_q_hat)
+    
+    #############################
+    # The prediction process
+    ############################
+    def predict(self, x_batch):
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model(x_batch, self._graph_data.edge_index)
+        sets = self.predict_with_logits(logits)
+        return sets
 
     def predict_with_logits(self, logits, eval_idx, q_hat=None):
         """
@@ -60,12 +79,10 @@ class GraphSplitPredictor(BaseGraphPredictor):
 
         S = self._generate_prediction_set(scores, q_hat)
         return S
-    
-    def calibrate(self, cal_idx, alpha):
-        self._model.eval()
-        with torch.no_grad():
-            logits = self._model(self._graph_data.x, self._graph_data.edge_index)
-        self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
+
+    #############################
+    # The evaluation process
+    ############################
 
     def evaluate(self, eval_idx):
         self._model.eval()
@@ -74,5 +91,6 @@ class GraphSplitPredictor(BaseGraphPredictor):
         prediction_sets = self.predict_with_logits(logits, eval_idx)
 
         res_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, self._graph_data.y[eval_idx]),
-                    "Average_size": self._metric('average_size')(prediction_sets, self._graph_data.y[eval_idx])}
+                    "Average_size": self._metric('average_size')(prediction_sets, self._graph_data.y[eval_idx]),
+                    "Singleton_Hit_Ratio": self._metric('singleton_hit_ratio')(prediction_sets, self._graph_data.y[eval_idx])}
         return res_dict
