@@ -167,6 +167,8 @@ def test_transductive_graph():
             f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
         print(
             f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")
+        print(
+            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, dataset.y[eval_idx])}.")
 
 
 def test_inductive_graph():
