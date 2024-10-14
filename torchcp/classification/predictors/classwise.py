@@ -12,9 +12,10 @@ from .split import SplitPredictor
 
 class ClassWisePredictor(SplitPredictor):
     """
-
-    Applications of Class-Conditional Conformal Predictor in Multi-Class Classification (Shi et al., 2013)
-    paper: https://ieeexplore.ieee.org/document/6784618
+    Method: Class-wise conformal prediction
+    Paper: Applications of Class-Conditional Conformal Predictor in Multi-Class Classification (Shi et al., 2013)
+    Link: https://ieeexplore.ieee.org/document/6784618
+    Github:  
     
         
     :param score_function: non-conformity score function.
