@@ -16,8 +16,10 @@ from .base import BaseScore
 
 class DAPS(BaseScore):
     """
-    Diffusion Adaptive Prediction Sets (Zargarbashi et al., 2023)
-    paper :https://proceedings.mlr.press/v202/h-zargarbashi23a/h-zargarbashi23a.pdf
+    Method: Diffusion Adaptive Prediction Sets
+    Paper: Conformal Prediction Sets for Graph Neural Networks (Zargarbashi et al., 2023)
+    Link: https://proceedings.mlr.press/v202/h-zargarbashi23a/h-zargarbashi23a.pdf
+    Github: https://github.com/soroushzargar/DAPS
 
     :param neigh_coef: the diffusion parameter which is a value in [0, 1].
     """

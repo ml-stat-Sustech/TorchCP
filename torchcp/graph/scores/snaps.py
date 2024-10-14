@@ -14,8 +14,10 @@ from .base import BaseScore
 
 class SNAPS(BaseScore):
     """
-    Similarity-Navigated Adaptive Prediction Sets (song et al., 2024)
-    paper: https://arxiv.org/pdf/2405.14303
+    Method: Similarity-Navigated Adaptive Prediction Sets
+    Paper: Similarity-Navigated Conformal Prediction for Graph Neural Networks (Song et al., 2024)
+    Link: https://arxiv.org/pdf/2405.14303
+    Github:
 
     :param lambda_val: the parameter of neighborhood-based scores.
     :param mu_val: the parameter of similarity-based scores.

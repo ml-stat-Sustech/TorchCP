@@ -15,9 +15,10 @@ from .utils import ProbabilityAccumulator
 
 class NAPSSplitPredictor(object):
     """
-    Neighbourhood Adaptive Prediction Sets (Clarkson et al., 2023)
-    paper: https://proceedings.mlr.press/v202/clarkson23a/clarkson23a.pdf
-    github: https://github.com/jase-clarkson/graph_cp/tree/master
+    Method: Neighbourhood Adaptive Prediction Sets
+    Paper: Distribution Free Prediction Sets for Node Classification (Clarkson et al., 2023)
+    Link: https://proceedings.mlr.press/v202/clarkson23a/clarkson23a.pdf
+    Github: https://github.com/jase-clarkson/graph_cp/tree/master
 
     :param G: network of test graph data.
     :param cutoff: nodes with at least 'cutoff' k-hop neighbors for test.
