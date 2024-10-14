@@ -68,6 +68,15 @@ def average_size(prediction_sets, labels):
     return avg_size / len(prediction_sets)
 
 
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def singleton_hit_ratio(prediction_sets, labels):
+    assert len(prediction_sets) > 0, "The number of prediction set must be greater than 0."
+
+    one_sized_pred = (prediction_sets.sum(axis=1) == 1)
+    result = prediction_sets[true_mask][one_sized_pred].sum().item() / prediction_sets.shape[0]
+    return result
+
+
 class Metrics:
 
     def __call__(self, metric) -> Any:
