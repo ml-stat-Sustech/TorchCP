@@ -116,7 +116,7 @@ class Ensemble(object):
         predictions_tensor = torch.stack(model_predictions)
         aggregated_predict = self.aggregation_function(predictions_tensor, dim=0)
         
-        if y_batch:
+        if y_batch is not None:
             update_scores = self.score_predictor.calculate_score(aggregated_predict, y_batch)
             self.scores = torch.cat([self.scores, update_scores], dim=0) if len(self.scores) > 0 else update_scores
             self.scores = self.scores[len(update_scores):]
