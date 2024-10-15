@@ -14,8 +14,10 @@ from ..loss import QuantileLoss
 
 class CQR(SplitPredictor):
     """
-    Conformalized Quantile Regression (Romano et al., 2019)
-    paper: https://arxiv.org/abs/1905.03222
+    Method: Conformalized Quantile Regression
+    Paper: Conformalized Quantile Regression (Romano et al., 2019)
+    Link: https://arxiv.org/abs/1905.03222
+    Github: https://github.com/yromano/cqr
 
     :param model: a pytorch model that can output alpha/2 and 1-alpha/2 quantile regression.
     """

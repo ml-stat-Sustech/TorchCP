@@ -18,8 +18,10 @@ from ..utils.metrics import Metrics
 
 class SplitPredictor(object):
     """
-    Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
-    paper: https://arxiv.org/abs/1604.04173
+    Method: Split Conformal Prediction for Regression
+    Paper: Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
+    Link: https://arxiv.org/abs/1604.04173
+    Github: https://github.com/ryantibs/conformal
     
     :param model: a pytorch model for regression.
     """
@@ -58,14 +60,6 @@ class SplitPredictor(object):
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item() 
-
-
-                 
-        # else:
-            
-
-        #     if verbose:
-        #         print(f"Epoch {epoch + 1} completed, Average Loss: {running_loss / len(train_dataloader):.6f}")
 
         print("Finish training!")
         model.eval()
