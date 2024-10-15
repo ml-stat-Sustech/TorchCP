@@ -15,8 +15,10 @@ from ..loss import R2ccpLoss
 
 class R2CCP(SplitPredictor):
     """
-    Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2021)
-    paper: https://neurips.cc/virtual/2023/80610
+    Method: Regression-to-Classification Conformal Prediction
+    Paper: Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2021)
+    Link: https://neurips.cc/virtual/2023/80610
+    Github: https://github.com/EtashGuha/R2CCP
 
     :param model: a pytorch model that can output probabilities for different bins.
     :param midpoints: the midpoints of the equidistant bins.
