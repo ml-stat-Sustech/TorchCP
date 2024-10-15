@@ -14,18 +14,20 @@ from ..utils.metrics import Metrics
 
 class Ensemble(object):
     """
-    Ensemble model for Conformal Prediction Interval in Time-Series Forecasting.
+    Method: Ensemble Conformal Prediction Interval
 
     There are two main implementations for `score_predictor`:
     
-    1. EnbPI (Xu and Xie, 2020):
-       - paper "Conformal Prediction Interval for Dynamic Time-Series".
-       - Reference: https://proceedings.mlr.press/v139/xu21h/xu21h.pdf
+    1. EnbPI:
+       - Paper: Conformal Prediction Interval for Dynamic Time-Series (Xu and Xie, 2020)
+       - Link: https://proceedings.mlr.press/v139/xu21h/xu21h.pdf
+       - Github: https://github.com/hamrel-cxu/EnbPI
     
-    2. EnCQR (Jensen et al., 2022):
-       - paper "Ensemble Conformalized Quantile Regression for 
-         Probabilistic Time Series Forecasting".
-       - Reference: https://ieeexplore.ieee.org/abstract/document/9940232
+    2. EnCQR:
+       - Paper: Ensemble Conformalized Quantile Regression for 
+         Probabilistic Time Series Forecasting (Jensen et al., 2022)
+       - Link: https://ieeexplore.ieee.org/abstract/document/9940232
+       - Github: https://github.com/FilippoMB/Ensemble-Conformalized-Quantile-Regression
 
     :param model: The base model to be used in the ensemble.
     :param score_predictor: The method for calculating scores and prediction intervals. 

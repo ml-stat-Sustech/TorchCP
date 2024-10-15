@@ -13,8 +13,10 @@ from ..loss import QuantileLoss
 
 class CQRM(CQR):
     """
-    A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
-    paper: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
+    Method: CQR-M
+    Paper: A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
+    Link: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
+    Github: https://github.com/msesia/cqr-comparison
 
     :param model: a pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
     """

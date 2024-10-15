@@ -12,8 +12,9 @@ from .cqrm import CQRM
 
 class CQRFM(CQRM):
     """
-    Adaptive, Distribution-Free Prediction Intervals for Deep Networks (Kivaranovic et al., 2019)
-    paper: https://proceedings.mlr.press/v108/kivaranovic20a.html
+    Method: Conformal Quantile Regression Fraction Median
+    Paper: Adaptive, Distribution-Free Prediction Intervals for Deep Networks (Kivaranovic et al., 2019)
+    Link: https://proceedings.mlr.press/v108/kivaranovic20a.html
 
     :param model: a pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
     """
