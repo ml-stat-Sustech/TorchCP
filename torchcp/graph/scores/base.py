@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import torch
 from abc import ABCMeta, abstractmethod
 
 
@@ -19,9 +20,21 @@ class BaseScore(object):
 
     def __init__(self, base_score_function, graph_data) -> None:
         self._base_score_function = base_score_function
-        self._edge_index = graph_data.edge_index
-        self._edge_weight = graph_data.edge_weight
+
         self._n_vertices = graph_data.num_nodes
+        edge_index = graph_data.edge_index
+        edge_weight = graph_data.edge_weight
+        self._device = edge_index.device
+
+        if edge_weight is None:
+            edge_weight = torch.ones(
+                edge_index.shape[1]).to(self._device)
+        self._adj = torch.sparse.FloatTensor(
+            edge_index,
+            edge_weight,
+            (self._n_vertices, self._n_vertices))
+        self._degs = torch.matmul(self._adj, torch.ones(
+            (self._adj.shape[0])).to(self._device))
 
     @abstractmethod
     def __call__(self, logits):
