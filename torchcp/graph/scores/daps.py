@@ -8,8 +8,6 @@
 # The reference repository is https://github.com/soroushzargar/DAPS
 
 import torch
-from torch import Tensor
-from torch_geometric.typing import SparseTensor
 
 from .base import BaseScore
 
@@ -35,22 +33,8 @@ class DAPS(BaseScore):
     def __call__(self, logits):
         base_scores = self._base_score_function(logits)
 
-        if isinstance(self._edge_index, Tensor):
-            if self._edge_weight is None:
-                self._edge_weight = torch.ones(
-                    self._edge_index.shape[1]).to(self._edge_index.device)
-            adj = torch.sparse.FloatTensor(
-                self._edge_index,
-                self._edge_weight,
-                (self._n_vertices, self._n_vertices))
-            degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
-
-        elif isinstance(self._edge_index, SparseTensor):
-            adj = self._edge_index
-            degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
-
         diffusion_scores = torch.linalg.matmul(
-            adj, base_scores) * (1 / (degs + 1e-10))[:, None]
+            self._adj, base_scores) * (1 / (self._degs + 1e-10))[:, None]
 
         scores = self._neigh_coef * diffusion_scores + \
             (1 - self._neigh_coef) * base_scores
