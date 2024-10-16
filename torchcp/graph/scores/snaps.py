@@ -6,8 +6,6 @@
 #
 
 import torch
-from torch import Tensor
-from torch_geometric.typing import SparseTensor
 
 from .base import BaseScore
 
@@ -37,48 +35,30 @@ class SNAPS(BaseScore):
 
         self._lambda_val = lambda_val
         self._mu_val = mu_val
-        self._knn_edge = knn_edge
-        self._knn_weight = knn_weight
+
+        if knn_edge is not None:
+            if knn_weight is None:
+                knn_weight = torch.ones(
+                    knn_edge.shape[1]).to(self._device)
+            self._adj_knn = torch.sparse.FloatTensor(
+                knn_edge,
+                knn_weight,
+                (self._n_vertices, self._n_vertices))
+            self._knn_degs = torch.matmul(self._adj_knn, torch.ones(
+                (self._adj_knn.shape[0])).to(self._device))
+        else:
+            self._adj_knn = None
 
     def __call__(self, logits):
         base_scores = self._base_score_function(logits)
 
-        if isinstance(self._edge_index, Tensor):
-            if self._edge_weight is None:
-                self._edge_weight = torch.ones(
-                    self._edge_index.shape[1]).to(self._edge_index.device)
-            adj = torch.sparse.FloatTensor(
-                self._edge_index,
-                self._edge_weight,
-                (self._n_vertices, self._n_vertices))
-            degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
-
-        elif isinstance(self._edge_index, SparseTensor):
-            adj = self._edge_index
-            degs = torch.matmul(adj, torch.ones((adj.shape[0])).to(adj.device))
-
         similarity_scores = 0.
-        if self._knn_edge is not None:
-            if isinstance(self._knn_edge, Tensor):
-                if self._knn_weight is None:
-                    self._knn_weight = torch.ones(
-                        self._knn_edge.shape[1]).to(self._edge_index.device)
-                adj_knn = torch.sparse.FloatTensor(
-                    self._knn_edge,
-                    self._knn_weight,
-                    (self._n_vertices, self._n_vertices))
-                knn_degs = torch.matmul(adj_knn, torch.ones(
-                    (adj_knn.shape[0])).to(adj_knn.device))
-
-            elif isinstance(self._knn_edge, SparseTensor):
-                knn_degs = torch.matmul(adj_knn, torch.ones(
-                    (adj_knn.shape[0])).to(adj_knn.device))
-
+        if self._adj_knn is not None:
             similarity_scores = torch.linalg.matmul(
-                adj_knn, base_scores) * (1 / (knn_degs + 1e-10))[:, None]
+                self._adj_knn, base_scores) * (1 / (self._knn_degs + 1e-10))[:, None]
 
         neigh_scores = torch.linalg.matmul(
-            adj, base_scores) * (1 / (degs + 1e-10))[:, None]
+            self._adj, base_scores) * (1 / (self._degs + 1e-10))[:, None]
 
         scores = (1 - self._lambda_val - self._mu_val) * base_scores + \
             self._lambda_val * similarity_scores + \
