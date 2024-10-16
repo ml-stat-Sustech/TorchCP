@@ -12,7 +12,6 @@ import torch.nn.functional as F
 
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils.common import get_device
-from torchcp.classification.predictors import BasePredictor
 
 
 class BaseGraphPredictor(object):
