@@ -11,8 +11,8 @@ from typing import Any
 
 from torchcp.utils.registry import Registry
 
-from torchcp.classification.utils.metrics import coverage_rate as grpah_coverage_rate
-from torchcp.classification.utils.metrics import average_size as grpah_average_size
+from torchcp.classification.utils.metrics import coverage_rate as graph_coverage_rate
+from torchcp.classification.utils.metrics import average_size as graph_average_size
 
 
 METRICS_REGISTRY_GRAPH = Registry("METRICS")
@@ -23,13 +23,13 @@ METRICS_REGISTRY_GRAPH = Registry("METRICS")
 
 @METRICS_REGISTRY_GRAPH.register()
 def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=None):
-    return grpah_coverage_rate(prediction_sets, labels, coverage_type=coverage_type, num_classes=num_classes)
+    return graph_coverage_rate(prediction_sets, labels, coverage_type=coverage_type, num_classes=num_classes)
    
 
 
 @METRICS_REGISTRY_GRAPH.register()
 def average_size(prediction_sets, labels):
-    return grpah_average_size(prediction_sets, labels)
+    return graph_average_size(prediction_sets, labels)
 
 
 @METRICS_REGISTRY_GRAPH.register()
