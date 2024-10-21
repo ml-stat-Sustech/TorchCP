@@ -1,1 +1,1 @@
-from .conformal_llm import ConformalLLM
+from .conformal_llm import ConformalLM

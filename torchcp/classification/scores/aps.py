@@ -15,8 +15,9 @@ from .thr import THR
 
 class APS(THR):
     """
-    Adaptive Prediction Sets (Romano et al., 2020)
-    paper :https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
+    Method: Adaptive Prediction Sets 
+    Paper: Classification with Valid and Adaptive Coverage (Romano et al., 2020)
+    Link:https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf
     """
 
     def __init__(self, score_type="softmax", randomized=True):
