@@ -13,8 +13,10 @@ from .aps import APS
 
 class SAPS(APS):
     """
-    Sorted Adaptive Prediction Sets (Huang et al., 2023)
-    paper: https://arxiv.org/abs/2310.06430
+    Method: Sorted Adaptive Prediction Sets 
+    Paper: Conformal Prediction for Deep Classifier via Label Ranking (Huang et al., 2023)
+    Link: https://arxiv.org/abs/2310.06430
+    Github: https://github.com/ml-stat-Sustech/conformal_prediction_via_label_ranking
     
     :param weight: the weight of label ranking.
     """

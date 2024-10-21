@@ -8,18 +8,17 @@ import torch
 from .base import BaseScore
 from torch.utils.data import DataLoader, TensorDataset
 
-# K-Nearest Neighbor non-conformity score
 class KNN(BaseScore):
     """
-    Hedging Predictions in Machine Learning (Gammerman et al., 2016).
-    paper : https://ieeexplore.ieee.org/document/8129828.
+    Method: K-Nearest Neighbor non-conformity score
+    Paper: Hedging Predictions in Machine Learning (Gammerman et al., 2016).
+    Link: https://ieeexplore.ieee.org/document/8129828.
     
     :param features: the input features of training data.
     :param labels: the labels of training data.
     :param num_classes: the number of classes.
     :param k: the number of neighbors..
     :param p: p value for the p-norm distance to calculate between each vector pair. Default: "2. Optional: float  or "cosine".
-    
     """
 
     def __init__(self, features, labels, num_classes, k=1, p=2, batch = False):

@@ -7,9 +7,11 @@ import math
 import re
 import string
 import numpy as np
+import numpy as np
+import collections
 from tqdm.auto import tqdm
 from datasets import load_dataset
-from transformers import LlamaForCausalLM, LlamaTokenizer, HfArgumentParser, set_seed, StoppingCriteria, StoppingCriteriaList
+from transformers import LlamaForCausalLM, LlamaTokenizer, set_seed, StoppingCriteriaList
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 
@@ -190,9 +192,7 @@ def preprocess_data(dataset_name, model_path, output_path):
 
     np.savez(output_path, labels=all_labels, scores=all_scores, diversity = diversity)
 
-import numpy as np
-import os
-import collections
+
 
 
 def test_conformal_llm():
@@ -200,9 +200,8 @@ def test_conformal_llm():
     model_path = "meta-llama/Llama-2-7b-hf"
     
     output_path = os.path.join(get_dataset_dir(), f"{dataset_name}_results.npz")
-    preprocess_data(dataset_name, model_path, output_path)
-    # if not os.path.exists(output_path):
-    #     preprocess_data(dataset_name, model_path, output_path)
+    if not os.path.exists(output_path):
+        preprocess_data(dataset_name, model_path, output_path)
 
 
     methods = [

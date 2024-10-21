@@ -60,11 +60,11 @@ class ConformalLM:
     
     :param tokenizer: a tokenizer for language model.
     :param model: a language model based on pytorch .
-    :param epsilons: the ratio of examples in the calibration dataset used to cluster classes.
-    :param scaling_type: the number of clusters. If ratio_clustering is "auto", the number of clusters is automatically computed.
-    :param scale_kwargs:
-    :param rejection:
-    :param seed:
+    :param epsilons: the risk that need to be controlled.
+    :param scaling_type: the scaling type for scores.
+    :param scale_kwargs: the parameters for scaling function.
+    :param rejection: (bool) Indicates whether to use rejection sampling.
+    :param seed: the random seed.
     """
     
     
@@ -114,7 +114,7 @@ class ConformalLM:
                     "num_return_sequences": num_return_sequences,
                 }
             for i in range(repeat_per_prompt):
-                set_seed(2024 + i)
+                set_seed(self.seed + i)
                 with torch.no_grad():
                     outputs = self.model.generate(input_ids, **kwargs)
 

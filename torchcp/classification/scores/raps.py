@@ -15,8 +15,9 @@ from .aps import APS
 
 class RAPS(APS):
     """
-    Regularized Adaptive Prediction Sets (Angelopoulos et al., 2020)
-    paper : https://arxiv.org/abs/2009.14193
+    Method: Regularized Adaptive Prediction Sets 
+    Paper: Uncertainty Sets for Image Classifiers using Conformal Prediction (Angelopoulos et al., 2020)
+    Link: https://arxiv.org/abs/2009.14193
     
     :param penalty: the weight of regularization. When penalty = 0, RAPS=APS.
     :param kreg: the rank of regularization which is an integer in [0,labels_num].
