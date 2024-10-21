@@ -32,6 +32,7 @@ class ProbabilityAccumulator:
         return (S)
 
     def calibrate_scores(self, Y, epsilon=None):
+        "1-score"
         n2 = Y.shape[0]
         ranks = self.ranks[torch.arange(n2), Y]
         prob_cum = self.Z[torch.arange(n2), ranks]

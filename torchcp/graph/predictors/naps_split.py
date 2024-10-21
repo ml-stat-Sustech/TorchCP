@@ -12,6 +12,7 @@ from scipy.optimize import brentq
 
 from .utils import ProbabilityAccumulator
 
+DEFAULT_SCHEMES = ["unif", "linear", "geom"]
 
 class NAPSSplitPredictor(object):
     """
@@ -30,7 +31,7 @@ class NAPSSplitPredictor(object):
         super().__init__()
 
         if scheme not in ["unif", "linear", "geom"]:
-            raise NotImplementedError
+            raise ValueError(f"Invalid scheme: {scheme}. Choose from {DEFAULT_SCHEMES}")
 
         self._cutoff = cutoff
         self._G = G
