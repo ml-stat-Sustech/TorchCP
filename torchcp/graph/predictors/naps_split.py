@@ -57,7 +57,7 @@ class NAPSSplitPredictor(object):
 
         lcc_nodes = torch.tensor(list(quantiles_nb.keys()), device=self._device)
         quantiles = torch.tensor(list(quantiles_nb.values()), device=self._device)
-        prediction_sets = self.predict(probs[lcc_nodes], quantiles)
+        prediction_sets = self.predict(probs[lcc_nodes], quantiles[:, None])
         prediction_sets = [tensor.cpu().tolist() for tensor in prediction_sets]
         return lcc_nodes, prediction_sets
 
@@ -76,7 +76,7 @@ class NAPSSplitPredictor(object):
         neigh_depth.pop(node, None) # Remove the node itself from list.
         neigh_count = len(neigh_depth)
 
-        node_ids = torch.tensor(neigh_depth.keys(), device=self._device)
+        node_ids = torch.tensor(list(neigh_depth.keys()), device=self._device)
 
         if self._scheme == 'unif':
             weights = torch.ones((neigh_count, ), device=self._device)
