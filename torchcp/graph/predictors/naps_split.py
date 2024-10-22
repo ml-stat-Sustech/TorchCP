@@ -24,8 +24,8 @@ class NAPSSplitPredictor(object):
 
     :param G: network of test graph data.
     :param cutoff: nodes with at least 'cutoff' k-hop neighbors for test.
-    :param k: k-hop neighbors.
-    :param scheme: name of decay rate.
+    :param k: Add nodes up to the 'k-hop' neighbors of ego node to its calibration set.
+    :param scheme: name of weight decay rate for k-hop neighbors. Options are 'unif' (weights = 1), 'linear' (weights = 1/k), or 'geom' (weights = 2^{-k}).
     """
 
     def __init__(self, G, cutoff=50, k=2, scheme="unif"):
@@ -100,27 +100,37 @@ class NAPSSplitPredictor(object):
         # Calibrate
         score_function = APS(score_type="softmax")
         alpha_max = 1 - score_function(probs, labels)
-        # calibrator = ProbabilityAccumulator(probs)
-        # eps = torch.rand(n).to(self._device)
-        # alpha_max = calibrator.calibrate_scores(labels, eps)
         scores = alpha - alpha_max
-        alpha_correction = self.get_weighted_quantile(scores, weights, alpha)
+        alpha_correction = self._get_weighted_quantile(scores, weights, alpha)
         return alpha - alpha_correction
     
-    def get_weighted_quantile(self, scores, weights, alpha):
+    def _get_weighted_quantile(self, scores, weights, alpha):
         wtildes = weights / (weights.sum() + 1)
         def critical_point_quantile(q): return (wtildes * (scores <= q)).sum().item() - (1 - alpha)
         try:
             q = brentq(critical_point_quantile, -1000, 1000)
         except ValueError:
-            print(critical_point_quantile(-1000), critical_point_quantile(1000))
-            print(scores)
             q = 0
+            raise ValueError("Did not find a suitable alpha value, keeping alpha unchanged.")
         return q
     
     def predict(self, probs, alpha, allow_empty=True):
         n = probs.shape[0]
         eps = torch.rand(n, device=self._device)
-        predictor = ProbabilityAccumulator(probs)
-        S_hat = predictor.predict_sets(alpha, eps, allow_empty)
-        return S_hat
+
+        order = torch.argsort(-probs, dim=1).to(self._device)
+        prob_sort = -torch.sort(-probs, dim=1).values
+        Z = torch.cumsum(prob_sort, dim=1)
+
+        L = torch.argmax((Z >= 1.0 - alpha).float(), dim=1).flatten()
+        Z_excess = Z[torch.arange(n), L] - (1.0 - alpha).flatten()
+        p_remove = Z_excess / prob_sort[torch.arange(n), L]
+        remove = eps <= p_remove
+        for i in torch.where(remove)[0]:
+            if not allow_empty:
+                L[i] = torch.maximum(torch.tensor(0), L[i] - 1)
+            else:
+                L[i] = L[i] - 1
+        
+        S = [order[i, torch.arange(0, L[i] + 1)] for i in range(n)]
+        return (S)
