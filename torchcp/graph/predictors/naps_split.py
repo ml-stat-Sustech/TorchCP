@@ -11,6 +11,7 @@ import networkx as nx
 from scipy.optimize import brentq
 
 from .utils import ProbabilityAccumulator
+from torchcp.classification.scores import APS
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
 
@@ -97,9 +98,11 @@ class NAPSSplitPredictor(object):
         if n == 0:
             return alpha
         # Calibrate
-        calibrator = ProbabilityAccumulator(probs)
-        eps = torch.rand(n).to(self._device)
-        alpha_max = calibrator.calibrate_scores(labels, eps)
+        score_function = APS(score_type="softmax")
+        alpha_max = 1 - score_function(probs, labels)
+        # calibrator = ProbabilityAccumulator(probs)
+        # eps = torch.rand(n).to(self._device)
+        # alpha_max = calibrator.calibrate_scores(labels, eps)
         scores = alpha - alpha_max
         alpha_correction = self.get_weighted_quantile(scores, weights, alpha)
         return alpha - alpha_correction

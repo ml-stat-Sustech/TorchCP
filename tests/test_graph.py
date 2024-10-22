@@ -180,6 +180,7 @@ def test_inductive_graph():
     #######################################
 
     dataset_name = 'Computers'
+    model_name = 'GraphSAGE'
 
     usr_dir = os.path.expanduser('~')
     data_dir = os.path.join(usr_dir, "data/Amazon")
@@ -282,6 +283,9 @@ def test_inductive_graph():
     for scheme in schemes:
         predictor = NAPSSplitPredictor(G, scheme=scheme)
         lcc_nodes, prediction_sets = predictor.precompute_naps_sets(probs, labels, alpha)
+
+        print(
+            f"Experiment--Data : {dataset_name}, Model : {model_name}, Predictor : {predictor.__class__.__name__}, Scheme : {scheme}, Alpha : {alpha}")
 
         metrics = Metrics()
         print("Evaluating prediction sets...")
