@@ -10,7 +10,6 @@ import pandas as pd
 import networkx as nx
 from scipy.optimize import brentq
 
-from .utils import ProbabilityAccumulator
 from torchcp.classification.scores import APS
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
@@ -25,7 +24,7 @@ class NAPSSplitPredictor(object):
     :param G: network of test graph data.
     :param cutoff: nodes with at least 'cutoff' k-hop neighbors for test.
     :param k: Add nodes up to the 'k-hop' neighbors of ego node to its calibration set.
-    :param scheme: name of weight decay rate for k-hop neighbors. Options are 'unif' (weights = 1), 'linear' (weights = 1/k), or 'geom' (weights = 2^{-k}).
+    :param scheme: name of weight decay rate for k-hop neighbors. Options are 'unif' (weights = 1), 'linear' (weights = 1/k), or 'geom' (weights = 2^{-(k - 1)}).
     """
 
     def __init__(self, G, cutoff=50, k=2, scheme="unif"):
@@ -50,52 +49,46 @@ class NAPSSplitPredictor(object):
         """
 
         self._device = probs.device
-        quantiles_nb = []
+        quantiles_nb = {}
         for node in list(self._G.nodes):
-            t = self.calibrate_nbhd(node, probs, labels, alpha)
-            quantiles_nb.append(t)
-        nz = [p for p in quantiles_nb if p is not None]
-        res = {}
-        for p in nz:
-            res.update(p)
-        nbhd_quantiles = pd.Series(res, name='quantile')
-        lcc_nodes = torch.tensor(nbhd_quantiles.index.values, device=self._device)
-        quantiles = torch.tensor(nbhd_quantiles.values[:, None], device=self._device)
+            p = self.calibrate_nbhd(node, probs, labels, alpha)
+            if p is not None:
+                quantiles_nb.update(p)
+
+        lcc_nodes = torch.tensor(list(quantiles_nb.keys()), device=self._device)
+        quantiles = torch.tensor(list(quantiles_nb.values()), device=self._device)
         prediction_sets = self.predict(probs[lcc_nodes], quantiles)
         prediction_sets = [tensor.cpu().tolist() for tensor in prediction_sets]
         return lcc_nodes, prediction_sets
 
     def calibrate_nbhd(self, node, probs, labels, alpha):
-        node_ids, weights = self.get_nbhd_weights(node)
+        node_ids, weights = self._get_nbhd_weights(node)
 
         if self._cutoff <= node_ids.shape[0]:
-            quantile = self.calibrate_weighted(probs[node_ids], labels[node_ids],
+            quantile = self._calibrate_weighted(probs[node_ids], labels[node_ids],
                                                weights, alpha)
             return {node: quantile}
         return None
 
-    def get_nbhd_weights(self, node):
+    def _get_nbhd_weights(self, node):
         # Get dict containing nodes -> shortest path to node (i.e. depth).
-        node_depth_map = pd.Series(nx.single_source_shortest_path_length(self._G, node, cutoff=self._k), name='distance')
-        node_depth_map.index.name = 'node_id'
-        node_depth_map = node_depth_map.drop(node) # Remove the node itself from list.
-        node_depth_map = node_depth_map.reset_index()
+        neigh_depth = nx.single_source_shortest_path_length(self._G, node, cutoff=self._k)
+        neigh_depth.pop(node, None) # Remove the node itself from list.
+        neigh_count = len(neigh_depth)
+
+        node_ids = torch.tensor(neigh_depth.keys(), device=self._device)
 
         if self._scheme == 'unif':
-            node_depth_map['weight'] = 1
+            weights = torch.ones((neigh_count, ), device=self._device)
         elif self._scheme == 'linear':
-            node_depth_map['weight'] = 1 / node_depth_map['distance']
+            weights = 1. / torch.tensor(list(neigh_depth.values()), device=self._device)
         elif self._scheme == 'geom':
-            node_depth_map['weight'] = (0.5)**(node_depth_map['distance'] - 1)
-        
-        node_ids = torch.tensor(node_depth_map['node_id']).to(self._device)
-        weights = torch.tensor(node_depth_map['weight']).to(self._device)
+            weights = (0.5)**(torch.tensor(list(neigh_depth.values()), device=self._device) - 1)
 
         return node_ids, weights
         
-    def calibrate_weighted(self, probs, labels, weights, alpha):
-        n = probs.shape[0]
-        if n == 0:
+    def _calibrate_weighted(self, probs, labels, weights, alpha):
+        if probs.shape[0] == 0:
             return alpha
         # Calibrate
         score_function = APS(score_type="softmax")
