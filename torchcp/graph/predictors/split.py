@@ -33,6 +33,8 @@ class GraphSplitPredictor(BaseGraphPredictor):
         self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
 
     def calculate_threshold(self, logits, cal_idx, label_mask, alpha):
+        self._device = logits.device
+        
         scores = self.score_function(logits).to(self._device)
         label_mask = label_mask.to(self._device)
 

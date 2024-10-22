@@ -11,7 +11,6 @@ import torch
 import torch.nn.functional as F
 
 from torchcp.graph.utils.metrics import Metrics
-from torchcp.utils.common import get_device
 
 
 class BaseGraphPredictor(object):
@@ -31,7 +30,6 @@ class BaseGraphPredictor(object):
         self._graph_data = graph_data
         if graph_data is not None:
             self._label_mask = F.one_hot(graph_data.y).bool()
-        self._device = get_device(model)
         self._metric = Metrics()
 
     @abstractmethod
