@@ -282,59 +282,48 @@ def test_inductive_graph():
     #######################################
 
     label_mask = F.one_hot(dataset.y).bool().to(device)[dataset.test_mask]
-
-    coverage_list = []
-    size_list = []
     
-    for _ in range(100):
-        n_calib = 500
-        test_idx = torch.arange(dataset.test_mask.sum())
-        perm = torch.randperm(test_idx.shape[0])
-        cal_idx = test_idx[perm[: n_calib]]
-        eval_idx = test_idx[perm[n_calib:]]
+    n_calib = 500
+    test_idx = torch.arange(dataset.test_mask.sum())
+    perm = torch.randperm(test_idx.shape[0])
+    cal_idx = test_idx[perm[: n_calib]]
+    eval_idx = test_idx[perm[n_calib:]]
 
-        score_functions = [APS(score_type="softmax")]
+    score_functions = [APS(score_type="softmax")]
 
-        for score_function in score_functions:
-            predictor = GraphSplitPredictor(score_function)
-            predictor.calculate_threshold(probs, cal_idx, label_mask, alpha)
+    for score_function in score_functions:
+        predictor = GraphSplitPredictor(score_function)
+        predictor.calculate_threshold(probs, cal_idx, label_mask, alpha)
 
-            metrics = Metrics()
-            prediction_sets = predictor.predict_with_logits(probs, eval_idx)
-            coverage_list.append(metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx]))
-            size_list.append(metrics('average_size')(prediction_sets, dataset.y[dataset.test_mask][eval_idx]))
-    import numpy as np
-    print(np.mean(coverage_list), np.mean(size_list))
-            # print(
-            #     f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
-            # prediction_sets = predictor.predict_with_logits(probs, eval_idx)
+        print(
+            f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+        prediction_sets = predictor.predict_with_logits(probs, eval_idx)
 
-            # metrics = Metrics()
-            # print("Evaluating prediction sets...")
-            # print(
-            #     f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
-            # print(
-            #     f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
-            # print(
-            #     f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+        metrics = Metrics()
+        print("Evaluating prediction sets...")
+        print(
+            f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+        print(
+            f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+        print(
+            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
 
     #######################################
     # Neighbourhood Adaptive Prediction Sets for inductive setting
     #######################################
-    # breakpoint()
-    # schemes = ["unif", "linear", "geom"]
-    # # schemes = ["unif"]
 
-    # for scheme in schemes:
-    #     predictor = NAPSSplitPredictor(G, scheme=scheme)
-    #     lcc_nodes, prediction_sets = predictor.precompute_naps_sets(probs, labels, alpha)
+    schemes = ["unif", "linear", "geom"]
 
-    #     print(
-    #         f"Experiment--Data : {dataset_name}, Model : {model_name}, Predictor : {predictor.__class__.__name__}, Scheme : {scheme}, Alpha : {alpha}")
+    for scheme in schemes:
+        predictor = NAPSSplitPredictor(G, scheme=scheme)
+        lcc_nodes, prediction_sets = predictor.precompute_naps_sets(probs, labels, alpha)
 
-    #     metrics = Metrics()
-    #     print("Evaluating prediction sets...")
-    #     print(
-    #         f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, labels[lcc_nodes])}.")
-    #     print(
-    #         f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
+        print(
+            f"Experiment--Data : {dataset_name}, Model : {model_name}, Predictor : {predictor.__class__.__name__}, Scheme : {scheme}, Alpha : {alpha}")
+
+        metrics = Metrics()
+        print("Evaluating prediction sets...")
+        print(
+            f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, labels[lcc_nodes])}.")
+        print(
+            f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
