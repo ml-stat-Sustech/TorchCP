@@ -37,6 +37,7 @@ class NAPSSplitPredictor(object):
         self._G = G
         self._k = k
         self._scheme = scheme
+        self.score_function = APS(score_type="identity")
 
     def precompute_naps_sets(self, probs, labels, alpha):
         """
@@ -91,8 +92,8 @@ class NAPSSplitPredictor(object):
         if probs.shape[0] == 0:
             return alpha
         # Calibrate
-        score_function = APS(score_type="softmax")
-        alpha_max = 1 - score_function(probs, labels)
+        
+        alpha_max = 1 - self.score_function(probs, labels)
         scores = alpha - alpha_max
         alpha_correction = self._get_weighted_quantile(scores, weights, alpha)
         return alpha - alpha_correction
@@ -126,4 +127,6 @@ class NAPSSplitPredictor(object):
                 L[i] = L[i] - 1
         
         S = [order[i, torch.arange(0, L[i] + 1)] for i in range(n)]
+        
+            
         return (S)
