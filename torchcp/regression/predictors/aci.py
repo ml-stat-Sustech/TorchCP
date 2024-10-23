@@ -12,8 +12,10 @@ from .cqr import CQR
 
 class ACI(CQR):
     """
-    Adaptive conformal inference Under Distribution Shift (Gibbs et al., 2021)
-    paper: https://arxiv.org/abs/2106.00170
+    Method: Adaptive Conformal Inference
+    Paper: Adaptive conformal inference Under Distribution Shift (Gibbs et al., 2021)
+    Link: https://arxiv.org/abs/2106.00170
+    Github: https://github.com/isgibbs/AdaptiveConformal
 
     :param model: a pytorch model that can output the values of different quantiles.
     :param gamma: a step size parameter.

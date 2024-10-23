@@ -6,31 +6,22 @@ from torch.utils.data import TensorDataset, ConcatDataset
 
 from torchcp.regression import Metrics
 from torchcp.regression.loss import QuantileLoss, R2ccpLoss
-from torchcp.regression.predictors import SplitPredictor, CQR, ACI, R2CCP
+from torchcp.regression.predictors import SplitPredictor, CQR, CQRM, CQRR, CQRFM, ACI, R2CCP, Ensemble
 from torchcp.regression.utils import calculate_midpoints
 from torchcp.utils import fix_randomness
-from .utils import *
+from .utils import build_reg_data, build_regression_model
 
 
-def train(model, device, epoch, train_data_loader, criterion, optimizer):
-    for index, (tmp_x, tmp_y) in enumerate(train_data_loader):
-        outputs = model(tmp_x.to(device))
-        loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-
-def test_SplitPredictor():
+def test_regression():
     print("##########################################")
-    print("######## Testing on a regression problem")
+    print("######## Testing regression algorithm")
     print("##########################################")
     ##################################
     # Preparing dataset
     ##################################
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     fix_randomness(seed=1)
-    X, y = build_reg_data()
+    X, y = build_reg_data(data_name="synthetic")
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
     split_index1 = int(len(indices) * 0.4)
@@ -46,9 +37,10 @@ def test_SplitPredictor():
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
 
-    epochs = 100
+    # CP parameters
+    epochs = 20
     alpha = 0.1
-
+    
     ##################################
     # Split Conformal Prediction
     ##################################
@@ -56,45 +48,142 @@ def test_SplitPredictor():
     model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-
-    for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader, criterion, optimizer)
-
-    model.eval()
+    
     predictor = SplitPredictor(model)
+    predictor.fit(train_dataloader=train_data_loader, epochs=epochs, criterion=criterion, optimizer=optimizer)
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))
+
 
     ##################################
     # Conformal Prediction via Regression-as-Classification
     ##################################
     print("########################## R2CCP ###########################")
-
     p = 0.5
     tau = 0.2
     K = 50
-
+    model = build_regression_model("NonLinearNet_with_Softmax")(X.shape[1], K, 1000, 0).to(device)
     train_and_cal_dataset = ConcatDataset([train_dataset, cal_dataset])
     train_and_cal_data_loader = torch.utils.data.DataLoader(train_and_cal_dataset, batch_size=100, shuffle=True,
                                                             pin_memory=True)
     midpoints = calculate_midpoints(train_and_cal_data_loader, K)
-
-    model = build_regression_model("NonLinearNet_with_Softmax")(X.shape[1], K, 1000, 0).to(device)
     criterion = R2ccpLoss(p, tau, midpoints)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
-    for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader, criterion, optimizer)
-
-    model.eval()
     predictor = R2CCP(model, midpoints)
+    predictor.fit(train_dataloader=train_data_loader, epochs=epochs, criterion=criterion, optimizer=optimizer)
     predictor.calibrate(cal_data_loader, alpha)
     print(predictor.evaluate(test_data_loader))
 
 
-def test_time_series():
+    ##################################
+    # Conformal Quantile Regression
+    ##################################
+    print("########################## CQR ###########################")
+    model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
+    quantiles = [alpha / 2, 1 - alpha / 2]
+    criterion = QuantileLoss(quantiles)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    predictor = CQR(model)
+    predictor.fit(train_dataloader=train_data_loader, epochs=epochs, criterion=criterion, optimizer=optimizer)
+    predictor.calibrate(cal_data_loader, alpha)
+    print(predictor.evaluate(test_data_loader))
+
+    ##################################
+    # Conformal Quantile Regression-R
+    ##################################
+    print("########################## CQRR ###########################")
+    model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
+    quantiles = [alpha / 2, 1 - alpha / 2]
+    criterion = QuantileLoss(quantiles)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    
+    predictor = CQRR(model)
+    predictor.fit(train_dataloader=train_data_loader, epochs=epochs, criterion=criterion, optimizer=optimizer)
+    predictor.calibrate(cal_data_loader, alpha)
+    print(predictor.evaluate(test_data_loader))
+
+    ##################################
+    # Conformal Quantile Regression Median
+    ##################################
+    print("########################## CQRM ###########################")
+    model = build_regression_model("NonLinearNet")(X.shape[1], 3, 64, 0.5).to(device)
+    quantiles = [alpha / 2, 1 / 2, 1 - alpha / 2]
+    criterion = QuantileLoss(quantiles)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    predictor = CQRM(model)
+    predictor.fit(train_dataloader=train_data_loader, epochs=epochs, criterion=criterion, optimizer=optimizer)
+    predictor.calibrate(cal_data_loader, alpha)
+    print(predictor.evaluate(test_data_loader))
+
+    ##################################
+    # Conformal Quantile Regression Fraction Median
+    ##################################
+    print("########################## CQRFM ###########################")
+    predictor = CQRFM(model)
+    predictor.fit(train_dataloader=train_data_loader, epochs=epochs, criterion=criterion, optimizer=optimizer)
+    predictor.calibrate(cal_data_loader, alpha)
+    print(predictor.evaluate(test_data_loader))
+    
+    
+def test_ensemble():
+    ##################################
+    # Preparing dataset
+    ##################################
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    fix_randomness(seed=1)
+    X, y = build_reg_data(data_name="synthetic")
+    indices = np.arange(X.shape[0])
+    np.random.shuffle(indices)
+    split_index1 = int(len(indices) * 0.5)
+    part1, part2= np.split(indices, [split_index1])
+    scalerX = StandardScaler()
+    scalerX = scalerX.fit(X[part1, :])
+    train_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part1, :])), torch.from_numpy(y[part1]))
+    test_dataset = TensorDataset(torch.from_numpy(scalerX.transform(X[part2, :])), torch.from_numpy(y[part2]))
+
+    train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True, pin_memory=True)
+    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
+
+    # CP parameters
+    epochs = 20
+    alpha = 0.1
+    
+    ##################################
+    # Sequential Distribution-free Ensemble Batch Prediction Intervals
+    ##################################
+    print("########################## EnbPI ###########################")
+    model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    
+    score_predictor = SplitPredictor(model=None)
+    aggregation_function = torch.mean
+    predictor = Ensemble(model, score_predictor, aggregation_function)
+    predictor.fit(train_dataloader=train_data_loader, ensemble_num=5, subset_num=500, epochs=epochs, criterion=criterion, optimizer=optimizer)
+    print(predictor.evaluate(test_data_loader, alpha, verbose=True))
+    
+    ##################################
+    # Ensemble Conformal Quantile Regression
+    ##################################
+    print("########################## EnCQR ###########################")
+    model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
+    quantiles = [alpha / 2, 1 - alpha / 2]
+    criterion = QuantileLoss(quantiles)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    
+    score_predictor = CQR(model=None)
+    aggregation_function = torch.mean
+    predictor = Ensemble(model, score_predictor, aggregation_function)
+    predictor.fit(train_dataloader=train_data_loader, ensemble_num=5, subset_num=500, epochs=epochs, criterion=criterion, optimizer=optimizer)
+    print(predictor.evaluate(test_data_loader, alpha, verbose=True))
+    
+
+def test_aci():
     print("##########################################")
-    print("######## Testing on a time series problem")
+    print("######## Testing on a time series problem with distribution shift")
     print("##########################################")
     ##################################
     # Preparing dataset
@@ -107,29 +196,13 @@ def test_time_series():
     train_dataset = TensorDataset(torch.from_numpy(X[:T0, :]), torch.from_numpy(y[:T0]))
     train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True, pin_memory=True)
 
-    alpha = 0.1
-    quantiles = [alpha / 2, 1 - alpha / 2]
-    model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
-    criterion = QuantileLoss(quantiles)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-
-    epochs = 10
-    for epoch in range(epochs):
-        train(model, device, epoch, train_data_loader, criterion, optimizer)
-
-    model.eval()
-    ##################################
-    # Conformal Quantile Regression
-    ##################################
-    print("########################## CQR ###########################")
-
-    predictor = CQR(model)
     cal_dataset = TensorDataset(torch.from_numpy(X[0:T0, :]), torch.from_numpy(y[0:T0]))
     test_dataset = TensorDataset(torch.from_numpy(X[T0:, :]), torch.from_numpy(y[T0:]))
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=100, shuffle=False, pin_memory=True)
     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, pin_memory=True)
-    predictor.calibrate(cal_data_loader, alpha)
-    print(predictor.evaluate(test_data_loader))
+
+    alpha = 0.1
+    model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
 
     ##################################
     # Adaptive Conformal Inference,

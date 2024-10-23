@@ -6,8 +6,10 @@
 #
 
 
-import math
+from tqdm import tqdm
 import torch
+import torch.nn as nn
+import torch.optim as optim
 
 from torchcp.utils.common import calculate_conformal_value
 from torchcp.utils.common import get_device
@@ -16,16 +18,61 @@ from ..utils.metrics import Metrics
 
 class SplitPredictor(object):
     """
-    Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
-    paper: https://arxiv.org/abs/1604.04173
+    Method: Split Conformal Prediction for Regression
+    Paper: Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
+    Link: https://arxiv.org/abs/1604.04173
+    Github: https://github.com/ryantibs/conformal
     
     :param model: a pytorch model for regression.
     """
 
-    def __init__(self, model):
+    def __init__(self, model =None):
         self._model = model
-        self._device = get_device(model)
+        if self._model != None:
+            assert isinstance(model, nn.Module), "The model is not an instance of torch.nn.Module"
+            self._device = get_device(model)
+        else:
+            self._device = None
         self._metric = Metrics()
+
+    def _train(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
+        model.train()
+        device = get_device(model)
+        if verbose:
+            with tqdm(total=epochs, desc = "Epoch") as _tqdm:
+                for epoch in range(epochs):
+                    running_loss = 0.0
+                    for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
+                        outputs = model(tmp_x.to(device))
+                        loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
+                        optimizer.zero_grad()
+                        loss.backward()
+                        optimizer.step()
+                        running_loss = (running_loss*max(0,index) + loss.data.cpu().numpy())/(index+1)
+                        _tqdm.set_postfix({  "loss": '{:.6f}'.format(running_loss)})
+                    _tqdm.update(1)
+                
+        else:
+            for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
+                outputs = model(tmp_x.to(device))
+                loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item() 
+
+        print("Finish training!")
+        model.eval()
+
+    def fit(self, train_dataloader, **kwargs):
+        model = kwargs.get('model', self._model)
+        epochs = kwargs.get('epochs', 100)
+        criterion = kwargs.get('criterion', nn.MSELoss())
+        lr = kwargs.get('lr', 0.01)
+        optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
+        verbose = kwargs.get('verbose', True)
+
+        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
 
     def calculate_score(self, predicts, y_truth):
         if len(y_truth.shape) == 1:
@@ -58,10 +105,13 @@ class SplitPredictor(object):
         x_batch.to(self._device)
         with torch.no_grad():
             predicts_batch = self._model(x_batch)
-            prediction_intervals = x_batch.new_zeros((predicts_batch.shape[0], self.q_hat.shape[0], 2))
+            return self.generate_intervals(predicts_batch, self.q_hat)
 
-            prediction_intervals[..., 0] = predicts_batch - self.q_hat.view(1, self.q_hat.shape[0])
-            prediction_intervals[..., 1] = predicts_batch + self.q_hat.view(1, self.q_hat.shape[0])
+    def generate_intervals(self, predicts_batch, q_hat):
+        prediction_intervals = predicts_batch.new_zeros((predicts_batch.shape[0], q_hat.shape[0], 2))
+
+        prediction_intervals[..., 0] = predicts_batch - q_hat.view(1, q_hat.shape[0])
+        prediction_intervals[..., 1] = predicts_batch + q_hat.view(1, q_hat.shape[0])
 
         return prediction_intervals
 
