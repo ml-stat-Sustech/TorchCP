@@ -11,10 +11,10 @@
 deepcp.egg-info
 data/
 .pytest_cache/
-.cache/
 *.pt
 Untitled*ipynb
 git_stats
+.cache/
 build/
 dist/
 _build/

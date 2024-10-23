@@ -13,14 +13,16 @@ from .aps import APS
 
 class SAPS(APS):
     """
-    Sorted Adaptive Prediction Sets (Huang et al., 2023)
-    paper: https://arxiv.org/abs/2310.06430
+    Method: Sorted Adaptive Prediction Sets 
+    Paper: Conformal Prediction for Deep Classifier via Label Ranking (Huang et al., 2023)
+    Link: https://arxiv.org/abs/2310.06430
+    Github: https://github.com/ml-stat-Sustech/conformal_prediction_via_label_ranking
     
     :param weight: the weight of label ranking.
     """
 
-    def __init__(self, weight, score_type="softmax"):
-        super().__init__(score_type)
+    def __init__(self, weight, score_type="softmax", randomized=True):
+        super().__init__(score_type,randomized)
         if weight <= 0:
             raise ValueError("The parameter 'weight' must be a positive value.")
         self.__weight = weight
@@ -29,7 +31,10 @@ class SAPS(APS):
         indices, ordered, cumsum = self._sort_sum(probs)
         ordered[:, 1:] = self.__weight
         cumsum = torch.cumsum(ordered, dim=-1)
-        U = torch.rand(probs.shape, device=probs.device)
+        if self.randomized:
+            U = torch.rand(probs.shape, device=probs.device)
+        else:
+            U = torch.ones_like(probs.shape)
         ordered_scores = cumsum - ordered * U
         _, sorted_indices = torch.sort(indices, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)
@@ -37,7 +42,10 @@ class SAPS(APS):
 
     def _calculate_single_label(self, probs, label):
         indices, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(indices.shape[0], device=probs.device)
+        if self.randomized:
+            U = torch.rand(indices.shape[0], device=probs.device)
+        else:
+            U = torch.ones(indices.shape[0], device=probs.device)
         idx = torch.where(indices == label.view(-1, 1))
         scores_first_rank = U * cumsum[idx]
         scores_usual = self.__weight * (idx[1] - U) + ordered[:, 0]

@@ -15,15 +15,16 @@ from .aps import APS
 
 class RAPS(APS):
     """
-    Regularized Adaptive Prediction Sets (Angelopoulos et al., 2020)
-    paper : https://arxiv.org/abs/2009.14193
+    Method: Regularized Adaptive Prediction Sets 
+    Paper: Uncertainty Sets for Image Classifiers using Conformal Prediction (Angelopoulos et al., 2020)
+    Link: https://arxiv.org/abs/2009.14193
     
     :param penalty: the weight of regularization. When penalty = 0, RAPS=APS.
     :param kreg: the rank of regularization which is an integer in [0,labels_num].
     """
 
-    def __init__(self, penalty, kreg=0, score_type="softmax"):
-        super().__init__(score_type)
+    def __init__(self, penalty, kreg=0, score_type="softmax", randomized=True):
+        super().__init__(score_type, randomized)
         if penalty <= 0:
             raise ValueError("The parameter 'penalty' must be a positive value.")
         if kreg < 0:
@@ -36,7 +37,10 @@ class RAPS(APS):
 
     def _calculate_all_label(self, probs):
         indices, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(probs.shape, device=probs.device)
+        if self.randomized:
+            U = torch.rand(probs.shape, device=probs.device)
+        else:
+            U = torch.ones_like(probs.shape)
         reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1, device=probs.device) - self.__kreg),
                             torch.tensor(0, device=probs.device))
         ordered_scores = cumsum - ordered * U + reg
@@ -46,7 +50,10 @@ class RAPS(APS):
 
     def _calculate_single_label(self, probs, label):
         indices, ordered, cumsum = self._sort_sum(probs)
-        U = torch.rand(indices.shape[0], device=probs.device)
+        if self.randomized:
+            U = torch.rand(indices.shape[0], device=probs.device)
+        else:
+            U = torch.ones(indices.shape[0], device=probs.device)
         idx = torch.where(indices == label.view(-1, 1))
         reg = torch.maximum(self.__penalty * (idx[1] + 1 - self.__kreg), torch.tensor(0).to(probs.device))
         scores_first_rank = U * ordered[idx] + reg

@@ -9,7 +9,7 @@ from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.regression.predictors import SplitPredictor, CQR, ACI, R2CCP
 from torchcp.regression.utils import calculate_midpoints
 from torchcp.utils import fix_randomness
-from utils import build_reg_data, build_regression_model
+from .utils import *
 
 
 def train(model, device, epoch, train_data_loader, criterion, optimizer):

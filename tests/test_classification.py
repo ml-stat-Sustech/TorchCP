@@ -9,12 +9,10 @@
 import os
 import pickle
 import random
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+import torch.optim as optim
 import torchvision
 import torchvision.datasets as dset
 import torchvision.transforms as trn
@@ -26,31 +24,21 @@ from torchcp.classification.scores import THR, APS, SAPS, RAPS, Margin
 from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 from torchcp.classification.utils import OrdinalClassifier
+from torchcp.classification.scores import KNN
+from .utils import *
 
-transform = trn.Compose([trn.Resize(256),
-                         trn.CenterCrop(224),
-                         trn.ToTensor(),
-                         trn.Normalize(mean=[0.485, 0.456, 0.406],
-                                       std=[0.229, 0.224, 0.225])
-                         ])
+dataset_dir = get_dataset_dir()
+model_dir = get_model_dir()
 
 
-def test_imagenet_logits():
-    #######################################
-    # Loading ImageNet dataset and a pytorch model
-    #######################################
-    fix_randomness(seed=0)
-    model_name = 'ResNet101'
-    fname = ".cache/" + model_name + ".pkl"
+def get_imagenet_logits(model_name):
+    fname = f"{dataset_dir}/{model_name}.pkl"
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)
 
     else:
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data")
-        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
-                                   transform)
+        dataset = build_dataset(dataset_name = "imagnet", data_mode= "test", transform_mode = "test")
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # load model
@@ -60,7 +48,7 @@ def test_imagenet_logits():
         labels_list = []
         with torch.no_grad():
             for examples in tqdm(data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]
+                tmp_x, tmp_label = examples[0].to(device), examples[1].to(device)
                 tmp_logits = model(tmp_x)
                 logits_list.append(tmp_logits)
                 labels_list.append(tmp_label)
@@ -76,8 +64,17 @@ def test_imagenet_logits():
 
     test_logits = torch.stack([sample[0] for sample in val_data])
     test_labels = torch.stack([sample[1] for sample in val_data])
-
     num_classes = 1000
+    return cal_logits, cal_labels, test_logits, test_labels, num_classes
+
+
+def test_imagenet_logits():
+    #######################################
+    # Loading ImageNet dataset and a pytorch model
+    #######################################
+    fix_randomness(seed=0)
+    model_name = 'ResNet101'
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
     #######################################
     # A standard process of conformal prediction
@@ -86,8 +83,8 @@ def test_imagenet_logits():
     predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
     score_functions = [THR(), APS(), RAPS(1, 0), SAPS(0.2), Margin()]
     for score in score_functions:
-        for class_predictor in predictors:
-            predictor = class_predictor(score)
+        for the_predictor in predictors:
+            predictor = the_predictor(score)
             predictor.calculate_threshold(cal_logits, cal_labels, alpha)
             print(
                 f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
@@ -102,6 +99,36 @@ def test_imagenet_logits():
             print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
 
 
+def test_imagenet_logits_unrandomized():
+    #######################################
+    # Loading ImageNet dataset and a pytorch model
+    #######################################
+    fix_randomness(seed=0)
+    model_name = 'ResNet101'
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
+
+    #######################################
+    # A standard process of conformal prediction
+    #######################################
+    alpha = 0.1
+    score_functions = [APS(randomized=False), RAPS(1, 0,randomized=False), SAPS(0.2,randomized=False)]
+    for score in score_functions:
+        predictor = SplitPredictor(score)
+        predictor.calculate_threshold(cal_logits, cal_labels, alpha)
+        print(
+            f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+        prediction_sets = predictor.predict_with_logits(test_logits)
+
+        metrics = Metrics()
+        print("Evaluating prediction sets...")
+        print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
+        print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
+        print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
+        print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
+        
+        
+        
 def test_imagenet():
     fix_randomness(seed=0)
     #######################################
@@ -111,9 +138,7 @@ def test_imagenet():
     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
-    usr_dir = os.path.expanduser('~')
-    data_dir = os.path.join(usr_dir, "data")
-    dataset = dset.ImageFolder(data_dir + "/imagenet/val", transform)
+    dataset = build_dataset(dataset_name = "imagnet", data_mode= "test", transform_mode = "test")
 
     cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, num_workers=4,
@@ -142,44 +167,9 @@ def test_calibration():
     # Loading ImageNet dataset and a pytorch model
     #######################################
     fix_randomness(seed=0)
+
     model_name = 'ResNet101'
-    fname = ".cache/" + model_name + ".pkl"
-    if os.path.exists(fname):
-        with open(fname, 'rb') as handle:
-            dataset = pickle.load(handle)
-
-    else:
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data")
-        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
-                                   transform)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # load model
-        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True).to(device)
-
-        logits_list = []
-        labels_list = []
-        with torch.no_grad():
-            for examples in tqdm(data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]
-                tmp_logits = model(tmp_x)
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_label)
-        logits = torch.cat(logits_list)
-        labels = torch.cat(labels_list)
-        dataset = torch.utils.data.TensorDataset(logits, labels.long())
-        with open(fname, 'wb') as handle:
-            pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
-    cal_logits = torch.stack([sample[0] for sample in cal_data])
-    cal_labels = torch.stack([sample[1] for sample in cal_data])
-
-    test_logits = torch.stack([sample[0] for sample in val_data])
-    test_labels = torch.stack([sample[1] for sample in val_data])
-
-    num_classes = 1000
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
     #######################################
     # A standard process of conformal prediction
@@ -209,43 +199,7 @@ def test_imagenet_logits_types():
     #######################################
     fix_randomness(seed=0)
     model_name = 'ResNet101'
-    fname = ".cache/" + model_name + ".pkl"
-    if os.path.exists(fname):
-        with open(fname, 'rb') as handle:
-            dataset = pickle.load(handle)
-
-    else:
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data")
-        dataset = dset.ImageFolder(data_dir + "/imagenet/val",
-                                   transform)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # load model
-        model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True).to(device)
-
-        logits_list = []
-        labels_list = []
-        with torch.no_grad():
-            for examples in tqdm(data_loader):
-                tmp_x, tmp_label = examples[0], examples[1]
-                tmp_logits = model(tmp_x)
-                logits_list.append(tmp_logits)
-                labels_list.append(tmp_label)
-        logits = torch.cat(logits_list)
-        labels = torch.cat(labels_list)
-        dataset = torch.utils.data.TensorDataset(logits, labels.long())
-        with open(fname, 'wb') as handle:
-            pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    cal_data, val_data = torch.utils.data.random_split(dataset, [25000, 25000])
-    cal_logits = torch.stack([sample[0] for sample in cal_data])
-    cal_labels = torch.stack([sample[1] for sample in cal_data])
-
-    test_logits = torch.stack([sample[0] for sample in val_data])
-    test_labels = torch.stack([sample[1] for sample in val_data])
-
-    num_classes = 1000
+    cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
     #######################################
     # A standard process of conformal prediction
@@ -369,37 +323,26 @@ def test_ordinal_classification():
 
 
 def test_KNN_Score():
-    import torch.optim as optim
-
     fix_randomness(seed=0)
-    data_dir = os.path.join(os.path.expanduser('~'), 'data')
-    mean = (0.492, 0.482, 0.446)
-    std = (0.247, 0.244, 0.262)
-    cifar10_train_transform = trn.Compose([trn.RandomHorizontalFlip(),
-                                           trn.RandomCrop(32, padding=4),
-                                           trn.ToTensor(),
-                                           trn.Normalize(mean, std)])
-    train_dataset = dset.CIFAR10(root=data_dir, train=True, download=False, transform=cifar10_train_transform)
-    train_labels = torch.stack([torch.tensor(sample[1]) for sample in train_dataset])
-    cifar10_test_transform = trn.Compose([trn.ToTensor(),
-                                          trn.Normalize(mean, std)])
-    test_dataset = dset.CIFAR10(root=data_dir, train=False, download=False, transform=cifar10_test_transform)
-    test_labels = torch.stack([torch.tensor(sample[1]) for sample in test_dataset])
+    
+    
+    train_dataset = build_dataset("cifar10", "train", "train")
+    
+    
 
     num_classes = 10
-    num_epochs = 10
+    num_epochs = 30
     batch_size = 1024
     lr = 0.001
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features, num_classes)
     model.cuda()
 
-    model_pkl_path = ".cache/resnet101_cifar10.pth"
+    model_pkl_path = os.path.join(model_dir,"resnet101_cifar10.pth")
     if os.path.exists(model_pkl_path):
         pretrained_dict = torch.load(model_pkl_path)
         model.load_state_dict(pretrained_dict)
@@ -421,13 +364,11 @@ def test_KNN_Score():
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
-            print(
-                f"Epoch {epoch + 1}, Loss: {running_loss / len(train_dataloader)},ACC.: {pre_acc / len(train_dataset)}")
+            print(f"Epoch {epoch + 1}, Loss: {running_loss / len(train_dataloader)},ACC.: {pre_acc / len(train_dataset)}")
 
         torch.save(model.state_dict(), model_pkl_path)
 
     model.eval()
-
     def get_features(dataloader, the_model):
         the_features = []
 
@@ -442,12 +383,21 @@ def test_KNN_Score():
                 batch_logits = the_model(x.cuda())
         features = torch.reshape(torch.cat(the_features, dim=0), (-1, outputsize)).detach()
         return features
-
+    
+    
+    train_dataset = build_dataset("cifar10", data_mode="train", transform_mode="test")
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
+    train_labels = torch.stack([torch.tensor(sample[1]) for sample in train_dataset])
+    
+    test_dataset = build_dataset("cifar10", data_mode="test", transform_mode="test")
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    test_labels = torch.stack([torch.tensor(sample[1]) for sample in test_dataset])
+        
     train_features = get_features(train_dataloader, model)
     test_features = get_features(test_dataloader, model)
 
-    from torchcp.classification.scores import KNN
-    score = KNN(train_features, train_labels, 10, k=2, p="cosine")
+    
+    score = KNN(train_features, train_labels, num_classes, k=2, p=2)
 
     mask = torch.rand_like(test_labels, dtype=torch.float32) > 0.5
     cal_features = test_features[mask]
@@ -455,9 +405,9 @@ def test_KNN_Score():
     cal_labels = test_labels[mask]
     test_labels = test_labels[~mask]
 
-    #######################################
+    ############################################
     # A standard process of conformal prediction
-    #######################################
+    ############################################
     alpha = 0.1
 
     predictor = SplitPredictor(score)

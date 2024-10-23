@@ -39,7 +39,7 @@ def build_dataset(dataset_name, transform=None, mode='train'):
     return dataset
 
 
-base_path = ".cache/data/"
+base_path = "~/.cache/torchcp/datasets/"
 
 
 def build_reg_data(data_name="community"):

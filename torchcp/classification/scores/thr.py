@@ -11,8 +11,9 @@ from .base import BaseScore
 
 class THR(BaseScore):
     """
-    Threshold conformal predictors (Sadinle et al., 2016).
-    paper : https://arxiv.org/abs/1609.00451.
+    Methd: Threshold conformal predictors 
+    Paper: Least Ambiguous Set-Valued Classifiers with Bounded Error Levels (Sadinle et al., 2016).
+    paper : https://arxiv.org/abs/1609.00451
     
     :param score_type: a transformation on logits. Default: "softmax". Optional: "softmax", "identity", "log_softmax" or "log".
     """

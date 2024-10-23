@@ -11,9 +11,9 @@ from .aps import APS
 
 class Margin(APS):
     """
-    Bias reduction through conditional conformal prediction (Löfström et al., 2015)
-
-    paper:https://dl.acm.org/doi/abs/10.3233/IDA-150786
+    Method: Margin non-conformity score
+    Paper: Bias reduction through conditional conformal prediction (Löfström et al., 2015)
+    Link:https://dl.acm.org/doi/abs/10.3233/IDA-150786
     """
 
     def __init__(self, score_type="softmax"):

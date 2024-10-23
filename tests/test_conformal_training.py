@@ -15,19 +15,21 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-
-import argparse
-import itertools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import torchvision
 
-from dataset import build_dataset
 from torchcp.classification.loss import ConfTr
 from torchcp.classification.predictors import SplitPredictor, ClusteredPredictor, ClassWisePredictor
 from torchcp.classification.scores import THR, APS, SAPS, RAPS
 from torchcp.utils import fix_randomness
+
+
+from .utils import *
+dataset_dir = get_dataset_dir()
+model_dir = get_model_dir()
 
 
 class Net(nn.Module):
@@ -79,19 +81,29 @@ def test_training():
             # Training a pytorch model
             ##################################
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            train_dataset = build_dataset("mnist")
+            
+
+            train_dataset = build_dataset("cifar10", data_mode="train", transform_mode="train")
             train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True,
                                                             pin_memory=True)
-            test_dataset = build_dataset("mnist", mode='test')
+            
+            num_classes = 10
+            model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
+            in_features = model.fc.in_features
+            model.fc = nn.Linear(in_features, num_classes)
+            model.cuda()
+            optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+            for epoch in range(1, 10):
+                train(model, device, train_data_loader, criterion, optimizer, epoch)
+                
+                
+            test_dataset = build_dataset("cifar10", data_mode="test", transform_mode="test")
             cal_dataset, test_dataset = torch.utils.data.random_split(test_dataset, [5000, 5000])
             cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1600, shuffle=False, pin_memory=True)
             test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1600, shuffle=False,
                                                            pin_memory=True)
-
-            model = Net().to(device)
-            optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
-            for epoch in range(1, 10):
-                train(model, device, train_data_loader, criterion, optimizer, epoch)
+            
+            
 
             for score in ["THR", "APS", "RAPS", "SAPS"]:
                 if score == "THR":

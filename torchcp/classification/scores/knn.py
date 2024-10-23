@@ -6,23 +6,22 @@
 #
 import torch
 from .base import BaseScore
+from torch.utils.data import DataLoader, TensorDataset
 
-
-# K-Nearest Neighbor non-conformity score
 class KNN(BaseScore):
     """
-    Hedging Predictions in Machine Learning (Gammerman et al., 2016).
-    paper : https://ieeexplore.ieee.org/document/8129828.
+    Method: K-Nearest Neighbor non-conformity score
+    Paper: Hedging Predictions in Machine Learning (Gammerman et al., 2016).
+    Link: https://ieeexplore.ieee.org/document/8129828.
     
     :param features: the input features of training data.
     :param labels: the labels of training data.
     :param num_classes: the number of classes.
     :param k: the number of neighbors..
     :param p: p value for the p-norm distance to calculate between each vector pair. Default: "2. Optional: float  or "cosine".
-    
     """
 
-    def __init__(self, features, labels, num_classes, k=1, p=2):
+    def __init__(self, features, labels, num_classes, k=1, p=2, batch = False):
         super().__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_features = features.to(self.device)
@@ -30,14 +29,16 @@ class KNN(BaseScore):
         self.k = k
         self.p = p
         self.num_classes = num_classes
+        self.batch = batch
 
         if self.p == "cosine":
             def cosine_similarity_custom(A, B):
-                norm_A = A.norm(dim=1, keepdim=True)
-                norm_B = B.norm(dim=1, keepdim=True)
-                B_T = B.t()
-                dot_product = torch.mm(A, B_T)
-                cosine_sim = dot_product / (norm_A * norm_B.t())
+                with torch.no_grad():
+                    norm_A = A.norm(dim=1, keepdim=True)
+                    norm_B = B.norm(dim=1, keepdim=True)
+                    B_T = B.t()
+                    dot_product = torch.mm(A, B_T)
+                    cosine_sim = dot_product / (norm_A * norm_B.t())
                 return cosine_sim
 
             self.transform = cosine_similarity_custom
@@ -48,7 +49,18 @@ class KNN(BaseScore):
         features = features.to(self.device)
         if len(features.shape) == 1:
             features = features.unsqueeze(0)
-        distances = self.transform(features, self.train_features)
+        if self.batch != False:
+            distances = []
+            dataset = TensorDataset(features) 
+            dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
+            for batch_feature in dataloader:
+                distances.append(self.transform(batch_feature[0], self.train_features))
+                del batch_feature
+                torch.cuda.empty_cache()
+                
+            distances = torch.cat(distances)
+        else:
+            distances = self.transform(features, self.train_features)
 
         if labels is None:
             return self.__calculate_all_label(distances)
