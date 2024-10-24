@@ -9,11 +9,13 @@ import torch
 import pandas as pd
 import networkx as nx
 from scipy.optimize import brentq
+from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.scores import APS
 from .split import GraphSplitPredictor
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
+
 
 class NAPSSplitPredictor(GraphSplitPredictor):
     """
@@ -22,20 +24,22 @@ class NAPSSplitPredictor(GraphSplitPredictor):
     Link: https://proceedings.mlr.press/v202/clarkson23a/clarkson23a.pdf
     Github: https://github.com/jase-clarkson/graph_cp/tree/master
 
-    :param G: network of test graph data.
     :param cutoff: nodes with at least 'cutoff' k-hop neighbors for test.
     :param k: Add nodes up to the 'k-hop' neighbors of ego node to its calibration set.
     :param scheme: name of weight decay rate for k-hop neighbors. Options are 'unif' (weights = 1), 'linear' (weights = 1/k), or 'geom' (weights = 2^{-(k - 1)}).
     """
 
-    def __init__(self, G, cutoff=50, k=2, scheme="unif"):
-        super().__init__(score_function=APS(score_type="identity"), model =None )
+    def __init__(self, graph_data, cutoff=50, k=2, scheme="unif"):
+        super().__init__(score_function=APS(score_type="identity"),
+                         model=None, graph_data=graph_data)
 
         if scheme not in ["unif", "linear", "geom"]:
-            raise ValueError(f"Invalid scheme: {scheme}. Choose from {DEFAULT_SCHEMES}")
+            raise ValueError(
+                f"Invalid scheme: {scheme}. Choose from {DEFAULT_SCHEMES}")
 
         self._cutoff = cutoff
-        self._G = G
+        test_subgraph = self._graph_data.subgraph(self._graph_data.test_mask)
+        self._G = to_networkx(test_subgraph).to_undirected()
         self._k = k
         self._scheme = scheme
 
@@ -56,8 +60,10 @@ class NAPSSplitPredictor(GraphSplitPredictor):
             if p is not None:
                 quantiles_nb.update(p)
 
-        lcc_nodes = torch.tensor(list(quantiles_nb.keys()), device=self._device)
-        quantiles = torch.tensor(list(quantiles_nb.values()), device=self._device)
+        lcc_nodes = torch.tensor(
+            list(quantiles_nb.keys()), device=self._device)
+        quantiles = torch.tensor(
+            list(quantiles_nb.values()), device=self._device)
         prediction_sets = self.predict(probs[lcc_nodes], quantiles[:, None])
         return lcc_nodes, prediction_sets
 
@@ -66,14 +72,15 @@ class NAPSSplitPredictor(GraphSplitPredictor):
 
         if self._cutoff <= node_ids.shape[0]:
             quantile = self._calibrate_weighted(probs[node_ids], labels[node_ids],
-                                               weights, alpha)
+                                                weights, alpha)
             return {node: quantile}
         return None
 
     def _get_nbhd_weights(self, node):
         # Get dict containing nodes -> shortest path to node (i.e. depth).
-        neigh_depth = nx.single_source_shortest_path_length(self._G, node, cutoff=self._k)
-        neigh_depth.pop(node, None) # Remove the node itself from list.
+        neigh_depth = nx.single_source_shortest_path_length(
+            self._G, node, cutoff=self._k)
+        neigh_depth.pop(node, None)  # Remove the node itself from list.
         neigh_count = len(neigh_depth)
 
         node_ids = torch.tensor(list(neigh_depth.keys()), device=self._device)
@@ -81,38 +88,42 @@ class NAPSSplitPredictor(GraphSplitPredictor):
         if self._scheme == 'unif':
             weights = torch.ones((neigh_count, ), device=self._device)
         elif self._scheme == 'linear':
-            weights = 1. / torch.tensor(list(neigh_depth.values()), device=self._device)
+            weights = 1. / \
+                torch.tensor(list(neigh_depth.values()), device=self._device)
         elif self._scheme == 'geom':
-            weights = (0.5)**(torch.tensor(list(neigh_depth.values()), device=self._device) - 1)
+            weights = (
+                0.5)**(torch.tensor(list(neigh_depth.values()), device=self._device) - 1)
 
         return node_ids, weights
-        
+
     def _calibrate_weighted(self, probs, labels, weights, alpha):
         if probs.shape[0] == 0:
             return alpha
         # Calibrate
-        
+
         alpha_max = 1 - self.score_function(probs, labels)
         scores = alpha - alpha_max
         alpha_correction = self._get_weighted_quantile(scores, weights, alpha)
         return alpha - alpha_correction
-    
+
     def _get_weighted_quantile(self, scores, weights, alpha):
         wtildes = weights / (weights.sum() + 1)
-        def critical_point_quantile(q): return (wtildes * (scores <= q)).sum().item() - (1 - alpha)
+        def critical_point_quantile(q): return (
+            wtildes * (scores <= q)).sum().item() - (1 - alpha)
         try:
             q = brentq(critical_point_quantile, -1000, 1000)
         except ValueError:
             q = 0
-            raise ValueError("Did not find a suitable alpha value, keeping alpha unchanged.")
+            raise ValueError(
+                "Did not find a suitable alpha value, keeping alpha unchanged.")
         return q
-    
-    def predict(self, probs, alphas, allow_empty = True):
+
+    def predict(self, probs, alphas, allow_empty=True):
         # scores = self.score_function(probs)
         # S = []
         # for index in range(scores.shape[0]):
         #     S.extend(self._generate_prediction_set(scores[index,:].reshape(1,-1), 1-quantiles[index]))
-        
+
         n = probs.shape[0]
         eps = torch.rand(n, device=self._device)
 
@@ -129,7 +140,7 @@ class NAPSSplitPredictor(GraphSplitPredictor):
                 L[i] = torch.maximum(torch.tensor(0), L[i] - 1)
             else:
                 L[i] = L[i] - 1
-        
+
         S = [order[i, torch.arange(0, L[i] + 1)] for i in range(n)]
-            
+
         return S
