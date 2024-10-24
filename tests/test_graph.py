@@ -14,7 +14,6 @@ import torch
 import torch.nn.functional as F
 
 from torch_geometric.loader import NeighborLoader
-from torch_geometric.utils.convert import to_networkx
 from torch_geometric.transforms import RandomNodeSplit
 from torch_geometric.datasets import CitationFull, Amazon
 
@@ -30,6 +29,7 @@ from .utils import *
 
 dataset_dir = get_dataset_dir()
 model_dir = get_model_dir()
+
 
 def test_transductive_graph():
     fix_randomness(seed=0)
@@ -182,15 +182,15 @@ def test_inductive_graph():
 
     dataset_name = 'Computers'
     model_name = 'GraphSAGE'
-    
+
     dataset = Amazon(dataset_dir, dataset_name,
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=10000))
     data = dataset[0].to(device)
 
-    fname = '.cache/Computers_probs.pkl'
+    fname = '.cache/Computers_logits.pkl'
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
-            probs = pickle.load(handle)
+            logits = pickle.load(handle)
     else:
         kwargs = {'batch_size': 512, 'num_workers': 6,
                   'persistent_workers': True}
@@ -255,15 +255,16 @@ def test_inductive_graph():
 
         best_model.eval()
         with torch.no_grad():
-            probs = F.softmax(best_model.inference(
-                data.x, subgraph_loader), dim=-1)
+            logits = best_model.inference(data.x, subgraph_loader)
             with open(fname, 'wb') as handle:
-                pickle.dump(probs, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        y_pred = probs.argmax(dim=-1)
+                pickle.dump(logits, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        y_pred = logits.argmax(dim=-1)
 
         test_accuracy = int((y_pred[data.test_mask] == data.y[data.test_mask]
                              ).sum()) / int(data.test_mask.sum())
         print(f"Model Accuracy: {test_accuracy}")
+
+    probs = F.softmax(logits, dim=-1)
 
     #######################################
     # conformal prediction for inductive setting
@@ -271,18 +272,17 @@ def test_inductive_graph():
 
     alpha = 0.1
 
-    test_subgraph = data.subgraph(data.test_mask)
-    G = to_networkx(test_subgraph).to_undirected()
     labels = data.y[data.test_mask]
+    label_mask = F.one_hot(dataset.y).bool().to(device)[dataset.test_mask]
+
+    logits = logits[data.test_mask]
     probs = probs[data.test_mask]
-    
+
     metrics = Metrics()
     #######################################
     # basic conformal prediction for inductive setting
     #######################################
 
-    label_mask = F.one_hot(dataset.y).bool().to(device)[dataset.test_mask]
-    
     n_calib = 500
     test_idx = torch.arange(dataset.test_mask.sum())
     perm = torch.randperm(test_idx.shape[0])
@@ -293,13 +293,13 @@ def test_inductive_graph():
 
     for score_function in score_functions:
         predictor = GraphSplitPredictor(score_function)
-        predictor.calculate_threshold(probs, cal_idx, label_mask, alpha)
+        predictor.calculate_threshold(logits, cal_idx, label_mask, alpha)
 
         print(
             f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
-        prediction_sets = predictor.predict_with_logits(probs, eval_idx)
+        prediction_sets = predictor.predict_with_logits(logits, eval_idx)
 
-        
+
         print("Evaluating prediction sets...")
         print(
             f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
@@ -315,12 +315,13 @@ def test_inductive_graph():
     schemes = ["unif", "linear", "geom"]
 
     for scheme in schemes:
-        predictor = NAPSSplitPredictor(G, scheme=scheme)
-        lcc_nodes, prediction_sets = predictor.precompute_naps_sets(probs, labels, alpha)
+        predictor = NAPSSplitPredictor(data, scheme=scheme)
+        lcc_nodes, prediction_sets = predictor.precompute_naps_sets(
+            probs, labels, alpha)
 
         print(
             f"Experiment--Data : {dataset_name}, Model : {model_name}, Predictor : {predictor.__class__.__name__}, Scheme : {scheme}, Alpha : {alpha}")
-        
+
         print("Evaluating prediction sets...")
         print(
             f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, labels[lcc_nodes])}.")
