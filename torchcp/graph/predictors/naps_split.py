@@ -6,7 +6,7 @@
 #
 
 import torch
-import pandas as pd
+from tqdm import tqdm
 import networkx as nx
 from scipy.optimize import brentq
 from torch_geometric.utils.convert import to_networkx
@@ -55,7 +55,7 @@ class NAPSSplitPredictor(GraphSplitPredictor):
 
         self._device = probs.device
         quantiles_nb = {}
-        for node in list(self._G.nodes):
+        for node in tqdm(list(self._G.nodes)):
             p = self.calibrate_nbhd(node, probs, labels, alpha)
             if p is not None:
                 quantiles_nb.update(p)

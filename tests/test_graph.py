@@ -8,7 +8,6 @@
 import os
 import copy
 import pickle
-import pandas as pd
 
 import torch
 import torch.nn.functional as F
