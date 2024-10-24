@@ -51,7 +51,7 @@ class BasePredictor(object):
         """
         raise NotImplementedError
 
-    def _generate_prediction_set(self, scores, q_hat):
+    def _generate_prediction_set(self, scores, q_hat : torch.Tensor):
         """
         Generate the prediction set with the threshold q_hat.
 

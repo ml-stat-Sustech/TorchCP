@@ -29,7 +29,7 @@ class BaseScore(object):
         if edge_weight is None:
             edge_weight = torch.ones(
                 edge_index.shape[1]).to(self._device)
-        self._adj = torch.sparse.FloatTensor(
+        self._adj = torch.sparse_coo_tensor(
             edge_index,
             edge_weight,
             (self._n_vertices, self._n_vertices))

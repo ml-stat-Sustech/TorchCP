@@ -23,6 +23,8 @@ class APS(THR):
     def __init__(self, score_type="softmax", randomized=True):
         super().__init__(score_type)
         self.randomized = randomized
+        
+        
     def _calculate_all_label(self, probs):
         indices, ordered, cumsum = self._sort_sum(probs)
         if self.randomized:
