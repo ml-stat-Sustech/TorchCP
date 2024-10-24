@@ -26,8 +26,10 @@ from torchcp.graph.utils.metrics import Metrics
 from torchcp.utils import fix_randomness
 
 
-from tests.utils import GCN, SAGE, compute_adj_knn
+from .utils import *
 
+dataset_dir = get_dataset_dir()
+model_dir = get_model_dir()
 
 def test_transductive_graph():
     fix_randomness(seed=0)
@@ -41,9 +43,8 @@ def test_transductive_graph():
     ntrain_per_class = 20
 
     if dataset_name in ['cora_ml']:
-        usr_dir = os.path.expanduser('~')
-        data_dir = os.path.join(usr_dir, "data")
-        dataset = CitationFull(data_dir, dataset_name)[0].to(device)
+
+        dataset = CitationFull(dataset_dir, dataset_name)[0].to(device)
         label_mask = F.one_hot(dataset.y).bool()
 
         #######################################
@@ -181,10 +182,8 @@ def test_inductive_graph():
 
     dataset_name = 'Computers'
     model_name = 'GraphSAGE'
-
-    usr_dir = os.path.expanduser('~')
-    data_dir = os.path.join(usr_dir, "data/Amazon")
-    dataset = Amazon(data_dir, dataset_name,
+    
+    dataset = Amazon(dataset_dir, dataset_name,
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=10000))
     data = dataset[0].to(device)
 
@@ -276,7 +275,8 @@ def test_inductive_graph():
     G = to_networkx(test_subgraph).to_undirected()
     labels = data.y[data.test_mask]
     probs = probs[data.test_mask]
-
+    
+    metrics = Metrics()
     #######################################
     # basic conformal prediction for inductive setting
     #######################################
@@ -299,7 +299,7 @@ def test_inductive_graph():
             f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
         prediction_sets = predictor.predict_with_logits(probs, eval_idx)
 
-        metrics = Metrics()
+        
         print("Evaluating prediction sets...")
         print(
             f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
@@ -320,10 +320,11 @@ def test_inductive_graph():
 
         print(
             f"Experiment--Data : {dataset_name}, Model : {model_name}, Predictor : {predictor.__class__.__name__}, Scheme : {scheme}, Alpha : {alpha}")
-
-        metrics = Metrics()
+        
         print("Evaluating prediction sets...")
         print(
             f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, labels[lcc_nodes])}.")
         print(
             f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
+        print(
+            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")

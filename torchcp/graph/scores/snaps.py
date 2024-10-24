@@ -40,7 +40,7 @@ class SNAPS(BaseScore):
             if knn_weight is None:
                 knn_weight = torch.ones(
                     knn_edge.shape[1]).to(self._device)
-            self._adj_knn = torch.sparse.FloatTensor(
+            self._adj_knn = torch.sparse_coo_tensor(
                 knn_edge,
                 knn_weight,
                 (self._n_vertices, self._n_vertices))

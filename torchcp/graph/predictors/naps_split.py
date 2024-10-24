@@ -11,10 +11,11 @@ import networkx as nx
 from scipy.optimize import brentq
 
 from torchcp.classification.scores import APS
+from .split import GraphSplitPredictor
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
 
-class NAPSSplitPredictor(object):
+class NAPSSplitPredictor(GraphSplitPredictor):
     """
     Method: Neighbourhood Adaptive Prediction Sets
     Paper: Distribution Free Prediction Sets for Node Classification (Clarkson et al., 2023)
@@ -28,7 +29,7 @@ class NAPSSplitPredictor(object):
     """
 
     def __init__(self, G, cutoff=50, k=2, scheme="unif"):
-        super().__init__()
+        super().__init__(score_function=APS(score_type="identity"), model =None )
 
         if scheme not in ["unif", "linear", "geom"]:
             raise ValueError(f"Invalid scheme: {scheme}. Choose from {DEFAULT_SCHEMES}")
@@ -37,7 +38,6 @@ class NAPSSplitPredictor(object):
         self._G = G
         self._k = k
         self._scheme = scheme
-        self.score_function = APS(score_type="identity")
 
     def precompute_naps_sets(self, probs, labels, alpha):
         """
@@ -59,7 +59,6 @@ class NAPSSplitPredictor(object):
         lcc_nodes = torch.tensor(list(quantiles_nb.keys()), device=self._device)
         quantiles = torch.tensor(list(quantiles_nb.values()), device=self._device)
         prediction_sets = self.predict(probs[lcc_nodes], quantiles[:, None])
-        prediction_sets = [tensor.cpu().tolist() for tensor in prediction_sets]
         return lcc_nodes, prediction_sets
 
     def calibrate_nbhd(self, node, probs, labels, alpha):
@@ -108,7 +107,12 @@ class NAPSSplitPredictor(object):
             raise ValueError("Did not find a suitable alpha value, keeping alpha unchanged.")
         return q
     
-    def predict(self, probs, alpha, allow_empty=True):
+    def predict(self, probs, alphas, allow_empty = True):
+        # scores = self.score_function(probs)
+        # S = []
+        # for index in range(scores.shape[0]):
+        #     S.extend(self._generate_prediction_set(scores[index,:].reshape(1,-1), 1-quantiles[index]))
+        
         n = probs.shape[0]
         eps = torch.rand(n, device=self._device)
 
@@ -116,8 +120,8 @@ class NAPSSplitPredictor(object):
         prob_sort = -torch.sort(-probs, dim=1).values
         Z = torch.cumsum(prob_sort, dim=1)
 
-        L = torch.argmax((Z >= 1.0 - alpha).float(), dim=1).flatten()
-        Z_excess = Z[torch.arange(n), L] - (1.0 - alpha).flatten()
+        L = torch.argmax((Z >= 1.0 - alphas).float(), dim=1).flatten()
+        Z_excess = Z[torch.arange(n), L] - (1.0 - alphas).flatten()
         p_remove = Z_excess / prob_sort[torch.arange(n), L]
         remove = eps <= p_remove
         for i in torch.where(remove)[0]:
@@ -127,6 +131,5 @@ class NAPSSplitPredictor(object):
                 L[i] = L[i] - 1
         
         S = [order[i, torch.arange(0, L[i] + 1)] for i in range(n)]
-        
             
-        return (S)
+        return S
