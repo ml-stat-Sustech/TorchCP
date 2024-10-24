@@ -39,12 +39,12 @@ class THR(BaseScore):
             logits = logits.unsqueeze(0)
         probs = self.transform(logits)
         if label is None:
-            return self.__calculate_all_label(probs)
+            return self._calculate_all_label(probs)
         else:
-            return self.__calculate_single_label(probs, label)
+            return self._calculate_single_label(probs, label)
 
-    def __calculate_single_label(self, probs, label):
+    def _calculate_single_label(self, probs, label):
         return 1 - probs[torch.arange(probs.shape[0], device=probs.device), label]
 
-    def __calculate_all_label(self, probs):
+    def _calculate_all_label(self, probs):
         return 1 - probs
