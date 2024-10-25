@@ -30,7 +30,7 @@ class APS(THR):
         if self.randomized:
             U = torch.rand(probs.shape, device=probs.device)
         else:
-            U = torch.ones_like(probs.shape)
+            U = torch.ones_like(probs)
 
         ordered_scores = cumsum - ordered * U
         _, sorted_indices = torch.sort(indices, descending=False, dim=-1)

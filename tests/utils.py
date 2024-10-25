@@ -176,7 +176,7 @@ def build_dataset(dataset_name, data_mode= "train", transform_mode = "train"):
             raise NotImplementedError
 
         if data_mode == "test":
-            dataset = dset.ImageFolder(dataset_dir + "/imagenet/val",transform)
+            dataset = dset.ImageFolder(dataset_dir + "/datasets/imagenet/val",transform)
         else:
             raise NotImplementedError
         

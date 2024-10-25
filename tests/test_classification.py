@@ -38,7 +38,7 @@ def get_imagenet_logits(model_name):
             dataset = pickle.load(handle)
 
     else:
-        dataset = build_dataset(dataset_name = "imagnet", data_mode= "test", transform_mode = "test")
+        dataset = build_dataset(dataset_name = "imagenet", data_mode= "test", transform_mode = "test")
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # load model
@@ -138,7 +138,7 @@ def test_imagenet():
     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
-    dataset = build_dataset(dataset_name = "imagnet", data_mode= "test", transform_mode = "test")
+    dataset = build_dataset(dataset_name = "imagenet", data_mode= "test", transform_mode = "test")
 
     cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, num_workers=4,
