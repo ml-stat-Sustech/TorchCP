@@ -50,9 +50,6 @@ def download_github(url, save_path):
 
 
 
-
-
-
 def build_reg_data(data_name="community"):
     if data_name == "community":
         # https://github.com/vbordalo/Communities-Crime/blob/master/Crime_v1.ipynb

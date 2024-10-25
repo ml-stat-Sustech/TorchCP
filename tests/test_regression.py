@@ -8,7 +8,8 @@ from torchcp.regression import Metrics
 from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.regression.predictors import SplitPredictor, CQR, CQRM, CQRR, CQRFM, ACI, R2CCP, Ensemble
 from torchcp.regression.utils import calculate_midpoints
-from torchcp.utils import fix_randomness
+from transformers import set_seed
+
 from .utils import build_reg_data, build_regression_model
 
 
@@ -20,7 +21,7 @@ def test_regression():
     # Preparing dataset
     ##################################
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    fix_randomness(seed=1)
+    set_seed(seed=1)
     X, y = build_reg_data(data_name="synthetic")
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
@@ -133,7 +134,7 @@ def test_ensemble():
     # Preparing dataset
     ##################################
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    fix_randomness(seed=1)
+    set_seed(seed=1)
     X, y = build_reg_data(data_name="synthetic")
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
@@ -189,7 +190,7 @@ def test_aci():
     # Preparing dataset
     ##################################
     device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-    fix_randomness(seed=2)
+    set_seed(seed=2)
     X, y = build_reg_data(data_name="synthetic")
     num_examples = X.shape[0]
     T0 = int(num_examples * 0.4)

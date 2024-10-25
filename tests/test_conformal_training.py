@@ -24,7 +24,7 @@ import torchvision
 from torchcp.classification.loss import ConfTr
 from torchcp.classification.predictors import SplitPredictor, ClusteredPredictor, ClassWisePredictor
 from torchcp.classification.scores import THR, APS, SAPS, RAPS
-from torchcp.utils import fix_randomness
+from transformers import set_seed
 
 
 from .utils import *
@@ -76,7 +76,7 @@ def test_training():
         else:
             raise NotImplementedError
         for seed in range(num_trials):
-            fix_randomness(seed=seed)
+            set_seed(seed=seed)
             ##################################
             # Training a pytorch model
             ##################################
