@@ -47,14 +47,17 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
     
     Paper: Conformal Language Modeling (Victor Quach et al., ICLR'24)
     """
+    
+    prediction_sets = torch.tensor(prediction_set_loss, dtype=prediction_set_loss.dtype)
+
     prediction_sizes = average_size(prediction_sets)
-    bins = torch.quantile(prediction_sizes, torch.linspace(0, 1, num_bins))
+    bins = torch.quantile(prediction_sizes, torch.linspace(0, 1, num_bins, dtype= prediction_sets.dtype))
     binids = torch.bucketize(prediction_sizes, torch.cat([torch.tensor([0]), torch.unique(bins)]))
 
     L_worst_avg = -1
     for binid in torch.unique(binids):
         kept = binids == binid
-        num_kept_examples = torch.maximum(torch.sum(kept), 1)
+        num_kept_examples = torch.maximum(torch.sum(kept), torch.tensor(1, device=kept.device))
         Ls_mask_avg = torch.sum(prediction_set_loss * kept) / num_kept_examples
         L_worst_avg = max(L_worst_avg, Ls_mask_avg)
 

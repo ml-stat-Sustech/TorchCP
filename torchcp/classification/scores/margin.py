@@ -29,12 +29,18 @@ class Margin(APS):
         return largest_probs_ex_correct_labels - target_prob
 
     def _calculate_all_label(self, probs):
-        _, num_labels = probs.shape
-        temp_probs = probs.unsqueeze(1).repeat(1, num_labels, 1)
-        indices = torch.arange(num_labels).to(probs.device)
-
-        temp_probs[:, indices, indices] = -1
-
-        # torch.max(temp_probs, dim=-1) are the largest probs except for the current labels
-        scores = torch.max(temp_probs, dim=-1).values - probs
+        batch_size, num_labels = probs.shape
+            
+        values, indices = torch.topk(probs, k=2, dim=1)
+    
+        max_values = values[:, 0].unsqueeze(1).expand(-1, num_labels)
+        second_max_values = values[:, 1].unsqueeze(1).expand(-1, num_labels)
+        max_indices = indices[:, 0].unsqueeze(1).expand(-1, num_labels)
+        position_indices = torch.arange(num_labels).expand(batch_size, -1).to(probs.device)
+        
+        selected_values = torch.where(position_indices == max_indices, 
+                                    second_max_values, 
+                                    max_values)
+        
+        scores = selected_values - probs
         return scores
