@@ -28,6 +28,8 @@ class BasePredictor(object):
     def __init__(self, score_function, model=None, temperature=1):
         self.score_function = score_function
         self._model = model
+        if self._model != None:
+            self._model.eval()
         self._device = get_device(model)
         self._metric = Metrics()
         self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("TS")(temperature)

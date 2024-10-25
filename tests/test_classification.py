@@ -30,7 +30,6 @@ from .utils import *
 dataset_dir = get_dataset_dir()
 model_dir = get_model_dir()
 
-
 def get_imagenet_logits(model_name):
     fname = f"{dataset_dir}/{model_name}.pkl"
     if os.path.exists(fname):
@@ -39,11 +38,15 @@ def get_imagenet_logits(model_name):
 
     else:
         dataset = build_dataset(dataset_name = "imagenet", data_mode= "test", transform_mode = "test")
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=320, shuffle=False, pin_memory=True)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        data_loader = torch.utils.data.DataLoader(dataset, 
+                                                batch_size=320, 
+                                                shuffle=False, 
+                                                pin_memory=True, 
+                                                num_workers=4)
+        device = torch.device("cuda:0")
         # load model
         model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True).to(device)
-
+        model.eval()
         logits_list = []
         labels_list = []
         with torch.no_grad():
@@ -82,6 +85,7 @@ def test_imagenet_logits():
     alpha = 0.1
     predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
     score_functions = [THR(), APS(), RAPS(1, 0), SAPS(0.2), Margin()]
+    score_functions = [SAPS(0.2)]
     for score in score_functions:
         for the_predictor in predictors:
             predictor = the_predictor(score)
@@ -151,8 +155,7 @@ def test_imagenet():
     #######################################
     alpha = 0.1
     predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
-    # score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
-    score_functions = [APS()]
+    score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
     for score in score_functions:
         for class_predictor in predictors:
             predictor = class_predictor(score, model, temperature=1)
@@ -327,9 +330,6 @@ def test_KNN_Score():
     
     
     train_dataset = build_dataset("cifar10", "train", "train")
-    
-    
-
     num_classes = 10
     num_epochs = 30
     batch_size = 1024

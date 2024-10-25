@@ -34,7 +34,7 @@ class SAPS(APS):
         if self.randomized:
             U = torch.rand(probs.shape, device=probs.device)
         else:
-            U = torch.ones_like(probs.shape)
+            U = torch.zeros_like(probs)
         ordered_scores = cumsum - ordered * U
         _, sorted_indices = torch.sort(indices, descending=False, dim=-1)
         scores = ordered_scores.gather(dim=-1, index=sorted_indices)
@@ -45,7 +45,7 @@ class SAPS(APS):
         if self.randomized:
             U = torch.rand(indices.shape[0], device=probs.device)
         else:
-            U = torch.ones(indices.shape[0], device=probs.device)
+            U = torch.zeros(indices.shape[0], device=probs.device)
         idx = torch.where(indices == label.view(-1, 1))
         scores_first_rank = U * cumsum[idx]
         scores_usual = self.__weight * (idx[1] - U) + ordered[:, 0]

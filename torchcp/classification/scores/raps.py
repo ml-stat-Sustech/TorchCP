@@ -40,7 +40,7 @@ class RAPS(APS):
         if self.randomized:
             U = torch.rand(probs.shape, device=probs.device)
         else:
-            U = torch.ones_like(probs.shape)
+            U = torch.zeros_like(probs.shape)
         reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1, device=probs.device) - self.__kreg),
                             torch.tensor(0, device=probs.device))
         ordered_scores = cumsum - ordered * U + reg
@@ -49,14 +49,18 @@ class RAPS(APS):
         return scores
 
     def _calculate_single_label(self, probs, label):
+        
         indices, ordered, cumsum = self._sort_sum(probs)
         if self.randomized:
             U = torch.rand(indices.shape[0], device=probs.device)
         else:
-            U = torch.ones(indices.shape[0], device=probs.device)
+            U = torch.zeros(indices.shape[0], device=probs.device)
         idx = torch.where(indices == label.view(-1, 1))
         reg = torch.maximum(self.__penalty * (idx[1] + 1 - self.__kreg), torch.tensor(0).to(probs.device))
-        scores_first_rank = U * ordered[idx] + reg
         idx_minus_one = (idx[0], idx[1] - 1)
-        scores_usual = U * ordered[idx] + cumsum[idx_minus_one] + reg
-        return torch.where(idx[1] == 0, scores_first_rank, scores_usual)
+        scores = cumsum[idx_minus_one] - U * ordered[idx] + reg
+        return scores
+        # indices, ordered, cumsum = self._sort_sum(probs)
+        # idx = torch.where(indices == label.view(-1, 1))
+        # reg = torch.maximum(self.__penalty * (idx[1] + 1 - self.__kreg), torch.tensor(0).to(probs.device))
+        # return super()._calculate_single_label(probs, label) + reg
