@@ -22,7 +22,7 @@ import numpy as np
 from torchcp.classification.predictors import SplitPredictor, ClusteredPredictor, ClassWisePredictor
 from torchcp.classification.scores import THR, APS, SAPS, RAPS, Margin
 from torchcp.classification.utils.metrics import Metrics
-from torchcp.utils import fix_randomness
+from transformers import set_seed
 from torchcp.classification.utils import OrdinalClassifier
 from torchcp.classification.scores import KNN
 from .utils import *
@@ -72,7 +72,7 @@ def test_imagenet_logits():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
-    fix_randomness(seed=0)
+    set_seed(seed=0)
     model_name = 'ResNet101'
     cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
@@ -103,7 +103,7 @@ def test_imagenet_logits_unrandomized():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
-    fix_randomness(seed=0)
+    set_seed(seed=0)
     model_name = 'ResNet101'
     cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
@@ -130,7 +130,7 @@ def test_imagenet_logits_unrandomized():
         
         
 def test_imagenet():
-    fix_randomness(seed=0)
+    set_seed(seed=0)
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
@@ -166,7 +166,7 @@ def test_calibration():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
-    fix_randomness(seed=0)
+    set_seed(seed=0)
 
     model_name = 'ResNet101'
     cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
@@ -197,7 +197,7 @@ def test_imagenet_logits_types():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
-    fix_randomness(seed=0)
+    set_seed(seed=0)
     model_name = 'ResNet101'
     cal_logits, cal_labels, test_logits, test_labels, num_classes = get_imagenet_logits(model_name)
 
@@ -225,7 +225,7 @@ def test_imagenet_logits_types():
 
 
 def test_ordinal_classification():
-    fix_randomness(seed=0)
+    set_seed(seed=0)
 
     num_classes = 10
     num_per_class = 2000
@@ -323,7 +323,7 @@ def test_ordinal_classification():
 
 
 def test_KNN_Score():
-    fix_randomness(seed=0)
+    set_seed(seed=0)
     
     
     train_dataset = build_dataset("cifar10", "train", "train")

@@ -21,7 +21,7 @@ from torchcp.classification.scores import APS
 from torchcp.graph.scores import DAPS, SNAPS
 from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
 from torchcp.graph.utils.metrics import Metrics
-from torchcp.utils import fix_randomness
+from transformers import set_seed
 
 
 from .utils import *
@@ -31,7 +31,7 @@ model_dir = get_model_dir()
 
 
 def test_transductive_graph():
-    fix_randomness(seed=0)
+    set_seed(seed=1)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #######################################
@@ -172,7 +172,7 @@ def test_transductive_graph():
 
 
 def test_inductive_graph():
-    fix_randomness(seed=0)
+    set_seed(seed=0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #######################################
@@ -186,7 +186,7 @@ def test_inductive_graph():
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=10000))
     data = dataset[0].to(device)
 
-    fname = '.cache/Computers_logits.pkl'
+    fname = os.path.join(dataset_dir,'Computers_logits.pkl')
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
             logits = pickle.load(handle)
@@ -263,8 +263,6 @@ def test_inductive_graph():
                              ).sum()) / int(data.test_mask.sum())
         print(f"Model Accuracy: {test_accuracy}")
 
-    probs = F.softmax(logits, dim=-1)
-
     #######################################
     # conformal prediction for inductive setting
     #######################################
@@ -275,7 +273,6 @@ def test_inductive_graph():
     label_mask = F.one_hot(dataset.y).bool().to(device)[dataset.test_mask]
 
     logits = logits[data.test_mask]
-    probs = probs[data.test_mask]
 
     metrics = Metrics()
     #######################################
@@ -288,24 +285,23 @@ def test_inductive_graph():
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
 
-    score_functions = [APS(score_type="softmax")]
+    score_function = APS(score_type="softmax")
 
-    for score_function in score_functions:
-        predictor = GraphSplitPredictor(score_function)
-        predictor.calculate_threshold(logits, cal_idx, label_mask, alpha)
+    predictor = GraphSplitPredictor(score_function)
+    predictor.calculate_threshold(logits, cal_idx, label_mask, alpha)
 
-        print(
-            f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
-        prediction_sets = predictor.predict_with_logits(logits, eval_idx)
+    print(
+        f"Experiment--Data : {dataset_name}, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}")
+    prediction_sets = predictor.predict_with_logits(logits, eval_idx)
 
 
-        print("Evaluating prediction sets...")
-        print(
-            f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
-        print(
-            f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
-        print(
-            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+    print("Evaluating prediction sets...")
+    print(
+        f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+    print(
+        f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+    print(
+        f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
 
     #######################################
     # Neighbourhood Adaptive Prediction Sets for inductive setting
@@ -316,7 +312,7 @@ def test_inductive_graph():
     for scheme in schemes:
         predictor = NAPSSplitPredictor(data, scheme=scheme)
         lcc_nodes, prediction_sets = predictor.precompute_naps_sets(
-            probs, labels, alpha)
+            logits, labels, alpha)
 
         print(
             f"Experiment--Data : {dataset_name}, Model : {model_name}, Predictor : {predictor.__class__.__name__}, Scheme : {scheme}, Alpha : {alpha}")
