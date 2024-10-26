@@ -22,12 +22,11 @@ class BaseGraphPredictor(BasePredictor):
     :param graph_data: PyG data of graph.
     """
 
-    def __init__(self, score_function, model=None, graph_data=None):
+    def __init__(self, graph_data, score_function, model=None):
         super(BaseGraphPredictor, self).__init__(score_function, model)
 
         self._graph_data = graph_data
-        if graph_data is not None:
-            self._label_mask = F.one_hot(graph_data.y).bool()
+        self._label_mask = F.one_hot(graph_data.y).bool()
         self._metric = Metrics()
 
     @abstractmethod

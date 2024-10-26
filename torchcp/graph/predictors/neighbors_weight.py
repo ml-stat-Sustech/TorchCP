@@ -28,9 +28,15 @@ class NAPSSplitPredictor(GraphSplitPredictor):
     :param scheme: name of weight decay rate for k-hop neighbors. Options are 'unif' (weights = 1), 'linear' (weights = 1/k), or 'geom' (weights = 2^{-(k - 1)}).
     """
 
-    def __init__(self, graph_data, cutoff=50, k=2, scheme="unif"):
-        super().__init__(score_function=APS(score_type="softmax"),
-                         model=None, graph_data=graph_data)
+    def __init__(self, graph_data, score_function=APS(score_type="softmax"), model=None, cutoff=50, k=2, scheme="unif"):
+        if type(score_function) is not APS:
+            raise ValueError(
+                f"Invalid score_function: {score_function.__class__}. Must be APS.")
+        if score_function.score_type != "softmax":
+            raise ValueError(
+                f"Invalid score_type of APS: {score_function.score_type}. Must be softmax.")
+        
+        super().__init__(graph_data, score_function, model)
 
         if scheme not in ["unif", "linear", "geom"]:
             raise ValueError(
@@ -121,6 +127,7 @@ class NAPSSplitPredictor(GraphSplitPredictor):
         scores = self.score_function(logits)
         S = []
         for index in range(scores.shape[0]):
-            S.extend(self._generate_prediction_set(scores[index,:].reshape(1,-1), 1-alphas[index]))
+            S.extend(self._generate_prediction_set(
+                scores[index, :].reshape(1, -1), 1 - alphas[index]))
 
         return S

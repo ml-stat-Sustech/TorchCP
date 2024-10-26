@@ -20,8 +20,8 @@ class GraphSplitPredictor(BaseGraphPredictor):
     :param model: a pytorch model.
     """
 
-    def __init__(self, score_function, model=None, graph_data=None):
-        super().__init__(score_function, model, graph_data)
+    def __init__(self, graph_data, score_function, model=None):
+        super().__init__(graph_data, score_function, model)
 
     #############################
     # The calibration process
