@@ -96,23 +96,20 @@ if __name__ == '__main__':
     model = build_gnn_model('SAGE')(graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    n_epochs = 30
+    n_epochs = 15
     print("########################## CP for Inductive ###########################")
     for _ in range(n_epochs):
         train_inductive(model, optimizer, train_loader)
     
     model.eval()
     with torch.no_grad():
-        probs = F.softmax(model.inference(
-                graph_data.x, subgraph_loader), dim=-1)
+        logits = model.inference(graph_data.x, subgraph_loader)
 
-    test_subgraph = graph_data.subgraph(graph_data.test_mask)
-    G = to_networkx(test_subgraph).to_undirected()
     labels = graph_data.y[graph_data.test_mask]
-    probs = probs[graph_data.test_mask]
+    logits = logits[graph_data.test_mask]
 
-    predictor = NAPSSplitPredictor(G)
-    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(probs, labels, args.alpha)
+    predictor = NAPSSplitPredictor(graph_data)
+    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(logits, labels, args.alpha)
 
     metrics = Metrics()
     print("Evaluating prediction sets...")
@@ -120,3 +117,5 @@ if __name__ == '__main__':
         f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, labels[lcc_nodes])}.")
     print(
         f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
+    print(
+        f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")

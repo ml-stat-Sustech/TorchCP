@@ -93,8 +93,7 @@ def build_reg_data(data_name="community"):
 
 
 def build_transductive_gnn_data(data_name, ntrain_per_class=20):
-    usr_dir = os.path.expanduser('~')
-    data_dir = os.path.join(usr_dir, "data")
+    data_dir = base_path
 
     if data_name in ['cora_ml']:
         graph_data = CitationFull(data_dir, data_name)[0]
@@ -124,10 +123,9 @@ def build_transductive_gnn_data(data_name, ntrain_per_class=20):
 
 
 def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
-    usr_dir = os.path.expanduser('~')
+    data_dir = base_path
 
     if data_name in ['Computers']:
-        data_dir = os.path.join(usr_dir, "data/Amazon")
         graph_data = Amazon(data_dir, data_name,
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0].to(device)
         kwargs = {'batch_size': 512, 'num_workers': 6,

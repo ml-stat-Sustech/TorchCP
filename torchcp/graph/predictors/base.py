@@ -28,6 +28,7 @@ class BaseGraphPredictor(BasePredictor):
         self._graph_data = graph_data
         if graph_data is not None:
             self._label_mask = F.one_hot(graph_data.y).bool()
+        self._metric = Metrics()
 
     @abstractmethod
     def calibrate(self, cal_idx, alpha):
