@@ -10,7 +10,6 @@ import argparse
 
 import torch
 import torch.nn.functional as F
-from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.scores import APS
 from torchcp.graph.scores import DAPS
@@ -96,7 +95,7 @@ if __name__ == '__main__':
     model = build_gnn_model('SAGE')(graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    n_epochs = 15
+    n_epochs = 30
     print("########################## CP for Inductive ###########################")
     for _ in range(n_epochs):
         train_inductive(model, optimizer, train_loader)
