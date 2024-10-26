@@ -76,7 +76,7 @@ if __name__ == '__main__':
     score_function = DAPS(neigh_coef=0.5,
                           base_score_function=APS(score_type="softmax"),
                           graph_data=graph_data)
-    predictor = GraphSplitPredictor(score_function, model, graph_data)
+    predictor = GraphSplitPredictor(graph_data, score_function, model)
 
     n_calib = 500
     perm = torch.randperm(test_idx.shape[0])

@@ -43,16 +43,17 @@ def test_transductive_graph():
 
     if dataset_name in ['cora_ml']:
 
-        dataset = CitationFull(dataset_dir, dataset_name)[0].to(device)
-        label_mask = F.one_hot(dataset.y).bool()
+        dataset = CitationFull(dataset_dir, dataset_name)
+        graph_data = dataset[0].to(device)
+        label_mask = F.one_hot(graph_data.y).bool()
 
         #######################################
         # training/validation/test data random split
         # 20 per class for training/validation, left for test
         #######################################
 
-        classes_idx_set = [(dataset.y == cls_val).nonzero(
-            as_tuple=True)[0] for cls_val in dataset.y.unique()]
+        classes_idx_set = [(graph_data.y == cls_val).nonzero(
+            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
         shuffled_classes = [
             s[torch.randperm(s.shape[0])] for s in classes_idx_set]
 
@@ -66,9 +67,9 @@ def test_transductive_graph():
         raise NotImplementedError(
             f"The dataset {dataset_name} has not been implemented!")
 
-    in_channels = dataset.x.shape[1]
+    in_channels = graph_data.x.shape[1]
     hidden_channels = 64
-    out_channels = dataset.y.max().item() + 1
+    out_channels = graph_data.y.max().item() + 1
     p_dropout = 0.8
 
     learning_rate = 0.01
@@ -93,10 +94,10 @@ def test_transductive_graph():
     for _ in range(n_epochs):
         model.train()
         optimizer.zero_grad()
-        out = model(dataset.x, dataset.edge_index)
-        training_loss = F.cross_entropy(out[train_idx], dataset.y[train_idx])
+        out = model(graph_data.x, graph_data.edge_index)
+        training_loss = F.cross_entropy(out[train_idx], graph_data.y[train_idx])
         validation_loss = F.cross_entropy(
-            out[val_idx], dataset.y[val_idx]).detach().item()
+            out[val_idx], graph_data.y[val_idx]).detach().item()
         training_loss.backward()
         optimizer.step()
 
@@ -118,10 +119,10 @@ def test_transductive_graph():
     #######################################
     best_model.eval()
     with torch.no_grad():
-        logits = best_model(dataset.x, dataset.edge_index)
+        logits = best_model(graph_data.x, graph_data.edge_index)
     y_pred = logits.argmax(dim=1).detach()
 
-    test_accuracy = (y_pred[test_idx] == dataset.y[test_idx]
+    test_accuracy = (y_pred[test_idx] == graph_data.y[test_idx]
                      ).sum().item() / test_idx.shape[0]
     print(f"Model Accuracy: {test_accuracy}")
 
@@ -129,7 +130,7 @@ def test_transductive_graph():
     # The construction of k-NN similarity graph
     #######################################
 
-    knn_edge, knn_weight = compute_adj_knn(dataset.x, k=20)
+    knn_edge, knn_weight = compute_adj_knn(graph_data.x, k=20)
 
     #######################################
     # A standard process of split conformal prediction
@@ -145,16 +146,16 @@ def test_transductive_graph():
     score_functions = [APS(score_type="softmax"),
                        DAPS(neigh_coef=0.5,
                             base_score_function=APS(score_type="softmax"),
-                            graph_data=dataset),
+                            graph_data=graph_data),
                        SNAPS(lambda_val=1 / 3,
                              mu_val=1 / 3,
                              base_score_function=APS(score_type="softmax"),
-                             graph_data=dataset,
+                             graph_data=graph_data,
                              knn_edge=knn_edge,
                              knn_weight=knn_weight)]
 
     for score_function in score_functions:
-        predictor = GraphSplitPredictor(score_function)
+        predictor = GraphSplitPredictor(graph_data, score_function)
         predictor.calculate_threshold(logits, cal_idx, label_mask, alpha)
 
         print(
@@ -164,11 +165,11 @@ def test_transductive_graph():
         metrics = Metrics()
         print("Evaluating prediction sets...")
         print(
-            f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[eval_idx])}.")
+            f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, graph_data.y[eval_idx])}.")
         print(
-            f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[eval_idx])}.")
+            f"Average_size: {metrics('average_size')(prediction_sets, graph_data.y[eval_idx])}.")
         print(
-            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, dataset.y[eval_idx])}.")
+            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, graph_data.y[eval_idx])}.")
 
 
 def test_inductive_graph():
@@ -184,7 +185,7 @@ def test_inductive_graph():
 
     dataset = Amazon(dataset_dir, dataset_name,
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=10000))
-    data = dataset[0].to(device)
+    graph_data = dataset[0].to(device)
 
     fname = os.path.join(dataset_dir,'Computers_logits.pkl')
     if os.path.exists(fname):
@@ -193,14 +194,14 @@ def test_inductive_graph():
     else:
         kwargs = {'batch_size': 512, 'num_workers': 6,
                   'persistent_workers': True}
-        train_loader = NeighborLoader(data, input_nodes=data.train_mask,
+        train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,
                                       num_neighbors=[25, 10], shuffle=True, **kwargs)
-        subgraph_loader = NeighborLoader(copy.copy(data), input_nodes=None,
+        subgraph_loader = NeighborLoader(copy.copy(graph_data), input_nodes=None,
                                          num_neighbors=[-1], shuffle=False, **kwargs)
 
         del subgraph_loader.data.x, subgraph_loader.data.y
-        subgraph_loader.data.num_nodes = data.num_nodes
-        subgraph_loader.data.n_id = torch.arange(data.num_nodes).to(device)
+        subgraph_loader.data.num_nodes = graph_data.num_nodes
+        subgraph_loader.data.n_id = torch.arange(graph_data.num_nodes).to(device)
 
         hidden_channels = 64
         learning_rate = 0.01
@@ -231,9 +232,9 @@ def test_inductive_graph():
                 optimizer.step()
 
             model.eval()
-            y_pred = model.inference(data.x, subgraph_loader).argmax(dim=-1)
-            val_acc = int((y_pred[data.val_mask] == data.y[data.val_mask]).sum(
-            )) / int(data.val_mask.sum())
+            y_pred = model.inference(graph_data.x, subgraph_loader).argmax(dim=-1)
+            val_acc = int((y_pred[graph_data.val_mask] == graph_data.y[graph_data.val_mask]).sum(
+            )) / int(graph_data.val_mask.sum())
 
             if val_acc >= max_val_acc:
                 max_val_acc = val_acc
@@ -254,13 +255,13 @@ def test_inductive_graph():
 
         best_model.eval()
         with torch.no_grad():
-            logits = best_model.inference(data.x, subgraph_loader)
+            logits = best_model.inference(graph_data.x, subgraph_loader)
             with open(fname, 'wb') as handle:
                 pickle.dump(logits, handle, protocol=pickle.HIGHEST_PROTOCOL)
         y_pred = logits.argmax(dim=-1)
 
-        test_accuracy = int((y_pred[data.test_mask] == data.y[data.test_mask]
-                             ).sum()) / int(data.test_mask.sum())
+        test_accuracy = int((y_pred[graph_data.test_mask] == graph_data.y[graph_data.test_mask]
+                             ).sum()) / int(graph_data.test_mask.sum())
         print(f"Model Accuracy: {test_accuracy}")
 
     #######################################
@@ -269,10 +270,10 @@ def test_inductive_graph():
 
     alpha = 0.1
 
-    labels = data.y[data.test_mask]
-    label_mask = F.one_hot(dataset.y).bool().to(device)[dataset.test_mask]
+    labels = graph_data.y[graph_data.test_mask]
+    label_mask = F.one_hot(graph_data.y).bool().to(device)[graph_data.test_mask]
 
-    logits = logits[data.test_mask]
+    logits = logits[graph_data.test_mask]
 
     metrics = Metrics()
     #######################################
@@ -280,14 +281,14 @@ def test_inductive_graph():
     #######################################
 
     n_calib = 500
-    test_idx = torch.arange(dataset.test_mask.sum())
+    test_idx = torch.arange(graph_data.test_mask.sum())
     perm = torch.randperm(test_idx.shape[0])
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
 
     score_function = APS(score_type="softmax")
 
-    predictor = GraphSplitPredictor(score_function)
+    predictor = GraphSplitPredictor(graph_data, score_function)
     predictor.calculate_threshold(logits, cal_idx, label_mask, alpha)
 
     print(
@@ -297,11 +298,11 @@ def test_inductive_graph():
 
     print("Evaluating prediction sets...")
     print(
-        f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+        f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, graph_data.y[graph_data.test_mask][eval_idx])}.")
     print(
-        f"Average_size: {metrics('average_size')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+        f"Average_size: {metrics('average_size')(prediction_sets, graph_data.y[graph_data.test_mask][eval_idx])}.")
     print(
-        f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, dataset.y[dataset.test_mask][eval_idx])}.")
+        f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, graph_data.y[graph_data.test_mask][eval_idx])}.")
 
     #######################################
     # Neighbourhood Adaptive Prediction Sets for inductive setting
@@ -310,7 +311,7 @@ def test_inductive_graph():
     schemes = ["unif", "linear", "geom"]
 
     for scheme in schemes:
-        predictor = NAPSSplitPredictor(data, scheme=scheme)
+        predictor = NAPSSplitPredictor(graph_data, scheme=scheme)
         lcc_nodes, prediction_sets = predictor.precompute_naps_sets(
             logits, labels, alpha)
 
