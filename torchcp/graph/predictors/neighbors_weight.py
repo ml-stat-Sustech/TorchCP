@@ -23,6 +23,7 @@ class NAPSSplitPredictor(GraphSplitPredictor):
     Link: https://proceedings.mlr.press/v202/clarkson23a/clarkson23a.pdf
     Github: https://github.com/jase-clarkson/graph_cp/tree/master
 
+    :param score_function: only use score_function=APS(score_type="softmax") in NAPS.
     :param cutoff: nodes with at least 'cutoff' k-hop neighbors for test.
     :param k: Add nodes up to the 'k-hop' neighbors of ego node to its calibration set.
     :param scheme: name of weight decay rate for k-hop neighbors. Options are 'unif' (weights = 1), 'linear' (weights = 1/k), or 'geom' (weights = 2^{-(k - 1)}).
@@ -31,7 +32,7 @@ class NAPSSplitPredictor(GraphSplitPredictor):
     def __init__(self, graph_data, score_function=APS(score_type="softmax"), model=None, cutoff=50, k=2, scheme="unif"):
         if type(score_function) is not APS:
             raise ValueError(
-                f"Invalid score_function: {score_function.__class__}. Must be APS.")
+                f"Invalid score_function: {type(score_function).__name__}. Must be APS.")
         if score_function.score_type != "softmax":
             raise ValueError(
                 f"Invalid score_type of APS: {score_function.score_type}. Must be softmax.")
