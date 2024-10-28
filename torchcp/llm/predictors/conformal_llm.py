@@ -8,8 +8,8 @@ from scipy.stats import binom
 from transformers import set_seed, StoppingCriteria, StoppingCriteriaList
 import torch
 
-from ..utils.metrics import Metrics
-from ..utils import scoring, scaling, loss
+from torchcp.llm import Metrics
+from torchcp.llm.utils import scoring, scaling, loss
 
 class StoppingCriteriaSub(StoppingCriteria):
     def __init__(self, input_length=0, stop_ids=None):

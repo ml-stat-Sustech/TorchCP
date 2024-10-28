@@ -26,6 +26,14 @@ class APS(THR):
         
         
     def _calculate_all_label(self, probs):
+        """_summary_
+
+        Args:
+            probs (torch.Tensor): the preidction probabilities
+
+        Returns:
+            torch.Tensor: the non-conformity scores
+        """
         indices, ordered, cumsum = self._sort_sum(probs)
         if self.randomized:
             U = torch.rand(probs.shape, device=probs.device)
