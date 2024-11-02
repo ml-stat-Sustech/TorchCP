@@ -69,17 +69,11 @@ class GraphSplitPredictor(BaseGraphPredictor):
 
         eval_scores = scores[eval_idx]
         if q_hat is None:
+            assert self.q_hat is not None, "Ensure self.q_hat is not None. Please perform calibration first."
             q_hat = self.q_hat
 
         S = self._generate_prediction_set(eval_scores, q_hat)
 
-        return S
-
-    def predict_with_scores(self, scores, q_hat=None):
-        if q_hat is None:
-            q_hat = self.q_hat
-
-        S = self._generate_prediction_set(scores, q_hat)
         return S
 
     #############################

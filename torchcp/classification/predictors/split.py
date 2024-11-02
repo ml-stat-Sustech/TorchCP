@@ -80,6 +80,7 @@ class SplitPredictor(BasePredictor):
 
         scores = self.score_function(logits).to(self._device)
         if q_hat is None:
+            assert self.q_hat is not None, "Ensure self.q_hat is not None. Please perform calibration first."
             q_hat = self.q_hat
 
         S = self._generate_prediction_set(scores, q_hat)
