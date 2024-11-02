@@ -68,7 +68,7 @@ def calculate_conformal_value(scores, alpha, default_q_hat=torch.inf):
             f"The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as {default_q_hat}.")
         return default_q_hat
     N = scores.shape[0]
-    qunatile_value = math.ceil(N + 1) * (1 - alpha) / N
+    qunatile_value = math.ceil((N + 1) * (1 - alpha)) / N
     if qunatile_value > 1:
         warnings.warn(
             f"The value of quantile exceeds 1. It should be a value in [0,1]. To avoid program crash, the threshold is set as {default_q_hat}.")
