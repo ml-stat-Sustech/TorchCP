@@ -9,6 +9,16 @@ class R2ccpLoss(nn.Module):
     Conformal Prediction via Regression-as-Classification Loss.
     This loss combines cross-entropy and entropy regularization to provide uncertainty estimates for predictions, 
     supporting conformal prediction in regression tasks by treating it as a classification problem.
+    
+    Args:
+        p (float): The norm degree for the distance measure in the cross-entropy term.
+        tau (float): Weighting factor for the entropy regularization term.
+        midpoints (torch.Tensor): A tensor containing midpoint values for each bin.
+
+    Shape:
+        - Input: :attr:`preds` of shape `(batch_size, K)` where `K` is the number of bins.
+        - Target: :attr:`target` of shape `(batch_size, 1)`.
+        - Output: A scalar representing the computed loss.
 
     Reference:
         Paper: Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2021)
@@ -36,16 +46,6 @@ class R2ccpLoss(nn.Module):
     - :math:`\hat{p}_{ik}` is the predicted probability for bin `k` and instance `i`,
     - :math:`\tau` is the weight for the entropy regularization term,
     - :math:`p` is the norm for the distance measure.
-
-    Args:
-        p (float): The norm degree for the distance measure in the cross-entropy term.
-        tau (float): Weighting factor for the entropy regularization term.
-        midpoints (torch.Tensor): A tensor containing midpoint values for each bin.
-
-    Shape:
-        - Input: :attr:`preds` of shape `(batch_size, K)` where `K` is the number of bins.
-        - Target: :attr:`target` of shape `(batch_size, 1)`.
-        - Output: A scalar representing the computed loss.
 
     Examples::
 

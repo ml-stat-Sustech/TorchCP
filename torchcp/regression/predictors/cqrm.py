@@ -13,15 +13,40 @@ from ..loss import QuantileLoss
 
 class CQRM(CQR):
     """
-    Method: CQR-M
-    Paper: A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
-    Link: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
-    Github: https://github.com/msesia/cqr-comparison
+    CQR-M
 
-    :param model: a pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
+    Args:
+        model (torch.nn.Module): A pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
+    
+    Reference:
+        Paper: A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
+        Link: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
+        Github: https://github.com/msesia/cqr-comparison
     """
 
     def fit(self, train_dataloader, **kwargs):
+        """
+        Trains the model on provided training data with :math:`[alpha/2, 1/2, 1-alpha/2]` quantile regression loss.
+
+        Args:
+            train_dataloader (torch.utils.data.DataLoader): DataLoader providing training data.
+            **kwargs: Additional training parameters.
+                - model (torch.nn.Module, optional): Model to be trained; defaults to the model passed to the predictor.
+                - criterion (callable, optional): Loss function for training. If not provided, uses :func:`QuantileLoss`.
+                - alpha (float, optional): Significance level (e.g., 0.1) for quantiles, required if :attr:`criterion` is None.
+                - epochs (int, optional): Number of training epochs. Default is :math:`100`.
+                - lr (float, optional): Learning rate for optimizer. Default is :math:`0.01`.
+                - optimizer (torch.optim.Optimizer, optional): Optimizer for training; defaults to :func:`torch.optim.Adam`.
+                - verbose (bool, optional): If True, displays training progress. Default is True.
+
+        Raises:
+            ValueError: If :attr:`criterion` is not provided and :attr:`alpha` is not specified.
+            
+        .. note::
+            This function is optional but recommended, because the training process for each preditor's model is different. 
+            We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
+            If the fit function is not used, users should pass the trained model to the predictor at the beginning.
+        """
         criterion = kwargs.pop('criterion', None)
         if criterion is None:
             alpha = kwargs.pop('alpha', None)

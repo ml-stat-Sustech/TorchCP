@@ -11,6 +11,15 @@ class QuantileLoss(nn.Module):
     the conditional quantiles of a target variable. It applies different penalties based on whether 
     the predictions fall above or below the actual target, making it useful for tasks requiring 
     interval or quantile estimation.
+    
+    Args:
+        quantiles (list of float): List of quantiles to compute, typically in the range [0, 1],
+            e.g., [0.025, 0.975] for the 2.5th and 97.5th percentiles.
+
+    Shape:
+        - Input: :attr:`preds` of shape `(batch_size, num_quantiles)` where `num_quantiles` is the number of specified quantiles.
+        - Target: :attr:`target` of shape `(batch_size, 1)`.
+        - Output: A scalar representing the mean quantile loss.
 
     Reference:
         Paper: Conformalized Quantile Regression (Romano, Y., et al., 2019)
@@ -31,15 +40,6 @@ class QuantileLoss(nn.Module):
     - :math:`\hat{y}` is the predicted quantile value.
 
     The total loss across all quantiles is averaged over the batch.
-
-    Args:
-        quantiles (list of float): List of quantiles to compute, typically in the range [0, 1],
-            e.g., [0.025, 0.975] for the 2.5th and 97.5th percentiles.
-
-    Shape:
-        - Input: :attr:`preds` of shape `(batch_size, num_quantiles)` where `num_quantiles` is the number of specified quantiles.
-        - Target: :attr:`target` of shape `(batch_size, 1)`.
-        - Output: A scalar representing the mean quantile loss.
 
     Examples::
 

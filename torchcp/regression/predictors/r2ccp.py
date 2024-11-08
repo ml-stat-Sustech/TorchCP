@@ -15,13 +15,27 @@ from ..loss import R2ccpLoss
 
 class R2CCP(SplitPredictor):
     """
-    Method: Regression-to-Classification Conformal Prediction
-    Paper: Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2021)
-    Link: https://neurips.cc/virtual/2023/80610
-    Github: https://github.com/EtashGuha/R2CCP
+    Regression-to-Classification Conformal Prediction.
+    
+    This method converting regression to a classification problem and 
+    then use CP for classification to obtain CP sets for regression.
 
-    :param model: a pytorch model that can output probabilities for different bins.
-    :param midpoints: the midpoints of the equidistant bins.
+    Args:
+        model (torch.nn.Module): a pytorch model that can output probabilities for different bins.
+        midpoints (torch.Tensor): the midpoints of the equidistant bins.
+        
+    Reference:
+        Paper: Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2021)
+        Link: https://neurips.cc/virtual/2023/80610
+        Github: https://github.com/EtashGuha/R2CCP
+        
+    Example::
+    
+        >>> from torchcp.regression.predictors import R2CCP
+        >>> from torchcp.regression.utils import calculate_midpoints
+        >>> K = 50   # number of midpoint
+        >>> midpoints = calculate_midpoints(train_and_cal_data_loader, K)
+        >>> predictor = R2CCP(model, midpoints)
     """
 
     def __init__(self, model, midpoints):
@@ -29,6 +43,27 @@ class R2CCP(SplitPredictor):
         self.midpoints = midpoints.to(self._device)
 
     def fit(self, train_dataloader, **kwargs):
+        """
+        Trains regression-to-classification model with the R2ccpLoss.
+
+        Args:
+            train_dataloader (torch.utils.data.DataLoader): DataLoader for training data.
+            kwargs: Additional parameters for training.
+                - model (torch.nn.Module, optional): Model to be trained; defaults to the model passed to the predictor.
+                - epochs (int, optional): Number of training epochs. Default is :math:`100`.
+                - p (float, optional): Probability parameter for the loss function. Default is :math:`0.5`.
+                - tau (float, optional): Threshold parameter for the loss function. Default is :math:`0.2`.
+                - criterion (callable, optional): Loss function; defaults to :class:`R2ccpLoss`.
+                - lr (float, optional): Learning rate. Default is :math:`1e-4`.
+                - weight_decay (float, optional): Weight decay for the optimizer. Default is :math:`1e-4`.
+                - optimizer (torch.optim.Optimizer, optional): Optimizer; defaults to :func:`torch.optim.AdamW`.
+                - verbose (bool, optional): If True, displays training progress. Default is True.
+                
+        .. note::
+            This function is optional but recommended, because the training process for each preditor's model is different. 
+            We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
+            If the fit function is not used, users should pass the trained model to the predictor at the beginning.
+        """
         model = kwargs.get('model', self._model)
         epochs = kwargs.get('epochs', 100)
         p = kwargs.get('p', 0.5)
@@ -87,11 +122,15 @@ class R2CCP(SplitPredictor):
 
     def __find_interval(self, midpoints, y_truth):
         """
-        Choosing an interval for y_truth[i], i.e., midpoints[interval[i]] <= y_truth[i] < midpoints[interval[i+1]]
+        Finds the interval index for each ground truth value based on midpoints, 
+        i.e., midpoints[interval[i]] <= y_truth[i] < midpoints[interval[i+1]]
 
-        :param midpoints: the midpoints of the equidistant bins
-        :param y_truth: the truth values
-        :return:
+        Args:
+            midpoints (torch.Tensor): Midpoints of the equidistant bins.
+            y_truth (torch.Tensor): Ground truth values, shape (batch_size,).
+
+        Returns:
+            torch.Tensor: Interval indices for each ground truth value, shape (batch_size,).
         """
         interval = torch.zeros_like(y_truth, dtype=torch.long).to(self._device)
 
@@ -108,7 +147,18 @@ class R2CCP(SplitPredictor):
         return interval
 
     def __calculate_linear_interpolation(self, interval, predicts, y_truth, midpoints):
+        """
+        Calculates scores through linear interpolation within intervals.
 
+        Args:
+            interval (torch.Tensor): Interval indices for each data point, shape (batch_size,).
+            predicts (torch.Tensor): Predicted bin probabilities, shape (batch_size, num_bins).
+            y_truth (torch.Tensor): Ground truth values, shape (batch_size,).
+            midpoints (torch.Tensor): Midpoints of the equidistant bins.
+
+        Returns:
+            torch.Tensor: Scores for each data point, shape (batch_size,).
+        """
         midpoints = midpoints.repeat((y_truth.shape[0], 1))
         left_points = midpoints[torch.arange(y_truth.shape[0]), (interval) % midpoints.shape[1]]
         right_points = midpoints[torch.arange(y_truth.shape[0]), (interval + 1) % midpoints.shape[1]]

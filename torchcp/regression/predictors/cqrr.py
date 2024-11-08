@@ -12,12 +12,15 @@ from .cqr import CQR
 
 class CQRR(CQR):
     """
-    Method: CQR-R
-    Paper: A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
-    Link: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
-    Github: https://github.com/msesia/cqr-comparison
+    CQR-R
 
-    :param model: a pytorch model that can output alpha/2 and 1-alpha/2 quantile regression.
+    Args:
+        model (torch.nn.Module): A pytorch regression model that can output alpha/2 and 1-alpha/2 quantiles.
+    
+    Reference:
+        Paper: A comparison of some conformal quantile regression methods (Matteo Sesia and Emmanuel J. Candes, 2019)
+        Link: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
+        Github: https://github.com/msesia/cqr-comparison
     """
 
     def calculate_score(self, predicts, y_truth):

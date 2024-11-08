@@ -14,37 +14,46 @@ from ..utils.metrics import Metrics
 
 class Ensemble(object):
     """
-    Method: Ensemble Conformal Prediction Interval
+    Ensemble Conformal Prediction Interval
 
     There are two main implementations for `score_predictor`:
     
     1. EnbPI:
-       - Paper: Conformal Prediction Interval for Dynamic Time-Series (Xu and Xie, 2020)
-       - Link: https://proceedings.mlr.press/v139/xu21h/xu21h.pdf
-       - Github: https://github.com/hamrel-cxu/EnbPI
+        - Paper: Conformal Prediction Interval for Dynamic Time-Series (Xu and Xie, 2020)
+        - Link: https://proceedings.mlr.press/v139/xu21h/xu21h.pdf
+        - Github: https://github.com/hamrel-cxu/EnbPI
     
     2. EnCQR:
-       - Paper: Ensemble Conformalized Quantile Regression for 
-         Probabilistic Time Series Forecasting (Jensen et al., 2022)
-       - Link: https://ieeexplore.ieee.org/abstract/document/9940232
-       - Github: https://github.com/FilippoMB/Ensemble-Conformalized-Quantile-Regression
+        - Paper: Ensemble Conformalized Quantile Regression for Probabilistic 
+                Time Series Forecasting (Jensen et al., 2022)
+        - Link: https://ieeexplore.ieee.org/abstract/document/9940232
+        - Github: https://github.com/FilippoMB/Ensemble-Conformalized-Quantile-Regression
+       
+    Args:
+        model (torch.nn.Module): The base model to be used in the ensemble.
+        score_predictor (torchcp.regression.predictors): The method for calculating scores and prediction intervals.
+                        Can be :class:`torchcp.regression.predictors.SplitPredictor` for EnbPI, 
+                        :class:`torchcp.regression.predictors.CQR` for EnCQR, or other variants.
+        aggregation_function (str or callable): A function to aggregate predictions from multiple 
+                        models in the ensemble. Options include:
+                        - torch.mean: Computes the mean of the predictions.
+                        - torch.median: Computes the median of the predictions.
+                        - Custom function: Should accept a tensor and dimension as input, returning the result.
 
-    :param model: The base model to be used in the ensemble.
-    :param score_predictor: The method for calculating scores and prediction intervals. 
-                            Can be SplitPredictor, CQR or other variants of CQR, based on the 
-                            approach from the referenced papers.
-    :param aggregation_function: A function to aggregate predictions from multiple 
-                                 models in the ensemble. This function should take a tensor 
-                                 of predictions as input and return a single aggregated tensor. 
-                                 It can be one of the predefined functions or a custom function. 
-                                 Options include:
-                                 - 'mean': Computes the mean of the predictions.
-                                 - 'median': Computes the median of the predictions.
-                                 - A custom function: Should accept a tensor and a dimension as input, 
-                                   and return the aggregated result. For example, a function that 
-                                   computes the maximum value across predictions.
+    Example::
+    
+        >>> ########################## EnbPI ###########################
+        >>> model = build_regression_model("NonLinearNet")(X.shape[1], 1, 64, 0.5).to(device)
+        >>> score_predictor = SplitPredictor(model=None)
+        >>> aggregation_function = torch.mean
+        >>> ensemble = Ensemble(model, score_predictor, aggregation_function=aggregation_function)
+        
+        >>> ########################## EnCQR  ###########################
+        >>> model = build_regression_model("NonLinearNet")(X.shape[1], 2, 64, 0.5).to(device)
+        >>> score_predictor = CQR(model=None)
+        >>> aggregation_function = torch.mean
+        >>> ensemble = Ensemble(model, score_predictor, aggregation_function=aggregation_function)
     """
-
     def __init__(self, model, score_predictor, aggregation_function='mean'):
         self._model = model
         self._device = get_device(model)
@@ -59,6 +68,42 @@ class Ensemble(object):
             self.aggregation_function = aggregation_function
 
     def fit(self, train_dataloader, ensemble_num, subset_num, **kwargs):
+        """
+        Trains an ensemble of models on randomly sampled subsets of the training data.
+
+        Args:
+            train_dataloader (DataLoader): The DataLoader for the training data, 
+                                        providing batches of data for training.
+            ensemble_num (int): The number of models to ensemble.
+            subset_num (int): The size of the subset of data for training each individual model in the ensemble.
+            **kwargs: Additional parameters for the :func:`score_predictor.fit` method.
+                - criterion (callable, optional): Loss function for training. If not provided, uses :func:`QuantileLoss`.
+                - alpha (float, optional): Significance level (e.g., 0.1) for quantiles, required if :attr:`criterion` is None.
+                - epochs (int, optional): Number of training epochs. Default is :math:`100`.
+                - lr (float, optional): Learning rate for optimizer. Default is :math:`0.01`.
+                - optimizer (torch.optim.Optimizer, optional): Optimizer for training; defaults to :func:`torch.optim.Adam`.
+                - verbose (bool, optional): If True, displays training progress. Default is True.
+
+        Raises:
+            ValueError: If :attr:`criterion` is not provided and :attr:`alpha` is not specified.
+        
+        Example::
+        
+            >>> predictor = Ensemble(model, score_predictor, aggregation_function)
+            >>> predictor.fit(train_dataloader=train_data_loader, ensemble_num=5, subset_num=500)
+            
+        .. note::
+        
+            Procedure:
+                1. Creates `ensemble_num` models by sampling subsets from the training data.
+                2. For each model in the ensemble:
+                - Samples a random subset of indices of size `subset_num` from the dataset.
+                - Trains a copy of the base model on this subset.
+                - Stores each trained model along with the subset indices used for training.
+
+            Post-training:
+                Computes and stores the conformal scores on the training dataset for later use in prediction intervals.
+        """
         self.model_list = []
         self.indices_list = []
 
@@ -126,6 +171,38 @@ class Ensemble(object):
         return self.score_predictor.generate_intervals(aggregated_predict, self.q_hat)
 
     def evaluate(self, data_loader, alpha, verbose=True):
+        """
+        Evaluates the performance of the ensemble model on a test dataset by calculating 
+        coverage rates and average sizes of the prediction intervals.
+
+        Args:
+            data_loader (DataLoader): The DataLoader providing the test data batches.
+            alpha (float): The significance level for conformal prediction, which controls 
+                        the width of the prediction intervals (e.g., 0.1 for 90% prediction intervals).
+            verbose (bool): If True, prints the coverage rate and average size for each batch. 
+                            Default is True.
+
+        Returns:
+            dict: A dictionary containing:
+                - "Total batches": The number of batches evaluated.
+                - "Average coverage rate": The average coverage rate across all batches.
+                - "Average prediction interval size": The average size of the prediction intervals.
+        
+        Example::
+        
+            >>> eval_results = model.evaluate(test_data_loader, alpha=0.1)
+            >>> print(eval_results)
+            
+        .. note::
+            Procedure:
+            1. Iterates through each batch in the test data.
+            2. For each batch:
+                - Generates prediction intervals using the `predict` method.
+                - Calculates the coverage rate (percentage of true values within the interval).
+                - Calculates the average interval size.
+                - (Optional) If `verbose` is True, prints batch-wise coverage rate and average size.
+            3. Aggregates and returns the overall average coverage rate and interval size across batches.
+        """
         coverage_rates = []
         average_sizes = []
 

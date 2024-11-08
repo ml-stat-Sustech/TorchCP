@@ -14,6 +14,21 @@ METRICS_REGISTRY_REGRESSION = Registry("METRICS")
 
 @METRICS_REGISTRY_REGRESSION.register()
 def coverage_rate(prediction_intervals, y_truth):
+    """
+    Calculates the coverage rate of prediction intervals.
+    
+    Args:
+        prediction_intervals (torch.Tensor): A tensor of shape (batch_size, num_intervals * 2),
+                                             where each interval has a lower and upper bound.
+        y_truth (torch.Tensor): A tensor of ground truth values of shape (batch_size,).
+    
+    Returns:
+        torch.Tensor: The coverage rate, representing the proportion of ground truth values
+                      within the specified prediction intervals.
+    
+    Raises:
+        AssertionError: If the number of columns in prediction_intervals is not even.
+    """
     num_columns = prediction_intervals.shape[-1]
     assert num_columns % 2 == 0, f"The number of columns in prediction_intervals must be even, but got {num_columns}"
 
@@ -35,6 +50,19 @@ def coverage_rate(prediction_intervals, y_truth):
 
 @METRICS_REGISTRY_REGRESSION.register()
 def average_size(prediction_intervals):
+    """
+    Computes the average size of prediction intervals.
+    
+    Args:
+        prediction_intervals (torch.Tensor): A tensor of shape (batch_size, num_intervals * 2),
+                                             where each interval has a lower and upper bound.
+    
+    Returns:
+        torch.Tensor: The average size of the prediction intervals across all samples.
+    
+    Raises:
+        AssertionError: If the number of columns in prediction_intervals is not even.
+    """
     num_columns = prediction_intervals.shape[-1]
     assert num_columns % 2 == 0, f"The number of columns in prediction_intervals must be even, but got {num_columns}"
 
