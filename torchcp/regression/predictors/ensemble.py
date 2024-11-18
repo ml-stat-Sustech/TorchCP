@@ -12,6 +12,7 @@ from torchcp.utils.common import get_device
 from ..utils.metrics import Metrics
 
 
+
 class Ensemble(object):
     """
     Method: Ensemble Conformal Prediction Interval
@@ -69,7 +70,7 @@ class Ensemble(object):
             subset = torch.utils.data.Subset(dataset, indices)
             subset_dataloader = torch.utils.data.DataLoader(subset, batch_size=batch_size)
             model_copy = copy.deepcopy(self._model)
-            self.score_predictor.fit(subset_dataloader, model=model_copy, **kwargs)
+            self.score_function.fit(subset_dataloader, model=model_copy, **kwargs)
             self.model_list.append(model_copy)
             self.indices_list.append(indices)
 

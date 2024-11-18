@@ -6,6 +6,7 @@
 #
 
 
+import argparse
 import os
 import pickle
 import random
@@ -20,12 +21,14 @@ from tqdm import tqdm
 import numpy as np
 
 from torchcp.classification.predictors import SplitPredictor, ClusteredPredictor, ClassWisePredictor
-from torchcp.classification.scores import THR, APS, SAPS, RAPS, Margin
+from torchcp.classification.scores import THR, APS, SAPS, RAPS, Margin, TOPK
 from torchcp.classification.utils.metrics import Metrics
 from transformers import set_seed
 from torchcp.classification.utils import OrdinalClassifier
 from torchcp.classification.scores import KNN
-from .utils import *
+from utils import *
+
+
 
 dataset_dir = get_dataset_dir()
 model_dir = get_model_dir()
@@ -71,7 +74,8 @@ def get_imagenet_logits(model_name):
     return cal_logits, cal_labels, test_logits, test_labels, num_classes
 
 
-def test_imagenet_logits():
+
+def run_imagenet_logits():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
@@ -85,7 +89,7 @@ def test_imagenet_logits():
     alpha = 0.1
     predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
     score_functions = [THR(), APS(), RAPS(1, 0), SAPS(0.2), Margin()]
-    score_functions = [SAPS(0.2)]
+    score_functions = [TOPK()]
     for score in score_functions:
         for the_predictor in predictors:
             predictor = the_predictor(score)
@@ -101,9 +105,9 @@ def test_imagenet_logits():
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
             print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
             print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
-
-
-def test_imagenet_logits_unrandomized():
+            
+            
+def run_imagenet_logits_unrandomized():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
@@ -133,7 +137,7 @@ def test_imagenet_logits_unrandomized():
         
         
         
-def test_imagenet():
+def run_imagenet():
     set_seed(seed=0)
     #######################################
     # Loading ImageNet dataset and a pytorch model
@@ -155,7 +159,7 @@ def test_imagenet():
     #######################################
     alpha = 0.1
     predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
-    score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin()]
+    score_functions = [THR(),  APS(), RAPS(1, 0), SAPS(0.2), Margin(),TOPK()]
     for score in score_functions:
         for class_predictor in predictors:
             predictor = class_predictor(score, model, temperature=1)
@@ -165,7 +169,7 @@ def test_imagenet():
             print(predictor.evaluate(test_data_loader))
 
 
-def test_calibration():
+def run_confidence_calibration():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
@@ -196,7 +200,7 @@ def test_calibration():
             print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
 
 
-def test_imagenet_logits_types():
+def run_imagenet_logits_types():
     #######################################
     # Loading ImageNet dataset and a pytorch model
     #######################################
@@ -227,7 +231,7 @@ def test_imagenet_logits_types():
         print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
 
 
-def test_ordinal_classification():
+def run_ordinal_classification():
     set_seed(seed=0)
 
     num_classes = 10
@@ -325,7 +329,7 @@ def test_ordinal_classification():
         print(f"DiffViolation: {metrics('DiffViolation')(test_logits, prediction_sets, test_labels, alpha)}.")
 
 
-def test_KNN_Score():
+def run_KNN_Score():
     set_seed(seed=0)
     
     
@@ -421,4 +425,41 @@ def test_KNN_Score():
     print(f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, test_labels)}.")
     print(f"Average_size: {metrics('average_size')(prediction_sets, test_labels)}.")
     print(f"CovGap: {metrics('CovGap')(prediction_sets, test_labels, alpha, num_classes)}.")
-    print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")
+    print(f"VioClasses: {metrics('VioClasses')(prediction_sets, test_labels, alpha, num_classes)}.")           
+
+if __name__ == '__main__':
+    # parser = argparse.ArgumentParser(description='')
+    # parser.add_argument('--seed', default=0, type=int)
+    # parser.add_argument('--alpha', default=0.1, type=float)
+    # args = parser.parse_args()
+
+    # set_seed(seed=args.seed)
+    
+    
+    run_imagenet_logits()
+
+#     #######################################
+#     # Loading ImageNet dataset and a pytorch model
+#     #######################################
+#     model_name = 'ResNet101'
+#     model = torchvision.models.resnet101(weights="IMAGENET1K_V1", progress=True)
+#     model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#     model.to(model_device)
+
+#     dataset = build_dataset('imagenet')
+
+#     cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [25000, 25000])
+#     cal_data_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=1024, shuffle=False, pin_memory=True)
+#     test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True)
+
+#     #######################################
+#     # A standard process of conformal prediction
+#     #######################################    
+#     alpha = args.alpha
+#     print(
+#         f"Experiment--Data : ImageNet, Model : {model_name}, Score : THR, Predictor : SplitPredictor, Alpha : {alpha}")
+#     score_function = THR()
+#     predictor = SplitPredictor(score_function, model)
+#     print(f"The size of calibration set is {len(cal_dataset)}.")
+#     predictor.calibrate(cal_data_loader, alpha)
+#     predictor.evaluate(test_data_loader)

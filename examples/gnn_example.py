@@ -17,7 +17,7 @@ from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
 from torchcp.utils import fix_randomness
 
 from torchcp.graph.utils.metrics import Metrics
-from examples.common.utils import build_gnn_model
+from examples.utils import build_gnn_model
 from examples.common.dataset import build_transductive_gnn_data, build_inductive_gnn_data
 
 

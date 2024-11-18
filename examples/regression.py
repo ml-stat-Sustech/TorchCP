@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset
 
 from examples.common.dataset import build_reg_data
-from examples.common.utils import build_regression_model
+from examples.utils import build_regression_model
 from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictors import SplitPredictor, CQR
 from torchcp.utils import fix_randomness
