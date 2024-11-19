@@ -74,7 +74,7 @@ class ACIPredictor(SplitPredictor):
         if y_batch_last.dim() == 0:
             y_batch_last = torch.tensor([y_batch_last.item()]).to(self._device)
         if len(y_batch_last.shape) == 0:
-            err_t = ((y_batch_last >= pred_interval_last[..., 0]) & (y_batch_last <= pred_interval_last[..., 1])).int()
+            err_t = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
         else:
             steps_t = len(y_batch_last)
             w_s = (steps_t - torch.arange(steps_t)).to(self._device)
@@ -85,19 +85,20 @@ class ACIPredictor(SplitPredictor):
             err_t = torch.sum(w_s * err)
         return err_t
         
-    def predict(self, x_batch, y_batch_last=None, pred_interval_last=None):
+    def predict(self, x_batch, x_batch_last=None, y_batch_last=None, pred_interval_last=None):
         """
         Generate prediction intervals for the input batch.
 
         Args:
             x_batch (torch.Tensor): Input features for the current batch.
+            x_batch_last (torch.Tensor): Input features from the last step.
             y_batch_last (torch.Tensor, optional): Labels from the last step. Defaults to None.
             pred_interval_last (torch.Tensor, optional): Previous prediction intervals. Defaults to None.
 
         Returns:
             torch.Tensor: Prediction intervals for the input batch.
         """
-        assert (y_batch_last is None) == (pred_interval_last is None), "y_batch_last and pred_interval_last must either be provided or be None."
+        assert (x_batch_last is None) == (y_batch_last is None) == (pred_interval_last is None), "x_batch_last, y_batch_last and pred_interval_last must either be provided or be None."
         self._model.eval()
         x_batch = x_batch.to(self._device)
 
@@ -105,6 +106,7 @@ class ACIPredictor(SplitPredictor):
             err_t = self.alpha
         else:
             err_t = self.calculate_err_rate(x_batch, y_batch_last, pred_interval_last)
+            self.scores = self.calculate_score(self._model(x_batch).float(), y_batch_last)
             
         # Adaptive adjust the value of alpha
         self.alpha_t = self.alpha_t + self.gamma * (self.alpha - err_t)
@@ -136,11 +138,13 @@ class ACIPredictor(SplitPredictor):
         average_sizes = []
 
         with torch.no_grad():
+            x_batch_last = None
             y_batch_last = None
             pred_interval_last = None
             for index, batch in enumerate(data_loader):
                 x_batch, y_batch = batch[0].to(self._device), batch[1].to(self._device)
-                prediction_intervals = self.predict(x_batch, y_batch_last, pred_interval_last)
+                prediction_intervals = self.predict(x_batch, x_batch_last, y_batch_last, pred_interval_last)
+                x_batch_last = x_batch
                 y_batch_last = y_batch
                 pred_interval_last = prediction_intervals
 
