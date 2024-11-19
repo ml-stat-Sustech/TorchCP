@@ -14,15 +14,12 @@ class CQRFM(CQRM):
     """
     Conformal Quantile Regression Fraction Median
 
-    Args:
-        model (torch.nn.Module): A pytorch model that can output alpha/2, 1/2 and 1-alpha/2 quantile regression.
-    
     Reference:
         Paper: Adaptive, Distribution-Free Prediction Intervals for Deep Networks (Kivaranovic et al., 2019)
         Link: https://proceedings.mlr.press/v108/kivaranovic20a.html
     """
 
-    def calculate_score(self, predicts, y_truth):
+    def __call__(self, predicts, y_truth):
         if len(predicts.shape) == 2:
             predicts = predicts.unsqueeze(1)
         if len(y_truth.shape) == 1:

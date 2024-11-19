@@ -7,10 +7,10 @@
 
 import torch
 
-from .cqr import CQR
+from .split import SplitPredictor
 
 
-class ACI(CQR):
+class ACIPredictor(SplitPredictor):
     """
     Adaptive Conformal Inference.
     
@@ -19,6 +19,7 @@ class ACI(CQR):
     
     Args:
         model (torch.nn.Module): A PyTorch model capable of outputting quantile values.
+        score_function (torchcp.regression.scores): A class that implements the score function.
         gamma (float): Step size parameter for adaptive adjustment of alpha. Must be greater than 0.
         
     Reference:  
@@ -27,89 +28,138 @@ class ACI(CQR):
         Github: https://github.com/isgibbs/AdaptiveConformal
         
     """
-
-    def __init__(self, model, gamma):
-        super().__init__(model)
+    def __init__(self, model, score_function, gamma):
+        super().__init__(score_function, model)
         assert gamma > 0, "gamma must be greater than 0."
-        self.__gamma = gamma
+        self.gamma = gamma
         self.alpha_t = None
-
-    def calculate_threshold(self, predicts, y_truth, alpha):
+        
+    def fit(self, train_dataloader, alpha, **kwargs):
         """
-        Calculates the conformal threshold value `q_hat` based on predictions and true values,
-        using the initial significance level :attr:`alpha`.
+        Fit and calibrate the predictor using the training data.
 
         Args:
-            predicts (torch.Tensor): Predicted values from the model, of shape (batch_size, 2).
-            y_truth (torch.Tensor): Ground truth values, of shape (batch_size,).
-            alpha (float): Initial significance level for setting up the prediction intervals.
+            train_dataloader (torch.utils.data.DataLoader): DataLoader for training data.
+            alpha (float): Desired initial coverage rate.
+            **kwargs: Additional keyword arguments for training configuration.
+                - model (nn.Module, optional): The model to be trained.
+                - epochs (int, optional): Number of training epochs.
+                - criterion (nn.Module, optional): Loss function.
+                - lr (float, optional): Learning rate for the optimizer.
+                - optimizer (torch.optim.Optimizer, optional): Optimizer for training.
+                - verbose (bool, optional): If True, prints training progress.
             
-        .. Note::
-            Procedure:
-            1. Computes the scores based on the deviation of `predicts` from `y_truth`.
-            2. Calculates the conformal quantile (q_hat) from the scores using the provided alpha.
-            3. Stores alpha as `self.alpha` and initializes `self.alpha_t` for adaptive adjustment.
-
+        .. note::
+            This function is optional but recommended, because the training process for each score_function is different. 
+            We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
+            If the fit function is not used, users should pass the trained model to the predictor at the beginning.
         """
-        self.scores = self.calculate_score(predicts, y_truth)
-        self.q_hat = self._calculate_conformal_value(self.scores, alpha)
+        super().fit(train_dataloader, **kwargs)
+        super().calibrate(train_dataloader, alpha)
         self.alpha = alpha
         self.alpha_t = alpha
-
-    def predict(self, x, y_t=None, pred_interval_t=None):
+    
+    def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last):
         """
-        Predicts the interval for the input features at time t+1, adapting based on 
-        the previous intervals' performance.
+        Calculate the error rate for the previous prediction intervals.
 
         Args:
-            x (torch.Tensor): Input features for prediction at time t+1, of shape (batch_size, input_dim).
-            y_t (torch.Tensor, optional): True values at time t for error rate computation. Defaults to None.
-            pred_interval_t (torch.Tensor, optional): Prediction intervals at time t. Required if :attr:`y_t` is provided.
+            x_batch (torch.Tensor): Input features for the current batch.
+            y_batch_last (torch.Tensor): True labels from the previous step.
+            pred_interval_last (torch.Tensor): Prediction intervals from the previous step.
 
         Returns:
-            torch.Tensor: The prediction interval for each sample in `x`, of shape (batch_size, 2).
-
-        .. Note::
-            - If `y_t` is provided, it calculates the error rate as a weighted sum of recent error rates, 
-            using a decay factor of 0.95. This allows for an adaptive approach to adjust the interval width.
-            
-            - Procedure:
-                1. Sets the model to evaluation mode and transfers `x` to the device.
-                2. Calculates the error rate `err_t` from previous intervals if `y_t` is provided. Otherwise, uses `self.alpha`.
-                3. Adapts `alpha_t` by adjusting based on `err_t` and `self.alpha` using the step size `gamma`.
-                4. Predicts the next quantiles and calculates prediction intervals based on updated `alpha_t`.
-
+            float: Weighted error rate based on historical predictions.
         """
-        self._model.eval()
-        x = x.to(self._device)
+        if y_batch_last.dim() == 0:
+            y_batch_last = torch.tensor([y_batch_last.item()]).to(self._device)
+        if len(y_batch_last.shape) == 0:
+            err_t = ((y_batch_last >= pred_interval_last[..., 0]) & (y_batch_last <= pred_interval_last[..., 1])).int()
+        else:
+            steps_t = len(y_batch_last)
+            w_s = (steps_t - torch.arange(steps_t)).to(self._device)
+            w_s = torch.pow(0.95, w_s)
+            w_s = w_s / torch.sum(w_s)
+            err = x_batch.new_zeros(steps_t, self.q_hat.shape[0])
+            err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
+            err_t = torch.sum(w_s * err)
+        return err_t
+        
+    def predict(self, x_batch, y_batch_last=None, pred_interval_last=None):
+        """
+        Generate prediction intervals for the input batch.
 
-        #######################
-        # Count the error rate in the previous steps
-        #######################
-        if y_t is None:
+        Args:
+            x_batch (torch.Tensor): Input features for the current batch.
+            y_batch_last (torch.Tensor, optional): Labels from the last step. Defaults to None.
+            pred_interval_last (torch.Tensor, optional): Previous prediction intervals. Defaults to None.
+
+        Returns:
+            torch.Tensor: Prediction intervals for the input batch.
+        """
+        assert (y_batch_last is None) == (pred_interval_last is None), "y_batch_last and pred_interval_last must either be provided or be None."
+        self._model.eval()
+        x_batch = x_batch.to(self._device)
+
+        if y_batch_last is None:
             err_t = self.alpha
         else:
-            if y_t.dim() == 0:
-                y_t = torch.tensor([y_t.item()]).to(self._device)
-            if len(y_t.shape) == 0:
-                err_t = ((y_t >= pred_interval_t[..., 0]) & (y_t <= pred_interval_t[..., 1])).int()
-            else:
-                steps_t = len(y_t)
-                w = torch.arange(steps_t).to(self._device)
-                w = torch.pow(0.95, w)
-                w = w / torch.sum(w)
-                err = x.new_zeros(steps_t, self.q_hat.shape[0])
-                for i in range(steps_t):
-                    err[i] = ((y_t >= pred_interval_t[..., 0]) & (y_t <= pred_interval_t[..., 1])).int()
-                err_t = torch.sum(w * err)
-
+            err_t = self.calculate_err_rate(x_batch, y_batch_last, pred_interval_last)
+            
         # Adaptive adjust the value of alpha
-        self.alpha_t = self.alpha_t + self.__gamma * (self.alpha - err_t)
-        predicts_batch = self._model(x.to(self._device)).float()
-        if len(predicts_batch.shape) == 1:
-            predicts_batch = predicts_batch.unsqueeze(0)
-        q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
-        prediction_intervals = x.new_zeros(self.q_hat.shape[0], 2)
-        prediction_intervals[:, 0] = predicts_batch[:, 0] - q_hat.view(self.q_hat.shape[0], 1)
-        prediction_intervals[:, 1] = predicts_batch[:, 1] + q_hat.view(self.q_hat.shape[0], 1)
-        return prediction_intervals
+        self.alpha_t = self.alpha_t + self.gamma * (self.alpha - err_t)
+        if self.alpha_t >= 1:
+            self.alpha_t = 0.9999
+        elif self.alpha_t <= 0:
+            self.alpha_t = 0.0001
+            
+        self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
+        predicts_batch = self._model(x_batch.to(self._device)).float()
+        return self.generate_intervals(predicts_batch, self.q_hat)
+    
+    
+    def evaluate(self, data_loader, verbose=True):
+        """
+        Evaluate the predictor on a dataset.
+
+        Args:
+            data_loader (torch.utils.data.DataLoader): DataLoader for evaluation data.
+            verbose (bool, optional): Whether to print evaluation metrics. Defaults to True.
+
+        Returns:
+            dict: Dictionary containing evaluation metrics:
+                  - Total batches
+                  - Average coverage rate
+                  - Average prediction interval size
+        """
+        coverage_rates = []
+        average_sizes = []
+
+        with torch.no_grad():
+            y_batch_last = None
+            pred_interval_last = None
+            for index, batch in enumerate(data_loader):
+                x_batch, y_batch = batch[0].to(self._device), batch[1].to(self._device)
+                prediction_intervals = self.predict(x_batch, y_batch_last, pred_interval_last)
+                y_batch_last = y_batch
+                pred_interval_last = prediction_intervals
+
+                batch_coverage_rate = self._metric('coverage_rate')(prediction_intervals, y_batch)
+                batch_average_size = self._metric('average_size')(prediction_intervals)
+
+                if verbose:
+                    print(
+                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate.item():.4f}, Average size: {batch_average_size.item():.4f}, Alpha: {self.alpha_t:.2f}")   
+
+                coverage_rates.append(batch_coverage_rate)
+                average_sizes.append(batch_average_size)
+
+        avg_coverage_rate = sum(coverage_rates) / len(coverage_rates)
+        avg_average_size = sum(average_sizes) / len(average_sizes)
+
+        res_dict = {"Total batches": index + 1,
+                    "Average coverage rate": avg_coverage_rate.item(),
+                    "Average prediction interval size": avg_average_size.item()}
+
+        return res_dict
+    

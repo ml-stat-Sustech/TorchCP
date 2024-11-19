@@ -9,11 +9,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from .split import SplitPredictor
+from .base import BaseScore
 from ..loss import R2ccpLoss
+from ..utils import build_regression_model
 
 
-class R2CCP(SplitPredictor):
+class R2CCP(BaseScore):
     """
     Regression-to-Classification Conformal Prediction.
     
@@ -21,26 +22,17 @@ class R2CCP(SplitPredictor):
     then use CP for classification to obtain CP sets for regression.
 
     Args:
-        model (torch.nn.Module): a pytorch model that can output probabilities for different bins.
         midpoints (torch.Tensor): the midpoints of the equidistant bins.
         
     Reference:
         Paper: Conformal Prediction via Regression-as-Classification (Etash Guha et al., 2021)
         Link: https://neurips.cc/virtual/2023/80610
         Github: https://github.com/EtashGuha/R2CCP
-        
-    Example::
-    
-        >>> from torchcp.regression.predictors import R2CCP
-        >>> from torchcp.regression.utils import calculate_midpoints
-        >>> K = 50   # number of midpoint
-        >>> midpoints = calculate_midpoints(train_and_cal_data_loader, K)
-        >>> predictor = R2CCP(model, midpoints)
     """
 
-    def __init__(self, model, midpoints):
-        super().__init__(model)
-        self.midpoints = midpoints.to(self._device)
+    def __init__(self, midpoints):
+        super().__init__()
+        self.midpoints = midpoints
 
     def fit(self, train_dataloader, **kwargs):
         """
@@ -59,12 +51,10 @@ class R2CCP(SplitPredictor):
                 - optimizer (torch.optim.Optimizer, optional): Optimizer; defaults to :func:`torch.optim.AdamW`.
                 - verbose (bool, optional): If True, displays training progress. Default is True.
                 
-        .. note::
-            This function is optional but recommended, because the training process for each preditor's model is different. 
-            We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
-            If the fit function is not used, users should pass the trained model to the predictor at the beginning.
         """
-        model = kwargs.get('model', self._model)
+        device = kwargs.get('device', self.midpoints.device)
+        self._device = device
+        model = kwargs.get('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], len(self.midpoints), 1000, 0).to(self._device))
         epochs = kwargs.get('epochs', 100)
         p = kwargs.get('p', 0.5)
         tau = kwargs.get('tau', 0.2)
@@ -75,17 +65,15 @@ class R2CCP(SplitPredictor):
         verbose = kwargs.get('verbose', True)
 
         self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
+        return model
 
-    def calculate_score(self, predicts, y_truth):
+    def __call__(self, predicts, y_truth):
         interval = self.__find_interval(self.midpoints, y_truth)
         scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, self.midpoints)
-        return scores
-
-    def calculate_threshold(self, predicts, y_truth, alpha):
-        scores = self.calculate_score(predicts, y_truth)
-        self.q_hat = self._calculate_conformal_value(scores, 1 - alpha)
+        return - scores   # since r2ccp calculates conformity score instead of nonconformity score
 
     def generate_intervals(self, predicts_batch, q_hat):
+        q_hat = - q_hat   # since r2ccp calculates conformity score instead of nonconformity score
         K = predicts_batch.shape[1]
         N = predicts_batch.shape[0]
         midpoints_expanded = self.midpoints.unsqueeze(0).expand(N, K)
@@ -165,7 +153,6 @@ class R2CCP(SplitPredictor):
 
         left_predicts = predicts[torch.arange(y_truth.shape[0]), (interval) % midpoints.shape[1]]
         right_predicts = predicts[torch.arange(y_truth.shape[0]), (interval + 1) % midpoints.shape[1]]
-
         scores = ((y_truth - left_points) * right_predicts + (right_points - y_truth) * left_predicts) / (
                 right_points - left_points)
         scores = torch.where(interval == -1, predicts[:, 0], scores)
