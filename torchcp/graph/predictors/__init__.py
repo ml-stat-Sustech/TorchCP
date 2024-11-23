@@ -1,2 +1,2 @@
 from .split import GraphSplitPredictor
-from .neighbors_weight import NAPSSplitPredictor
+from .neighbors_weight import NAPSPredictor

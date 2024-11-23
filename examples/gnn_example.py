@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 from torchcp.classification.scores import APS
 from torchcp.graph.scores import DAPS
-from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
+from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
 from torchcp.utils import fix_randomness
 
 from torchcp.graph.utils.metrics import Metrics
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     labels = graph_data.y[graph_data.test_mask]
     logits = logits[graph_data.test_mask]
 
-    predictor = NAPSSplitPredictor(graph_data)
+    predictor = NAPSPredictor(graph_data)
     lcc_nodes, prediction_sets = predictor.precompute_naps_sets(logits, labels, args.alpha)
 
     metrics = Metrics()

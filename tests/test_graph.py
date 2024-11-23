@@ -19,7 +19,7 @@ from torch_geometric.datasets import CitationFull, Amazon
 
 from torchcp.classification.scores import APS
 from torchcp.graph.scores import DAPS, SNAPS
-from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
+from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
 from torchcp.graph.utils.metrics import Metrics
 from transformers import set_seed
 
@@ -311,7 +311,7 @@ def test_inductive_graph():
     schemes = ["unif", "linear", "geom"]
 
     for scheme in schemes:
-        predictor = NAPSSplitPredictor(graph_data, scheme=scheme)
+        predictor = NAPSPredictor(graph_data, scheme=scheme)
         lcc_nodes, prediction_sets = predictor.precompute_naps_sets(
             logits, labels, alpha)
 

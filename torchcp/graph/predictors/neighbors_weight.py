@@ -16,7 +16,7 @@ from .split import GraphSplitPredictor
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
 
 
-class NAPSSplitPredictor(GraphSplitPredictor):
+class NAPSPredictor(GraphSplitPredictor):
     """
     Method: Neighbourhood Adaptive Prediction Sets
     Paper: Distribution Free Prediction Sets for Node Classification (Clarkson et al., 2023)
