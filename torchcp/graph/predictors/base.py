@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from torchcp.graph.utils.metrics import Metrics
 from torchcp.classification.predictors.base import BasePredictor
 
+
 class BaseGraphPredictor(BasePredictor):
     """
     Abstract base class for all conformal predictors designed for graph data.
@@ -52,7 +53,7 @@ class BaseGraphPredictor(BasePredictor):
                 acceptable error rate for conformal prediction.
         """
         raise NotImplementedError
-    
+
     @abstractmethod
     def predict(self, eval_idx):
         """

@@ -21,10 +21,11 @@ METRICS_REGISTRY_GRAPH = Registry("METRICS")
 # Marginal coverage metric
 #########################################
 
+
 @METRICS_REGISTRY_GRAPH.register()
 def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=None):
     return graph_coverage_rate(prediction_sets, labels, coverage_type=coverage_type, num_classes=num_classes)
-   
+
 
 
 @METRICS_REGISTRY_GRAPH.register()
@@ -34,7 +35,8 @@ def average_size(prediction_sets, labels):
 
 @METRICS_REGISTRY_GRAPH.register()
 def singleton_hit_ratio(prediction_sets, labels):
-    assert len(prediction_sets) > 0, "The number of prediction set must be greater than 0."
+    assert len(
+        prediction_sets) > 0, "The number of prediction set must be greater than 0."
     n = len(prediction_sets)
 
     one_size = 0

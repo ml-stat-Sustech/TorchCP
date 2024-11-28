@@ -31,7 +31,7 @@ class SNAPS(BaseScore):
             The weights associated with each k-NN edge, if applicable. Defaults to uniform weights.
     """
 
-    def __init__(self, graph_data, base_score_function, lambda_val=1/3, mu_val=1/3, knn_edge=None, knn_weight=None):
+    def __init__(self, graph_data, base_score_function, lambda_val=1 / 3, mu_val=1 / 3, knn_edge=None, knn_weight=None):
         super(SNAPS, self).__init__(graph_data, base_score_function)
         if lambda_val < 0 and lambda_val > 1:
             raise ValueError(

@@ -21,8 +21,10 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, SAGEConv
 from torch_geometric.datasets import CitationFull
 
+
 def get_dataset_dir():
-    dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/datasets')
+    dataset_dir = os.path.join(
+        os.path.expanduser('~'), '.cache/torchcp/datasets')
     path = Path(dataset_dir)
     path.mkdir(parents=True, exist_ok=True)
     return dataset_dir
@@ -34,8 +36,10 @@ def get_model_dir():
     path.mkdir(parents=True, exist_ok=True)
     return dataset_dir
 
+
 def download_github(url, save_path):
-    raw_url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+    raw_url = url.replace(
+        "github.com", "raw.githubusercontent.com").replace("/blob/", "/")
 
     response = requests.get(raw_url)
 
@@ -59,7 +63,7 @@ def build_reg_data(data_name="community"):
         dataset_path = os.path.join(dataset_dir, 'communities.data')
         if not os.path.exists(attrib_path):
             attrib_github_url = "https://github.com/vbordalo/Communities-Crime/blob/master/attributes.csv"
-            
+
             download_github(attrib_github_url, attrib_path)
             attrib_github_url = "https://github.com/vbordalo/Communities-Crime/blob/master/communities.data"
             download_github(attrib_github_url, dataset_path)
@@ -99,7 +103,8 @@ def build_reg_data(data_name="community"):
 
         n = 10000
         X = np.random.rand(n, 5)
-        y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + 20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
+        y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + \
+            20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
         eplison = np.zeros(n)
         phi = theta = 0.8
         delta_t_1 = np.random.randn()
@@ -160,7 +165,7 @@ def build_regression_model(model_name="NonLinearNet"):
 
 
 
-def build_dataset(dataset_name, data_mode= "train", transform_mode = "train"):    
+def build_dataset(dataset_name, data_mode="train", transform_mode="train"):
 
     if dataset_name == 'imagenet':
         usr_dir = os.path.expanduser('~')
@@ -177,11 +182,12 @@ def build_dataset(dataset_name, data_mode= "train", transform_mode = "train"):
             raise NotImplementedError
 
         if data_mode == "test":
-            dataset = dset.ImageFolder(dataset_dir + "/datasets/imagenet/val",transform)
+            dataset = dset.ImageFolder(
+                dataset_dir + "/datasets/imagenet/val", transform)
         else:
             raise NotImplementedError
-        
-        
+
+
     elif dataset_name == 'imagenetv2':
         if transform == None:
             transform = trn.Compose([
@@ -203,34 +209,38 @@ def build_dataset(dataset_name, data_mode= "train", transform_mode = "train"):
                 trn.Normalize((0.1307,), (0.3081,))
             ])
         if data_mode == "train":
-            dataset = dset.MNIST(dataset_dir, train=True, download=True, transform=transform)
+            dataset = dset.MNIST(dataset_dir, train=True,
+                                 download=True, transform=transform)
         elif data_mode == "test":
-            dataset = dset.MNIST(dataset_dir, train=False, download=True, transform=transform)
+            dataset = dset.MNIST(dataset_dir, train=False,
+                                 download=True, transform=transform)
     elif dataset_name == 'cifar10':
         dataset_dir = get_dataset_dir()
-        
+
         mean = (0.492, 0.482, 0.446)
         std = (0.247, 0.244, 0.262)
-        
+
         if transform_mode == "train":
             cifar10_transform = trn.Compose([trn.RandomHorizontalFlip(),
-                                           trn.RandomCrop(32, padding=4),
-                                           trn.ToTensor(),
-                                           trn.Normalize(mean, std)])
+                                             trn.RandomCrop(32, padding=4),
+                                             trn.ToTensor(),
+                                             trn.Normalize(mean, std)])
         elif transform_mode == "test":
             cifar10_transform = trn.Compose([trn.ToTensor(),
-                                          trn.Normalize(mean, std)])
+                                             trn.Normalize(mean, std)])
         else:
             raise NotImplementedError
-        
+
         if data_mode == "train":
-        
-            dataset = dset.CIFAR10(root=dataset_dir, train=True, download=True, transform=cifar10_transform)
+
+            dataset = dset.CIFAR10(
+                root=dataset_dir, train=True, download=True, transform=cifar10_transform)
         elif data_mode == "test":
-            dataset = dset.CIFAR10(root=dataset_dir, train=False, download=True, transform=cifar10_transform)
+            dataset = dset.CIFAR10(
+                root=dataset_dir, train=False, download=True, transform=cifar10_transform)
         else:
             raise NotImplementedError
-        
+
     else:
         raise NotImplementedError
 
@@ -247,11 +257,12 @@ class ImageNetV2Dataset(Dataset):
         return len(self.fnames)
 
     def __getitem__(self, i):
-        img, label = Image.open(self.fnames[i]), int(self.fnames[i].parent.name)
+        img, label = Image.open(self.fnames[i]), int(
+            self.fnames[i].parent.name)
         if self.transform is not None:
             img = self.transform(img)
         return img, label
-    
+
 
 def build_graph_dataset(dataset_name, device, ntrain_per_class=20):
     dataset_dir = get_dataset_dir()
@@ -280,7 +291,7 @@ def build_graph_dataset(dataset_name, device, ntrain_per_class=20):
     else:
         raise NotImplementedError(
             f"The dataset {dataset_name} has not been implemented!")
-    
+
     return graph_data, label_mask, train_idx, val_idx, test_idx
 
 
@@ -296,7 +307,7 @@ class GCN(nn.Module):
         x = F.dropout(x, p=self._p_dropout, training=self.training)
         x = self.conv2(x, edge_index, edge_weight)
         return x
-    
+
 
 class SAGE(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, p_dropout=0.5):
@@ -304,7 +315,7 @@ class SAGE(torch.nn.Module):
         self.convs = torch.nn.ModuleList()
         self.convs.append(SAGEConv(in_channels, hidden_channels))
         self.convs.append(SAGEConv(hidden_channels, out_channels))
-        
+
         self._p_dropout = p_dropout
 
     def forward(self, x, edge_index):

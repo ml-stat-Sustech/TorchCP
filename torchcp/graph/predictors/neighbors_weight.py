@@ -15,6 +15,7 @@ from .split import GraphSplitPredictor
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
 
+
 class NAPSPredictor(GraphSplitPredictor):
     """
     Method: Neighbourhood Adaptive Prediction Sets
@@ -31,10 +32,10 @@ class NAPSPredictor(GraphSplitPredictor):
 
         cutoff (int): Minimum number of k-hop neighbors a node must have to be included in the test set.
             Default is 50. Nodes with fewer than this number of neighbors will be excluded.
-        
+
         k (int): Number of k-hop neighbors to include in the calibration set for each node.
             Default is 2, meaning nodes and their 2-hop neighbors are used for calibration.
-        
+
         scheme (str): The weight decay scheme for k-hop neighbors. Options include:
             - 'unif': Uniform weighting (weights = 1)
             - 'linear': Linear decay (weights = 1/k)
@@ -49,7 +50,7 @@ class NAPSPredictor(GraphSplitPredictor):
         if score_function.score_type != "softmax":
             raise ValueError(
                 f"Invalid score_type of APS: {score_function.score_type}. Must be softmax.")
-        
+
         super().__init__(graph_data, score_function, model)
 
         if scheme not in DEFAULT_SCHEMES:
@@ -75,13 +76,13 @@ class NAPSPredictor(GraphSplitPredictor):
         Args:
             node (int): 
                 The ID of the node for which the threshold is being calculated.
-            
+
             logits (torch.Tensor): 
                 The raw model outputs (logits) for test nodes. Shape: [num_test_nodes, num_classes].
-            
+
             labels (torch.Tensor): 
                 The true labels for test nodes. Shape: [num_test_nodes].
-            
+
             alpha (float): 
                 The significance level for the conformal prediction. This is used to determine the 
                 threshold for the prediction set.
@@ -95,10 +96,11 @@ class NAPSPredictor(GraphSplitPredictor):
         node_ids, weights = self._get_nbhd_weights(node)
 
         if self._cutoff <= node_ids.shape[0]:
-            quantile = self._calibrate_quantile(logits[node_ids], labels[node_ids], weights, alpha)
+            quantile = self._calibrate_quantile(
+                logits[node_ids], labels[node_ids], weights, alpha)
             return {node: quantile}
         return None
-    
+
     def _get_nbhd_weights(self, node):
         """
         Get the neighboring nodes and their corresponding weights based on the chosen weight decay scheme.
@@ -132,7 +134,7 @@ class NAPSPredictor(GraphSplitPredictor):
                 0.5)**(torch.tensor(list(neigh_depth.values()), device=self._device) - 1)
 
         return node_ids, weights
-    
+
     def _calibrate_quantile(self, logits, labels, weights, alpha):
         """
         Calibrate the conformal prediction threshold by computing the quantile of non-conformity scores.
@@ -144,13 +146,13 @@ class NAPSPredictor(GraphSplitPredictor):
         Args:
             logits (torch.Tensor): 
                 The raw model outputs (logits) for all nodes in the calibration set. Shape: [num_samples, num_classes].
-            
+
             labels (torch.Tensor): 
                 The true labels for all nodes in the calibration set. Shape: [num_samples].
-            
+
             weights (torch.Tensor): 
                 The weights corresponding to each sample in the calibration set. Shape: [num_samples].
-            
+
             alpha (float): 
                 The desired significance level for the conformal prediction.
 
@@ -161,12 +163,12 @@ class NAPSPredictor(GraphSplitPredictor):
         """
         if logits.shape[0] == 0:
             return alpha
-        
+
         alpha_max = 1 - self.score_function(logits, labels)
         scores = alpha - alpha_max
         alpha_correction = self._get_weighted_quantile(scores, weights, alpha)
         return alpha - alpha_correction
-    
+
     def _get_weighted_quantile(self, scores, weights, alpha):
         """
         Calculate the weighted quantile of the non-conformity scores.
@@ -178,10 +180,10 @@ class NAPSPredictor(GraphSplitPredictor):
         Parameters:
             scores (torch.Tensor): 
                 A tensor containing the non-conformity scores of the samples. Shape: [num_samples].
-            
+
             weights (torch.Tensor): 
                 A tensor containing the weights corresponding to each sample. Shape: [num_samples].
-            
+
             alpha (float): 
                 The desired significance level for the conformal prediction, typically a small positive value (e.g., 0.05).
 
@@ -200,7 +202,7 @@ class NAPSPredictor(GraphSplitPredictor):
             raise ValueError(
                 "Did not find a suitable alpha value, keeping alpha unchanged.")
         return q
-    
+
     # The prediction process ########################################################
 
     def precompute_naps_sets(self, logits, labels, alpha):
@@ -214,10 +216,10 @@ class NAPSPredictor(GraphSplitPredictor):
         Parameters:
             logits (torch.Tensor):
                 A tensor containing the model's predicted logits for each test node. Shape: [num_test_nodes, num_classes].
-            
+
             labels (torch.Tensor):
                 A tensor containing the true labels of test nodes. Shape: [num_test_nodes].
-            
+
             alpha (float):
                 The pre-defined empirical marginal coverage level, where `1 - alpha` represents the confidence 
                 level of the prediction sets.
@@ -226,7 +228,7 @@ class NAPSPredictor(GraphSplitPredictor):
             lcc_nodes (torch.Tensor):
                 A tensor containing the indices of the nodes that meet the criteria of having at least 'cutoff' k-hop 
                 neighbors for testing. Shape: [num_lcc_nodes].
-            
+
             prediction_sets (list):
                 A list containing the precomputed prediction sets for each node in `lcc_nodes`. Each set is a 
                 list of predicted classes for that node.
@@ -255,12 +257,12 @@ class NAPSPredictor(GraphSplitPredictor):
             logits (torch.Tensor):
                 A tensor of model outputs (logits), where each row corresponds to the logits for one node/sample.
                 Shape: [num_samples, num_classes].
-            
+
             alphas (torch.Tensor):
                 A tensor containing the significance levels (alphas) for each sample. Each alpha corresponds to 
                 the desired size of the prediction set for the respective sample.
                 Shape: [num_samples].
-            
+
         Returns:
             List:
                 A list of prediction sets, one for each sample. Each set contains the nodes/classes that are 

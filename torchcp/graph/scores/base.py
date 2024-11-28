@@ -20,7 +20,7 @@ class BaseScore(object):
         base_score_function (function): 
             A function that calculates the base non-conformity score. This function will be 
             used in subclasses to define the behavior of the score function.
-        
+
         graph_data (torch_geometric.data.Data): 
             The graph data used for computing the scores. It includes information like the number 
             of nodes (`num_nodes`), edge connections (`edge_index`), and edge weights (`edge_weight`).

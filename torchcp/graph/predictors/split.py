@@ -22,11 +22,12 @@ class GraphSplitPredictor(BaseGraphPredictor):
         super().__init__(graph_data, score_function, model)
 
     # The calibration process ########################################################
-    
+
     def calibrate(self, cal_idx, alpha):
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x, self._graph_data.edge_index)
+            logits = self._model(self._graph_data.x,
+                                 self._graph_data.edge_index)
         self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
 
     def calculate_threshold(self, logits, cal_idx, label_mask, alpha):
@@ -60,13 +61,14 @@ class GraphSplitPredictor(BaseGraphPredictor):
 
     def _calculate_conformal_value(self, scores, alpha, marginal_q_hat=torch.inf):
         return calculate_conformal_value(scores, alpha, marginal_q_hat)
-    
+
     # The prediction process ########################################################
-    
+
     def predict(self, eval_idx):
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x, self._graph_data.edge_index)
+            logits = self._model(self._graph_data.x,
+                                 self._graph_data.edge_index)
         sets = self.predict_with_logits(logits[eval_idx])
         return sets
 
@@ -83,11 +85,11 @@ class GraphSplitPredictor(BaseGraphPredictor):
             logits (torch.Tensor): 
                 The raw output of the model (before applying softmax).
                 Shape: [num_samples, num_classes].
-            
+
             eval_idx (torch.Tensor or list): 
                 Indices of the samples in the evaluation or test set. 
                 Shape: [num_test_samples].
-            
+
             q_hat (float, optional): 
                 The conformal threshold used to generate prediction sets. If not provided, 
                 `self.q_hat` (calculated during the calibration phase) will be used.
@@ -135,7 +137,8 @@ class GraphSplitPredictor(BaseGraphPredictor):
         """
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x, self._graph_data.edge_index)
+            logits = self._model(self._graph_data.x,
+                                 self._graph_data.edge_index)
         prediction_sets = self.predict_with_logits(logits, eval_idx)
 
         res_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, self._graph_data.y[eval_idx]),

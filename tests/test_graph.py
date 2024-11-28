@@ -42,12 +42,13 @@ def test_transductive_graph():
     #######################################
 
     dataset_name = 'cora_ml'
-    graph_data, label_mask, train_idx, val_idx, test_idx = build_graph_dataset(dataset_name, device)
+    graph_data, label_mask, train_idx, val_idx, test_idx = build_graph_dataset(
+        dataset_name, device)
 
     model_name = 'GCN'
     model = GCN(in_channels=graph_data.x.shape[1],
                 hidden_channels=64,
-                out_channels=graph_data.y.max().item() + 1, 
+                out_channels=graph_data.y.max().item() + 1,
                 p_dropout=0.8).to(device)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=0.01, weight_decay=0.001)
@@ -66,7 +67,8 @@ def test_transductive_graph():
         model.train()
         optimizer.zero_grad()
         out = model(graph_data.x, graph_data.edge_index)
-        training_loss = F.cross_entropy(out[train_idx], graph_data.y[train_idx])
+        training_loss = F.cross_entropy(
+            out[train_idx], graph_data.y[train_idx])
         validation_loss = F.cross_entropy(
             out[val_idx], graph_data.y[val_idx]).detach().item()
         training_loss.backward()
@@ -158,7 +160,7 @@ def test_inductive_graph():
                      pre_transform=RandomNodeSplit(split='train_rest', num_val=1000, num_test=10000))
     graph_data = dataset[0].to(device)
 
-    fname = os.path.join(dataset_dir,'Computers_logits.pkl')
+    fname = os.path.join(dataset_dir, 'Computers_logits.pkl')
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
             logits = pickle.load(handle)
@@ -172,7 +174,8 @@ def test_inductive_graph():
 
         del subgraph_loader.data.x, subgraph_loader.data.y
         subgraph_loader.data.num_nodes = graph_data.num_nodes
-        subgraph_loader.data.n_id = torch.arange(graph_data.num_nodes).to(device)
+        subgraph_loader.data.n_id = torch.arange(
+            graph_data.num_nodes).to(device)
 
         hidden_channels = 64
         learning_rate = 0.01
@@ -203,7 +206,8 @@ def test_inductive_graph():
                 optimizer.step()
 
             model.eval()
-            y_pred = model.inference(graph_data.x, subgraph_loader).argmax(dim=-1)
+            y_pred = model.inference(
+                graph_data.x, subgraph_loader).argmax(dim=-1)
             val_acc = int((y_pred[graph_data.val_mask] == graph_data.y[graph_data.val_mask]).sum(
             )) / int(graph_data.val_mask.sum())
 
@@ -242,7 +246,8 @@ def test_inductive_graph():
     alpha = 0.1
 
     labels = graph_data.y[graph_data.test_mask]
-    label_mask = F.one_hot(graph_data.y).bool().to(device)[graph_data.test_mask]
+    label_mask = F.one_hot(graph_data.y).bool().to(device)[
+        graph_data.test_mask]
 
     logits = logits[graph_data.test_mask]
 
@@ -307,12 +312,13 @@ def test_conformal_training_graph():
     #######################################
 
     dataset_name = 'cora_ml'
-    graph_data, label_mask, train_idx, val_idx, test_idx = build_graph_dataset(dataset_name, device)
+    graph_data, label_mask, train_idx, val_idx, test_idx = build_graph_dataset(
+        dataset_name, device)
 
     model_name = 'GCN'
     model = GCN(in_channels=graph_data.x.shape[1],
                 hidden_channels=64,
-                out_channels=graph_data.y.max().item() + 1, 
+                out_channels=graph_data.y.max().item() + 1,
                 p_dropout=0.8).to(device)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=0.01, weight_decay=0.001)
@@ -362,7 +368,7 @@ def test_conformal_training_graph():
     test_accuracy = (y_pred[test_idx] == graph_data.y[test_idx]
                      ).sum().item() / test_idx.shape[0]
     print(f"Model Accuracy: {test_accuracy}")
-    
+
     #######################################
     # Base non-conformity scores
     #######################################
@@ -374,10 +380,11 @@ def test_conformal_training_graph():
 
     predictor = SplitPredictor(score_function=APS(score_type="softmax"))
     predictor._device = device
-    predictor.calculate_threshold(logits[cal_idx], graph_data.y[cal_idx], alpha)
+    predictor.calculate_threshold(
+        logits[cal_idx], graph_data.y[cal_idx], alpha)
     prediction_sets = predictor.predict_with_logits(logits[eval_idx])
     res_dict = {"Coverage_rate": predictor._metric('coverage_rate')(prediction_sets, graph_data.y[eval_idx]),
-                    "Average_size": predictor._metric('average_size')(prediction_sets, graph_data.y[eval_idx])}
+                "Average_size": predictor._metric('average_size')(prediction_sets, graph_data.y[eval_idx])}
     print(res_dict)
     # breakpoint()
     #######################################
@@ -413,8 +420,10 @@ def test_conformal_training_graph():
     #######################################
     calib_test_idx = test_idx
     rand_perms = torch.randperm(calib_test_idx.size(0))
-    calib_train_idx = calib_test_idx[rand_perms[:int(calib_num * calib_fraction)]]
-    calib_eval_idx = calib_test_idx[rand_perms[int(calib_num * calib_fraction):]]
+    calib_train_idx = calib_test_idx[rand_perms[:int(
+        calib_num * calib_fraction)]]
+    calib_eval_idx = calib_test_idx[rand_perms[int(
+        calib_num * calib_fraction):]]
 
     train_calib_idx = calib_train_idx[int(len(calib_train_idx) / 2):]
     train_test_idx = calib_train_idx[:int(len(calib_train_idx) / 2)]
@@ -424,26 +433,32 @@ def test_conformal_training_graph():
         confmodel.train()
         optimizer.zero_grad()
 
-        adjust_logits, ori_logits = confmodel(graph_data.x, graph_data.edge_index)
+        adjust_logits, ori_logits = confmodel(
+            graph_data.x, graph_data.edge_index)
 
         adjust_softmax = F.softmax(adjust_logits, dim=1)
 
         n_temp = len(train_calib_idx)
         q_level = math.ceil((n_temp + 1) * (1 - alpha)) / n_temp
 
-        tps_conformal_scores = adjust_softmax[train_calib_idx, graph_data.y[train_calib_idx]]
-        qhat = torch.quantile(tps_conformal_scores, 1 - q_level, interpolation='higher')
+        tps_conformal_scores = adjust_softmax[train_calib_idx,
+                                              graph_data.y[train_calib_idx]]
+        qhat = torch.quantile(tps_conformal_scores, 1 -
+                              q_level, interpolation='higher')
 
-        proxy_size = torch.sigmoid((adjust_softmax[train_test_idx] - qhat) / tau)
-        size_loss = torch.mean(torch.relu(torch.sum(proxy_size, dim=1) - target_size))
+        proxy_size = torch.sigmoid(
+            (adjust_softmax[train_test_idx] - qhat) / tau)
+        size_loss = torch.mean(torch.relu(
+            torch.sum(proxy_size, dim=1) - target_size))
 
-        pred_loss = F.cross_entropy(adjust_logits[train_idx], graph_data.y[train_idx])
+        pred_loss = F.cross_entropy(
+            adjust_logits[train_idx], graph_data.y[train_idx])
 
         if epoch <= 1000:
             loss = pred_loss
         else:
             loss = pred_loss + size_loss_weight * size_loss
-        
+
         loss.backward()
         optimizer.step()
 
@@ -452,17 +467,21 @@ def test_conformal_training_graph():
         #######################################
         confmodel.eval()
         with torch.no_grad():
-            adjust_logits, ori_logits = confmodel(graph_data.x, graph_data.edge_index)
+            adjust_logits, ori_logits = confmodel(
+                graph_data.x, graph_data.edge_index)
 
         size_list = []
         for _ in range(100):
             val_perms = torch.randperm(val_idx.size(0))
-            valid_calib_idx = val_idx[val_perms[:int(len(val_idx)/2)]]
-            valid_test_idx = val_idx[val_perms[int(len(val_idx)/2):]]
+            valid_calib_idx = val_idx[val_perms[:int(len(val_idx) / 2)]]
+            valid_test_idx = val_idx[val_perms[int(len(val_idx) / 2):]]
 
-            predictor.calculate_threshold(adjust_logits[valid_calib_idx], graph_data.y[valid_calib_idx], alpha)
-            pred_sets = predictor.predict_with_logits(adjust_logits[valid_test_idx])
-            size = predictor._metric('average_size')(pred_sets, graph_data.y[valid_test_idx])
+            predictor.calculate_threshold(
+                adjust_logits[valid_calib_idx], graph_data.y[valid_calib_idx], alpha)
+            pred_sets = predictor.predict_with_logits(
+                adjust_logits[valid_test_idx])
+            size = predictor._metric('average_size')(
+                pred_sets, graph_data.y[valid_test_idx])
             size_list.append(size)
 
         eff_valid = np.mean(size_list)
@@ -478,15 +497,20 @@ def test_conformal_training_graph():
     size_list = []
     for _ in range(1):
         eval_perms = torch.randperm(calib_eval_idx.size(0))
-        eval_calib_idx = calib_eval_idx[eval_perms[:int(calib_num * calib_fraction)]]
-        eval_test_idx = calib_eval_idx[eval_perms[int(calib_num * calib_fraction):]]
+        eval_calib_idx = calib_eval_idx[eval_perms[:int(
+            calib_num * calib_fraction)]]
+        eval_test_idx = calib_eval_idx[eval_perms[int(
+            calib_num * calib_fraction):]]
 
-        predictor.calculate_threshold(best_logits[eval_calib_idx], graph_data.y[eval_calib_idx], alpha)
+        predictor.calculate_threshold(
+            best_logits[eval_calib_idx], graph_data.y[eval_calib_idx], alpha)
         pred_sets = predictor.predict_with_logits(best_logits[eval_test_idx])
 
-        coverage = predictor._metric('coverage_rate')(pred_sets, graph_data.y[eval_test_idx])
-        size = predictor._metric('average_size')(pred_sets, graph_data.y[eval_test_idx])
-        
+        coverage = predictor._metric('coverage_rate')(
+            pred_sets, graph_data.y[eval_test_idx])
+        size = predictor._metric('average_size')(
+            pred_sets, graph_data.y[eval_test_idx])
+
         coverage_list.append(coverage)
         size_list.append(size)
 

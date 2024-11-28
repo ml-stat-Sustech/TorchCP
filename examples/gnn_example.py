@@ -90,16 +90,18 @@ if __name__ == '__main__':
     #######################################
 
     data_name = 'Computers'
-    graph_data, train_loader, subgraph_loader = build_inductive_gnn_data(data_name)
+    graph_data, train_loader, subgraph_loader = build_inductive_gnn_data(
+        data_name)
 
-    model = build_gnn_model('SAGE')(graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
+    model = build_gnn_model('SAGE')(
+        graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     n_epochs = 30
     print("########################## CP for Inductive ###########################")
     for _ in range(n_epochs):
         train_inductive(model, optimizer, train_loader)
-    
+
     model.eval()
     with torch.no_grad():
         logits = model.inference(graph_data.x, subgraph_loader)
@@ -108,7 +110,8 @@ if __name__ == '__main__':
     logits = logits[graph_data.test_mask]
 
     predictor = NAPSPredictor(graph_data)
-    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(logits, labels, args.alpha)
+    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(
+        logits, labels, args.alpha)
 
     metrics = Metrics()
     print("Evaluating prediction sets...")
