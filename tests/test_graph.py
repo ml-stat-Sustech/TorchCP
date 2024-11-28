@@ -21,7 +21,7 @@ from torch_geometric.datasets import CitationFull, Amazon
 from torchcp.classification.scores import APS, THR
 from torchcp.classification.predictors import SplitPredictor
 from torchcp.graph.scores import DAPS, SNAPS
-from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
+from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
 from torchcp.graph.loss import ConfGNN
 from torchcp.graph.utils.metrics import Metrics
 from transformers import set_seed
