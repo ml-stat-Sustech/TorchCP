@@ -35,7 +35,7 @@ model_dir = get_model_dir()
 
 def test_transductive_graph():
     set_seed(seed=1)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     #######################################
     # Loading dataset and a model
@@ -145,7 +145,7 @@ def test_transductive_graph():
 
 def test_inductive_graph():
     set_seed(seed=0)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     #######################################
     # Loading dataset and a model

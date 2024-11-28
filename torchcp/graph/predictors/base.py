@@ -35,7 +35,7 @@ class BaseGraphPredictor(BasePredictor):
 
         self._graph_data = graph_data
         self._label_mask = F.one_hot(graph_data.y).bool()
-        self._device = graph_data.device
+        self._device = graph_data.x.device
         self._metric = Metrics()
 
     @abstractmethod
