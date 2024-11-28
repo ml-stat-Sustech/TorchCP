@@ -395,6 +395,7 @@ def test_conformal_training_graph():
     size_loss_weight = 1
     best_valid_size = 10000
     best_logits = logits
+    out_channels = graph_data.y.max().item() + 1
 
     alpha = 0.05
 
