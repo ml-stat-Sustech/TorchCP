@@ -19,6 +19,7 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 
 from torch_geometric.nn import GCNConv, SAGEConv
+from torch_geometric.datasets import CitationFull
 
 def get_dataset_dir():
     dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/datasets')
@@ -250,6 +251,38 @@ class ImageNetV2Dataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
         return img, label
+    
+
+def build_graph_dataset(dataset_name, device, ntrain_per_class=20):
+    dataset_dir = get_dataset_dir()
+
+    if dataset_name in ['cora_ml']:
+        dataset = CitationFull(dataset_dir, dataset_name)
+        graph_data = dataset[0].to(device)
+        label_mask = F.one_hot(graph_data.y).bool()
+
+        #######################################
+        # training/validation/test data random split
+        # 20 per class for training/validation, left for test
+        #######################################
+
+        classes_idx_set = [(graph_data.y == cls_val).nonzero(
+            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
+        shuffled_classes = [
+            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
+
+        train_idx = torch.concat([s[: ntrain_per_class]
+                                 for s in shuffled_classes])
+        val_idx = torch.concat(
+            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
+        test_idx = torch.concat([s[2 * ntrain_per_class:]
+                                for s in shuffled_classes])
+    else:
+        raise NotImplementedError(
+            f"The dataset {dataset_name} has not been implemented!")
+    
+    return graph_data, label_mask, train_idx, val_idx, test_idx
+
 
 class GCN(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, p_dropout):

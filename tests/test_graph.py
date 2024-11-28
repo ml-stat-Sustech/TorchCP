@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 from torch_geometric.loader import NeighborLoader
 from torch_geometric.transforms import RandomNodeSplit
-from torch_geometric.datasets import CitationFull, Amazon
+from torch_geometric.datasets import Amazon
 
 
 from torchcp.classification.scores import APS, THR
@@ -42,47 +42,15 @@ def test_transductive_graph():
     #######################################
 
     dataset_name = 'cora_ml'
-    ntrain_per_class = 20
-
-    if dataset_name in ['cora_ml']:
-
-        dataset = CitationFull(dataset_dir, dataset_name)
-        graph_data = dataset[0].to(device)
-        label_mask = F.one_hot(graph_data.y).bool()
-
-        #######################################
-        # training/validation/test data random split
-        # 20 per class for training/validation, left for test
-        #######################################
-
-        classes_idx_set = [(graph_data.y == cls_val).nonzero(
-            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
-        shuffled_classes = [
-            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
-
-        train_idx = torch.concat([s[: ntrain_per_class]
-                                 for s in shuffled_classes])
-        val_idx = torch.concat(
-            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-        test_idx = torch.concat([s[2 * ntrain_per_class:]
-                                for s in shuffled_classes])
-    else:
-        raise NotImplementedError(
-            f"The dataset {dataset_name} has not been implemented!")
-
-    in_channels = graph_data.x.shape[1]
-    hidden_channels = 64
-    out_channels = graph_data.y.max().item() + 1
-    p_dropout = 0.8
-
-    learning_rate = 0.01
-    weight_decay = 0.001
+    graph_data, label_mask, train_idx, val_idx, test_idx = build_graph_dataset(dataset_name, device)
 
     model_name = 'GCN'
-    model = GCN(in_channels, hidden_channels,
-                out_channels, p_dropout).to(device)
+    model = GCN(in_channels=graph_data.x.shape[1],
+                hidden_channels=64,
+                out_channels=graph_data.y.max().item() + 1, 
+                p_dropout=0.8).to(device)
     optimizer = torch.optim.Adam(
-        model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        model.parameters(), lr=0.01, weight_decay=0.001)
 
     #######################################
     # Training the model
@@ -339,47 +307,15 @@ def test_conformal_training_graph():
     #######################################
 
     dataset_name = 'cora_ml'
-    ntrain_per_class = 20
-
-    if dataset_name in ['cora_ml']:
-
-        dataset = CitationFull(dataset_dir, dataset_name)
-        graph_data = dataset[0].to(device)
-        label_mask = F.one_hot(graph_data.y).bool()
-
-        #######################################
-        # training/validation/test data random split
-        # 20 per class for training/validation, left for test
-        #######################################
-
-        classes_idx_set = [(graph_data.y == cls_val).nonzero(
-            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
-        shuffled_classes = [
-            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
-
-        train_idx = torch.concat([s[: ntrain_per_class]
-                                 for s in shuffled_classes])
-        val_idx = torch.concat(
-            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-        test_idx = torch.concat([s[2 * ntrain_per_class:]
-                                for s in shuffled_classes])
-    else:
-        raise NotImplementedError(
-            f"The dataset {dataset_name} has not been implemented!")
-
-    in_channels = graph_data.x.shape[1]
-    hidden_channels = 64
-    out_channels = graph_data.y.max().item() + 1
-    p_dropout = 0.8
-
-    learning_rate = 0.01
-    weight_decay = 0.001
+    graph_data, label_mask, train_idx, val_idx, test_idx = build_graph_dataset(dataset_name, device)
 
     model_name = 'GCN'
-    model = GCN(in_channels, hidden_channels,
-                out_channels, p_dropout).to(device)
+    model = GCN(in_channels=graph_data.x.shape[1],
+                hidden_channels=64,
+                out_channels=graph_data.y.max().item() + 1, 
+                p_dropout=0.8).to(device)
     optimizer = torch.optim.Adam(
-        model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        model.parameters(), lr=0.01, weight_decay=0.001)
 
     #######################################
     # Training the model
