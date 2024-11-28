@@ -7,6 +7,7 @@
 
 import os
 import copy
+import math
 import pickle
 
 import torch
@@ -17,9 +18,11 @@ from torch_geometric.transforms import RandomNodeSplit
 from torch_geometric.datasets import CitationFull, Amazon
 
 
-from torchcp.classification.scores import APS
+from torchcp.classification.scores import APS, THR
+from torchcp.classification.predictors import SplitPredictor
 from torchcp.graph.scores import DAPS, SNAPS
-from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
+from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
+from torchcp.graph.loss import ConfGNN
 from torchcp.graph.utils.metrics import Metrics
 from transformers import set_seed
 
@@ -325,3 +328,229 @@ def test_inductive_graph():
             f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
         print(
             f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")
+
+
+def test_conformal_training_graph():
+    set_seed(seed=1)
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
+    #######################################
+    # Loading dataset and a model
+    #######################################
+
+    dataset_name = 'cora_ml'
+    ntrain_per_class = 20
+
+    if dataset_name in ['cora_ml']:
+
+        dataset = CitationFull(dataset_dir, dataset_name)
+        graph_data = dataset[0].to(device)
+        label_mask = F.one_hot(graph_data.y).bool()
+
+        #######################################
+        # training/validation/test data random split
+        # 20 per class for training/validation, left for test
+        #######################################
+
+        classes_idx_set = [(graph_data.y == cls_val).nonzero(
+            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
+        shuffled_classes = [
+            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
+
+        train_idx = torch.concat([s[: ntrain_per_class]
+                                 for s in shuffled_classes])
+        val_idx = torch.concat(
+            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
+        test_idx = torch.concat([s[2 * ntrain_per_class:]
+                                for s in shuffled_classes])
+    else:
+        raise NotImplementedError(
+            f"The dataset {dataset_name} has not been implemented!")
+
+    in_channels = graph_data.x.shape[1]
+    hidden_channels = 64
+    out_channels = graph_data.y.max().item() + 1
+    p_dropout = 0.8
+
+    learning_rate = 0.01
+    weight_decay = 0.001
+
+    model_name = 'GCN'
+    model = GCN(in_channels, hidden_channels,
+                out_channels, p_dropout).to(device)
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+
+    #######################################
+    # Training the model
+    #######################################
+
+    n_epochs = 1000
+    min_validation_loss = 100.
+    patience = 50
+    bad_counter = 0
+    best_model = None
+
+    for _ in range(n_epochs):
+        model.train()
+        optimizer.zero_grad()
+        out = model(graph_data.x, graph_data.edge_index)
+        training_loss = F.cross_entropy(
+            out[train_idx], graph_data.y[train_idx])
+        validation_loss = F.cross_entropy(
+            out[val_idx], graph_data.y[val_idx]).detach().item()
+        training_loss.backward()
+        optimizer.step()
+
+        if validation_loss <= min_validation_loss:
+            min_validation_loss = validation_loss
+            best_model = copy.deepcopy(model)
+            bad_counter = 0
+        else:
+            bad_counter += 1
+
+        if bad_counter >= patience:
+            break
+
+    if best_model is None:
+        best_model = copy.deepcopy(model)
+
+    #######################################
+    # Testing the model
+    #######################################
+    best_model.eval()
+    with torch.no_grad():
+        logits = best_model(graph_data.x, graph_data.edge_index)
+    y_pred = logits.argmax(dim=1).detach()
+
+    test_accuracy = (y_pred[test_idx] == graph_data.y[test_idx]
+                     ).sum().item() / test_idx.shape[0]
+    print(f"Model Accuracy: {test_accuracy}")
+    
+    #######################################
+    # Base non-conformity scores
+    #######################################
+    alpha = 0.05
+    n_calib = min(1000, int(test_idx.shape[0] / 2))
+    perm = torch.randperm(test_idx.shape[0])
+    cal_idx = test_idx[perm[: n_calib]]
+    eval_idx = test_idx[perm[n_calib:]]
+
+    predictor = SplitPredictor(score_function=APS(score_type="softmax"))
+    predictor._device = device
+    predictor.calculate_threshold(logits[cal_idx], graph_data.y[cal_idx], alpha)
+    prediction_sets = predictor.predict_with_logits(logits[eval_idx])
+    res_dict = {"Coverage_rate": predictor._metric('coverage_rate')(prediction_sets, graph_data.y[eval_idx]),
+                    "Average_size": predictor._metric('average_size')(prediction_sets, graph_data.y[eval_idx])}
+    print(res_dict)
+    # breakpoint()
+    #######################################
+    # Initialized Parameter for Conformalized GNN
+    #######################################
+    epochs = 5000
+
+    calib_fraction = 0.5
+    calib_num = min(1000, int(test_idx.shape[0] / 2))
+    confgnn_base_model = 'GCN'
+
+    tau = 0.1
+    target_size = 0
+    confnn_hidden_dim = 64
+    size_loss_weight = 1
+    best_valid_size = 10000
+    best_logits = logits
+
+    alpha = 0.05
+
+    model_to_correct = copy.deepcopy(model)
+    confmodel = ConfGNN(model_to_correct, confgnn_base_model,
+                        out_channels, confnn_hidden_dim).to(device)
+    optimizer = torch.optim.Adam(
+        confmodel.parameters(), weight_decay=5e-4, lr=0.001)
+
+    aps_score_function = APS(score_type="softmax")
+    predictor = SplitPredictor(APS(score_type="softmax"))
+    predictor._device = device
+    #######################################
+    # Split calib/test sets
+    #######################################
+    calib_test_idx = test_idx
+    rand_perms = torch.randperm(calib_test_idx.size(0))
+    calib_train_idx = calib_test_idx[rand_perms[:int(calib_num * calib_fraction)]]
+    calib_eval_idx = calib_test_idx[rand_perms[int(calib_num * calib_fraction):]]
+
+    train_calib_idx = calib_train_idx[int(len(calib_train_idx) / 2):]
+    train_test_idx = calib_train_idx[:int(len(calib_train_idx) / 2)]
+
+    print('Starting topology-aware conformal correction...')
+    for epoch in tqdm(range(1, epochs + 1)):
+        confmodel.train()
+        optimizer.zero_grad()
+
+        adjust_logits, ori_logits = confmodel(graph_data.x, graph_data.edge_index)
+
+        adjust_softmax = F.softmax(adjust_logits, dim=1)
+
+        n_temp = len(train_calib_idx)
+        q_level = math.ceil((n_temp + 1) * (1 - alpha)) / n_temp
+
+        tps_conformal_scores = adjust_softmax[train_calib_idx, graph_data.y[train_calib_idx]]
+        qhat = torch.quantile(tps_conformal_scores, 1 - q_level, interpolation='higher')
+
+        proxy_size = torch.sigmoid((adjust_softmax[train_test_idx] - qhat) / tau)
+        size_loss = torch.mean(torch.relu(torch.sum(proxy_size, dim=1) - target_size))
+
+        pred_loss = F.cross_entropy(adjust_logits[train_idx], graph_data.y[train_idx])
+
+        if epoch <= 1000:
+            loss = pred_loss
+        else:
+            loss = pred_loss + size_loss_weight * size_loss
+        
+        loss.backward()
+        optimizer.step()
+
+        #######################################
+        # Validation Stage
+        #######################################
+        confmodel.eval()
+        with torch.no_grad():
+            adjust_logits, ori_logits = confmodel(graph_data.x, graph_data.edge_index)
+
+        size_list = []
+        for _ in range(100):
+            val_perms = torch.randperm(val_idx.size(0))
+            valid_calib_idx = val_idx[val_perms[:int(len(val_idx)/2)]]
+            valid_test_idx = val_idx[val_perms[int(len(val_idx)/2):]]
+
+            predictor.calculate_threshold(adjust_logits[valid_calib_idx], graph_data.y[valid_calib_idx], alpha)
+            pred_sets = predictor.predict_with_logits(adjust_logits[valid_test_idx])
+            size = predictor._metric('average_size')(pred_sets, graph_data.y[valid_test_idx])
+            size_list.append(size)
+
+        eff_valid = np.mean(size_list)
+
+        #######################################
+        # Early Stop
+        #######################################
+        if eff_valid < best_valid_size:
+            best_valid_size = eff_valid
+            best_logits = adjust_logits
+
+    coverage_list = []
+    size_list = []
+    for _ in range(1):
+        eval_perms = torch.randperm(calib_eval_idx.size(0))
+        eval_calib_idx = calib_eval_idx[eval_perms[:int(calib_num * calib_fraction)]]
+        eval_test_idx = calib_eval_idx[eval_perms[int(calib_num * calib_fraction):]]
+
+        predictor.calculate_threshold(best_logits[eval_calib_idx], graph_data.y[eval_calib_idx], alpha)
+        pred_sets = predictor.predict_with_logits(best_logits[eval_test_idx])
+
+        coverage = predictor._metric('coverage_rate')(pred_sets, graph_data.y[eval_test_idx])
+        size = predictor._metric('average_size')(pred_sets, graph_data.y[eval_test_idx])
+        
+        coverage_list.append(coverage)
+        size_list.append(size)
+
+    print(np.mean(coverage_list), np.mean(size_list))
