@@ -47,7 +47,7 @@ class BaseScore(object):
             (self._adj.shape[0])).to(self._device))
 
     @abstractmethod
-    def __call__(self, logits):
+    def __call__(self, logits, labels=None):
         """
         Virtual method to compute non-conformity scores for a data pair (x, y).
 
@@ -56,8 +56,12 @@ class BaseScore(object):
 
         Args:
             logits (torch.Tensor): 
-                The logits (model output before softmax) for each input data sample. 
-                Shape: [num_samples, num_classes].
+                The logits (model output before softmax) for each node. 
+                Shape: [num_nodes, num_classes].
+
+            labels (torch.Tensor):
+                The labels for each node.
+                Shape: [num_nodes]
 
         Returns:
             torch.Tensor: A tensor containing the non-conformity scores for each data sample. 

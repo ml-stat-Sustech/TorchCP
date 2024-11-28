@@ -59,7 +59,7 @@ class SNAPS(BaseScore):
         else:
             self._adj_knn = None
 
-    def __call__(self, logits):
+    def __call__(self, logits, labels=None):
         base_scores = self._base_score_function(logits)
 
         similarity_scores = 0.
@@ -74,4 +74,7 @@ class SNAPS(BaseScore):
             self._lambda_val * similarity_scores + \
             self._mu_val * neigh_scores
 
-        return scores
+        if labels is None:
+            return scores
+        else:
+            return scores[torch.arange(scores.shape[0]), labels]

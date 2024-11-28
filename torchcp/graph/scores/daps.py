@@ -37,7 +37,7 @@ class DAPS(BaseScore):
 
         self._neigh_coef = neigh_coef
 
-    def __call__(self, logits):
+    def __call__(self, logits, labels=None):
         base_scores = self._base_score_function(logits)
 
         diffusion_scores = torch.linalg.matmul(
@@ -45,5 +45,8 @@ class DAPS(BaseScore):
 
         scores = self._neigh_coef * diffusion_scores + \
             (1 - self._neigh_coef) * base_scores
-
-        return scores
+        
+        if labels is None:
+            return scores
+        else:
+            return scores[torch.arange(scores.shape[0]), labels]
