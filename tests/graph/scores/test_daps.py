@@ -20,9 +20,11 @@ def graph_data():
         [1, 0, 2, 1]
     ], dtype=torch.long)
 
+    edge_weight = torch.ones(edge_index.shape[1])
+
     y = torch.tensor([0, 1, 0], dtype=torch.long)
 
-    data = Data(x=x, edge_index=edge_index, edge_weight=None, y=y)
+    data = Data(x=x, edge_index=edge_index, edge_weight=edge_weight, y=y)
 
     return data
 
@@ -37,11 +39,6 @@ def test_daps_initialization(graph_data, base_score_function):
     assert daps._n_vertices == graph_data.num_nodes
     assert daps._device == graph_data.edge_index.device
 
-    if graph_data.edge_weight is None:
-        edge_weight = torch.ones(graph_data.edge_index.shape[1])
-    else:
-        edge_weight = graph_data.edge_weight
-
     def are_sparse_tensors_equal(tensor1, tensor2):
         if tensor1.shape != tensor2.shape:
             return False
@@ -52,7 +49,15 @@ def test_daps_initialization(graph_data, base_score_function):
         if not torch.equal(tensor1.coalesce().values(), tensor2.coalesce().values()):
             return False
         return True
-    
+
+    edge_weight = torch.ones(graph_data.edge_index.shape[1])
+    adj = torch.sparse_coo_tensor(
+            graph_data.edge_index,
+            edge_weight,
+            (graph_data.num_nodes, graph_data.num_nodes))
+    assert are_sparse_tensors_equal(daps._adj, adj)
+
+    edge_weight = graph_data.edge_weight
     adj = torch.sparse_coo_tensor(
             graph_data.edge_index,
             edge_weight,
