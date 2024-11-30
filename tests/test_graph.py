@@ -20,6 +20,7 @@ from torch_geometric.datasets import Amazon
 
 from torchcp.classification.scores import APS, THR
 from torchcp.classification.predictors import SplitPredictor
+from torchcp.classification.loss import ConfTr
 from torchcp.graph.scores import DAPS, SNAPS
 from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
 from torchcp.graph.loss import ConfGNN
@@ -411,8 +412,14 @@ def test_conformal_training_graph():
                         out_channels, confnn_hidden_dim).to(device)
     optimizer = torch.optim.Adam(
         confmodel.parameters(), weight_decay=5e-4, lr=0.001)
+    criterion = ConfTr(weight=1.0,
+                       predictor=SplitPredictor(score_function=THR(score_type="softmax")),
+                       alpha=alpha,
+                       fraction=0.5,
+                       loss_type="cfgnn",
+                       target_size=0,
+                       base_loss_fn=F.cross_entropy)
 
-    aps_score_function = APS(score_type="softmax")
     predictor = SplitPredictor(APS(score_type="softmax"))
     predictor._device = device
     #######################################
@@ -425,9 +432,6 @@ def test_conformal_training_graph():
     calib_eval_idx = calib_test_idx[rand_perms[int(
         calib_num * calib_fraction):]]
 
-    train_calib_idx = calib_train_idx[int(len(calib_train_idx) / 2):]
-    train_test_idx = calib_train_idx[:int(len(calib_train_idx) / 2)]
-
     print('Starting topology-aware conformal correction...')
     for epoch in tqdm(range(1, epochs + 1)):
         confmodel.train()
@@ -435,29 +439,12 @@ def test_conformal_training_graph():
 
         adjust_logits, ori_logits = confmodel(
             graph_data.x, graph_data.edge_index)
-
-        adjust_softmax = F.softmax(adjust_logits, dim=1)
-
-        n_temp = len(train_calib_idx)
-        q_level = math.ceil((n_temp + 1) * (1 - alpha)) / n_temp
-
-        tps_conformal_scores = adjust_softmax[train_calib_idx,
-                                              graph_data.y[train_calib_idx]]
-        qhat = torch.quantile(tps_conformal_scores, 1 -
-                              q_level, interpolation='higher')
-
-        proxy_size = torch.sigmoid(
-            (adjust_softmax[train_test_idx] - qhat) / tau)
-        size_loss = torch.mean(torch.relu(
-            torch.sum(proxy_size, dim=1) - target_size))
-
-        pred_loss = F.cross_entropy(
-            adjust_logits[train_idx], graph_data.y[train_idx])
-
+        
         if epoch <= 1000:
-            loss = pred_loss
+            loss = F.cross_entropy(
+                adjust_logits[train_idx], graph_data.y[train_idx])
         else:
-            loss = pred_loss + size_loss_weight * size_loss
+            loss = criterion(adjust_logits[calib_train_idx], graph_data.y[calib_train_idx])
 
         loss.backward()
         optimizer.step()

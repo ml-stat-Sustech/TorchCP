@@ -6,6 +6,7 @@
 #
 __all__ = ["ConfTr"]
 
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -29,12 +30,12 @@ class ConfTr(nn.Module):
     """
 
     def __init__(self, weight, predictor, alpha, fraction, loss_type="valid", target_size=1,
-                 loss_transform="square", base_loss_fn=None):
+                 loss_transform="square", base_loss_fn=None, temperature=0.1, soft_quantile=True):
 
         super(ConfTr, self).__init__()
         assert weight > 0, "weight must be greater than 0."
         assert (0 < fraction < 1), "fraction should be a value in (0,1)."
-        assert loss_type in ["valid", "classification", "probs", "coverage"], (
+        assert loss_type in ["valid", "classification", "probs", "coverage", "cfgnn"], (
             'loss_type should be a value in ["valid", "classification",  "probs", "coverage"].')
         assert target_size == 0 or target_size == 1, "target_size should be 0 or 1."
         assert loss_transform in ["square", "abs", "log"], (
@@ -46,6 +47,8 @@ class ConfTr(nn.Module):
         self.loss_type = loss_type
         self.target_size = target_size
         self.base_loss_fn = base_loss_fn
+        self.temperature = temperature
+        self.soft_quantile = soft_quantile
 
         if loss_transform == "square":
             self.transform = torch.square
@@ -56,7 +59,8 @@ class ConfTr(nn.Module):
         self.loss_functions_dict = {"valid": self.__compute_hinge_size_loss,
                                     "probs": self.__compute_probabilistic_size_loss,
                                     "coverage": self.__compute_coverage_loss,
-                                    "classification": self.__compute_classification_loss
+                                    "classification": self.__compute_classification_loss,
+                                    "cfgnn": self.__compute_conformalized_gnn_loss,
                                     }
 
     def forward(self, logits, labels):
@@ -70,11 +74,19 @@ class ConfTr(nn.Module):
         cal_scores = self.predictor.score_function(cal_logits, cal_labels)
         # self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
         # tau = self.predictor.q_hat
-        tau = self.__soft_quantile(cal_scores, self.alpha)
+        if self.soft_quantile:
+            tau = self.__soft_quantile(cal_scores, self.alpha)
+        else:
+            n_temp = len(val_split)
+            q_level = math.ceil((n_temp + 1) * (1 - self.alpha)) / n_temp
+            tau = torch.quantile(cal_scores, q_level, interpolation='higher')
         # breakpoint()
         test_scores = self.predictor.score_function(test_logits)
         # Computing the probability of each label contained in the prediction set.
-        pred_sets = torch.sigmoid(tau - test_scores)
+        if self.loss_type == "cfgnn":
+            pred_sets = torch.sigmoid(tau - test_scores)
+        else:
+            pred_sets = torch.sigmoid((tau - test_scores) / self.temperature)
         loss = self.weight * self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
 
         if self.base_loss_fn is not None:
@@ -121,6 +133,9 @@ class ConfTr(nn.Module):
 
         # Return the mean loss
         return torch.mean(loss)
+    
+    def __compute_conformalized_gnn_loss(self, pred_sets, labels):
+        return torch.mean(torch.relu(torch.sum(pred_sets, dim=1) - self.target_size))
 
     def __neural_sort(self,
                       scores: Tensor,
