@@ -314,7 +314,7 @@ def test_conformal_training_graph():
 
     dataset_name = 'cora_ml'
     graph_data, label_mask, train_idx, val_idx, test_idx = build_graph_dataset(
-        dataset_name, device)
+        dataset_name, device, split_ratio=True)
 
     model_name = 'GCN'
     model = GCN(in_channels=graph_data.x.shape[1],
@@ -399,8 +399,8 @@ def test_conformal_training_graph():
     best_valid_size = 10000
     best_logits = logits
 
-    confmodel = ConfGNN(confgnn_base_model='GCN',
-                        out_channels=graph_data.y.max().item() + 1, 
+    confmodel = ConfGNN(base_model='GCN',
+                        output_dim=graph_data.y.max().item() + 1, 
                         confnn_hidden_dim=64).to(device)
     optimizer = torch.optim.Adam(
         confmodel.parameters(), weight_decay=5e-4, lr=0.001)
@@ -432,35 +432,33 @@ def test_conformal_training_graph():
         confmodel.train()
         optimizer.zero_grad()
 
-        adjust_logits = confmodel(logits, graph_data.edge_index)
+        # adjust_softmax = F.softmax(adjust_logits, dim=1)
+        # n_temp = len(train_calib_idx)
+        # q_level = math.ceil((n_temp + 1) * (1 - alpha)) / n_temp
 
-        adjust_softmax = F.softmax(adjust_logits, dim=1)
-        n_temp = len(train_calib_idx)
-        q_level = math.ceil((n_temp + 1) * (1 - alpha)) / n_temp
+        # tps_conformal_scores = adjust_softmax[train_calib_idx,
+        #                                       graph_data.y[train_calib_idx]]
+        # qhat = torch.quantile(tps_conformal_scores, 1 -
+        #                       q_level, interpolation='higher')
 
-        tps_conformal_scores = adjust_softmax[train_calib_idx,
-                                              graph_data.y[train_calib_idx]]
-        qhat = torch.quantile(tps_conformal_scores, 1 -
-                              q_level, interpolation='higher')
+        # proxy_size = torch.sigmoid(
+        #     (adjust_softmax[train_test_idx] - qhat) / 0.1)
+        # size_loss = torch.mean(torch.relu(
+        #     torch.sum(proxy_size, dim=1) - 0))
 
-        proxy_size = torch.sigmoid(
-            (adjust_softmax[train_test_idx] - qhat) / 0.1)
-        size_loss = torch.mean(torch.relu(
-            torch.sum(proxy_size, dim=1) - 0))
+        # pred_loss = F.cross_entropy(
+        #     adjust_logits[train_idx], graph_data.y[train_idx])
 
-        pred_loss = F.cross_entropy(
-            adjust_logits[train_idx], graph_data.y[train_idx])
-
-        if epoch <= 1000:
-            loss = pred_loss
-        else:
-            loss = pred_loss + size_loss
-        
-        # if epoch <= 200:
-        #     loss = F.cross_entropy(
-        #         adjust_logits[train_idx], graph_data.y[train_idx])
+        # if epoch <= 1000:
+        #     loss = pred_loss
         # else:
-        #     loss = criterion(adjust_logits[calib_train_idx], graph_data.y[calib_train_idx])
+        #     loss = pred_loss + size_loss
+        
+        if epoch <= 1000:
+            loss = F.cross_entropy(
+                adjust_logits[train_idx], graph_data.y[train_idx])
+        else:
+            loss = criterion(adjust_logits[calib_train_idx], graph_data.y[calib_train_idx])
 
         loss.backward()
         optimizer.step()
@@ -473,7 +471,7 @@ def test_conformal_training_graph():
             adjust_logits = confmodel(logits, graph_data.edge_index)
 
         size_list = []
-        for _ in range(100):
+        for _ in range(10):
             val_perms = torch.randperm(val_idx.size(0))
             valid_calib_idx = val_idx[val_perms[:int(len(val_idx) / 2)]]
             valid_test_idx = val_idx[val_perms[int(len(val_idx) / 2):]]

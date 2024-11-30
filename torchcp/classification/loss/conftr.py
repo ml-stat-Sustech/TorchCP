@@ -84,9 +84,9 @@ class ConfTr(nn.Module):
         test_scores = self.predictor.score_function(test_logits)
         # Computing the probability of each label contained in the prediction set.
         if self.loss_type == "cfgnn":
-            pred_sets = torch.sigmoid(tau - test_scores)
-        else:
             pred_sets = torch.sigmoid((tau - test_scores) / self.temperature)
+        else:
+            pred_sets = torch.sigmoid(tau - test_scores)
         loss = self.weight * self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
 
         if self.base_loss_fn is not None:

@@ -264,7 +264,7 @@ class ImageNetV2Dataset(Dataset):
         return img, label
 
 
-def build_graph_dataset(dataset_name, device, ntrain_per_class=20):
+def build_graph_dataset(dataset_name, device, ntrain_per_class=20, split_ratio=False):
     dataset_dir = get_dataset_dir()
 
     if dataset_name in ['cora_ml']:
@@ -277,17 +277,26 @@ def build_graph_dataset(dataset_name, device, ntrain_per_class=20):
         # 20 per class for training/validation, left for test
         #######################################
 
-        classes_idx_set = [(graph_data.y == cls_val).nonzero(
-            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
-        shuffled_classes = [
-            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
+        if not split_ratio:
+            classes_idx_set = [(graph_data.y == cls_val).nonzero(
+                as_tuple=True)[0] for cls_val in graph_data.y.unique()]
+            shuffled_classes = [
+                s[torch.randperm(s.shape[0])] for s in classes_idx_set]
 
-        train_idx = torch.concat([s[: ntrain_per_class]
-                                 for s in shuffled_classes])
-        val_idx = torch.concat(
-            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-        test_idx = torch.concat([s[2 * ntrain_per_class:]
-                                for s in shuffled_classes])
+            train_idx = torch.concat([s[: ntrain_per_class]
+                                    for s in shuffled_classes])
+            val_idx = torch.concat(
+                [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
+            test_idx = torch.concat([s[2 * ntrain_per_class:]
+                                    for s in shuffled_classes])
+        else:
+            num_nodes = graph_data.x.shape[0]
+            rand_perm = torch.randperm(num_nodes)
+
+            train_idx = rand_perm[:int(num_nodes * 0.2)].to(device)
+            val_idx = rand_perm[int(num_nodes * 0.2):int(num_nodes * 0.3)].to(device)
+            test_idx = rand_perm[int(num_nodes * 0.3):].to(device)
+
     else:
         raise NotImplementedError(
             f"The dataset {dataset_name} has not been implemented!")
