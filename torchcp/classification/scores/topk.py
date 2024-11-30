@@ -31,7 +31,7 @@ class TOPK(THR):
 
     """
 
-    def __init__(self, score_type="softmax", randomized = True):
+    def __init__(self, randomized = True, score_type="softmax"):
         super().__init__(score_type)
         self.randomized = randomized
         
@@ -62,9 +62,6 @@ class TOPK(THR):
     
     def _sort_sum(self, probs):
         """Sort values and return indices and cumulative sums
-        
-        Note: We still use original probs for sorting to maintain ordering,
-        but work with ones in the actual calculations
         """
         ordered, indices = torch.sort(probs, dim=-1, descending=True)
         ones = torch.ones_like(ordered)

@@ -11,7 +11,6 @@ from abc import ABCMeta, abstractmethod
 class BaseScore(object):
     """
     Abstract base class for all score functions.
-
     """
     __metaclass__ = ABCMeta
 

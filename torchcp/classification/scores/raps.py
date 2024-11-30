@@ -35,7 +35,7 @@ class RAPS(APS):
         
     """
 
-    def __init__(self, penalty, kreg=0, score_type="softmax", randomized=True):
+    def __init__(self, penalty, kreg=0, randomized=True, score_type="softmax" ):
         super().__init__(score_type, randomized)
         if penalty <= 0:
             raise ValueError("The parameter 'penalty' must be a positive value.")

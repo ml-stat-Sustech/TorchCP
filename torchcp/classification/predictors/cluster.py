@@ -37,8 +37,8 @@ class ClusteredPredictor(ClassWisePredictor):
         __split (str): The method to split the dataset into clustering dataset and calibration set.
     """
 
-    def __init__(self, score_function, model=None, ratio_clustering="auto", num_clusters="auto", split='random',
-                 temperature=1):
+    def __init__(self, score_function, model=None, temperature=1, ratio_clustering="auto", num_clusters="auto", split='random',
+                 ):
         super(ClusteredPredictor, self).__init__(score_function, model, temperature)
         
         if ratio_clustering != "auto" and not (0 < ratio_clustering < 1):

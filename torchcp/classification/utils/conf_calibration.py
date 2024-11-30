@@ -30,7 +30,7 @@ class Identity(nn.Module):
 
 @ConfCalibrator_REGISTRY.register()
 class TS(nn.Module):
-    """Temperature Scaling"""
+    """Using a pre-defiend tempreature to scale the logits"""
 
     def __init__(self, temperature=1) -> None:
         super().__init__()
@@ -42,7 +42,7 @@ class TS(nn.Module):
 
 @ConfCalibrator_REGISTRY.register()
 class oTS(nn.Module):
-    """Optimal Temperature Scaling"""
+    """Temperature Scaling"""
 
     def __init__(self, temperature=1) -> None:
         super().__init__()

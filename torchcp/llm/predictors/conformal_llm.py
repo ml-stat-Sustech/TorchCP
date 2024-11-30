@@ -58,13 +58,15 @@ class ConformalLM:
     Github: https://github.com/Varal7/conformal-language-modeling
     
     
-    :param tokenizer: a tokenizer for language model.
-    :param model: a language model based on pytorch .
-    :param epsilons: the risk that need to be controlled.
-    :param scaling_type: the scaling type for scores.
-    :param scale_kwargs: the parameters for scaling function.
-    :param rejection: (bool) Indicates whether to use rejection sampling.
-    :param seed: the random seed.
+    Args:
+        tokenizer (Any, optional): A tokenizer for the language model. Default is None.
+        model (Any, optional): A language model based on PyTorch. Default is None.
+        epsilons (torch.Tensor, optional): The risk levels that need to be controlled. Default is DEFAULT_EPSILONS.
+        scaling_type (str, optional): The scaling type for scores. Default is "none".
+        scale_kwargs (dict, optional): The parameters for the scaling function. Default is None.
+        set_score_function_name (str, optional): The name of the score function to use. Default is "none".
+        rejection (bool, optional): Indicates whether to use rejection sampling. Default is False.
+        seed (int, optional): The random seed. Default is 2024.
     """
     
     
@@ -157,49 +159,6 @@ class ConformalLM:
                     self.best_valid_configs[j] = config
                 else:
                     is_stopped[j] = True
-            
-    # def predict(self, prompt):
-    #     for batch in range(num_batches):
-    #         set_seed(seed + batch)
-    #         with torch.no_grad():
-    #             outputs = model.generate(input_ids, **kwargs)
-
-    #         transition_scores = model.compute_transition_scores(outputs.sequences, outputs.scores, normalize_logits=True)
-    #         input_length = 1 if model.config.is_encoder_decoder else input_ids.shape[1]
-    #         generated_tokens = outputs.sequences[:, input_length:]
-
-    #         for i in range(len(generated_tokens)):
-    #             tokens = []
-    #             scores = []
-    #             for tok, score in zip(generated_tokens[i], transition_scores[i]):
-    #                 if tok in stop_word_ids and len(tokens) > 0:
-    #                     break
-    #                 tokens.append(tok)
-    #                 scores.append(score)
-
-    #             tokens = torch.stack(tokens, dim=0)
-    #             scores = torch.stack(scores, dim=0)
-
-    #             generations.append({
-    #                 'tokens': tokens.cpu().tolist(),
-    #                 'scores': scores.cpu().tolist(),
-    #                 'decoded': tokenizer.decode(tokens)
-    #             })
-            
-            
-    #     trial_results = collections.defaultdict(list)
-    #     trial_results['configs'] = np.array(self.best_valid_configs)
-    #     for j, config in enumerate(self.best_valid_configs):
-    #         values = self.__compute_values(
-    #             config=config,
-    #             item_scores=test_scores,
-    #             similarity_scores=test_similarities,
-    #             item_labels=test_labels)
-    #         for k, v in values.items():
-    #             trial_results[k].append(v)
-    #     return trial_results      
-        
-    
         
         
     def get_pareto_frontier(self, item_scores, similarity_scores, item_labels):

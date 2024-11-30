@@ -23,9 +23,6 @@ class APS(THR):
         score_type (str, optional): The type of score to use. Default is "softmax".
         randomized (bool, optional): Whether to use randomized scores. Default is True.
 
-    Attributes:
-        randomized (bool): Whether to use randomized scores.
-
     Methods:
         _calculate_all_label(probs):
             Calculate non-conformity scores for all classes.
@@ -41,7 +38,7 @@ class APS(THR):
         >>> print(scores)
     """
 
-    def __init__(self, score_type="softmax", randomized=True):
+    def __init__(self, score_type="softmax", randomized=True ):
         super().__init__(score_type)
         self.randomized = randomized
         
