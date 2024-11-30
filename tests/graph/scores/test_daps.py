@@ -71,6 +71,28 @@ def test_invalid_neigh_coef(graph_data, base_score_function, neigh_coef):
 
 def test_daps_call_without_labels(graph_data, base_score_function):
     daps = DAPS(graph_data, base_score_function, neigh_coef=0.5)
+    logits = torch.tensor([
+        [1.0, 0.5],
+        [0.2, 0.8],
+        [0.4, 0.6]
+    ], dtype=torch.float32)
+    
+    base_scores = base_score_function(logits)
+
+    diffusion_scores = torch.tensor([
+        [base_scores[1, 0], base_scores[1, 1]],
+        [(base_scores[0, 0]+base_scores[2, 0])/2, (base_scores[0, 1]+base_scores[2, 1])/2],
+        [base_scores[1, 0], base_scores[1, 1]]
+    ], dtype=torch.float32)
+    
+    expected_scores = 0.5 * diffusion_scores + 0.5 * base_scores
+    
+    scores = daps(logits)
+    assert torch.allclose(scores, expected_scores, atol=1e-5)
+
+
+def test_daps_call_with_labels(graph_data, base_score_function):
+    daps = DAPS(graph_data, base_score_function, neigh_coef=0.5)
     
     logits = torch.tensor([
         [1.0, 0.5],
@@ -78,30 +100,8 @@ def test_daps_call_without_labels(graph_data, base_score_function):
         [0.4, 0.6]
     ], dtype=torch.float32)
     
-    expected_base_scores = logits
-    expected_diffusion_scores = torch.tensor([
-        [0.1, 0.4],
-        [0.7, 0.55],
-        [0.1, 0.4]
-    ], dtype=torch.float32)
+    labels = torch.tensor([0, 1, 0], dtype=torch.long)
     
-    expected_scores = 0.5 * expected_diffusion_scores + 0.5 * expected_base_scores
-    
-    scores = daps(logits)
-    assert torch.allclose(scores, expected_scores, atol=1e-5)
-
-
-# def test_daps_call_with_labels(graph_data, base_score_function):
-#     daps = DAPS(graph_data, base_score_function, neigh_coef=0.5)
-    
-#     logits = torch.tensor([
-#         [1.0, 0.5],
-#         [0.2, 0.8],
-#         [0.4, 0.6]
-#     ], dtype=torch.float32)
-    
-#     labels = torch.tensor([0, 1, 1], dtype=torch.long)
-    
-#     scores = daps(logits, labels)
-#     expected_scores = daps(logits)
-#     assert torch.allclose(scores, expected_scores[torch.arange(3), labels], atol=1e-5)
+    scores = daps(logits, labels)
+    expected_scores = daps(logits)
+    assert torch.allclose(scores, expected_scores[torch.arange(3), labels], atol=1e-5)
