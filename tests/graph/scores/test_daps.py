@@ -1,16 +1,30 @@
 import pytest
 
 import torch
+from torch_geometric.data import Data
+
 from torchcp.classification.scores import THR
 from torchcp.graph.scores import DAPS
 
 
 @pytest.fixture
 def graph_data():
-    adj = torch.tensor([[0, 1, 1, 2],
-                        [1, 0, 2, 1]], dtype=torch.int)
-    degs = torch.tensor([1, 2, 1], dtype=torch.int)
-    return {"adj": adj, "degs": degs}
+    x = torch.tensor([
+        [1.0, 2.0],
+        [3.0, 4.0],
+        [5.0, 6.0]
+    ], dtype=torch.float32)
+
+    edge_index = torch.tensor([
+        [0, 1, 1, 2],
+        [1, 0, 2, 1]
+    ], dtype=torch.long)
+
+    y = torch.tensor([0, 1, 0], dtype=torch.long)
+
+    data = Data(x=x, edge_index=edge_index, edge_weight=None, y=y)
+
+    return data
 
 
 @pytest.fixture
@@ -20,42 +34,63 @@ def base_score_function():
 
 def test_daps_initialization(graph_data, base_score_function):
     daps = DAPS(graph_data, base_score_function, neigh_coef=0.7)
-    assert daps._neigh_coef == 0.7
-    assert daps._adj.equal(graph_data["adj"])
-    assert daps._degs.equal(graph_data["degs"])
+    assert daps._n_vertices == graph_data.num_nodes
+    assert daps._device == graph_data.edge_index.device
 
+    if graph_data.edge_weight is None:
+        edge_weight = torch.ones(graph_data.edge_index.shape[1])
+    else:
+        edge_weight = graph_data.edge_weight
 
-# # 测试非法的 neigh_coef 参数
-# @pytest.mark.parametrize("neigh_coef", [-0.1, 1.1, -5, 1.5])
-# def test_invalid_neigh_coef(graph_data, base_score_function, neigh_coef):
-#     with pytest.raises(ValueError, match="The parameter 'neigh_coef' must be a value between 0 and 1."):
-#         DAPS(graph_data, base_score_function, neigh_coef)
-
-
-# # 测试 __call__ 方法（无标签）
-# def test_daps_call_without_labels(graph_data, base_score_function):
-#     daps = DAPS(graph_data, base_score_function, neigh_coef=0.5)
+    def are_sparse_tensors_equal(tensor1, tensor2):
+        if tensor1.shape != tensor2.shape:
+            return False
+        if tensor1.device != tensor2.device:
+            return False
+        if not torch.equal(tensor1.coalesce().indices(), tensor2.coalesce().indices()):
+            return False
+        if not torch.equal(tensor1.coalesce().values(), tensor2.coalesce().values()):
+            return False
+        return True
     
-#     logits = torch.tensor([
-#         [1.0, 0.5],
-#         [0.2, 0.8],
-#         [0.4, 0.6]
-#     ], dtype=torch.float32)
-    
-#     expected_base_scores = logits
-#     expected_diffusion_scores = torch.tensor([
-#         [0.1, 0.4],
-#         [0.7, 0.55],
-#         [0.1, 0.4]
-#     ], dtype=torch.float32)  # 根据邻接矩阵和度数计算的扩散分数
-    
-#     expected_scores = 0.5 * expected_diffusion_scores + 0.5 * expected_base_scores
-    
-#     scores = daps(logits)
-#     assert torch.allclose(scores, expected_scores, atol=1e-5)
+    adj = torch.sparse_coo_tensor(
+            graph_data.edge_index,
+            edge_weight,
+            (graph_data.num_nodes, graph_data.num_nodes))
+    assert are_sparse_tensors_equal(daps._adj, adj)
+
+    degs = torch.matmul(adj, torch.ones((adj.shape[0])))
+    assert daps._degs.equal(degs)
 
 
-# # 测试 __call__ 方法（带标签）
+@pytest.mark.parametrize("neigh_coef", [-0.1, 1.1, -5, 1.5])
+def test_invalid_neigh_coef(graph_data, base_score_function, neigh_coef):
+    with pytest.raises(ValueError, match="The parameter 'neigh_coef' must be a value between 0 and 1."):
+        DAPS(graph_data, base_score_function, neigh_coef)
+
+
+def test_daps_call_without_labels(graph_data, base_score_function):
+    daps = DAPS(graph_data, base_score_function, neigh_coef=0.5)
+    
+    logits = torch.tensor([
+        [1.0, 0.5],
+        [0.2, 0.8],
+        [0.4, 0.6]
+    ], dtype=torch.float32)
+    
+    expected_base_scores = logits
+    expected_diffusion_scores = torch.tensor([
+        [0.1, 0.4],
+        [0.7, 0.55],
+        [0.1, 0.4]
+    ], dtype=torch.float32)
+    
+    expected_scores = 0.5 * expected_diffusion_scores + 0.5 * expected_base_scores
+    
+    scores = daps(logits)
+    assert torch.allclose(scores, expected_scores, atol=1e-5)
+
+
 # def test_daps_call_with_labels(graph_data, base_score_function):
 #     daps = DAPS(graph_data, base_score_function, neigh_coef=0.5)
     
@@ -65,7 +100,7 @@ def test_daps_initialization(graph_data, base_score_function):
 #         [0.4, 0.6]
 #     ], dtype=torch.float32)
     
-#     labels = torch.tensor([0, 1, 1], dtype=torch.long)  # 节点对应的标签
+#     labels = torch.tensor([0, 1, 1], dtype=torch.long)
     
 #     scores = daps(logits, labels)
 #     expected_scores = daps(logits)
