@@ -13,7 +13,24 @@ class Margin(APS):
     """
     Method: Margin non-conformity score
     Paper: Bias reduction through conditional conformal prediction (Löfström et al., 2015)
-    Link:https://dl.acm.org/doi/abs/10.3233/IDA-150786
+    Link: https://dl.acm.org/doi/abs/10.3233/IDA-150786
+
+    Args:
+        score_type (str, optional): The type of score to use. Default is "softmax".
+
+    Methods:
+        _calculate_single_label(probs, label):
+            Calculate margin non-conformity score for a single label.
+        _calculate_all_label(probs):
+            Calculate margin non-conformity scores for all labels.
+    
+    Examples::
+        >>> margin = Margin(score_type="softmax")
+        >>> probs = torch.tensor([[0.1, 0.4, 0.5], [0.3, 0.3, 0.4]])
+        >>> scores_single = margin._calculate_single_label(probs, torch.tensor([2, 1]))
+        >>> print(scores_single)
+        >>> scores_all = margin._calculate_all_label(probs)
+        >>> print(scores_all)
     """
 
     def __init__(self, score_type="softmax"):

@@ -15,30 +15,60 @@ from torch import Tensor
 
 class ConfTr(nn.Module):
     """
-    Conformal Training (Stutz et al., 2021).
-    Paper: https://arxiv.org/abs/2110.09192
+    Method: Conformal Training  (ConfTr)
+    Paper: Learning Optimal Conformal Classifiers (Stutz et al., 2021)
+    Link: https://arxiv.org/abs/2110.09192
+    Github: https://github.com/google-deepmind/conformal_training
+    
+    The class implements conformal training for neural networks. It supports
+    multiple loss functions and allows for flexible configuration of the training
+    process.
 
-    :param weight: the weight of each loss function
-    :param predictor: the CP predictors
-    :param alpha: the significance level for each training batch
-    :param fraction: the fraction of the calibration set in each training batch
-    :param loss_type: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
-    :param target_size: Optional: 0 | 1.
-    :param loss_transform: a transform for loss
-    :param base_loss_fn: a base loss function. For example, cross entropy in classification.
+    Args:
+        weight (float): The weight of each loss function. Must be greater than 0.
+        predictor (torchcp.classification.Predictor): An instance of the CP predictor class.
+        alpha (float): The significance level for each training batch.
+        fraction (float): The fraction of the calibration set in each training batch.
+            Must be a value in (0, 1).
+        loss_type (str): The selected (multi-selected) loss functions, which can be
+            "valid", "classification", "probs", "coverage".
+        target_size (int, optional): Optional: 0 | 1. Default is 1.
+        loss_transform (str, optional): A transform for loss. Default is "square".
+            Can be "square", "abs", or "log".
+        base_loss_fn (callable, optional): A base loss function. For example, cross
+            entropy in classification. Default is None.
+
+        
+        
+    Shape:
+        - Input: :math:`(N, *)` where :math:`*` means any number of additional dimensions.
+        - Output: scalar representing the computed loss.
+        
+    Examples::
+        >>> predictor = torchcp.classification.SplitPredictor()
+        >>> conftr = ConfTr(weight=1.0, predictor=predictor, alpha=0.05, fraction=0.2, loss_type="valid")
+        >>> logits = torch.randn(100, 10)
+        >>> labels = torch.randint(0, 2, (100,))
+        >>> loss = conftr(logits, labels)
+        >>> loss.backward()
     """
 
     def __init__(self, weight, predictor, alpha, fraction, loss_type="valid", target_size=1,
                  loss_transform="square", base_loss_fn=None):
 
         super(ConfTr, self).__init__()
-        assert weight > 0, "weight must be greater than 0."
-        assert (0 < fraction < 1), "fraction should be a value in (0,1)."
-        assert loss_type in ["valid", "classification", "probs", "coverage"], (
-            'loss_type should be a value in ["valid", "classification",  "probs", "coverage"].')
-        assert target_size == 0 or target_size == 1, "target_size should be 0 or 1."
-        assert loss_transform in ["square", "abs", "log"], (
-            'loss_transform should be a value in ["square", "abs","log"].')
+        if weight <= 0:
+            raise ValueError("weight must be greater than 0.")
+        if not (0 < fraction < 1):
+            raise ValueError("fraction should be a value in (0,1).")
+        if loss_type not in ["valid", "classification", "probs", "coverage"]:
+            raise ValueError('loss_type should be a value in ["valid", "classification", "probs", "coverage"].')
+        if target_size not in [0, 1]:
+            raise ValueError("target_size should be 0 or 1.")
+        if loss_transform not in ["square", "abs", "log"]:
+            raise ValueError('loss_transform should be a value in ["square", "abs", "log"].')
+        
+        
         self.weight = weight
         self.predictor = predictor
         self.alpha = alpha
@@ -71,7 +101,6 @@ class ConfTr(nn.Module):
         # self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
         # tau = self.predictor.q_hat
         tau = self.__soft_quantile(cal_scores, self.alpha)
-        # breakpoint()
         test_scores = self.predictor.score_function(test_logits)
         # Computing the probability of each label contained in the prediction set.
         pred_sets = torch.sigmoid(tau - test_scores)

@@ -17,9 +17,10 @@ class SplitPredictor(BasePredictor):
     Split Conformal Prediction (Vovk et a., 2005).
     Book: https://link.springer.com/book/10.1007/978-3-031-06649-8.
     
-    :param score_function: non-conformity score function.
-    :param model: a pytorch model.
-    :param temperature: the temperature of Temperature Scaling.
+    Args:
+        score_function (callable): Non-conformity score function.
+        model (torch.nn.Module, optional): A PyTorch model. Default is None.
+        temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
     """
 
     def __init__(self, score_function, model=None, temperature=1):
@@ -29,6 +30,13 @@ class SplitPredictor(BasePredictor):
     # The calibration process
     ############################
     def calibrate(self, cal_dataloader, alpha):
+        
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        
+        if self._model is None:
+            raise ValueError("Model is not defined. Please provide a valid model.")
+        
         self._model.eval()
         logits_list = []
         labels_list = []
@@ -56,26 +64,34 @@ class SplitPredictor(BasePredictor):
     ############################
     def predict(self, x_batch):
         """
-        The input of score function is softmax probability.
+        Generate prediction sets for a batch of instances.
 
-        :param x_batch: a batch of instances.
-        """
+        Args:
+            x_batch (torch.Tensor): A batch of instances.
+
+        Returns:
+            list: A list of prediction sets for each instance in the batch.
+        """        
+        
+        if self._model is None:
+            raise ValueError("Model is not defined. Please provide a valid model.")
+        
         self._model.eval()
-        if self._model != None:
-            x_batch = self._model(x_batch.to(self._device)).float()
+        x_batch = self._model(x_batch.to(self._device)).float()
         x_batch = self._logits_transformation(x_batch).detach()
         sets = self.predict_with_logits(x_batch)
         return sets
 
     def predict_with_logits(self, logits, q_hat=None):
         """
-        The input of score function is softmax probability.
-        if q_hat is not given by the function 'self.calibrate', the construction progress of prediction set is a naive method.
+        Generate prediction sets from logits.
 
-        :param logits: model output before softmax.
-        :param q_hat: the conformal threshold.
+        Args:
+            logits (torch.Tensor): Model output before softmax.
+            q_hat (torch.Tensor, optional): The conformal threshold. Default is None.
 
-        :return: prediction sets
+        Returns:
+            list: A list of prediction sets for each instance in the batch.
         """
 
         scores = self.score_function(logits).to(self._device)
@@ -91,6 +107,15 @@ class SplitPredictor(BasePredictor):
     ############################
 
     def evaluate(self, val_dataloader):
+        """
+        Evaluate the prediction sets on a validation dataset.
+
+        Args:
+            val_dataloader (torch.utils.data.DataLoader): A dataloader of the validation set.
+
+        Returns:
+            dict: A dictionary containing the coverage rate and average size of the prediction sets.
+        """
         prediction_sets = []
         labels_list = []
         with torch.no_grad():

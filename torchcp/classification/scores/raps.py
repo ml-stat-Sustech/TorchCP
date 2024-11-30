@@ -19,18 +19,29 @@ class RAPS(APS):
     Paper: Uncertainty Sets for Image Classifiers using Conformal Prediction (Angelopoulos et al., 2020)
     Link: https://arxiv.org/abs/2009.14193
     
-    :param penalty: the weight of regularization. When penalty = 0, RAPS=APS.
-    :param kreg: the rank of regularization which is an integer in [0,labels_num].
+    Args:
+        penalty (float): The weight of regularization. When penalty = 0, RAPS=APS.
+        kreg (int, optional): The rank of regularization which is an integer in [0, labels_num]. Default is 0.
+        score_type (str, optional): The type of score to use. Default is "softmax".
+        randomized (bool, optional): Whether to use randomized scores. Default is True.
+        
+    Examples::
+        >>> raps = RAPS(penalty=0.1, kreg=1, score_type="softmax", randomized=True)
+        >>> probs = torch.tensor([[0.1, 0.4, 0.5], [0.3, 0.3, 0.4]])
+        >>> scores_all = raps._calculate_all_label(probs)
+        >>> print(scores_all)
+        >>> scores_single = raps._calculate_single_label(probs, torch.tensor([2, 1]))
+        >>> print(scores_single)
+        
     """
 
     def __init__(self, penalty, kreg=0, score_type="softmax", randomized=True):
         super().__init__(score_type, randomized)
         if penalty <= 0:
             raise ValueError("The parameter 'penalty' must be a positive value.")
-        if kreg < 0:
-            raise ValueError("The parameter 'kreg' must be a nonnegative value.")
-        if type(kreg) != int:
-            raise TypeError("The parameter 'kreg' must be a integer.")
+
+        if type(kreg) != int or kreg < 0:
+            raise TypeError("The parameter 'kreg' must be a nonnegative integer.")
         super(RAPS, self).__init__()
         self.__penalty = penalty
         self.__kreg = kreg
@@ -60,7 +71,3 @@ class RAPS(APS):
         idx_minus_one = (idx[0], idx[1] - 1)
         scores = cumsum[idx_minus_one] - U * ordered[idx] + reg
         return scores
-        # indices, ordered, cumsum = self._sort_sum(probs)
-        # idx = torch.where(indices == label.view(-1, 1))
-        # reg = torch.maximum(self.__penalty * (idx[1] + 1 - self.__kreg), torch.tensor(0).to(probs.device))
-        # return super()._calculate_single_label(probs, label) + reg

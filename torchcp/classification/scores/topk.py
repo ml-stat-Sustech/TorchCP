@@ -18,6 +18,17 @@ class TOPK(THR):
     Method: TOPK prediction sets
     Paper: Uncertainty Sets for Image Classifiers using Conformal Prediction (Angelopoulos et al., 2020)
     Link: https://arxiv.org/abs/2009.14193
+    
+     Args:
+        score_type (str, optional): The type of score to use. Default is "softmax".
+        randomized (bool, optional): Whether to use randomized scores. Default is True.
+
+    Examples::
+        >>> topk = TOPK(score_type="softmax", randomized=True)
+        >>> probs = torch.tensor([[0.1, 0.4, 0.5], [0.3, 0.3, 0.4]])
+        >>> scores = topk._calculate_all_label(probs)
+        >>> print(scores)
+
     """
 
     def __init__(self, score_type="softmax", randomized = True):

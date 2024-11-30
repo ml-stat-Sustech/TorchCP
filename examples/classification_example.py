@@ -88,8 +88,7 @@ def run_imagenet_logits():
     #######################################
     alpha = 0.1
     predictors = [SplitPredictor, ClassWisePredictor, ClusteredPredictor]
-    score_functions = [THR(), APS(), RAPS(1, 0), SAPS(0.2), Margin()]
-    score_functions = [TOPK()]
+    score_functions = [THR(), APS(), RAPS(1, 0), SAPS(0.2), Margin(),TOPK()]
     for score in score_functions:
         for the_predictor in predictors:
             predictor = the_predictor(score)
