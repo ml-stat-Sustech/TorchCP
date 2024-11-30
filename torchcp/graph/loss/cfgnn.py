@@ -79,16 +79,12 @@ class ConfGNN(torch.nn.Module):
 
     """
 
-    def __init__(self, model, base_model, output_dim, confnn_hidden_dim, num_conf_layers=1):
+    def __init__(self, base_model, output_dim, confnn_hidden_dim, num_conf_layers=1):
         super().__init__()
-        self.model = model
         self.confgnn = GNN_Multi_Layer(
             output_dim, confnn_hidden_dim, output_dim, base_model, num_layers=num_conf_layers)
 
-    def forward(self, x, edge_index):
-        with torch.no_grad():
-            logits = self.model(x, edge_index)
-
+    def forward(self, logits, edge_index):
         out = F.softmax(logits, dim=1)
         adjust_logits = self.confgnn(out, edge_index)
-        return adjust_logits, logits
+        return adjust_logits

@@ -164,7 +164,7 @@ def test_inductive_graph():
     fname = os.path.join(dataset_dir, 'Computers_logits.pkl')
     if os.path.exists(fname):
         with open(fname, 'rb') as handle:
-            logits = pickle.load(handle)
+            logits = pickle.load(handle).to(device)
     else:
         kwargs = {'batch_size': 512, 'num_workers': 6,
                   'persistent_workers': True}
@@ -391,7 +391,7 @@ def test_conformal_training_graph():
     #######################################
     # Initialized Parameter for Conformalized GNN
     #######################################
-    epochs = 1000
+    epochs = 5000
 
     calib_fraction = 0.5
     calib_num = min(1000, int(test_idx.shape[0] / 2))
@@ -399,11 +399,9 @@ def test_conformal_training_graph():
     best_valid_size = 10000
     best_logits = logits
 
-    alpha = 0.1
-
-    model_to_correct = copy.deepcopy(model)
-    confmodel = ConfGNN(model_to_correct, confgnn_base_model='GCN',
-                        out_channels=graph_data.y.max().item() + 1, confnn_hidden_dim=64).to(device)
+    confmodel = ConfGNN(confgnn_base_model='GCN',
+                        out_channels=graph_data.y.max().item() + 1, 
+                        confnn_hidden_dim=64).to(device)
     optimizer = torch.optim.Adam(
         confmodel.parameters(), weight_decay=5e-4, lr=0.001)
     criterion = ConfTr(weight=1.0,
@@ -425,20 +423,44 @@ def test_conformal_training_graph():
         calib_num * calib_fraction)]]
     calib_eval_idx = calib_test_idx[rand_perms[int(
         calib_num * calib_fraction):]]
+    
+    train_calib_idx = calib_train_idx[int(len(calib_train_idx) / 2):]
+    train_test_idx = calib_train_idx[:int(len(calib_train_idx) / 2)]
 
     print('Starting topology-aware conformal correction...')
     for epoch in tqdm(range(1, epochs + 1)):
         confmodel.train()
         optimizer.zero_grad()
 
-        adjust_logits, ori_logits = confmodel(
-            graph_data.x, graph_data.edge_index)
-        
-        if epoch <= 200:
-            loss = F.cross_entropy(
-                adjust_logits[train_idx], graph_data.y[train_idx])
+        adjust_logits = confmodel(logits, graph_data.edge_index)
+
+        adjust_softmax = F.softmax(adjust_logits, dim=1)
+        n_temp = len(train_calib_idx)
+        q_level = math.ceil((n_temp + 1) * (1 - alpha)) / n_temp
+
+        tps_conformal_scores = adjust_softmax[train_calib_idx,
+                                              graph_data.y[train_calib_idx]]
+        qhat = torch.quantile(tps_conformal_scores, 1 -
+                              q_level, interpolation='higher')
+
+        proxy_size = torch.sigmoid(
+            (adjust_softmax[train_test_idx] - qhat) / 0.1)
+        size_loss = torch.mean(torch.relu(
+            torch.sum(proxy_size, dim=1) - 0))
+
+        pred_loss = F.cross_entropy(
+            adjust_logits[train_idx], graph_data.y[train_idx])
+
+        if epoch <= 1000:
+            loss = pred_loss
         else:
-            loss = criterion(adjust_logits[calib_train_idx], graph_data.y[calib_train_idx])
+            loss = pred_loss + size_loss
+        
+        # if epoch <= 200:
+        #     loss = F.cross_entropy(
+        #         adjust_logits[train_idx], graph_data.y[train_idx])
+        # else:
+        #     loss = criterion(adjust_logits[calib_train_idx], graph_data.y[calib_train_idx])
 
         loss.backward()
         optimizer.step()
@@ -448,11 +470,10 @@ def test_conformal_training_graph():
         #######################################
         confmodel.eval()
         with torch.no_grad():
-            adjust_logits, ori_logits = confmodel(
-                graph_data.x, graph_data.edge_index)
+            adjust_logits = confmodel(logits, graph_data.edge_index)
 
         size_list = []
-        for _ in range(10):
+        for _ in range(100):
             val_perms = torch.randperm(val_idx.size(0))
             valid_calib_idx = val_idx[val_perms[:int(len(val_idx) / 2)]]
             valid_test_idx = val_idx[val_perms[int(len(val_idx) / 2):]]
@@ -476,7 +497,7 @@ def test_conformal_training_graph():
 
     coverage_list = []
     size_list = []
-    for _ in range(10):
+    for _ in range(100):
         eval_perms = torch.randperm(calib_eval_idx.size(0))
         eval_calib_idx = calib_eval_idx[eval_perms[:int(
             calib_num * calib_fraction)]]
