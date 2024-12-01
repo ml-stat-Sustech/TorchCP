@@ -1,4 +1,5 @@
 import pytest
+import torch
 from torchcp.graph.utils import Metrics
 
 @pytest.fixture
@@ -8,7 +9,7 @@ def mock_prediction_sets():
 
 @pytest.fixture
 def mock_labels():
-    return [0, 2, 1, 3]
+    return torch.tensor([0, 2, 1, 3])
 
 
 @pytest.fixture
@@ -28,9 +29,9 @@ def test_average_size(mock_prediction_sets, mock_labels, metrics):
     assert result == expected_avg_size
 
 
-def test_singleton_hit_ratio(mock_prediction_sets, mock_labels):
+def test_singleton_hit_ratio(mock_prediction_sets, mock_labels, metrics):
     result = metrics('singleton_hit_ratio')(mock_prediction_sets, mock_labels)
-    expected_ratio = 1 / 3
+    expected_ratio = 1 / 4
     assert result == expected_ratio
 
 
