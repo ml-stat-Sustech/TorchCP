@@ -69,7 +69,7 @@ class GraphSplitPredictor(BaseGraphPredictor):
         with torch.no_grad():
             logits = self._model(self._graph_data.x,
                                  self._graph_data.edge_index)
-        sets = self.predict_with_logits(logits[eval_idx])
+        sets = self.predict_with_logits(logits, eval_idx)
         return sets
 
     def predict_with_logits(self, logits, eval_idx, q_hat=None):
