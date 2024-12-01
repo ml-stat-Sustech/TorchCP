@@ -33,6 +33,8 @@ class R2CCP(BaseScore):
     def __init__(self, midpoints):
         super().__init__()
         self.midpoints = midpoints
+        self._device = self.midpoints.device 
+
 
     def fit(self, train_dataloader, **kwargs):
         """
@@ -52,7 +54,7 @@ class R2CCP(BaseScore):
                 - verbose (bool, optional): If True, displays training progress. Default is True.
                 
         """
-        device = kwargs.get('device', self.midpoints.device)
+        device = kwargs.get('device', self._device)
         self._device = device
         model = kwargs.get('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], len(self.midpoints), 1000, 0).to(self._device))
         epochs = kwargs.get('epochs', 100)

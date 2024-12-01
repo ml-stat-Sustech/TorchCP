@@ -88,7 +88,6 @@ class BaseScore(object):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                running_loss += loss.item()
                 
         print("Training complete.")
         model.eval()
