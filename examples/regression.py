@@ -7,9 +7,9 @@ from torch.utils.data import TensorDataset, ConcatDataset
 from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.regression.predictors import SplitPredictor, EnsemblePredictor, ACIPredictor
 from torchcp.regression.scores import split, CQR, CQRR, CQRM, CQRFM, R2CCP
-from torchcp.regression.utils import calculate_midpoints
+from torchcp.regression.utils import calculate_midpoints, build_regression_model
 from torchcp.utils import fix_randomness
-from tests.utils import build_reg_data, build_regression_model
+from .utils import build_reg_data
 
 
 def test_split_predictor():
