@@ -134,7 +134,7 @@ class GraphSplitPredictor(BaseGraphPredictor):
                 - "Coverage_rate": The proportion of test samples for which the true label is included 
                 in the prediction set.
                 - "Average_size": The average size of the prediction sets.
-                - "Singleton_Hit_Ratio": The ratio of singleton (i.e., single-class) prediction sets 
+                - "Singleton_hit_ratio": The ratio of singleton (i.e., single-class) prediction sets 
                 where the predicted class matches the true label.
         """
         self._model.eval()

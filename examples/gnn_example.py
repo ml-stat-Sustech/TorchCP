@@ -120,4 +120,4 @@ if __name__ == '__main__':
     print(
         f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
     print(
-        f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")
+        f"Singleton_hit_ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")

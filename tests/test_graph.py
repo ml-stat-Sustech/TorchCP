@@ -143,7 +143,7 @@ def test_transductive_graph():
         print(
             f"Average_size: {metrics('average_size')(prediction_sets, graph_data.y[eval_idx])}.")
         print(
-            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, graph_data.y[eval_idx])}.")
+            f"Singleton_hit_ratio: {metrics('singleton_hit_ratio')(prediction_sets, graph_data.y[eval_idx])}.")
 
 
 def test_inductive_graph():
@@ -279,7 +279,7 @@ def test_inductive_graph():
     print(
         f"Average_size: {metrics('average_size')(prediction_sets, graph_data.y[graph_data.test_mask][eval_idx])}.")
     print(
-        f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, graph_data.y[graph_data.test_mask][eval_idx])}.")
+        f"Singleton_hit_ratio: {metrics('singleton_hit_ratio')(prediction_sets, graph_data.y[graph_data.test_mask][eval_idx])}.")
 
     #######################################
     # Neighbourhood Adaptive Prediction Sets for inductive setting
@@ -301,7 +301,7 @@ def test_inductive_graph():
         print(
             f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
         print(
-            f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")
+            f"Singleton_hit_ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")
 
 
 def test_conformal_training_graph():
