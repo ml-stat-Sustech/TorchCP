@@ -25,43 +25,43 @@ def dummy_data():
 
 
 @pytest.fixture
-def cqr_instance():
+def cqrm_instance():
     """
-    Fixture to provide an instance of the CQR class.
+    Fixture to provide an instance of the CQRM class.
     """
     return CQRM()
 
 
-def test_call(cqr_instance):
+def test_call(cqrm_instance):
     """
     Test the __call__ method for score calculation.
     """
     predicts = torch.tensor([[[0.2, 0.45, 0.7]], [[0.3, 0.55, 0.8]]])
     y_truth = torch.tensor([[0.5], [0.4]])
 
-    scores = cqr_instance(predicts, y_truth)
+    scores = cqrm_instance(predicts, y_truth)
     expected_scores = torch.tensor([[-0.8], [-0.4]])
     assert torch.allclose(scores, expected_scores), "The __call__ method is not working as expected."
 
 
-def test_generate_intervals(cqr_instance):
+def test_generate_intervals(cqrm_instance):
     """
     Test the generate_intervals method for prediction interval generation.
     """
     predicts_batch = torch.tensor([[[0.2, 0.4, 0.7]], [[0.3, 0.6, 0.8]]])
     q_hat = torch.tensor([0.1])
 
-    intervals = cqr_instance.generate_intervals(predicts_batch, q_hat)
+    intervals = cqrm_instance.generate_intervals(predicts_batch, q_hat)
     expected_intervals = torch.tensor([[[0.18, 0.73]], [[0.27, 0.82]]])
     assert torch.allclose(intervals, expected_intervals), "The generate_intervals method is not working as expected."
 
 
-def test_fit(cqr_instance, dummy_data):
+def test_fit(cqrm_instance, dummy_data):
     """
     Test the fit method to ensure the model trains correctly.
     """
     train_dataloader, _ = dummy_data
-    model = cqr_instance.fit(train_dataloader, alpha=0.1, epochs=5, verbose=False)
+    model = cqrm_instance.fit(train_dataloader, alpha=0.1, epochs=5, verbose=False)
 
     # Check model output shape
     test_input = next(iter(train_dataloader))[0]
