@@ -104,7 +104,9 @@ class GraphSplitPredictor(BaseGraphPredictor):
 
         eval_scores = scores[eval_idx]
         if q_hat is None:
-            assert self.q_hat is not None, "Ensure self.q_hat is not None. Please perform calibration first."
+            if not hasattr(self, "q_hat"):
+                raise ValueError(
+                    "Ensure self.q_hat is not None. Please perform calibration first.")
             q_hat = self.q_hat
 
         S = self._generate_prediction_set(eval_scores, q_hat)
