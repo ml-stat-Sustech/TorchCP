@@ -61,8 +61,7 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
         torch.Tensor: The size-stratified conditional loss.
     """
     
-    prediction_sets = torch.tensor(prediction_set_loss, dtype=prediction_set_loss.dtype)
-
+    prediction_sets = prediction_sets.to(torch.float32).clone().detach()
     prediction_sizes = average_size(prediction_sets)
     bins = torch.quantile(prediction_sizes, torch.linspace(0, 1, num_bins, dtype= prediction_sets.dtype))
     binids = torch.bucketize(prediction_sizes, torch.cat([torch.tensor([0]), torch.unique(bins)]))
@@ -73,6 +72,7 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
         num_kept_examples = torch.maximum(torch.sum(kept), torch.tensor(1, device=kept.device))
         Ls_mask_avg = torch.sum(prediction_set_loss * kept) / num_kept_examples
         L_worst_avg = max(L_worst_avg, Ls_mask_avg)
+    return L_worst_avg
 
 class Metrics:
 

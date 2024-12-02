@@ -62,6 +62,8 @@ class BinningScaler(BaseScaler):
     """Non-parametric equal-mass histogram regression on uncalibrated scores."""
 
     def __init__(self, n_bins=20):
+        if n_bins <= 0:
+            raise ValueError("n_bins must be positive")
         self.n_bins = n_bins
 
     def fit(self, X, y):
