@@ -88,8 +88,10 @@ class ClusteredPredictor(ClassWisePredictor):
             # Compute the number of clusters and the minium number of examples for each class
             n_clustering = (n_min * num_remaining_classes / (75 + num_remaining_classes)).clone().to(
                 torch.int32).to(self._device)
-            self.__num_clusters = torch.floor(n_clustering / 2).to(torch.int32)
-            self.__ratio_clustering = n_clustering / n_min
+            if self.__num_clusters == 'auto':
+                self.__num_clusters = torch.floor(n_clustering / 2).to(torch.int32)
+            if self.__ratio_clustering == 'auto':
+                self.__ratio_clustering = n_clustering / n_min
 
         # 2) Split data
         clustering_scores, clustering_labels, cal_scores, cal_labels = self.__split_data(scores,
@@ -143,7 +145,7 @@ class ClusteredPredictor(ClassWisePredictor):
         if self.__split == 'proportional':
             # Split dataset along with fraction "frac_clustering"
             num_classes = classes_statistics.shape[0]
-            n_k = torch.tensor([self.__ratio_clustering * classes_statistics[k] for k in range(num_classes)],
+            n_k = torch.tensor([int(self.__ratio_clustering * classes_statistics[k]) for k in range(num_classes)],
                                device=self._device, dtype=torch.int32)
             idx1 = torch.zeros(labels.shape, dtype=torch.bool, device=self._device)
             for k in range(num_classes):
@@ -160,6 +162,7 @@ class ClusteredPredictor(ClassWisePredictor):
         elif self.__split == 'doubledip':
             clustering_scores, clustering_labels = scores, labels
             cal_scores, cal_labels = scores, labels
+            idx1 = torch.ones((scores.shape[0])).bool()
 
         elif self.__split == 'random':
             # Each point is assigned to clustering set w.p. frac_clustering 
@@ -169,8 +172,7 @@ class ClusteredPredictor(ClassWisePredictor):
             clustering_labels = labels[idx1]
             cal_scores = scores[~idx1]
             cal_labels = labels[~idx1]
-        else:
-            raise Exception("Invalid split method. Options are 'proportional', 'doubledip', and 'random'")
+
         self.idx1 = idx1
         return clustering_scores, clustering_labels, cal_scores, cal_labels
 
