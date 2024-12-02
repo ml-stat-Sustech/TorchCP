@@ -1,0 +1,39 @@
+import pytest
+import torch
+from torchcp.regression.predictors import SplitPredictor
+from torchcp.regression.scores import split
+from torchcp.regression.utils import build_regression_model
+
+@pytest.fixture
+def mock_model():
+    return build_regression_model("NonLinearNet")(5, 1, 64, 0.5)
+
+@pytest.fixture
+def mock_score_function():
+    return split()
+
+@pytest.fixture
+def split_predictor(mock_model, mock_score_function):
+    return SplitPredictor(score_function=mock_score_function, model=mock_model)
+
+def test_workflow(mock_data, split_predictor):
+    # Extract mock data
+    train_dataloader, cal_dataloader, test_dataloader = mock_data
+
+    # Step 1: Fit the model
+    split_predictor.fit(train_dataloader)
+    for param in split_predictor._model.parameters():
+        assert param.grad is not None, "Model parameters should have gradients."
+
+    # Step 2: Calibrate the model
+    alpha = 0.1
+    split_predictor.calibrate(cal_dataloader, alpha=alpha)
+    assert hasattr(split_predictor, "scores"), "SplitPredictor should have scores after calibration."
+    assert hasattr(split_predictor, "q_hat"), "SplitPredictor should have q_hat after calibration."
+
+    # Step 3: Evaluate the model
+    eval_res = split_predictor.evaluate(test_dataloader)
+    assert "Coverage_rate" in eval_res, "Coverage rate should be part of evaluation results."
+    assert "Average_size" in eval_res, "Average size should be part of evaluation results."
+    assert torch.isclose(eval_res['Coverage_rate'], torch.tensor(0.9), atol=5e-2), "Coverage rate should be close to 0.9."
+    assert eval_res["Average_size"] > 0, "Average size should be greater than 0."
