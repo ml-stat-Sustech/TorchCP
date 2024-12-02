@@ -58,13 +58,13 @@ class IW(nn.Module):
     Compute the importance weight
     """
 
-    def __init__(self, domain_detecor):
+    def __init__(self, domain_detector):
         super().__init__()
 
-        self.domain_detecor = domain_detecor
+        self.domain_detector = domain_detector
 
     def forward(self, x_batch):
-        prob = self.domain_detecor(x_batch)
+        prob = self.domain_detector(x_batch)
         if prob.shape[1] == 1:
             return prob / (1 - prob)
         else:
