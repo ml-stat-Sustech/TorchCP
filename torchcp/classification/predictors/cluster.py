@@ -78,7 +78,7 @@ class ClusteredPredictor(ClassWisePredictor):
                                           device=self._device)
 
         # 1) Choose necessary parameters for Cluster algorithm
-        if self.__ratio_clustering == 'auto' and self.__num_clusters == 'auto':
+        if self.__ratio_clustering == 'auto' or self.__num_clusters == 'auto':
             n_min = torch.min(classes_statistics)
             n_thresh = self.__get_quantile_minimum(alpha)
             # Classes with fewer than n_thresh examples will be excluded from clustering
