@@ -39,7 +39,7 @@ class KNN(BaseScore):
         if not (isinstance(p, (float, int)) and p > 0) and p != "cosine":
             raise ValueError("p must be a positive float or 'cosine'.")
         
-        if not (isinstance(batch, int) and batch > 0) and p != None:
+        if not (isinstance(batch, int) and batch > 0) and batch != None:
             raise ValueError("batch must be None or a positive integer.")
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

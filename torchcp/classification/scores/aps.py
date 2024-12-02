@@ -53,6 +53,8 @@ class APS(THR):
         Returns:
             torch.Tensor: The non-conformity scores.
         """
+        if probs.dim() == 1 or probs.dim() > 2:
+            raise ValueError("Input probabilities must be 2D.")
         indices, ordered, cumsum = self._sort_sum(probs)
         if self.randomized:
             U = torch.rand(probs.shape, device=probs.device)
