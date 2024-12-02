@@ -25,17 +25,21 @@ class WeightedPredictor(SplitPredictor):
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
     """
 
-    def __init__(self, score_function,model=None, temperature=1, image_encoder= None, domain_classifier=None):
+    def __init__(self, score_function, model=None, temperature=1, image_encoder=None, domain_classifier=None):
         
         super().__init__(score_function, model, temperature)
 
+        if image_encoder is None:
+            raise ValueError("image_encoder cannot be None.")
+        
         self.image_encoder = image_encoder.to(self._device)
+        self.domain_classifier = domain_classifier
+
         #  non-conformity scores
         self.scores = None
         # significance level
         self.alpha = None
         # Domain Classifier
-        self.domain_classifier = domain_classifier
 
     def calibrate(self, cal_dataloader, alpha):
         """
