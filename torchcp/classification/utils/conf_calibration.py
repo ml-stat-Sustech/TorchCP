@@ -53,7 +53,7 @@ class oTS(nn.Module):
 
 
 @ConfOptimizer_REGISTRY.register()
-def optimze_oTS(transformation, dataloader, device):
+def optimze_oTS(transformation, dataloader, device,max_iters = 10, lr = 0.01, epsilon = 0.01):
     """
     Tune the tempearature of the model (using the validation set).
     We're going to set it to optimize NLL.
@@ -61,16 +61,12 @@ def optimze_oTS(transformation, dataloader, device):
     """
 
     transformation.to(device)
-    max_iters = 10
-    lr = 0.01
-    epsilon = 0.01
     nll_criterion = nn.CrossEntropyLoss().to(device)
     T = transformation.temperature
 
     optimizer = torch.optim.SGD([transformation.temperature], lr=lr)
     for iter in range(max_iters):
         T_old = T.item()
-        # print(T_old)
         for x, targets in dataloader:
             optimizer.zero_grad()
             x = x.to(device)

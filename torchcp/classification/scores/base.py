@@ -5,15 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 
 
-class BaseScore(object):
+class BaseScore(ABC):
     """
     Abstract base class for all score functions.
     """
-    __metaclass__ = ABCMeta
-
+    # __metaclass__ = ABCMeta
+    
     def __init__(self) -> None:
         pass
 
@@ -21,7 +21,8 @@ class BaseScore(object):
     def __call__(self, logits, labels=None):
         """Virtual method to compute scores for a data pair (x,y).
 
-        :param logits: the logits for inputs.
-        :param labels : the labels.
+        Args:
+            probs (torch.Tensor): The prediction probabilities.
+            label (torch.Tensor): The ground truth label.
         """
         raise NotImplementedError

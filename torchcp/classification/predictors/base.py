@@ -87,3 +87,7 @@ class BasePredictor(object):
         """
 
         return [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
+    
+    
+    def get_device(self):
+        return self._device

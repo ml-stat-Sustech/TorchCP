@@ -45,6 +45,9 @@ class OrdinalClassifier(nn.Module):
             raise NotImplementedError(f"phi function '{self.phi}' is not implemented. Options are 'abs' and 'square'.")
         if varphi not in varphi_options:
             raise NotImplementedError(f"varphi function '{self.varphi}' is not implemented. Options are 'abs' and 'square'.")
+        
+        self.phi_function = phi_options[phi]
+        self.varphi_function = varphi_options[phi]
 
     def forward(self, x):
         """

@@ -32,7 +32,7 @@ class SAPS(APS):
         >>> print(scores_single)
     """
 
-    def __init__(self, weight, randomized=True, score_type="softmax", ):
+    def __init__(self, score_type="softmax", randomized=True, weight=0.2 ):
         super().__init__(score_type,randomized)
         if weight <= 0:
             raise ValueError("The parameter 'weight' must be a positive value.")

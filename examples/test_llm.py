@@ -15,10 +15,10 @@ from transformers import LlamaForCausalLM, LlamaTokenizer, set_seed, StoppingCri
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 
-from .llm.prompts import  few_shot_qa, StoppingCriteriaSub
-from .utils import get_dataset_dir
-from .llm.llm_utils import get_dataset
-from torchcp.llm.predictors import ConformalLM
+from examples.llm.prompts import  few_shot_qa, StoppingCriteriaSub
+from examples.utils import get_dataset_dir
+from examples.llm.llm_utils import get_dataset
+from torchcp.llm.predictor import ConformalLM
 
 
 
@@ -229,6 +229,8 @@ def test_conformal_llm():
     all_scores = torch.from_numpy(data['scores'])
     diversity = torch.from_numpy(data['diversity'])
     
+    breakpoint()
+    
 
     epsilons = np.linspace(0, 1, 101)
     num_trials = 1
@@ -314,3 +316,4 @@ def test_conformal_llm():
 
     
 
+test_conformal_llm()

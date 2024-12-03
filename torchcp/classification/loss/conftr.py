@@ -54,11 +54,8 @@ class ConfTr(ConfTS):
 
     def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True, epsilon = 1e-4, loss_type="valid", target_size=1, loss_transform="square"):
 
-        super(ConfTr, self).__init__(weight, )
-        if weight <= 0:
-            raise ValueError("weight must be greater than 0.")
-        if not (0 < fraction < 1):
-            raise ValueError("fraction should be a value in (0,1).")
+        super(ConfTr, self).__init__(weight,predictor, alpha, fraction)
+        
         if loss_type not in ["valid", "classification", "probs", "coverage"]:
             raise ValueError('loss_type should be a value in ["valid", "classification", "probs", "coverage"].')
         if target_size not in [0, 1]:
@@ -103,10 +100,9 @@ class ConfTr(ConfTS):
                 torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0).to(pred_sets.device))))
 
     def __compute_probabilistic_size_loss(self, pred_sets, labels):
-        classes = pred_sets.shape[0]
+        classes = pred_sets.shape[1]
         one_hot_labels = torch.unsqueeze(torch.eye(classes).to(pred_sets.device), dim=0)
-        repeated_confidence_sets = torch.repeat_interleave(
-            torch.unsqueeze(pred_sets, 2), classes, dim=2)
+        repeated_confidence_sets = pred_sets.unsqueeze(2).repeat(1, 1, classes)
         loss = one_hot_labels * repeated_confidence_sets + \
                (1 - one_hot_labels) * (1 - repeated_confidence_sets)
         loss = torch.prod(loss, dim=1)

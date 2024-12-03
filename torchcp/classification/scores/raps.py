@@ -35,14 +35,14 @@ class RAPS(APS):
         
     """
 
-    def __init__(self, penalty, kreg=0, randomized=True, score_type="softmax" ):
-        super().__init__(score_type, randomized)
-        if penalty <= 0:
-            raise ValueError("The parameter 'penalty' must be a positive value.")
+    def __init__(self, score_type="softmax", randomized=True, penalty=0, kreg=0):
+        
+        super().__init__(score_type=score_type, randomized=randomized)
+        if penalty < 0:
+            raise ValueError("The parameter 'penalty' must be a nonnegative value.")
 
         if type(kreg) != int or kreg < 0:
             raise TypeError("The parameter 'kreg' must be a nonnegative integer.")
-        super(RAPS, self).__init__()
         self.__penalty = penalty
         self.__kreg = kreg
 
@@ -51,7 +51,7 @@ class RAPS(APS):
         if self.randomized:
             U = torch.rand(probs.shape, device=probs.device)
         else:
-            U = torch.zeros_like(probs.shape)
+            U = torch.zeros_like(probs)
         reg = torch.maximum(self.__penalty * (torch.arange(1, probs.shape[-1] + 1, device=probs.device) - self.__kreg),
                             torch.tensor(0, device=probs.device))
         ordered_scores = cumsum - ordered * U + reg

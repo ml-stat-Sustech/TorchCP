@@ -35,17 +35,11 @@ class DSLoss(BaseLoss):
 
     def __init__(self, weight, predictor, epsilon = 1e-4):
 
-        super(BaseLoss, self).__init__()
-        if weight <= 0:
-            raise ValueError("weight must be greater than 0.")
-        
+        super(DSLoss, self).__init__(weight, predictor)
         if epsilon <= 0:
             raise ValueError("epsilon must be greater than 0.")
         
         self.epsilon  = epsilon
-       
-        
-        
         self.weight = weight
         self.predictor = predictor
         
@@ -53,9 +47,10 @@ class DSLoss(BaseLoss):
 
         all_scores = self.predictor.score_function(logits)
         label_scores = self.predictor.score_function(logits, labels)
+        label_scores = label_scores.unsqueeze(1).expand_as(all_scores)
         # Computing the probability of each label contained in the prediction set.
         pred_sets = torch.sigmoid((all_scores-label_scores)/self.epsilon)
-        loss = self.weight * torch.mean(pred_sets,dim = -1)
+        loss = self.weight * torch.mean(pred_sets)
         
         return loss
 

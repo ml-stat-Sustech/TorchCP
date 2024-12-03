@@ -42,7 +42,7 @@ def average_set_loss(prediction_sets, prediction_set_loss):
     max_indices = prediction_sets.shape[1] - 1 - torch.argmax(prediction_sets.flip(1).to(torch.int), dim=1)
 
     losses =  prediction_set_loss[torch.arange(prediction_sets.shape[0]), max_indices]
-    return torch.mean(losses)
+    return torch.mean(losses.float())
 
 
 @METRICS_REGISTRY_LLM.register()
@@ -75,7 +75,6 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
     return L_worst_avg
 
 class Metrics:
-
     def __call__(self, metric) -> Any:
         if metric not in METRICS_REGISTRY_LLM.registered_names():
             raise NameError(f"The metric: {metric} is not defined in TorchCP.")

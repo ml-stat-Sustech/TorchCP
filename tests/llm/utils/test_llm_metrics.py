@@ -1,6 +1,7 @@
 import pytest
 import torch
-from torchcp.llm.utils.metrics import Metrics, METRICS_REGISTRY_LLM
+from torchcp.llm.utils.metrics import Metrics, METRICS_REGISTRY_LLM,SSCL
+
 
 def test_metrics_registry():
     metrics = Metrics()
@@ -51,6 +52,16 @@ def test_average_set_loss():
         prediction_set_loss
     )
     assert isinstance(result, torch.Tensor)
+    
+def test_metrics_call():
+    metrics = Metrics()
+    with pytest.raises(NameError):
+        metrics("undefined_metric")
+        
+def test_metrics_call_defined_metric():
+    metrics = Metrics()
+    metric = metrics("SSCL")
+    assert metric == SSCL
 
 if __name__ == "__main__":
     pytest.main(["-v"])

@@ -117,6 +117,32 @@ def test_numerical_stability():
     scores = knn(torch.tensor([[1.5e-10, 2.5e-10]], dtype=torch.float32))
     assert not torch.any(torch.isnan(scores))
     assert not torch.any(torch.isinf(scores))
+    
+def test_empty_same_label_case(sample_data):
+    knn = KNN(**sample_data)
+    
+    # Create test case where no training samples have same label
+    features = torch.randn(2)
+    labels = torch.tensor([3])  # Label not in training set
+    
+    scores = knn(features, labels)
+    assert not torch.any(torch.isnan(scores))
+    
+def test_all_same_label_case(sample_data):
+    # Modify sample data to have all same labels
+    modified_data = {
+        'features': sample_data['features'],
+        'labels': torch.zeros_like(sample_data['labels']),  # All labels are 0
+        'num_classes': sample_data['num_classes']
+    }
+    
+    knn = KNN(**modified_data)
+    features = torch.randn(2, 2)
+    labels = torch.zeros(2)  # Test with matching labels
+    
+    scores = knn(features, labels)
+    assert not torch.any(torch.isnan(scores))
+    assert torch.all(torch.isfinite(scores))
 
 if __name__ == "__main__":
     pytest.main(["-v"])

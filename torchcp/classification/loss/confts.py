@@ -42,23 +42,25 @@ class ConfTS(BaseLoss):
 
     def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True):
 
-        super(BaseLoss, self).__init__()
-        if weight <= 0:
-            raise ValueError("weight must be greater than 0.")
-        if not (0 < fraction < 1):
-            raise ValueError("fraction should be a value in (0,1).")
-
+        super(ConfTS, self).__init__(weight, predictor)
+        
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0,1).")
+        
+        if not (0 < fraction < 1):
+            raise ValueError("fraction should be a value in (0,1).")
         
         self.weight = weight
         self.predictor = predictor
         self.soft_qunatile = soft_qunatile
         self.fraction = fraction
-        self.alpah = alpha
+        self.alpha = alpha
+        self.device = predictor.get_device()
 
        
     def forward(self, logits, labels):
+        logits = logits.to(self.device)
+        labels = labels.to(self.device)
         # Compute Size Loss
         val_split = int(self.fraction * logits.shape[0])
         cal_logits = logits[:val_split]

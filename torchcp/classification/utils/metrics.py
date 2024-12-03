@@ -59,7 +59,6 @@ def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels=None):
-    labels = labels.cpu()
     avg_size = 0
     for index, ele in enumerate(prediction_sets):
         avg_size += len(ele)

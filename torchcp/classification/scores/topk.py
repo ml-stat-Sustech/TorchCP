@@ -31,7 +31,7 @@ class TOPK(THR):
 
     """
 
-    def __init__(self, randomized = True, score_type="softmax"):
+    def __init__(self,score_type="softmax", randomized = True):
         super().__init__(score_type)
         self.randomized = randomized
         

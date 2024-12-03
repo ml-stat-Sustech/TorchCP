@@ -90,6 +90,8 @@ class ConformalLM:
         self.metrics = Metrics()
         
     def scaling(self, training_scores, training_labels):
+        if self.scale_kwargs is None:
+            self.scale_kwargs = {}
         self.scaler = NAME_TO_SCALER[self.scaling_type](**self.scale_kwargs )
         self.scaler.fit(training_scores, training_labels)
     
@@ -107,21 +109,24 @@ class ConformalLM:
         repeat_per_prompt = 4
         num_return_sequences = 5
         stop_word_ids = [13, 1919, 2982, 869, 29889]
+        
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(device)
 
         for sample in dataset:
             generations = []
             question = sample['question']
             answer = sample['answer']
             input_text = prompt_template.format(question)
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(stop_ids=stop_word_ids, input_length=input_ids.shape[1])])
             input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids.to(device)
+            stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(stop_ids=stop_word_ids, input_length=input_ids.shape[1])])
             kwargs = {
                     "max_new_tokens": 100,
                     "return_dict_in_generate": True,
                     "output_scores": True,
                     "stopping_criteria": stopping_criteria,
                     "num_return_sequences": num_return_sequences,
+                    "do_sample":True,
                 }
             for i in range(repeat_per_prompt):
                 set_seed(self.seed + i)
@@ -185,6 +190,7 @@ class ConformalLM:
                 similarity_scores=similarity_scores)
             
             losses = self.metrics("average_set_loss")(prediction_sets, loss.set_losses_from_labels(item_labels))
+            
             avg_preidction_size = self.metrics("average_size")(prediction_sets)
             avg_sample_size = self.metrics("average_sample_size")(prediction_sets)
             costs.append((losses, avg_preidction_size+avg_sample_size))
