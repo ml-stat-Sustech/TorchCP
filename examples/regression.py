@@ -4,10 +4,10 @@ import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset, ConcatDataset
 
-from torchcp.regression.loss import QuantileLoss, R2ccpLoss
-from torchcp.regression.predictors import SplitPredictor, EnsemblePredictor, ACIPredictor
-from torchcp.regression.scores import split, CQR, CQRR, CQRM, CQRFM, R2CCP
-from torchcp.regression.utils import calculate_midpoints, build_regression_model
+from examples.common.dataset import build_reg_data
+from examples.utils import build_regression_model
+from torchcp.regression.loss import QuantileLoss
+from torchcp.regression.predictors import SplitPredictor, CQR
 from torchcp.utils import fix_randomness
 from .utils import build_reg_data
 

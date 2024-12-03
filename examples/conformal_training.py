@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from examples.common.dataset import build_dataset
+from .utils import build_dataset
 from torchcp.classification.loss import ConfTr
 from torchcp.classification.predictors import SplitPredictor
 from torchcp.classification.scores import THR

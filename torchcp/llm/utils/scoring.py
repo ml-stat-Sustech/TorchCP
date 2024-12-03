@@ -2,6 +2,7 @@
 
 import torch
 
+import torch.nn.functional as F
 
 def geometric(p, mask=None):
     """Score of a set is based on a geometric distribution approximation:
@@ -28,7 +29,7 @@ def marginal(p, mask=None):
     if mask is not None:
         p = p * mask
     p = torch.maximum(1 - p, torch.tensor(1e-8))
-    shifted = torch.pad(p, ((0, 0), (1, 0)), constant_values=1)[:, :-1]
+    shifted = F.pad(p, (1, 0), mode='constant', value=1.0)[:, :-1]
     return -torch.log(1 - p) - torch.cumsum(torch.log(shifted), dim=-1)
 
 

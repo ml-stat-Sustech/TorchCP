@@ -15,11 +15,15 @@ class ClassWisePredictor(SplitPredictor):
     Method: Class-wise conformal prediction
     Paper: Applications of Class-Conditional Conformal Predictor in Multi-Class Classification (Shi et al., 2013)
     Link: https://ieeexplore.ieee.org/document/6784618
-    Github:  
     
         
-    :param score_function: non-conformity score function.
-    :param model: a pytorch model.
+    Args:
+        score_function (callable): Non-conformity score function.
+        model (torch.nn.Module, optional): A PyTorch model. Default is None.
+        temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+
+    Attributes:
+        q_hat (torch.Tensor): The calibrated threshold for each class.
     """
 
     def __init__(self, score_function, model=None, temperature=1):
@@ -28,6 +32,17 @@ class ClassWisePredictor(SplitPredictor):
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):
+        """
+        Calculate the class-wise conformal prediction thresholds.
+
+        Args:
+            logits (torch.Tensor): The logits output from the model.
+            labels (torch.Tensor): The ground truth labels.
+            alpha (float): The significance level.
+        """
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        
         alpha = torch.tensor(alpha, device=self._device)
         logits = logits.to(self._device)
         labels = labels.to(self._device)

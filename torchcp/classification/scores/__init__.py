@@ -4,3 +4,4 @@ from .raps import RAPS
 from .saps import SAPS
 from .thr import THR
 from .knn import KNN
+from .topk import TOPK

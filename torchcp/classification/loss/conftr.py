@@ -11,41 +11,69 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from .confts import ConfTS
 
-
-class ConfTr(nn.Module):
+class ConfTr(ConfTS):
     """
-    Conformal Training (Stutz et al., 2021).
-    Paper: https://arxiv.org/abs/2110.09192
+    Method: Conformal Training  (ConfTr)
+    Paper: Learning Optimal Conformal Classifiers (Stutz et al., 2021)
+    Link: https://arxiv.org/abs/2110.09192
+    Github: https://github.com/google-deepmind/conformal_training
+    
+    The class implements conformal training for neural networks. It supports
+    multiple loss functions and allows for flexible configuration of the training
+    process.
 
-    :param weight: the weight of each loss function
-    :param predictor: the CP predictors
-    :param alpha: the significance level for each training batch
-    :param fraction: the fraction of the calibration set in each training batch
-    :param loss_type: the selected (multi-selected) loss functions, which can be "valid", "classification",  "probs", "coverage".
-    :param target_size: Optional: 0 | 1.
-    :param loss_transform: a transform for loss
-    :param base_loss_fn: a base loss function. For example, cross entropy in classification.
+    Args:
+        weight (float): The weight of each loss function. Must be greater than 0.
+        predictor (torchcp.classification.Predictor): An instance of the CP predictor class.
+        alpha (float): The significance level for each training batch.
+        fraction (float): The fraction of the calibration set in each training batch.
+            Must be a value in (0, 1).
+        soft_qunatile (bool, optional): Whether to use soft quantile. Default is True.
+        epsilon (float, optional): A temperature value. Default is 1e-4.
+        loss_type (str): The selected (multi-selected) loss functions, which can be
+            "valid", "classification", "probs", "coverage".
+        target_size (int, optional): Optional: 0 | 1. Default is 1.
+        loss_transform (str, optional): A transform for loss. Default is "square".
+            Can be "square", "abs", or "log".
+        
+        
+    Shape:
+        - Input: :math:`(N, *)` where :math:`*` means any number of additional dimensions.
+        - Output: scalar representing the computed loss.
+        
+    Examples::
+        >>> predictor = torchcp.classification.SplitPredictor()
+        >>> conftr = ConfTr(weight=1.0, predictor=predictor, alpha=0.05, fraction=0.2, loss_type="valid")
+        >>> logits = torch.randn(100, 10)
+        >>> labels = torch.randint(0, 2, (100,))
+        >>> loss = conftr(logits, labels)
+        >>> loss.backward()
     """
 
-    def __init__(self, weight, predictor, alpha, fraction, loss_type="valid", target_size=1,
-                 loss_transform="square", base_loss_fn=None):
+    def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True, epsilon = 1e-4, loss_type="valid", target_size=1, loss_transform="square"):
 
-        super(ConfTr, self).__init__()
-        assert weight > 0, "weight must be greater than 0."
-        assert (0 < fraction < 1), "fraction should be a value in (0,1)."
-        assert loss_type in ["valid", "classification", "probs", "coverage"], (
-            'loss_type should be a value in ["valid", "classification",  "probs", "coverage"].')
-        assert target_size == 0 or target_size == 1, "target_size should be 0 or 1."
-        assert loss_transform in ["square", "abs", "log"], (
-            'loss_transform should be a value in ["square", "abs","log"].')
+        super(ConfTr, self).__init__(weight,predictor, alpha, fraction)
+        
+        if loss_type not in ["valid", "classification", "probs", "coverage"]:
+            raise ValueError('loss_type should be a value in ["valid", "classification", "probs", "coverage"].')
+        if target_size not in [0, 1]:
+            raise ValueError("target_size should be 0 or 1.")
+        if loss_transform not in ["square", "abs", "log"]:
+            raise ValueError('loss_transform should be a value in ["square", "abs", "log"].')
+        if epsilon <= 0:
+            raise ValueError("epsilon must be greater than 0.")
+        
+        
         self.weight = weight
         self.predictor = predictor
         self.alpha = alpha
         self.fraction = fraction
         self.loss_type = loss_type
         self.target_size = target_size
-        self.base_loss_fn = base_loss_fn
+        self.soft_qunatile = soft_qunatile
+        self.epsilon= epsilon
 
         if loss_transform == "square":
             self.transform = torch.square
@@ -59,27 +87,11 @@ class ConfTr(nn.Module):
                                     "classification": self.__compute_classification_loss
                                     }
 
-    def forward(self, logits, labels):
-        # Compute Size Loss
-        val_split = int(self.fraction * logits.shape[0])
-        cal_logits = logits[:val_split]
-        cal_labels = labels[:val_split]
-        test_logits = logits[val_split:]
-        test_labels = labels[val_split:]
-
-        cal_scores = self.predictor.score_function(cal_logits, cal_labels)
-        # self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
-        # tau = self.predictor.q_hat
-        tau = self.__soft_quantile(cal_scores, self.alpha)
-        # breakpoint()
-        test_scores = self.predictor.score_function(test_logits)
-        # Computing the probability of each label contained in the prediction set.
-        pred_sets = torch.sigmoid(tau - test_scores)
+    
+    
+    def compute_loss(self, test_scores, test_labels, tau):
+        pred_sets = torch.sigmoid((tau - test_scores)/self.epsilon)
         loss = self.weight * self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
-
-        if self.base_loss_fn is not None:
-            loss += self.base_loss_fn(logits, labels).float()
-
         return loss
 
     def __compute_hinge_size_loss(self, pred_sets, labels):
@@ -88,10 +100,9 @@ class ConfTr(nn.Module):
                 torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0).to(pred_sets.device))))
 
     def __compute_probabilistic_size_loss(self, pred_sets, labels):
-        classes = pred_sets.shape[0]
+        classes = pred_sets.shape[1]
         one_hot_labels = torch.unsqueeze(torch.eye(classes).to(pred_sets.device), dim=0)
-        repeated_confidence_sets = torch.repeat_interleave(
-            torch.unsqueeze(pred_sets, 2), classes, dim=2)
+        repeated_confidence_sets = pred_sets.unsqueeze(2).repeat(1, 1, classes)
         loss = one_hot_labels * repeated_confidence_sets + \
                (1 - one_hot_labels) * (1 - repeated_confidence_sets)
         loss = torch.prod(loss, dim=1)
@@ -122,70 +133,3 @@ class ConfTr(nn.Module):
         # Return the mean loss
         return torch.mean(loss)
 
-    def __neural_sort(self,
-                      scores: Tensor,
-                      tau: float = 0.1,
-                      ) -> Tensor:
-        """
-        Soft sorts scores (descending) along last dimension
-        Follows implementation form
-        https://github.com/ermongroup/neuralsort/blob/master/pytorch/neuralsort.py
-        
-        Grover, Wang et al., Stochastic Optimization of Sorting Networks via Continuous Relaxations
-
-        Args:
-            scores (Tensor): scores to sort
-            tau (float, optional): smoothness factor. Defaults to 0.01.
-        Returns:
-            Tensor: permutation matrix such that sorted_scores = P @ scores 
-        """
-        pairwise_abs_diffs = (scores[..., :, None] - scores[..., None, :]).abs()
-        n = scores.shape[-1]
-
-        pairwise_abs_diffs_sum = pairwise_abs_diffs @ torch.ones(n, 1, device=pairwise_abs_diffs.device)
-        scores_diffs = scores[..., :, None] * (
-                n - 1 - 2 * torch.arange(n, device=pairwise_abs_diffs.device, dtype=torch.float))
-        P_scores = (scores_diffs - pairwise_abs_diffs_sum).transpose(-2, -1)
-        P_hat = torch.softmax(P_scores / tau, dim=-1)
-
-        return P_hat
-
-    def __soft_quantile(self, scores: Tensor,
-                        q: float,
-                        dim=-1,
-                        **kwargs
-                        ) -> Tensor:
-        # swap requested dim with final dim
-        dims = list(range(len(scores.shape)))
-        dims[-1], dims[dim] = dims[dim], dims[-1]
-        scores = scores.permute(*dims)
-        # normalize scores on last dimension
-        # scores_norm = (scores - scores.mean()) / 3.*scores.std()
-        # obtain permutation matrix for scores
-        P_hat = self.__neural_sort(scores, **kwargs)
-        # use permutation matrix to sort scores
-        sorted_scores = (P_hat @ scores[..., None])[..., 0]
-        # turn quantiles into indices to select
-        n = scores.shape[-1]
-        squeeze = False
-        if isinstance(q, float):
-            squeeze = True
-            q = [q]
-        q = torch.tensor(q, dtype=torch.float, device=scores.device)
-        indices = (1 - q) * (n + 1) - 1
-        indices_low = torch.floor(indices).long()
-        indices_frac = indices - indices_low
-        indices_high = indices_low + 1
-        # select quantiles from computed scores:
-
-        quantiles = sorted_scores[..., torch.cat([indices_low, indices_high])]
-        quantiles = quantiles[..., :q.shape[0]] + indices_frac * (
-                quantiles[..., q.shape[0]:] - quantiles[..., :q.shape[0]])
-        # restore dimension order
-        if len(dims) > 1:
-            quantiles = quantiles.permute(*dims)
-
-        if squeeze:
-            quantiles = quantiles.squeeze(dim)
-
-        return quantiles
