@@ -5,100 +5,97 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torchcp.utils.common import calculate_conformal_value
-from torchcp.utils.common import get_device
-from ..utils.metrics import Metrics
+from .base import BasePredictor
 
 
-class SplitPredictor(object):
+class SplitPredictor(BasePredictor):
     """
-    Method: Split Conformal Prediction for Regression
-    Paper: Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
-    Link: https://arxiv.org/abs/1604.04173
-    Github: https://github.com/ryantibs/conformal
+    Split Conformal Prediction for Regression.
     
-    :param model: a pytorch model for regression.
+    This predictor allows for the construction of a prediction band for the response 
+    variable using any estimator of the regression function.
+        
+    Args:
+        score_function (torchcp.regression.scores): A class that implements the score function.
+        model (torch.nn.Module): A pytorch regression model that can output predicted point.
+        
+    Reference:
+        Paper: Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
+        Link: https://arxiv.org/abs/1604.04173
+        Github: https://github.com/ryantibs/conformal
     """
 
-    def __init__(self, model =None):
-        self._model = model
-        if self._model != None:
-            assert isinstance(model, nn.Module), "The model is not an instance of torch.nn.Module"
-            self._device = get_device(model)
-        else:
-            self._device = None
-        self._metric = Metrics()
-
-    def _train(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
-        model.train()
-        device = get_device(model)
-        if verbose:
-            with tqdm(total=epochs, desc = "Epoch") as _tqdm:
-                for epoch in range(epochs):
-                    running_loss = 0.0
-                    for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
-                        outputs = model(tmp_x.to(device))
-                        loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
-                        optimizer.zero_grad()
-                        loss.backward()
-                        optimizer.step()
-                        running_loss = (running_loss*max(0,index) + loss.data.cpu().numpy())/(index+1)
-                        _tqdm.set_postfix({  "loss": '{:.6f}'.format(running_loss)})
-                    _tqdm.update(1)
-                
-        else:
-            for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
-                outputs = model(tmp_x.to(device))
-                loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                running_loss += loss.item() 
-
-        print("Finish training!")
-        model.eval()
+    def __init__(self, score_function, model=None):
+        super().__init__(score_function, model)
 
     def fit(self, train_dataloader, **kwargs):
-        model = kwargs.get('model', self._model)
-        epochs = kwargs.get('epochs', 100)
-        criterion = kwargs.get('criterion', nn.MSELoss())
-        lr = kwargs.get('lr', 0.01)
-        optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
-        verbose = kwargs.get('verbose', True)
-
-        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
-
+        """
+        Trains the model using the provided train_dataloader and score_function.
+        
+        Args:
+            train_dataloader (DataLoader): DataLoader for the training data.
+            **kwargs: Additional keyword arguments for training configuration.
+                - model (nn.Module, optional): The model to be trained.
+                - epochs (int, optional): Number of training epochs.
+                - criterion (nn.Module, optional): Loss function.
+                - lr (float, optional): Learning rate for the optimizer.
+                - optimizer (torch.optim.Optimizer, optional): Optimizer for training.
+                - verbose (bool, optional): If True, prints training progress.
+            
+        .. note::
+            This function is optional but recommended, because the training process for each score_function is different. 
+            We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
+            If the fit function is not used, users should pass the trained model to the predictor at the beginning.
+        """
+        if self._model is None:
+            self._model = self.score_function.fit(train_dataloader, device=self._device, **kwargs)
+        else:
+            self._model = self.score_function.fit(train_dataloader, model=self._model, device=self._device, **kwargs)
+        
     def calculate_score(self, predicts, y_truth):
-        if len(y_truth.shape) == 1:
-            y_truth = y_truth.unsqueeze(1)
-        return torch.abs(predicts - y_truth)
+        """
+        Calculate the nonconformity scores based on the model's predictions and true values.
+
+        Args:
+            predicts (torch.Tensor): Model predictions.
+            y_truth (torch.Tensor): Ground truth values.
+
+        Returns:
+            torch.Tensor: Computed scores for each prediction.
+        """
+        return self.score_function(predicts, y_truth)
+    
+    def generate_intervals(self, predicts_batch, q_hat):
+        """
+        Generate prediction intervals based on the model's predictions and the conformal value.
+
+        Args:
+            predicts_batch (torch.Tensor): Batch of predictions from the model.
+            q_hat (float): Conformal value computed during calibration.
+
+        Returns:
+            torch.Tensor: Prediction intervals.
+        """
+        return self.score_function.generate_intervals(predicts_batch, q_hat)
 
     def calibrate(self, cal_dataloader, alpha):
         self._model.eval()
-        predicts_list = []
-        y_truth_list = []
+        predicts_list, y_truth_list = [], []
         with torch.no_grad():
-            for examples in cal_dataloader:
-                tmp_x, tmp_labels = examples[0].to(self._device), examples[1].to(self._device)
+            for tmp_x, tmp_labels in cal_dataloader:
+                tmp_x, tmp_labels = tmp_x.to(self._device), tmp_labels.to(self._device)
                 tmp_predicts = self._model(tmp_x).detach()
                 predicts_list.append(tmp_predicts)
                 y_truth_list.append(tmp_labels)
-            predicts = torch.cat(predicts_list).float().to(self._device)
-            y_truth = torch.cat(y_truth_list).to(self._device)
-        self.calculate_threshold(predicts, y_truth, alpha)
-
-    def calculate_threshold(self, predicts, y_truth, alpha):
-        scores = self.calculate_score(predicts, y_truth)
-        self.q_hat = self._calculate_conformal_value(scores, alpha)
-
-    def _calculate_conformal_value(self, scores, alpha):
-        return calculate_conformal_value(scores, alpha)
+                
+        predicts = torch.cat(predicts_list).float().to(self._device)
+        y_truth = torch.cat(y_truth_list).to(self._device)
+        self.scores = self.calculate_score(predicts, y_truth)
+        self.q_hat = self._calculate_conformal_value(self.scores, alpha)
 
     def predict(self, x_batch):
         self._model.eval()
@@ -107,20 +104,11 @@ class SplitPredictor(object):
             predicts_batch = self._model(x_batch)
             return self.generate_intervals(predicts_batch, self.q_hat)
 
-    def generate_intervals(self, predicts_batch, q_hat):
-        prediction_intervals = predicts_batch.new_zeros((predicts_batch.shape[0], q_hat.shape[0], 2))
-
-        prediction_intervals[..., 0] = predicts_batch - q_hat.view(1, q_hat.shape[0])
-        prediction_intervals[..., 1] = predicts_batch + q_hat.view(1, q_hat.shape[0])
-
-        return prediction_intervals
-
     def evaluate(self, data_loader):
-        y_list = []
-        predict_list = []
+        y_list, predict_list = [], []
         with torch.no_grad():
-            for examples in data_loader:
-                tmp_x, tmp_y = examples[0].to(self._device), examples[1].to(self._device)
+            for tmp_x, tmp_y in data_loader:
+                tmp_x, tmp_y = tmp_x.to(self._device), tmp_y.to(self._device)
                 tmp_prediction_intervals = self.predict(tmp_x)
                 y_list.append(tmp_y)
                 predict_list.append(tmp_prediction_intervals)
@@ -128,6 +116,8 @@ class SplitPredictor(object):
         predicts = torch.cat(predict_list, dim=0).to(self._device)
         test_y = torch.cat(y_list).to(self._device)
 
-        res_dict = {"Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
-                    "Average_size": self._metric('average_size')(predicts)}
+        res_dict = {
+            "Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
+            "Average_size": self._metric('average_size')(predicts)
+        }
         return res_dict
