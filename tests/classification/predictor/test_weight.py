@@ -51,8 +51,20 @@ def mock_image_encoder():
 
 
 @pytest.fixture
-def predictor(mock_score_function, mock_model, mock_image_encoder):
-    return WeightedPredictor(mock_score_function, mock_model, 2.0, mock_image_encoder)
+def mock_domain_classifier():
+    class MockModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.param = torch.nn.Parameter(torch.tensor(1.0))
+
+        def forward(self, x):
+            return x
+    return MockModel()
+
+
+@pytest.fixture
+def predictor(mock_score_function, mock_model, mock_image_encoder, mock_domain_classifier):
+    return WeightedPredictor(mock_score_function, mock_model, 1.0, mock_image_encoder, mock_domain_classifier)
 
 
 def test_valid_initialization(predictor, mock_score_function, mock_model, mock_image_encoder):
@@ -61,14 +73,17 @@ def test_valid_initialization(predictor, mock_score_function, mock_model, mock_i
     assert not predictor._model.training
     assert predictor.image_encoder is mock_image_encoder
     assert predictor._device == next(mock_model.parameters()).device
-    assert predictor._logits_transformation.temperature == 2.0
+    assert predictor._logits_transformation.temperature == 1.0
     assert predictor.scores is None
     assert predictor.alpha is None
 
 
 def test_invalid_initialization(mock_score_function, mock_model):
     with pytest.raises(ValueError, match="image_encoder cannot be None."):
-        WeightedPredictor(mock_score_function, mock_model)
+        WeightedPredictor(mock_score_function, mock_model, domain_classifier=mock_model)
+    
+    with pytest.raises(ValueError, match="domain_classifier cannot be None."):
+        WeightedPredictor(mock_score_function, mock_model, image_encoder=mock_model)
 
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
@@ -79,7 +94,7 @@ def test_calibrate(predictor, mock_dataset, mock_score_function, mock_model, alp
     assert torch.equal(predictor.source_image_features, mock_dataset.x)
     
     mock_model.eval()
-    logits = mock_model(mock_dataset.x) / 2.0
+    logits = mock_model(mock_dataset.x) / 1.0
     labels = mock_dataset.labels
 
     scores = torch.zeros(logits.shape[0] + 1)
@@ -122,17 +137,19 @@ def test_invalid_calculate_threshold(predictor, alpha):
 #     assert pred_sets == excepted_sets
 
 
-# @pytest.mark.parametrize("q_hat", [0.5, 0.7])
-# def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, q_hat):
+@pytest.mark.parametrize("alpha", [0.05, 0.1])
+def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, alpha):
+    val_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
+    predictor.evaluate(val_dataloader)
 
-#     cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
-#     predictor.q_hat = q_hat
-#     results = predictor.evaluate(cal_dataloader)
+    assert torch.equal(predictor.source_image_features, mock_dataset.x)
+    
+    mock_model.eval()
+    logits = mock_model(mock_dataset.x) / 1.0
+    labels = mock_dataset.labels
 
-#     logits = mock_model(mock_dataset.x)
-#     scores = mock_score_function(logits)
-#     excepted_sets = [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
-#     metrics = Metrics()
-#     assert len(results) == 2
-#     assert results['Coverage_rate'] == metrics('coverage_rate')(excepted_sets, mock_dataset.labels)
-#     assert results['Average_size'] == metrics('average_size')(excepted_sets, mock_dataset.labels)
+    scores = torch.zeros(logits.shape[0] + 1)
+    scores[:logits.shape[0]] = mock_score_function(logits, labels)
+    scores[logits.shape[0]] = torch.tensor(torch.inf)
+    assert torch.equal(predictor.scores, scores)
+    assert torch.equal(predictor.scores_sorted, scores.sort()[0])

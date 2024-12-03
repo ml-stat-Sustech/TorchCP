@@ -93,7 +93,8 @@ class WeightedPredictor(SplitPredictor):
         Returns:
             list: A list of prediction sets for each instance in the batch.
         """
-        
+        if not hasattr(self, "scores_sorted"):
+            raise ValueError("Please calibrate first.")
         
         bs = x_batch.shape[0]
         with torch.no_grad():
@@ -146,6 +147,8 @@ class WeightedPredictor(SplitPredictor):
         ###############################
         # Training domain detector
         ###############################
+        if not hasattr(self, "source_image_features"):
+            raise ValueError("Please calibrate first.")
         if self.domain_classifier == None:
             self._train_domain_classifier(target_image_features)
 
