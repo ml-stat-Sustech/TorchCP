@@ -94,24 +94,28 @@ class WeightedPredictor(SplitPredictor):
             list: A list of prediction sets for each instance in the batch.
         """
         if not hasattr(self, "scores_sorted"):
-            raise ValueError("Please calibrate first.")
+            raise ValueError("Please calibrate first to get self.scores_sorted.")
         
         bs = x_batch.shape[0]
         with torch.no_grad():
             image_features = self.image_encoder(x_batch.to(self._device)).float()
-            if self.domain_classifier == None:
-                self._train_domain_classifier(image_features)
+        
+        if self.domain_classifier == None:
+            self._train_domain_classifier(image_features)
 
-            self.IW = IW(self.domain_classifier).to(self._device)
-            w_new = self.IW(image_features)
+        self.IW = IW(self.domain_classifier).to(self._device)
+        w_new = self.IW(image_features)
 
-            w_sorted = self.w_sorted.expand([bs, -1])
-            w_sorted = torch.cat([w_sorted, w_new.unsqueeze(1)], 1)
-            p_sorted = w_sorted / w_sorted.sum(1, keepdim=True)
-            p_sorted_acc = p_sorted.cumsum(1)
+        if not hasattr(self, "w_sorted"):
+            w_cal = self.IW(self.source_image_features.to(self._device))
+            self.w_sorted = w_cal.sort(descending=False)[0]
+        w_sorted = self.w_sorted.expand([bs, -1])
+        w_sorted = torch.cat([w_sorted, w_new.unsqueeze(1)], 1)
+        p_sorted = w_sorted / w_sorted.sum(1, keepdim=True)
+        p_sorted_acc = p_sorted.cumsum(1)
 
-            i_T = torch.argmax((p_sorted_acc >= 1.0 - self.alpha).int(), dim=1, keepdim=True)
-            q_hat_batch = self.scores_sorted.expand([bs, -1]).gather(1, i_T).detach()
+        i_T = torch.argmax((p_sorted_acc >= 1.0 - self.alpha).int(), dim=1, keepdim=True)
+        q_hat_batch = self.scores_sorted.expand([bs, -1]).gather(1, i_T).detach()
 
         logits = self._model(x_batch.to(self._device)).float()
         logits = self._logits_transformation(logits).detach()
@@ -148,7 +152,7 @@ class WeightedPredictor(SplitPredictor):
         # Training domain detector
         ###############################
         if not hasattr(self, "source_image_features"):
-            raise ValueError("Please calibrate first.")
+            raise ValueError("Please calibrate first to get self.source_image_features.")
         if self.domain_classifier == None:
             self._train_domain_classifier(target_image_features)
 
