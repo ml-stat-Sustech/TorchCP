@@ -23,7 +23,7 @@ from torchcp.classification.predictors import SplitPredictor
 from torchcp.classification.loss import ConfTr
 from torchcp.graph.scores import DAPS, SNAPS
 from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
-from torchcp.graph.loss import ConfGNN
+from torchcp.graph.trainer import ConfGNN
 from torchcp.graph.utils.metrics import Metrics
 from transformers import set_seed
 
