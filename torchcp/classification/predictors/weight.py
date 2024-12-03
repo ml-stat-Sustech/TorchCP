@@ -31,12 +31,9 @@ class WeightedPredictor(SplitPredictor):
 
         if image_encoder is None:
             raise ValueError("image_encoder cannot be None.")
-        if domain_classifier is None:
-            raise ValueError("domain_classifier cannot be None.")
         
         self.image_encoder = image_encoder.to(self._device)
         self.domain_classifier = domain_classifier
-        self.IW = IW(self.domain_classifier).to(self._device)
 
         #  non-conformity scores
         self.scores = None
@@ -101,6 +98,10 @@ class WeightedPredictor(SplitPredictor):
         bs = x_batch.shape[0]
         with torch.no_grad():
             image_features = self.image_encoder(x_batch.to(self._device)).float()
+            if self.domain_classifier == None:
+                self._train_domain_classifier(image_features)
+
+            self.IW = IW(self.domain_classifier).to(self._device)
             w_new = self.IW(image_features)
 
             w_sorted = self.w_sorted.expand([bs, -1])
@@ -146,35 +147,9 @@ class WeightedPredictor(SplitPredictor):
         # Training domain detector
         ###############################
         if self.domain_classifier == None:
-            source_labels = torch.zeros(self.source_image_features.shape[0]).to(self._device)
-            target_labels = torch.ones(target_image_features.shape[0]).to(self._device)
+            self._train_domain_classifier(target_image_features)
 
-            input = torch.cat((self.source_image_features, target_image_features))
-            labels = torch.cat((source_labels, target_labels))
-            dataset = torch.utils.data.TensorDataset(input.float(), labels.float().long())
-            data_loader = torch.utils.data.DataLoader(dataset, batch_size=1024, shuffle=True, pin_memory=False)
-
-            self.domain_classifier = build_DomainDetecor(target_image_features.shape[1], 2, self._device)
-
-            criterion = nn.CrossEntropyLoss()
-            optimizer = optim.Adam(self.domain_classifier.parameters(), lr=0.001)
-
-            epochs = 5
-            for epoch in range(epochs):
-                loss_log = 0
-                accuracy_log = 0
-                for X_train, y_train in data_loader:
-                    y_train = y_train.to(self._device)
-                    outputs = self.domain_classifier(X_train.to(self._device))
-                    loss = criterion(outputs, y_train.view(-1))
-                    loss_log += loss.item() / len(data_loader)
-                    predictions = torch.argmax(outputs, dim=1)
-                    accuracy = torch.sum((predictions == y_train.view(-1))).item() / len(y_train)
-                    accuracy_log += accuracy / len(data_loader)
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
-
+        self.IW = IW(self.domain_classifier).to(self._device)
         w_cal = self.IW(self.source_image_features.to(self._device))
         self.w_sorted = w_cal.sort(descending=False)[0]
 
@@ -191,3 +166,33 @@ class WeightedPredictor(SplitPredictor):
         result_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, val_labels),
                        "Average_size": self._metric('average_size')(prediction_sets, val_labels)}
         return result_dict
+    
+    def _train_domain_classifier(self, target_image_features):
+        source_labels = torch.zeros(self.source_image_features.shape[0]).to(self._device)
+        target_labels = torch.ones(target_image_features.shape[0]).to(self._device)
+
+        input = torch.cat((self.source_image_features, target_image_features))
+        labels = torch.cat((source_labels, target_labels))
+        dataset = torch.utils.data.TensorDataset(input.float(), labels.float().long())
+        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1024, shuffle=True, pin_memory=False)
+
+        self.domain_classifier = build_DomainDetecor(target_image_features.shape[1], 2, self._device)
+
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(self.domain_classifier.parameters(), lr=0.001)
+
+        epochs = 5
+        for epoch in range(epochs):
+            loss_log = 0
+            accuracy_log = 0
+            for X_train, y_train in data_loader:
+                y_train = y_train.to(self._device)
+                outputs = self.domain_classifier(X_train.to(self._device))
+                loss = criterion(outputs, y_train.view(-1))
+                loss_log += loss.item() / len(data_loader)
+                predictions = torch.argmax(outputs, dim=1)
+                accuracy = torch.sum((predictions == y_train.view(-1))).item() / len(y_train)
+                accuracy_log += accuracy / len(data_loader)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
