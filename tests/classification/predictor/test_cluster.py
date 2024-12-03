@@ -273,32 +273,32 @@ def test_embed_all_classes(predictor):
 @pytest.mark.parametrize("alpha", [0.10, 0.05, 0.01])
 def test_compute_cluster_specific_qhats(predictor, alpha):
     cluster_assignments = torch.tensor([-1, 0, 1], dtype=torch.int32)
-    cal_class_scores = torch.arange(401).float()
-    zeros = torch.zeros(99, dtype=torch.long)
-    ones = torch.ones(101, dtype=torch.long)
-    twos = torch.full((201,), 2, dtype=torch.long)
+    cal_class_scores = torch.arange(400).float()
+    zeros = torch.zeros(100, dtype=torch.long)
+    ones = torch.ones(100, dtype=torch.long)
+    twos = torch.full((200,), 2, dtype=torch.long)
     cal_true_labels = torch.cat([zeros, ones, twos])
 
     result = predictor._ClusteredPredictor__compute_cluster_specific_qhats(cluster_assignments, cal_class_scores, cal_true_labels, alpha)
 
     assert result[0] == torch.tensor(int((1 - alpha) * 400))
-    assert result[1] == torch.tensor(99 + int((1 - alpha) * 100))
+    assert result[1] == torch.tensor(100 + int((1 - alpha) * 100))
     assert result[2] == torch.tensor(200 + int((1 - alpha) * 200))
 
 
 @pytest.mark.parametrize("alpha", [0.10, 0.05, 0.01])
 def test_compute_class_specific_qhats(predictor, alpha):
-    cal_class_scores = torch.arange(701).float()
-    zeros = torch.zeros(101, dtype=torch.long)
-    ones = torch.ones(201, dtype=torch.long)
-    twos = torch.full((301,), 2, dtype=torch.long)
-    threes = torch.full((98,), -1, dtype=torch.long)
+    cal_class_scores = torch.arange(700).float()
+    zeros = torch.zeros(100, dtype=torch.long)
+    ones = torch.ones(200, dtype=torch.long)
+    twos = torch.full((300,), 2, dtype=torch.long)
+    threes = torch.full((100,), -1, dtype=torch.long)
     cal_true_clusters = torch.cat([zeros, ones, twos, threes])
     num_clusters = 3
 
     result = predictor._ClusteredPredictor__compute_class_specific_qhats(cal_class_scores, cal_true_clusters, num_clusters, alpha)
 
     assert result[0] == torch.tensor(int((1 - alpha) * 100))
-    assert result[1] == torch.tensor(101 + int((1 - alpha) * 200))
-    assert result[2] == torch.tensor(302 + int((1 - alpha) * 300))
+    assert result[1] == torch.tensor(100 + int((1 - alpha) * 200))
+    assert result[2] == torch.tensor(300 + int((1 - alpha) * 300))
     assert result[3] == torch.tensor(int((1 - alpha) * 700))
