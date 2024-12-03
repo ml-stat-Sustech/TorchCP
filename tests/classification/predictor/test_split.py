@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from torchcp.classification.scores import THR
 from torchcp.classification.utils.metrics import Metrics
 from torchcp.classification.predictors import SplitPredictor
+from torchcp.classification.predictors.base import BasePredictor
 
 
 @pytest.fixture
@@ -43,6 +44,19 @@ def mock_score_function():
 @pytest.fixture
 def predictor(mock_score_function, mock_model):
     return SplitPredictor(mock_score_function, mock_model)
+
+
+def test_base_predictor_abstractmethod(mock_score_function):
+    class Predictor(BasePredictor):
+        def __init__(self, score_function):
+            super().__init__(score_function)
+    
+    predictor = Predictor(mock_score_function)
+    with pytest.raises(NotImplementedError):
+        predictor.calibrate(None, 0.1)
+    with pytest.raises(NotImplementedError):
+        predictor.predict(None)
+        
 
 def test_valid_initialization(predictor, mock_score_function, mock_model):
     assert predictor.score_function is mock_score_function
@@ -105,6 +119,13 @@ def test_predict(predictor, mock_score_function, mock_model, mock_dataset, q_hat
     scores = mock_score_function(logits)
     excepted_sets = [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
     assert pred_sets == excepted_sets
+
+
+def test_invalid_predict_model(mock_score_function, mock_dataset):
+    predictor = SplitPredictor(mock_score_function, None)
+    with pytest.raises(ValueError, match="Model is not defined"):
+        predictor.predict(mock_dataset.x)
+
 
 @pytest.mark.parametrize("q_hat", [0.5, 0.7])
 def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, q_hat):

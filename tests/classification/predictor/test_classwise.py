@@ -63,10 +63,11 @@ def test_invalid_initialization(mock_score_function, mock_model, temperature):
 
 
 @pytest.mark.parametrize("alpha", [0, 1, -0.1, 2])
-def test_invalid_calibrate_alpha(predictor, mock_dataset, alpha):
-    cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
+def test_invalid_calibrate_alpha(predictor, alpha):
+    logits = torch.randn(100, 3)
+    labels = torch.randint(0, 3, (100, ))
     with pytest.raises(ValueError, match="alpha should be a value"):
-        predictor.calibrate(cal_dataloader, alpha)
+        predictor.calculate_threshold(logits, labels, alpha)
 
 
 @pytest.mark.parametrize("alpha", [0.05])

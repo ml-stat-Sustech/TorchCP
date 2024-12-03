@@ -51,7 +51,7 @@ def test_invalid_num_clusters_initialization(mock_score_function, mock_model, nu
         ClusteredPredictor(mock_score_function, mock_model, num_clusters=num_clusters)
 
 
-def test_invalid_num_clusters_initialization(mock_score_function, mock_model):
+def test_invalid_split_initialization(mock_score_function, mock_model):
     with pytest.raises(ValueError, match="split should be one of 'proportional', 'doubledip', or 'random'."):
         ClusteredPredictor(mock_score_function, mock_model, split="error")
 
