@@ -17,16 +17,26 @@ class SNAPS(BaseScore):
     Link: https://arxiv.org/pdf/2405.14303
     Github:
 
-    :param lambda_val: the parameter of neighborhood-based scores.
-    :param mu_val: the parameter of similarity-based scores.
+    Parameters:
+        lambda_val (float): 
+            The weight parameter for neighborhood-based scores, where 0 <= lambda_val <= 1.
+
+        mu_val (float): 
+            The weight parameter for similarity-based scores, where 0 <= mu_val <= 1.
+
+        knn_edge (torch.Tensor, optional): 
+            An edge list representing the k-nearest neighbors (k-NN) for each node.
+
+        knn_weight (torch.Tensor, optional): 
+            The weights associated with each k-NN edge, if applicable. Defaults to uniform weights.
     """
 
-    def __init__(self, lambda_val, mu_val, base_score_function, graph_data, knn_edge=None, knn_weight=None):
-        super(SNAPS, self).__init__(base_score_function, graph_data)
-        if lambda_val < 0 and lambda_val > 1:
+    def __init__(self, graph_data, base_score_function, lambda_val=1 / 3, mu_val=1 / 3, knn_edge=None, knn_weight=None):
+        super(SNAPS, self).__init__(graph_data, base_score_function)
+        if lambda_val < 0 or lambda_val > 1:
             raise ValueError(
                 "The parameter 'lambda_val' must be a value between 0 and 1.")
-        if mu_val < 0 and mu_val > 1:
+        if mu_val < 0 or mu_val > 1:
             raise ValueError(
                 "The parameter 'mu_val' must be a value between 0 and 1.")
         if lambda_val + mu_val > 1:
@@ -49,7 +59,7 @@ class SNAPS(BaseScore):
         else:
             self._adj_knn = None
 
-    def __call__(self, logits):
+    def __call__(self, logits, labels=None):
         base_scores = self._base_score_function(logits)
 
         similarity_scores = 0.
@@ -64,4 +74,7 @@ class SNAPS(BaseScore):
             self._lambda_val * similarity_scores + \
             self._mu_val * neigh_scores
 
-        return scores
+        if labels is None:
+            return scores
+        else:
+            return scores[torch.arange(scores.shape[0]), labels]

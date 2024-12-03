@@ -6,6 +6,7 @@
 #
 __all__ = ["ConfTr"]
 
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -52,11 +53,11 @@ class ConfTr(ConfTS):
         >>> loss.backward()
     """
 
-    def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True, epsilon = 1e-4, loss_type="valid", target_size=1, loss_transform="square"):
+    def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True, epsilon = 1e-4, loss_type="valid", target_size=1, loss_transform="square", temperature=0.1, soft_quantile=True):
 
         super(ConfTr, self).__init__(weight,predictor, alpha, fraction)
         
-        if loss_type not in ["valid", "classification", "probs", "coverage"]:
+        if loss_type not in ["valid", "classification", "probs", "coverage", "cfgnn"]:
             raise ValueError('loss_type should be a value in ["valid", "classification", "probs", "coverage"].')
         if target_size not in [0, 1]:
             raise ValueError("target_size should be 0 or 1.")
@@ -84,13 +85,38 @@ class ConfTr(ConfTS):
         self.loss_functions_dict = {"valid": self.__compute_hinge_size_loss,
                                     "probs": self.__compute_probabilistic_size_loss,
                                     "coverage": self.__compute_coverage_loss,
-                                    "classification": self.__compute_classification_loss
+                                    "classification": self.__compute_classification_loss,
+                                    "cfgnn": self.__compute_conformalized_gnn_loss,
                                     }
 
     
     
     def compute_loss(self, test_scores, test_labels, tau):
         pred_sets = torch.sigmoid((tau - test_scores)/self.epsilon)
+    def forward(self, logits, labels):
+        # Compute Size Loss
+        val_split = int(self.fraction * logits.shape[0])
+        cal_logits = logits[:val_split]
+        cal_labels = labels[:val_split]
+        test_logits = logits[val_split:]
+        test_labels = labels[val_split:]
+
+        cal_scores = self.predictor.score_function(cal_logits, cal_labels)
+        # self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
+        # tau = self.predictor.q_hat
+        if self.soft_quantile:
+            tau = self.__soft_quantile(cal_scores, self.alpha)
+        else:
+            n_temp = len(val_split)
+            q_level = math.ceil((n_temp + 1) * (1 - self.alpha)) / n_temp
+            tau = torch.quantile(cal_scores, q_level, interpolation='higher')
+        # breakpoint()
+        test_scores = self.predictor.score_function(test_logits)
+        # Computing the probability of each label contained in the prediction set.
+        if self.loss_type == "cfgnn":
+            pred_sets = torch.sigmoid((tau - test_scores) / self.temperature)
+        else:
+            pred_sets = torch.sigmoid(tau - test_scores)
         loss = self.weight * self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
         return loss
 
@@ -133,3 +159,5 @@ class ConfTr(ConfTS):
         # Return the mean loss
         return torch.mean(loss)
 
+    def __compute_conformalized_gnn_loss(self, pred_sets, labels):
+        return torch.mean(torch.relu(torch.sum(pred_sets, dim=1) - self.target_size))

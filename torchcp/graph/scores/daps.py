@@ -19,18 +19,25 @@ class DAPS(BaseScore):
     Link: https://proceedings.mlr.press/v202/h-zargarbashi23a/h-zargarbashi23a.pdf
     Github: https://github.com/soroushzargar/DAPS
 
-    :param neigh_coef: the diffusion parameter which is a value in [0, 1].
+    The diffusion process adjusts the non-conformity scores of nodes by propagating information 
+    from their neighbors, where the strength of diffusion is controlled by the parameter `neigh_coef`. 
+    A higher value of `neigh_coef` puts more emphasis on the diffusion of scores.
+
+    Args:
+        neigh_coef (float): 
+            A diffusion parameter that controls the balance between local 
+            (node-specific) scores and diffusion scores. It must be a value in [0, 1].
     """
 
-    def __init__(self, neigh_coef, base_score_function, graph_data):
-        super(DAPS, self).__init__(base_score_function, graph_data)
-        if neigh_coef < 0 and neigh_coef > 1:
+    def __init__(self, graph_data, base_score_function, neigh_coef=0.5):
+        super(DAPS, self).__init__(graph_data, base_score_function)
+        if neigh_coef < 0 or neigh_coef > 1:
             raise ValueError(
                 "The parameter 'neigh_coef' must be a value between 0 and 1.")
 
         self._neigh_coef = neigh_coef
 
-    def __call__(self, logits):
+    def __call__(self, logits, labels=None):
         base_scores = self._base_score_function(logits)
 
         diffusion_scores = torch.linalg.matmul(
@@ -39,4 +46,7 @@ class DAPS(BaseScore):
         scores = self._neigh_coef * diffusion_scores + \
             (1 - self._neigh_coef) * base_scores
 
-        return scores
+        if labels is None:
+            return scores
+        else:
+            return scores[torch.arange(scores.shape[0]), labels]

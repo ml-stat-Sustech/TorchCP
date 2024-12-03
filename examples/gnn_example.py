@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 from torchcp.classification.scores import APS
 from torchcp.graph.scores import DAPS
-from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
+from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
 from torchcp.utils import fix_randomness
 
 from torchcp.graph.utils.metrics import Metrics
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     score_function = DAPS(neigh_coef=0.5,
                           base_score_function=APS(score_type="softmax"),
                           graph_data=graph_data)
-    predictor = GraphSplitPredictor(score_function, model, graph_data)
+    predictor = GraphSplitPredictor(graph_data, score_function, model)
 
     n_calib = 500
     perm = torch.randperm(test_idx.shape[0])
@@ -90,16 +90,18 @@ if __name__ == '__main__':
     #######################################
 
     data_name = 'Computers'
-    graph_data, train_loader, subgraph_loader = build_inductive_gnn_data(data_name)
+    graph_data, train_loader, subgraph_loader = build_inductive_gnn_data(
+        data_name)
 
-    model = build_gnn_model('SAGE')(graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
+    model = build_gnn_model('SAGE')(
+        graph_data.x.shape[1], 64, graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     n_epochs = 30
     print("########################## CP for Inductive ###########################")
     for _ in range(n_epochs):
         train_inductive(model, optimizer, train_loader)
-    
+
     model.eval()
     with torch.no_grad():
         logits = model.inference(graph_data.x, subgraph_loader)
@@ -107,8 +109,9 @@ if __name__ == '__main__':
     labels = graph_data.y[graph_data.test_mask]
     logits = logits[graph_data.test_mask]
 
-    predictor = NAPSSplitPredictor(graph_data)
-    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(logits, labels, args.alpha)
+    predictor = NAPSPredictor(graph_data)
+    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(
+        logits, labels, args.alpha)
 
     metrics = Metrics()
     print("Evaluating prediction sets...")
@@ -117,4 +120,4 @@ if __name__ == '__main__':
     print(
         f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
     print(
-        f"Singleton_Hit_Ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")
+        f"Singleton_hit_ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")
