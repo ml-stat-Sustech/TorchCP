@@ -47,7 +47,8 @@ class EnsemblePredictor(SplitPredictor):
         if aggregation_function == 'mean':
             self.aggregation_function = torch.mean
         elif aggregation_function == 'median':
-            self.aggregation_function = torch.median
+            # self.aggregation_function = torch.median
+            self.aggregation_function = lambda x, dim: torch.median(x, dim=dim)[0]
         else:
             self.aggregation_function = aggregation_function
 
@@ -88,6 +89,9 @@ class EnsemblePredictor(SplitPredictor):
             Post-training:
                 Computes and stores the conformal scores on the training dataset for later use in prediction intervals.
         """
+        if ensemble_num <= 0:
+            raise ValueError("ensemble_num must be greater than 0")
+        
         self.model_list = []
         self.indices_list = []
 

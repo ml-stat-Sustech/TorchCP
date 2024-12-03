@@ -54,7 +54,7 @@ class ACIPredictor(SplitPredictor):
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
             If the fit function is not used, users should pass the trained model to the predictor at the beginning.
         """
-        super().fit(train_dataloader, **kwargs)
+        super().fit(train_dataloader, alpha=alpha, **kwargs)
         super().calibrate(train_dataloader, alpha)
         self.alpha = alpha
         self.alpha_t = alpha
@@ -71,18 +71,13 @@ class ACIPredictor(SplitPredictor):
         Returns:
             float: Weighted error rate based on historical predictions.
         """
-        if y_batch_last.dim() == 0:
-            y_batch_last = torch.tensor([y_batch_last.item()]).to(self._device)
-        if len(y_batch_last.shape) == 0:
-            err_t = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
-        else:
-            steps_t = len(y_batch_last)
-            w_s = (steps_t - torch.arange(steps_t)).to(self._device)
-            w_s = torch.pow(0.95, w_s)
-            w_s = w_s / torch.sum(w_s)
-            err = x_batch.new_zeros(steps_t, self.q_hat.shape[0])
-            err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
-            err_t = torch.sum(w_s * err)
+        steps_t = len(y_batch_last)
+        w_s = (steps_t - torch.arange(steps_t)).to(self._device)
+        w_s = torch.pow(0.95, w_s)
+        w_s = w_s / torch.sum(w_s)
+        err = x_batch.new_zeros(steps_t, self.q_hat.shape[0])
+        err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
+        err_t = torch.sum(w_s * err)
         return err_t
         
     def predict(self, x_batch, x_batch_last=None, y_batch_last=None, pred_interval_last=None):
@@ -108,12 +103,7 @@ class ACIPredictor(SplitPredictor):
             err_t = self.calculate_err_rate(x_batch, y_batch_last, pred_interval_last)
             self.scores = self.calculate_score(self._model(x_batch).float(), y_batch_last)
             
-        # Adaptive adjust the value of alpha
-        self.alpha_t = self.alpha_t + self.gamma * (self.alpha - err_t)
-        if self.alpha_t >= 1:
-            self.alpha_t = 0.9999
-        elif self.alpha_t <= 0:
-            self.alpha_t = 0.0001
+        self.alpha_t = max(0.0001, min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
             
         self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
         predicts_batch = self._model(x_batch.to(self._device)).float()
