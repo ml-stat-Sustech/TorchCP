@@ -8,6 +8,7 @@ from torch_geometric.data import Data
 from torchcp.classification.scores import THR
 from torchcp.graph.predictors import GraphSplitPredictor
 from torchcp.graph.utils import Metrics
+from torchcp.graph.predictors.base import BaseGraphPredictor
 
 
 @pytest.fixture
@@ -60,6 +61,19 @@ def preprocess(mock_graph_data, mock_score_function, mock_model):
             self.cal_scores = self.scores[self.cal_idx][self.label_mask[self.cal_idx]]
             self.logits = mock_model(mock_graph_data.x)
     return PreProcess()
+
+
+def test_base_graph_predictor(mock_graph_data, mock_score_function):
+    class TestPredictor(BaseGraphPredictor):
+        def __init__(self, graph_data, score_function, model=None):
+            super().__init__(graph_data, score_function, model)
+        
+    predictor = TestPredictor(mock_graph_data, mock_score_function)
+    with pytest.raises(NotImplementedError):
+        predictor.calibrate(None, 0.1)
+
+    with pytest.raises(NotImplementedError):
+        predictor.predict(None)
 
 
 def test_initialization(predictor, mock_graph_data, mock_score_function, mock_model):

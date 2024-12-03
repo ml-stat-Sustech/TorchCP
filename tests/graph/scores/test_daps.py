@@ -5,6 +5,7 @@ from torch_geometric.data import Data
 
 from torchcp.classification.scores import THR
 from torchcp.graph.scores import DAPS
+from torchcp.graph.scores.base import BaseScore
 
 
 @pytest.fixture
@@ -32,6 +33,16 @@ def graph_data():
 @pytest.fixture
 def base_score_function():
     return THR(score_type="softmax")
+
+
+def test_base_graph_scores(graph_data, base_score_function):
+    class TestScores(BaseScore):
+        def __init__(self, graph_data, base_score_function):
+            super().__init__(graph_data, base_score_function)
+        
+    score_function = TestScores(graph_data, base_score_function)
+    with pytest.raises(NotImplementedError):
+        score_function(None)
 
 
 def test_daps_initialization(graph_data, base_score_function):
