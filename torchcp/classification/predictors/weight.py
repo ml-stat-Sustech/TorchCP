@@ -31,9 +31,12 @@ class WeightedPredictor(SplitPredictor):
 
         if image_encoder is None:
             raise ValueError("image_encoder cannot be None.")
+        if domain_classifier is None:
+            raise ValueError("domain_classifier cannot be None.")
         
         self.image_encoder = image_encoder.to(self._device)
         self.domain_classifier = domain_classifier
+        self.IW = IW(self.domain_classifier).to(self._device)
 
         #  non-conformity scores
         self.scores = None
@@ -172,7 +175,6 @@ class WeightedPredictor(SplitPredictor):
                     loss.backward()
                     optimizer.step()
 
-        self.IW = IW(self.domain_classifier).to(self._device)
         w_cal = self.IW(self.source_image_features.to(self._device))
         self.w_sorted = w_cal.sort(descending=False)[0]
 
