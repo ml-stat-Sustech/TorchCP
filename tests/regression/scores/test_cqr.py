@@ -2,26 +2,8 @@
 
 import pytest
 import torch
-from torch.utils.data import DataLoader, TensorDataset
 
 from torchcp.regression.scores import CQR
-
-@pytest.fixture
-def dummy_data():
-    """
-    Fixture to provide dummy data for testing.
-    """
-    x_train = torch.rand((100, 10))
-    y_train = torch.rand((100, 1))
-    train_dataset = TensorDataset(x_train, y_train)
-    train_dataloader = DataLoader(train_dataset, batch_size=16)
-
-    x_test = torch.rand((20, 10))
-    y_test = torch.rand((20, 1))
-    test_dataset = TensorDataset(x_test, y_test)
-    test_dataloader = DataLoader(test_dataset, batch_size=16)
-
-    return train_dataloader, test_dataloader
 
 
 @pytest.fixture
@@ -36,8 +18,8 @@ def test_call(cqr_instance):
     """
     Test the __call__ method for score calculation.
     """
-    predicts = torch.tensor([[[0.2, 0.7]], [[0.3, 0.8]]])
-    y_truth = torch.tensor([[0.5], [0.4]])
+    predicts = torch.tensor([[0.2, 0.7], [0.3, 0.8]])
+    y_truth = torch.tensor([0.5, 0.4])
 
     scores = cqr_instance(predicts, y_truth)
     expected_scores = torch.tensor([[-0.2], [-0.1]])
@@ -47,8 +29,8 @@ def test_call(cqr_instance):
 def test_generate_intervals(cqr_instance):
     """
     Test the generate_intervals method for prediction interval generation.
-    """
-    predicts_batch = torch.tensor([[[0.2, 0.7]], [[0.3, 0.8]]])
+    """ 
+    predicts_batch = torch.tensor([[0.2, 0.7], [0.3, 0.8]])
     q_hat = torch.tensor([0.1])
 
     intervals = cqr_instance.generate_intervals(predicts_batch, q_hat)
@@ -61,6 +43,8 @@ def test_fit(cqr_instance, dummy_data):
     Test the fit method to ensure the model trains correctly.
     """
     train_dataloader, _ = dummy_data
+    with pytest.raises(ValueError):
+        model = cqr_instance.fit(train_dataloader)
     model = cqr_instance.fit(train_dataloader, alpha=0.1, epochs=5, verbose=False)
 
     # Check model output shape

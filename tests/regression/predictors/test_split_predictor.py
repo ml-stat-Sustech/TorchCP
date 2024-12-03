@@ -16,11 +16,20 @@ def mock_score_function():
 def split_predictor(mock_model, mock_score_function):
     return SplitPredictor(score_function=mock_score_function, model=mock_model)
 
-def test_workflow(mock_data, split_predictor):
+@pytest.fixture
+def split_predictor_nomodel(mock_score_function):
+    return SplitPredictor(score_function=mock_score_function)
+
+def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
     # Extract mock data
     train_dataloader, cal_dataloader, test_dataloader = mock_data
 
     # Step 1: Fit the model
+    # case 1
+    split_predictor_nomodel.fit(train_dataloader)
+    for param in split_predictor_nomodel._model.parameters():
+        assert param.grad is not None, "Model parameters should have gradients."
+    # case 2
     split_predictor.fit(train_dataloader)
     for param in split_predictor._model.parameters():
         assert param.grad is not None, "Model parameters should have gradients."

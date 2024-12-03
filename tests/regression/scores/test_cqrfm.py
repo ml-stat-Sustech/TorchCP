@@ -7,24 +7,6 @@ from torch.utils.data import DataLoader, TensorDataset
 from torchcp.regression.scores import CQRFM
 
 @pytest.fixture
-def dummy_data():
-    """
-    Fixture to provide dummy data for testing.
-    """
-    x_train = torch.rand((100, 10))
-    y_train = torch.rand((100, 1))
-    train_dataset = TensorDataset(x_train, y_train)
-    train_dataloader = DataLoader(train_dataset, batch_size=16)
-
-    x_test = torch.rand((20, 10))
-    y_test = torch.rand((20, 1))
-    test_dataset = TensorDataset(x_test, y_test)
-    test_dataloader = DataLoader(test_dataset, batch_size=16)
-
-    return train_dataloader, test_dataloader
-
-
-@pytest.fixture
 def cqrfm_instance():
     """
     Fixture to provide an instance of the CQRFM class.
@@ -36,8 +18,8 @@ def test_call(cqrfm_instance):
     """
     Test the __call__ method for score calculation.
     """
-    predicts = torch.tensor([[[0.2, 0.45, 0.7]], [[0.3, 0.55, 0.8]]])
-    y_truth = torch.tensor([[0.5], [0.4]])
+    predicts = torch.tensor([[0.2, 0.45, 0.7], [0.3, 0.55, 0.8]])
+    y_truth = torch.tensor([0.5, 0.4])
 
     scores = cqrfm_instance(predicts, y_truth)
     expected_scores = torch.tensor([[0.2], [0.6]])
@@ -48,7 +30,7 @@ def test_generate_intervals(cqrfm_instance):
     """
     Test the generate_intervals method for prediction interval generation.
     """
-    predicts_batch = torch.tensor([[[0.2, 0.4, 0.7]], [[0.3, 0.6, 0.8]]])
+    predicts_batch = torch.tensor([[0.2, 0.4, 0.7], [0.3, 0.6, 0.8]])
     q_hat = torch.tensor([0.1])
 
     intervals = cqrfm_instance.generate_intervals(predicts_batch, q_hat)
