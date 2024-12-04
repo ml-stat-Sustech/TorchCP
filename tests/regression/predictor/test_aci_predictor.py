@@ -15,7 +15,7 @@ def mock_score_function():
 def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     train_dataloader, cal_dataloader, test_dataloader = mock_data
     
-    with pytest.raises(AssertionError, match="gamma must be greater than 0."):
+    with pytest.raises(ValueError, match="gamma must be greater than 0."):
         ACIPredictor(mock_model, mock_score_function, gamma=0)
 
     # Initialize ACIPredictor
@@ -43,16 +43,16 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     # Test evaluate method
     eval_results = aci_predictor.evaluate(test_dataloader, verbose=False)
     assert eval_results["Total batches"] > 0, "Evaluation should process at least one batch."
-    assert eval_results["Average coverage rate"] > 0, "Average coverage rate should be greater than 0."
-    assert eval_results["Average prediction interval size"] > 0, "Average interval size should be greater than 0."
+    assert eval_results["Coverage_rate"] > 0, "Average coverage rate should be greater than 0."
+    assert eval_results["Average_size"] > 0, "Average interval size should be greater than 0."
     
     # Test evaluate method with verbose=True
     aci_predictor.evaluate(test_dataloader, verbose=True)
 
     # Test exception for missing arguments
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         aci_predictor.predict(x_batch, y_batch_last=torch.rand(10), pred_interval_last=None)
-
+        
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_device_support(mock_data, mock_model, mock_score_function, device):
     if device == "cuda" and not torch.cuda.is_available():

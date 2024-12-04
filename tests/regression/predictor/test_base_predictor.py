@@ -45,3 +45,10 @@ def test_not_implemented_methods(method_name, mock_data, mock_score_function):
         # Dynamically call the method
         getattr(partial_predictor, method_name)(*dummy_args[method_name])
 
+
+def test_model_type_error(mock_score_function):
+    """
+    Test that a TypeError is raised when model is not an instance of torch.nn.Module.
+    """
+    with pytest.raises(TypeError, match="The model must be an instance of torch.nn.Module"):
+        PartialPredictor(score_function=mock_score_function, model="not_a_model")

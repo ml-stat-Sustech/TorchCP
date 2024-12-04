@@ -44,5 +44,5 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
     eval_res = split_predictor.evaluate(test_dataloader)
     assert "Coverage_rate" in eval_res, "Coverage rate should be part of evaluation results."
     assert "Average_size" in eval_res, "Average size should be part of evaluation results."
-    assert torch.isclose(eval_res['Coverage_rate'], torch.tensor(0.9), atol=5e-2), "Coverage rate should be close to 0.9."
+    assert abs(eval_res['Coverage_rate'] - 0.9) < 5e-2, f"Coverage rate {eval_res['Coverage_rate']} should be close to 0.9"
     assert eval_res["Average_size"] > 0, "Average size should be greater than 0."

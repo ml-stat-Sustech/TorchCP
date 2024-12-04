@@ -34,24 +34,43 @@ def test_coverage_rate(mock_data):
     expected_coverage_rate = torch.sum(condition).cpu() / y_truth.shape[0]
 
     # Ensure the computed coverage rate is correct
-    assert torch.allclose(result, expected_coverage_rate, atol=1e-1), f"Expected coverage_rate {expected_coverage_rate}, but got {result}"
+    assert abs(result - expected_coverage_rate) <= 1e-1, f"Expected coverage_rate {expected_coverage_rate}, but got {result}"
 
 
-def test_average_size(mock_data):
-    prediction_intervals, _ = mock_data
+def test_prediction_intervals_columns():
+    """Test validation of prediction intervals column count."""
+    # Test odd number of columns
+    odd_intervals = torch.tensor([[0.1, 0.2, 0.3]])  # 3 columns
+    with pytest.raises(ValueError, match="must be even"):
+        average_size(odd_intervals)
+    
+    # Test even number of columns
+    even_intervals = torch.tensor([[0.1, 0.2, 0.3, 0.4]])  # 4 columns
+    try:
+        result = average_size(even_intervals)
+        assert isinstance(result, float), "Result should be a float"
+    except ValueError:
+        pytest.fail("Unexpected ValueError for even number of columns")
+        
+def test_average_size():
+    # Test data
+    prediction_intervals = torch.tensor([
+        [0.1, 0.5, 0.2, 0.6],  # Two intervals per sample
+        [0.3, 0.7, 0.4, 0.8],
+    ])
 
-    # Call the average_size function
+    # Call function
     result = average_size(prediction_intervals)
 
-    # Ensure the result is a scalar tensor
-    assert result.shape == torch.Size([]), f"Expected result shape [], but got {result.shape}"
 
-    # Manually compute the average size of prediction intervals
-    size = torch.abs(prediction_intervals[..., 1::2] - prediction_intervals[..., 0::2]).sum(dim=-1)
-    expected_average_size = size.mean(dim=0).cpu()
+    expected = 0.8
 
-    # Ensure the computed average size is correct
-    assert torch.allclose(result, expected_average_size, atol=1e-6), f"Expected average_size {expected_average_size}, but got {result}"
+    assert abs(result - expected) < 1e-6, f"Expected {expected}, got {result}"
+
+def test_average_size_invalid_shape():
+    invalid_intervals = torch.tensor([0.1, 0.5, 0.2])  # Odd number of columns
+    with pytest.raises(ValueError):
+        average_size(invalid_intervals)
 
 
 def test_metrics_class():

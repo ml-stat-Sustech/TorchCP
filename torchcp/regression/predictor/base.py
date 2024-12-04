@@ -27,7 +27,8 @@ class BasePredictor(object):
     def __init__(self, score_function, model=None):
         self._model = model
         if self._model is not None:
-            assert isinstance(model, nn.Module), "The model must be an instance of torch.nn.Module"
+            if not isinstance(model, nn.Module):
+                raise TypeError("The model must be an instance of torch.nn.Module")
             self._device = get_device(model)
         else:
             self._device = None

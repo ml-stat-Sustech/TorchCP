@@ -31,13 +31,4 @@ def test_batch_size_mismatch(setup_loss):
     with pytest.raises(IndexError, match="Batch size mismatch"):
         loss_fn(preds, target)
 
-def test_no_grad_target(setup_loss):
-    """Test that the target tensor does not require gradients."""
-    loss_fn = setup_loss
-    preds = torch.tensor([[0.2, 0.5, 0.3], [0.1, 0.7, 0.2]], requires_grad=True).softmax(dim=1)
-    target = torch.tensor([[0.2], [0.6]], requires_grad=True)  # Target should not require grad
-    
-    with pytest.raises(AssertionError, match="Target should not require gradients."):
-        loss_fn(preds, target)
-
 

@@ -143,7 +143,8 @@ class EnsemblePredictor(SplitPredictor):
                 - Prediction intervals for the input batch.
                 - Aggregated predictions for the input batch.
         """
-        assert (y_batch_last is None) == (aggr_pred_last is None), "y_batch_last and pred_interval_last must either be provided or be None."
+        if (y_batch_last is None) != (aggr_pred_last is None):
+            raise ValueError("y_batch_last and pred_interval_last must either be provided or be None.")
         if y_batch_last is not None:
             update_scores = self.calculate_score(aggr_pred_last, y_batch_last)
             self.scores = torch.cat([self.scores, update_scores], dim=0) if len(self.scores) > 0 else update_scores
@@ -210,7 +211,7 @@ class EnsemblePredictor(SplitPredictor):
 
                 if verbose:
                     print(
-                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate.item():.4f}, Average size: {batch_average_size.item():.4f}")
+                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate:.4f}, Average size: {batch_average_size:.4f}")
 
                 coverage_rates.append(batch_coverage_rate)
                 average_sizes.append(batch_average_size)
@@ -219,7 +220,7 @@ class EnsemblePredictor(SplitPredictor):
         avg_average_size = sum(average_sizes) / len(average_sizes)
 
         res_dict = {"Total batches": index + 1,
-                    "Average coverage rate": avg_coverage_rate.item(),
-                    "Average prediction interval size": avg_average_size.item()}
+                    "Coverage_rate": avg_coverage_rate,
+                    "Average_size": avg_average_size}
 
         return res_dict

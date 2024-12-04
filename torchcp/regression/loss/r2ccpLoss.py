@@ -73,11 +73,8 @@ class R2ccpLoss(nn.Module):
         Returns:
             torch.Tensor: Scalar loss value.
 
-        Raises:
-            AssertionError: If `target` requires gradients.
-            IndexError: If batch size of `preds` does not match `target`.
         """
-        assert not target.requires_grad, "Target should not require gradients."
+
         if preds.size(0) != target.size(0):
             raise IndexError("Batch size mismatch between preds and target.")
 

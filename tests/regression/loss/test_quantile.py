@@ -27,20 +27,9 @@ def test_batch_size_mismatch():
     preds = torch.tensor([[0.1, 0.5, 0.9]])
     target = torch.tensor([[0.3], [0.4]]) 
 
-    with pytest.raises(AssertionError, match="Batch size mismatch between predictions and targets."):
+    with pytest.raises(ValueError, match=f"Batch size mismatch between predictions and targets. Got preds: {preds.size(0)}, target: {target.size(0)}"):
         loss_fn(preds, target)
 
-
-def test_requires_grad_error():
-    """Test that target requiring gradient raises an error."""
-    quantiles = [0.1, 0.5, 0.9]
-    loss_fn = QuantileLoss(quantiles=quantiles)
-
-    preds = torch.tensor([[0.1, 0.5, 0.9]])
-    target = torch.tensor([[0.3]], requires_grad=True) 
-
-    with pytest.raises(AssertionError, match="Target should not require gradients."):
-        loss_fn(preds, target)
 
 
 def test_zero_quantile():

@@ -203,11 +203,11 @@ def build_dataset(dataset_name, data_mode="train", transform_mode="train"):
 
     elif dataset_name == 'mnist':
         dataset_dir = get_dataset_dir()
-        if transform == None:
-            transform = trn.Compose([
-                trn.ToTensor(),
-                trn.Normalize((0.1307,), (0.3081,))
-            ])
+       
+        transform = trn.Compose([
+            trn.ToTensor(),
+            trn.Normalize((0.1307,), (0.3081,))
+        ])
         if data_mode == "train":
             dataset = dset.MNIST(dataset_dir, train=True,
                                  download=True, transform=transform)

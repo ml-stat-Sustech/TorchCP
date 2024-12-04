@@ -126,7 +126,8 @@ class RecurrentScaler(BaseScaler, nn.Module):
         verbose = True
     ):
         super(RecurrentScaler, self).__init__()
-        assert(target in ['set', 'item'])
+        if target not in ['set', 'item']:
+            raise ValueError(f"target must be one of ['set', 'item'], but got {target}")
         self.num_iters = num_iters
         self.batch_size = batch_size
         self.target = target

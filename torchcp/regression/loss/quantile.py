@@ -65,11 +65,9 @@ class QuantileLoss(nn.Module):
         Returns:
             torch.Tensor: The scalar mean pinball loss across the batch.
 
-        Raises:
-            AssertionError: If `target` requires gradients or if batch sizes of `preds` and `target` do not match.
         """
-        assert not target.requires_grad, "Target should not require gradients."
-        assert preds.size(0) == target.size(0), "Batch size mismatch between predictions and targets."
+        if preds.size(0) != target.size(0):
+            raise ValueError(f"Batch size mismatch between predictions and targets. Got preds: {preds.size(0)}, target: {target.size(0)}")
 
         losses = []
         for i, q in enumerate(self.quantiles):

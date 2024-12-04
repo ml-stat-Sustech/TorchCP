@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', default=0.1, type=float)
     args = parser.parse_args()
 
-    fix_randomness(seed=args.seed)
+    set_seed(seed=args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #######################################

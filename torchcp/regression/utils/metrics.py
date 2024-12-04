@@ -26,11 +26,10 @@ def coverage_rate(prediction_intervals, y_truth):
         torch.Tensor: The coverage rate, representing the proportion of ground truth values
                       within the specified prediction intervals.
     
-    Raises:
-        AssertionError: If the number of columns in prediction_intervals is not even.
     """
     num_columns = prediction_intervals.shape[-1]
-    assert num_columns % 2 == 0, f"The number of columns in prediction_intervals must be even, but got {num_columns}"
+    if num_columns % 2 != 0:
+        raise ValueError(f"The number of columns in prediction_intervals must be even, but got {num_columns}")
 
     if len(prediction_intervals.shape) == 2:
         prediction_intervals = prediction_intervals.unsqueeze(1)
@@ -45,7 +44,7 @@ def coverage_rate(prediction_intervals, y_truth):
         condition |= torch.bitwise_and(y_truth >= lower_bound, y_truth <= upper_bound)
 
     coverage_rate = torch.sum(condition, dim=0).cpu() / y_truth.shape[0]
-    return coverage_rate
+    return coverage_rate.item()
 
 
 @METRICS_REGISTRY_REGRESSION.register()
@@ -59,15 +58,13 @@ def average_size(prediction_intervals):
     
     Returns:
         torch.Tensor: The average size of the prediction intervals across all samples.
-    
-    Raises:
-        AssertionError: If the number of columns in prediction_intervals is not even.
     """
     num_columns = prediction_intervals.shape[-1]
-    assert num_columns % 2 == 0, f"The number of columns in prediction_intervals must be even, but got {num_columns}"
+    if num_columns % 2 != 0:
+        raise ValueError(f"The number of columns in prediction_intervals must be even, but got {num_columns}")
 
     size = torch.abs(prediction_intervals[..., 1::2] - prediction_intervals[..., 0::2]).sum(dim=-1)
-    average_size = size.mean(dim=0).cpu()
+    average_size = size.mean(dim=0).cpu().item()
 
     return average_size
 

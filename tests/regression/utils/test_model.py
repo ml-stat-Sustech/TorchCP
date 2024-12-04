@@ -12,12 +12,12 @@ def mock_input():
 
 def test_non_linear_net_initialization():
     # Test initialization of NonLinearNet class
-    model = NonLinearNet(in_shape=5, out_shape=2, hidden_size=10, dropout=0.5)
+    model = NonLinearNet(input_dim=5, output_dim=2, hidden_size=10, dropout=0.5)
 
     # Check attributes
     assert model.hidden_size == 10, f"Expected hidden_size 10, got {model.hidden_size}"
-    assert model.in_shape == 5, f"Expected in_shape 5, got {model.in_shape}"
-    assert model.out_shape == 2, f"Expected out_shape 2, got {model.out_shape}"
+    assert model.input_dim == 5, f"Expected in_shape 5, got {model.in_shape}"
+    assert model.output_dim == 2, f"Expected out_shape 2, got {model.out_shape}"
     assert model.dropout == 0.5, f"Expected dropout 0.5, got {model.dropout}"
 
     # Check that base_model is a Sequential container with the correct layers
@@ -29,7 +29,7 @@ def test_non_linear_net_initialization():
 
 def test_non_linear_net_forward(mock_input):
     # Test forward pass of NonLinearNet
-    model = NonLinearNet(in_shape=5, out_shape=2, hidden_size=10, dropout=0.5)
+    model = NonLinearNet(input_dim=5, output_dim=2, hidden_size=10, dropout=0.5)
     output = model(mock_input)
 
     # Check output shape
@@ -38,7 +38,7 @@ def test_non_linear_net_forward(mock_input):
 
 def test_softmax_initialization():
     # Test initialization of Softmax class
-    model = Softmax(in_shape=5, out_shape=2, hidden_size=10, dropout=0.5)
+    model = Softmax(input_dim=5, output_dim=2, hidden_size=10, dropout=0.5)
 
     # Check that Softmax contains an instance of NonLinearNet and a Softmax layer
     assert isinstance(model.base_model[0], NonLinearNet), "Expected base_model[0] to be an instance of NonLinearNet"
@@ -47,7 +47,7 @@ def test_softmax_initialization():
 
 def test_softmax_forward(mock_input):
     # Test forward pass of Softmax
-    model = Softmax(in_shape=5, out_shape=2, hidden_size=10, dropout=0.5)
+    model = Softmax(input_dim=5, output_dim=2, hidden_size=10, dropout=0.5)
     output = model(mock_input)
 
     # Check output shape

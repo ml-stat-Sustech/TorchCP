@@ -8,20 +8,20 @@ import torch.nn as nn
 
 
 class NonLinearNet(nn.Module):
-    def __init__(self, in_shape, out_shape, hidden_size, dropout):
+    def __init__(self, input_dim, output_dim, hidden_size, dropout):
         super(NonLinearNet, self).__init__()
         self.hidden_size = hidden_size
-        self.in_shape = in_shape
-        self.out_shape = out_shape
+        self.input_dim = input_dim
+        self.output_dim = output_dim
         self.dropout = dropout
         self.base_model = nn.Sequential(
-            nn.Linear(self.in_shape, self.hidden_size),
+            nn.Linear(self.input_dim, self.hidden_size),
             nn.ReLU(),
             nn.Dropout(self.dropout),
             nn.Linear(self.hidden_size, self.hidden_size),
             nn.ReLU(),
             nn.Dropout(self.dropout),
-            nn.Linear(self.hidden_size, self.out_shape),
+            nn.Linear(self.hidden_size, self.output_dim),
         )
 
     def forward(self, x):
@@ -29,10 +29,10 @@ class NonLinearNet(nn.Module):
 
 
 class Softmax(nn.Module):
-    def __init__(self, in_shape, out_shape, hidden_size, dropout):
+    def __init__(self, input_dim, output_dim, hidden_size, dropout):
         super(Softmax, self).__init__()
         self.base_model = nn.Sequential(
-            NonLinearNet(in_shape, out_shape, hidden_size, dropout),
+            NonLinearNet(input_dim, output_dim, hidden_size, dropout),
             nn.Softmax(dim=1),
         )
 

@@ -45,8 +45,8 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
     
     assert "Total batches" in eval_res, "Evaluation should return total batches."
     assert eval_res["Total batches"] > 0, "There should be at least one batch evaluated."
-    assert eval_res["Average coverage rate"] > 0, "Coverage rate should be greater than 0."
-    assert eval_res["Average prediction interval size"] > 0, "Interval size should be greater than 0."
+    assert eval_res["Coverage_rate"] > 0, "Coverage rate should be greater than 0."
+    assert eval_res["Average_size"] > 0, "Interval size should be greater than 0."
     
     # Test evaluate method with verbose=True
     ensemble_predictor.evaluate(test_dataloader, alpha=0.1, verbose=True)
@@ -54,7 +54,8 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
     with pytest.raises(ValueError):
         ensemble_predictor.fit(train_dataloader, ensemble_num=0, subset_num=100)
 
-    with pytest.raises(AssertionError):
+
+    with pytest.raises(ValueError):
         ensemble_predictor.predict(alpha=0.1, x_batch=x_batch, y_batch_last=torch.rand(10), aggr_pred_last=None)
 
 

@@ -30,7 +30,9 @@ class ACIPredictor(SplitPredictor):
     """
     def __init__(self, model, score_function, gamma):
         super().__init__(score_function, model)
-        assert gamma > 0, "gamma must be greater than 0."
+        if gamma <= 0:
+            raise ValueError("gamma must be greater than 0.")
+
         self.gamma = gamma
         self.alpha_t = None
         
@@ -93,7 +95,8 @@ class ACIPredictor(SplitPredictor):
         Returns:
             torch.Tensor: Prediction intervals for the input batch.
         """
-        assert (x_batch_last is None) == (y_batch_last is None) == (pred_interval_last is None), "x_batch_last, y_batch_last and pred_interval_last must either be provided or be None."
+        if not ((x_batch_last is None) == (y_batch_last is None) == (pred_interval_last is None)):
+            raise ValueError("x_batch_last, y_batch_last and pred_interval_last must either be provided or be None.")
         self._model.eval()
         x_batch = x_batch.to(self._device)
 
@@ -143,7 +146,7 @@ class ACIPredictor(SplitPredictor):
 
                 if verbose:
                     print(
-                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate.item():.4f}, Average size: {batch_average_size.item():.4f}, Alpha: {self.alpha_t:.2f}")   
+                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate:.4f}, Average size: {batch_average_size:.4f}, Alpha: {self.alpha_t:.2f}")   
 
                 coverage_rates.append(batch_coverage_rate)
                 average_sizes.append(batch_average_size)
@@ -152,8 +155,8 @@ class ACIPredictor(SplitPredictor):
         avg_average_size = sum(average_sizes) / len(average_sizes)
 
         res_dict = {"Total batches": index + 1,
-                    "Average coverage rate": avg_coverage_rate.item(),
-                    "Average prediction interval size": avg_average_size.item()}
+                    "Coverage_rate": avg_coverage_rate,
+                    "Average_size": avg_average_size}
 
         return res_dict
     
