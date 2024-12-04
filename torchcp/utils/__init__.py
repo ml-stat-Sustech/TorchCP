@@ -1,2 +1,2 @@
-from .common import fix_randomness, get_device
+from .common import get_device
 from .registry import Registry

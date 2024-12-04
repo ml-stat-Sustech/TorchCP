@@ -14,7 +14,6 @@ import torch.nn.functional as F
 from torchcp.classification.score import APS
 from torchcp.graph.score import DAPS
 from torchcp.graph.predictor import GraphSplitPredictor, NAPSPredictor
-from torchcp.utils import fix_randomness
 
 from torchcp.graph.utils.metrics import Metrics
 from examples.utils import build_gnn_model
@@ -47,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', default=0.1, type=float)
     args = parser.parse_args()
 
-    fix_randomness(seed=args.seed)
+    set_seed(seed=args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #######################################

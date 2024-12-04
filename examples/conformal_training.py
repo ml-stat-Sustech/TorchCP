@@ -20,12 +20,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from transformers import set_seed
 
 from .utils import build_dataset
 from torchcp.classification.loss import ConfTr
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import THR
-from torchcp.utils import fix_randomness
 
 
 class Net(nn.Module):
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         else:
             NotImplementedError
 
-        fix_randomness(seed=0)
+        set_seed(seed=0)
         ##################################
         # Training a pytorch model
         ##################################

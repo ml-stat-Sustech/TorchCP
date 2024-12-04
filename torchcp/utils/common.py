@@ -12,20 +12,7 @@ import random
 import torch
 import warnings
 
-__all__ = ["fix_randomness", "DimensionError", "get_device"]
-
-
-def fix_randomness(seed=0):
-    """
-    Fix the random seed for python, torch, numpy.
-
-    :param seed: the random seed
-    """
-    np.random.seed(seed=seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    random.seed(seed)
-
+__all__ = ["calculate_conformal_value", "get_device", "DimensionError"]
 
 class DimensionError(Exception):
     pass

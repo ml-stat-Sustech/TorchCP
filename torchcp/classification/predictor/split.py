@@ -121,7 +121,7 @@ class SplitPredictor(BasePredictor):
                 - Coverage_rate: Empirical coverage rate on validation set
                 - Average_size: Average size of prediction sets
         """
-        predictions_list: List[torch.Tensor] = []
+        predictions_sets_list: List[torch.Tensor] = []
         labels_list: List[torch.Tensor] = []
         
         # Evaluate in inference mode
@@ -136,17 +136,17 @@ class SplitPredictor(BasePredictor):
                 batch_predictions = self.predict(inputs)
                 
                 # Accumulate predictions and labels
-                predictions_list.append(batch_predictions)
+                predictions_sets_list.append(batch_predictions)
                 labels_list.append(labels)
 
         # Concatenate all batches
-        val_predictions = torch.cat(predictions_list, dim=0)  # (N_val x C)
+        val_prediction_sets = torch.cat(predictions_sets_list, dim=0)  # (N_val x C)
         val_labels = torch.cat(labels_list, dim=0)  # (N_val,)
         
         # Compute evaluation metrics
         metrics = {
-            "Coverage_rate": self._metric('coverage_rate')(val_predictions, val_labels),
-            "Average_size": self._metric('average_size')(val_predictions, val_labels)
+            "Coverage_rate": self._metric('coverage_rate')(val_prediction_sets, val_labels),
+            "Average_size": self._metric('average_size')(val_prediction_sets, val_labels)
         }
         
         return metrics

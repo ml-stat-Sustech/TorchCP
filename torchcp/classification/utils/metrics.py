@@ -112,7 +112,7 @@ def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx=None):
         cls_coverage_rate = cls_coverage_rate[shot_idx]
     
     overall_covgap = torch.mean(torch.abs(cls_coverage_rate - (1 - alpha))) * 100
-    return overall_covgap
+    return overall_covgap.float().item()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
@@ -295,6 +295,20 @@ def WSC(features, prediction_sets, labels, delta=0.1, M=1000, test_fraction=0.75
     if M <= 0:
         raise ValueError("M must be positive")
     
+    if len(features.shape) != 2:
+        raise ValueError(f"features must be 2D tensor, got shape {features.shape}")
+    if len(prediction_sets.shape) != 2:
+        raise ValueError(f"prediction_sets must be 2D tensor, got shape {prediction_sets.shape}")
+    if len(labels.shape) != 1:
+        raise ValueError(f"labels must be 1D tensor, got shape {labels.shape}")
+    
+    if features.shape[0] != len(labels):
+        raise ValueError(f"Number of samples mismatch: features has {features.shape[0]} samples but labels has {len(labels)} samples")
+    if features.shape[0] != prediction_sets.shape[0]:
+        raise ValueError(f"Number of samples mismatch: features has {features.shape[0]} samples but prediction_sets has {prediction_sets.shape[0]} samples")
+    if prediction_sets.shape[1] != len(torch.unique(labels)):
+        raise ValueError(f"Number of classes mismatch: prediction_sets has {prediction_sets.shape[1]} classes but labels has {len(torch.unique(labels))} unique classes")
+    
     
     features = features.cpu().numpy()
     labels_np = labels.cpu().numpy()
@@ -316,7 +330,7 @@ def calWSC(X, y, covered, delta=0.1, M=1000, random_state=2020, verbose=True):
     rng = np.random.default_rng(random_state)
     n = len(y)
     
-    def wsc_v(X, y, covered, delta, v):
+    def wsc_v(X, covered, delta, v):
         z = np.dot(X, v)
         z_order = np.argsort(z)
         z_sorted = z[z_order]

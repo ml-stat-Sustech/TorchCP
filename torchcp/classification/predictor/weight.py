@@ -85,6 +85,7 @@ class WeightedPredictor(SplitPredictor):
         self.scores[logits.shape[0]] = torch.tensor(torch.inf).to(self._device)
         self.scores_sorted = self.scores.sort()[0]
 
+
     def predict(self, x_batch):
         """
         Generate prediction sets for a batch of instances.
@@ -101,16 +102,8 @@ class WeightedPredictor(SplitPredictor):
         bs = x_batch.shape[0]
         with torch.no_grad():
             image_features = self.image_encoder(x_batch.to(self._device)).float()
-        
-        if self.domain_classifier == None:
-            self._train_domain_classifier(image_features)
+            w_new = self.IW(image_features)
 
-        self.IW = IW(self.domain_classifier).to(self._device)
-        w_new = self.IW(image_features)
-
-        if not hasattr(self, "w_sorted"):
-            w_cal = self.IW(self.source_image_features.to(self._device))
-            self.w_sorted = w_cal.sort(descending=False)[0]
         w_sorted = self.w_sorted.expand([bs, -1])
         w_sorted = torch.cat([w_sorted, w_new.unsqueeze(1)], 1)
         p_sorted = w_sorted / w_sorted.sum(1, keepdim=True)
@@ -121,10 +114,12 @@ class WeightedPredictor(SplitPredictor):
 
         logits = self._model(x_batch.to(self._device)).float()
         logits = self._logits_transformation(logits).detach()
-        sets = []
+        predictions_sets_list = []
         for index, (logits_instance, q_hat) in enumerate(zip(logits, q_hat_batch)):
-            sets.extend(self.predict_with_logits(logits_instance, q_hat))
-        return sets
+            predictions_sets_list.append(self.predict_with_logits(logits_instance, q_hat))
+            
+        predictions_sets = torch.cat(predictions_sets_list, dim=0)  # (N_val x C)
+        return predictions_sets
 
     def evaluate(self, val_dataloader: DataLoader) -> Dict[str, float]:
         """
