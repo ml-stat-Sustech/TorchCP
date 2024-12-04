@@ -21,7 +21,7 @@ class EnsemblePredictor(SplitPredictor):
     
     1. EnbPI:
         - Paper: Conformal Prediction Interval for Dynamic Time-Series (Xu and Xie, 2020)
-        - Link: https://proceedings.mlr.press/v139/xu21h/xu21h.pdf
+        - Link: https://proceedings.mlr.press/v139/xu21h.html
         - Github: https://github.com/hamrel-cxu/EnbPI
     
     2. EnCQR:

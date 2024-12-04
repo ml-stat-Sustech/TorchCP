@@ -13,8 +13,8 @@ from .split import SplitPredictor
 class ClassWisePredictor(SplitPredictor):
     """
     Method: Class-wise conformal prediction
-    Paper: Applications of Class-Conditional Conformal Predictor in Multi-Class Classification (Shi et al., 2013)
-    Link: https://ieeexplore.ieee.org/document/6784618
+    Paper: Conditional validity of inductive conformal predictors (Vovk et al., 2012)
+    Link: https://proceedings.mlr.press/v25/vovk12.html
     
         
     Args:

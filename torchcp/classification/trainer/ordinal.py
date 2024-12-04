@@ -5,7 +5,7 @@ import torch.nn as nn
 class OrdinalClassifier(nn.Module):
     """
     Method: Ordinal Classifier 
-    Paper: Conformal Prediction Sets for Ordinal Classification
+    Paper: Conformal Prediction Sets for Ordinal Classification (DEY et al., 2023)
     Link: https://proceedings.neurips.cc/paper_files/paper/2023/hash/029f699912bf3db747fe110948cc6169-Abstract-Conference.html
 
     Args:
