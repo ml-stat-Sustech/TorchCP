@@ -1,5 +1,5 @@
 import pytest
-from torchcp.regression.score import split
+from torchcp.regression.score import ABS
 from torchcp.regression.predictor.base import BasePredictor
 
 import pytest
@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 @pytest.fixture
 def mock_score_function():
-    return split()
+    return ABS()
 
 # Partial implementation of BasePredictor for testing
 class PartialPredictor(BasePredictor):

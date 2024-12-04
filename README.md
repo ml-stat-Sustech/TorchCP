@@ -35,7 +35,7 @@ TorchCP has implemented the following methods:
 | 2023 | [**Conformal Prediction via Regression-as-Classification**](http://etash.me/papers/Bayesian_Conformal_Prediction_through_Memory_Adaptation.pdf) | RegML @ NeurIPS 2023 | [link](https://github.com/EtashGuha/R2CCP/tree/master) | regression.score.r2ccp |             |
 | 2021 | [**Adaptive Conformal Inference Under Distribution Shift**](https://arxiv.org/abs/2106.00170)                                                   | NeurIPS              | [Link](https://github.com/isgibbs/AdaptiveConformal)   | regression.predictor.aci   | support time series           |
 | 2020 | [**A comparison of some conformal quantile regression methods**](https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261)                                                                                | Stat, 2020 | [Link](https://github.com/soroushzargar/DAPS)                                   |regression.score.cqm regression.score.cqrr  | |
-| 2020 | [**Conformal Prediction Interval for Dynamic Time-Series**](https://proceedings.mlr.press/v139/xu21h.html)                                                                         | ICML'21 | [Link](https://github.com/hamrel-cxu/EnbPI)                                   |regression.predictor.ensemble | |
+| 2020 | [**Conformal Prediction Interval for Dynamic Time-Series**](https://proceedings.mlr.press/v139/xu21h.html)                                                                         | ICML'21 | [Link](https://github.com/hamrel-cxu/EnbPI)                                   |regression.predictor.ensemble | support time series |
 | 2019 | [**Adaptive, Distribution-Free Prediction Intervals for Deep Networks**](https://proceedings.mlr.press/v108/kivaranovic20a.html)  | AISTATS'19              | [Link](https://github.com/yromano/cqr)                 | regression.score.cqrfm   |             |
 | 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS              | [Link](https://github.com/yromano/cqr)                 | regression.score.cqr   |             |
 | 2017 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                   | JASA                 | [Link](https://github.com/ryantibs/conformal)          | regression.predictor.split |             |
@@ -46,7 +46,7 @@ TorchCP has implemented the following methods:
 ## Graph
 | Year | Title                                                                                                                                           | Venue                | Code Link                                              | Implementation              |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------------------------------------------------------|-----------------------------|
-| 2024 | [**Similarity-Navigated Conformal Prediction for Graph Neural Networks**](https://arxiv.org/abs/2405.14303)                                                                                        | NeuIPS'24    |                                  |graph.score.snaps|
+| 2024 | [**Similarity-Navigated Conformal Prediction for Graph Neural Networks**](https://arxiv.org/abs/2405.14303)                                                                                        | NeuIPS'24    |     [Link](https://github.com/janqsong/SNAPS)                             |graph.score.snaps|
 | 2023 | [**Distribution Free Prediction Sets for Node Classification**](https://proceedings.mlr.press/v202/clarkson23a)                                                                                            | ICML'23    | [Link](https://github.com/jase-clarkson/graph_cp)                            | graph.predictor.neighbors_weight|
 | 2023 | [**Conformal Prediction Sets for Graph Neural Networks**](https://proceedings.mlr.press/v202/h-zargarbashi23a.html)                                                                                        | ICML'23    | [Link](https://github.com/soroushzargar/DAPS)                                   |graph.score.daps |
 | 2023 | [**Uncertainty Quantification over Graph with Conformalized Graph Neural Networks**](https://proceedings.neurips.cc/paper_files/paper/2023/hash/54a1495b06c4ee2f07184afb9a37abda-Abstract-Conference.html) | NeurIPS'23 | [Link](https://github.com/snap-stanford/conformalized-gnn)                      | graph.trainer.cfgnn |
@@ -170,6 +170,7 @@ We welcome you to cite the following works:
 * [Hongxin Wei](https://hongxin001.github.io/)
 * [Jianguo Huang](https://jianguo99.github.io/)
 * [Xuanning Zhou](https://github.com/Shinning-Zhou)
+* [Jianqing Song](https://janqsong.github.io/)
 
 
 

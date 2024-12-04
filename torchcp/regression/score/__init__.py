@@ -1,4 +1,4 @@
-from .split import split
+from .abs import ABS
 from .cqr import CQR
 from .cqrr import CQRR
 from .cqrm import CQRM

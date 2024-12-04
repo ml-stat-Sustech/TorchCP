@@ -1,6 +1,7 @@
 import pytest
 import torch
 import numpy as np
+import torch.nn as nn
 from torchcp.utils.common import get_device, calculate_conformal_value, DimensionError
 
 
@@ -19,22 +20,59 @@ class DummyModel(torch.nn.Module):
     def __init__(self, device):
         super().__init__()
         self.linear = torch.nn.Linear(1, 1).to(device)
+        
+        
+from unittest.mock import patch
 
-def test_get_device():
-    """Test device detection logic"""
-    # Test with no model
-    device = get_device(None)
-    expected_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    assert device == expected_device
+def test_get_device_none_with_cuda():
+    """Test when model is None and cuda is available"""
+    with patch('torch.cuda.is_available', return_value=True), \
+         patch('torch.cuda.current_device', return_value=0):
+        device = get_device(None)
+        assert device == torch.device('cuda:0')
+
+def test_get_device_none_without_cuda():
+    """Test when model is None and cuda is not available"""
+    with patch('torch.cuda.is_available', return_value=False):
+        device = get_device(None)
+        assert device == torch.device('cpu')
+
+def test_get_device_with_cpu_model():
+    """Test with a model on CPU"""
+    model = nn.Linear(10, 5)  # Creates a model on CPU by default
+    device = get_device(model)
+    assert device == torch.device('cpu')
+
+@pytest.mark.skipif(not torch.cuda.is_available(), 
+                    reason="Skip if CUDA is not available")
+def test_get_device_with_gpu_model():
+    """Test with a model on GPU (only runs if CUDA is available)"""
+    model = nn.Linear(10, 5).cuda()
+    device = get_device(model)
+    assert device == torch.device(f'cuda:{torch.cuda.current_device()}')
+
+def test_get_device_with_specific_gpu():
+    """Test with a model on a specific GPU device"""
+    # Create a mock model with a parameter that appears to be on cuda:1
+    model = nn.Linear(10, 5)
+    mock_device = torch.device('cuda:1')
+    # Mock the next() and parameters() calls to return a tensor with our desired device
+    with patch.object(model, 'parameters') as mock_parameters:
+        mock_param = torch.nn.Parameter(torch.randn(1))
+        mock_param.data = mock_param.data.to(mock_device)
+        mock_parameters.return_value = iter([mock_param])
+        device = get_device(model)
+        assert device == mock_device
+
+
+def test_default_q_hat_max_normal_case():
+    """Test when default_q_hat is 'max' and scores is not empty"""
+    scores = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
+    alpha = 0.1
+    result = calculate_conformal_value(scores, alpha, default_q_hat="max")
     
-    # Test with CPU model
-    model_cpu = DummyModel("cpu")
-    assert get_device(model_cpu) == torch.device("cpu")
-    
-    # Test with CUDA model if available
-    if torch.cuda.is_available():
-        model_cuda = DummyModel("cuda")
-        assert get_device(model_cuda) == torch.device("cuda:0")
+    assert result == 5.0
+
 
 def test_calculate_conformal_value():
     """Test conformal value calculation"""
@@ -42,7 +80,7 @@ def test_calculate_conformal_value():
     scores = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     alpha = 0.2
     result = calculate_conformal_value(scores, alpha)
-    assert torch.allclose(result, torch.tensor(4.0))
+    assert torch.allclose(result, torch.tensor(5.0))
     
     # Test invalid alpha values
     with pytest.raises(ValueError, match="Significance level 'alpha' must be in"):

@@ -14,10 +14,10 @@ import torch.nn.functional as F
 from torchcp.classification.score import APS
 from torchcp.graph.score import DAPS
 from torchcp.graph.predictor import GraphSplitPredictor, NAPSPredictor
+from transformers import set_seed
 
 from torchcp.graph.utils.metrics import Metrics
-from examples.utils import build_gnn_model
-from examples.common.dataset import build_transductive_gnn_data, build_inductive_gnn_data
+from examples.utils import build_transductive_gnn_data, build_inductive_gnn_data, build_gnn_model
 
 
 def train_transductive(model, optimizer, graph_data, train_idx):
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', default=0.1, type=float)
     args = parser.parse_args()
 
-    set_seed(seed=args.seed)
+    fix_randomness(seed=args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #######################################

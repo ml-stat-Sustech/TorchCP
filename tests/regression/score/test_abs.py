@@ -4,14 +4,14 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.regression.score import split
+from torchcp.regression.score import ABS
 
 @pytest.fixture
 def split_instance():
     """
     Fixture to provide an instance of the split class.
     """
-    return split()
+    return ABS()
 
 def test_call(split_instance):
     """

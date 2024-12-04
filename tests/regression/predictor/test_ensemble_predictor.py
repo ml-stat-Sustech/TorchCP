@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchcp.regression.score import split
+from torchcp.regression.score import ABS
 from torchcp.regression.utils import build_regression_model
 from torchcp.regression.predictor import EnsemblePredictor
 
@@ -10,7 +10,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return split()
+    return ABS()
 
 @pytest.mark.parametrize("aggregation_function", ['mean', 'median', lambda x, dim: torch.max(x, dim=dim)[0]])
 def test_workflow(mock_data, mock_model, mock_score_function, aggregation_function):

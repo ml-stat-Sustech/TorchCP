@@ -20,11 +20,16 @@ class DimensionError(Exception):
 
 def get_device(model):
     """
-    Get the device of Torch model.
+    Get the device of a PyTorch model.
 
-    :param model: a Pytorch model. If None, it uses GPU when the cuda is available, otherwise it uses CPU。
+    This function determines the device (CPU or GPU) on which the model's parameters are located.
+    If the model is None, it defaults to using GPU if available, otherwise it uses CPU.
 
-    :return: the device in use
+    Args:
+        model (torch.nn.Module or None): A PyTorch model. If None, the function checks for GPU availability.
+
+    Returns:
+        torch.device: The device on which the model's parameters are located, or the default device (CPU or GPU).
     """
     if model is None:
         if not torch.cuda.is_available():
@@ -39,12 +44,23 @@ def get_device(model):
 
 def calculate_conformal_value(scores, alpha, default_q_hat=torch.inf):
     """
-    Calculate the 1-alpha quantile of scores.
+    Calculate the 1-alpha quantile of scores for conformal prediction.
+
+    This function computes the threshold value (quantile) used to construct prediction sets based on the given
+    non-conformity scores and significance level alpha. If the scores are empty or the quantile value exceeds 1,
+    it returns the default_q_hat value.
+
+    Args:
+        scores (torch.Tensor): Non-conformity scores.
+        alpha (float): Significance level, must be between 0 and 1.
+        default_q_hat (torch.Tensor or str, optional): Default threshold value to use if scores are empty or invalid.
+            If set to "max", it uses the maximum value of scores. Default is torch.inf.
+
+    Returns:
+        torch.Tensor: The threshold value used to construct prediction sets.
     
-    :param scores: non-conformity scores.
-    :param alpha: a significance level.
-    
-    :return: the threshold which is use to construct prediction sets.
+    Raises:
+        ValueError: If alpha is not between 0 and 1.
     """
     if default_q_hat == "max":
         default_q_hat = torch.max(scores)

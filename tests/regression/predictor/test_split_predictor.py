@@ -1,7 +1,7 @@
 import pytest
 import torch
 from torchcp.regression.predictor import SplitPredictor
-from torchcp.regression.score import split
+from torchcp.regression.score import ABS
 from torchcp.regression.utils import build_regression_model
 
 @pytest.fixture
@@ -10,7 +10,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return split()
+    return ABS()
 
 @pytest.fixture
 def split_predictor(mock_model, mock_score_function):

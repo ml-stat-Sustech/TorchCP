@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import TensorDataset
 
-from examples.common.dataset import build_reg_data
+from examples.utils import build_reg_data
 from examples.utils import build_regression_model
 from regression import train
 from torchcp.regression import Metrics

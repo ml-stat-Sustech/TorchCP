@@ -3,12 +3,13 @@ import torch
 import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset, ConcatDataset
+from transformers import set_seed
 
-from examples.common.dataset import build_reg_data
-from examples.utils import build_regression_model
-from torchcp.regression.loss import QuantileLoss
-from torchcp.regression.predictor import SplitPredictor, CQR
-from torchcp.utils import fix_randomness
+from torchcp.regression.loss import QuantileLoss, R2ccpLoss
+from torchcp.regression.predictor import SplitPredictor, EnsemblePredictor, ACIPredictor
+from torchcp.regression.score import split, CQR, CQRR, CQRM, CQRFM, R2CCP
+from torchcp.regression.utils import calculate_midpoints, build_regression_model
+
 from .utils import build_reg_data
 
 
@@ -20,7 +21,7 @@ def test_split_predictor():
     # Preparing dataset
     ##################################
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    fix_randomness(seed=1)
+    set_seed(seed=1)
     X, y = build_reg_data(data_name="synthetic")
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
@@ -142,7 +143,7 @@ def test_ensemble_predictor():
     # Preparing dataset
     ##################################
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    fix_randomness(seed=1)
+    set_seed(seed=1)
     X, y = build_reg_data(data_name="synthetic")
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
@@ -195,7 +196,7 @@ def test_aci_predictor():
     # Preparing dataset
     ##################################
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    fix_randomness(seed=1)
+    set_seed(seed=1)
     X, y = build_reg_data(data_name="synthetic")
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)

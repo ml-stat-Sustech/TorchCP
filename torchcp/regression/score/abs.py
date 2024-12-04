@@ -13,7 +13,7 @@ from .base import BaseScore
 from ..utils import build_regression_model
 
 
-class split(BaseScore):
+class ABS(BaseScore):
     """
     Split Conformal Prediction for Regression.
     
