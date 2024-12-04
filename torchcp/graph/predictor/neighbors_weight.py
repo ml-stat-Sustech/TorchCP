@@ -269,9 +269,9 @@ class NAPSPredictor(GraphSplitPredictor):
                 predicted to belong to the true class for the given significance level.
         """
         scores = self.score_function(logits)
-        S = []
+        prediction_set_list = []
         for index in range(scores.shape[0]):
-            S.extend(self._generate_prediction_set(
+            prediction_set_list.append(self._generate_prediction_set(
                 scores[index, :].reshape(1, -1), 1 - alphas[index]))
 
-        return S
+        return torch.cat(prediction_set_list,dim=0)

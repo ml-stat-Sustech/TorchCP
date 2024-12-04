@@ -4,7 +4,12 @@ from torchcp.graph.utils import Metrics
 
 @pytest.fixture
 def mock_prediction_sets():
-    return [[0], [1, 2], [0, 1], [2]]
+    return torch.tensor([
+        [1, 0, 0, 0],
+        [0, 1, 1, 0],
+        [1, 1, 0, 0],
+        [0, 0, 1, 0]
+    ])
 
 
 @pytest.fixture
@@ -31,7 +36,7 @@ def test_average_size(mock_prediction_sets, mock_labels, metrics):
 
 def test_singleton_hit_ratio(mock_prediction_sets, mock_labels, metrics):
     result = metrics('singleton_hit_ratio')(mock_prediction_sets, mock_labels)
-    expected_ratio = 1 / 4
+    expected_ratio = 1/4
     assert result == expected_ratio
 
 

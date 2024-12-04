@@ -11,7 +11,7 @@ import numpy as np
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-__all__ = ["ConfTr"]
+__all__ = ["CDLoss"]
 
 import numpy as np
 import torch
@@ -20,9 +20,9 @@ import torch.nn.functional as F
 from torch import Tensor
 from .base import BaseLoss
 
-class DSLoss(BaseLoss):
+class CDLoss(BaseLoss):
     """
-    Method: Discriminative Score Loss  (DsLoss)
+    Method: Conformal Discriminative Loss  (CDLoss)
     Paper: C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets (Liu et al., 2024)
     Link: https://arxiv.org/abs/2410.09408
     
@@ -35,7 +35,7 @@ class DSLoss(BaseLoss):
 
     def __init__(self, weight, predictor, epsilon = 1e-4):
 
-        super(DSLoss, self).__init__(weight, predictor)
+        super(CDLoss, self).__init__(weight, predictor)
         if epsilon <= 0:
             raise ValueError("epsilon must be greater than 0.")
         

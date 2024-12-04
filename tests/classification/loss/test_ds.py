@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchcp.classification.loss.ds import DSLoss
+from torchcp.classification.loss.cd_loss import CDLoss
 from torchcp.classification.predictor import SplitPredictor as Predictor
 from torchcp.classification.score import THR
 
@@ -9,7 +9,7 @@ def ds_instance():
     weight = 1.0
     predictor = Predictor(THR())
     epsilon = 1e-4
-    return DSLoss(weight, predictor, epsilon)
+    return CDLoss(weight, predictor, epsilon)
 
 def test_init(ds_instance):
     ds = ds_instance
@@ -19,12 +19,12 @@ def test_init(ds_instance):
 
 def test_invalid_weight():
     with pytest.raises(ValueError):
-        DSLoss(0, Predictor(THR()), 0.05)
+        CDLoss(0, Predictor(THR()), 0.05)
 
 
 def test_invalid_epsilon():
     with pytest.raises(ValueError):
-        DSLoss(1.0, Predictor(THR()), 0)
+        CDLoss(1.0, Predictor(THR()), 0)
         
 
 def test_forward_with_different_epsilon():
@@ -33,7 +33,7 @@ def test_forward_with_different_epsilon():
     labels = torch.randint(0, 5, (10,))
     epsilons = [1e-3, 1e-2, 1e-1]
     for epsilon in epsilons:
-        ds_loss = DSLoss(1.0, predictor, epsilon)
+        ds_loss = CDLoss(1.0, predictor, epsilon)
         loss = ds_loss.forward(logits, labels)
         assert isinstance(loss, torch.Tensor)
         assert loss.shape == torch.Size([])
@@ -44,13 +44,13 @@ def test_forward_with_edge_cases():
     labels = torch.randint(0, 5, (10,))
     
     # Test with very small epsilon
-    ds_loss = DSLoss(1.0, predictor, 1e-10)
+    ds_loss = CDLoss(1.0, predictor, 1e-10)
     loss = ds_loss.forward(logits, labels)
     assert isinstance(loss, torch.Tensor)
     assert loss.shape == torch.Size([])
 
     # Test with very large epsilon
-    ds_loss = DSLoss(1.0, predictor, 1e+10)
+    ds_loss = CDLoss(1.0, predictor, 1e+10)
     loss = ds_loss.forward(logits, labels)
     assert isinstance(loss, torch.Tensor)
     assert loss.shape == torch.Size([])

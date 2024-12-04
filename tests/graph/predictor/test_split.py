@@ -113,12 +113,11 @@ def test_predict(predictor, preprocess, alpha):
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
 
     eval_scores = preprocess.scores[preprocess.eval_idx]
-    excepted_sets = [torch.argwhere(eval_scores[i] <= quantile).reshape(-1).tolist()
-                     for i in range(eval_scores.shape[0])]
+    excepted_sets = (eval_scores <= quantile).int()
 
     predictor.calibrate(preprocess.cal_idx, alpha)
     pred_sets = predictor.predict(preprocess.eval_idx)
-    assert excepted_sets == pred_sets
+    assert torch.equal(excepted_sets, pred_sets)
 
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
@@ -127,12 +126,11 @@ def test_predict_with_logits(predictor, preprocess, alpha):
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
 
     eval_scores = preprocess.scores[preprocess.eval_idx]
-    excepted_sets = [torch.argwhere(
-        eval_scores[i] <= quantile).reshape(-1).tolist() for i in range(eval_scores.shape[0])]
+    excepted_sets = (eval_scores <= quantile).int()
 
     pred_sets = predictor.predict_with_logits(
         preprocess.logits, preprocess.eval_idx, quantile)
-    assert excepted_sets == pred_sets
+    assert torch.equal(excepted_sets, pred_sets)
 
     with pytest.raises(ValueError, match="Ensure self.q_hat is not None. Please perform calibration first."):
         predictor.predict_with_logits(preprocess.logits, preprocess.eval_idx)
@@ -147,8 +145,7 @@ def test_evaluate(predictor, mock_graph_data, preprocess, alpha):
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
 
     eval_scores = preprocess.scores[preprocess.eval_idx]
-    excepted_sets = [torch.argwhere(
-        eval_scores[i] <= quantile).reshape(-1).tolist() for i in range(eval_scores.shape[0])]
+    excepted_sets = (eval_scores <= quantile).int()
 
     predictor.calibrate(preprocess.cal_idx, alpha)
     results = predictor.evaluate(preprocess.eval_idx)

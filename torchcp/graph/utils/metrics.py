@@ -35,15 +35,13 @@ def average_size(prediction_sets, labels):
 
 @METRICS_REGISTRY_GRAPH.register()
 def singleton_hit_ratio(prediction_sets, labels):
-    assert len(
-        prediction_sets) > 0, "The number of prediction set must be greater than 0."
-    n = len(prediction_sets)
+    if len(prediction_sets) == 0:
+        raise AssertionError("The number of prediction set must be greater than 0.")
+    n = len(prediction_sets[0])
+    singletons = torch.sum(prediction_sets, dim=1) == 1
+    covered = prediction_sets[torch.arange(len(labels)), labels]
 
-    one_size = 0
-    for index, ele in enumerate(prediction_sets):
-        if len(ele) == 1 and ele[0] == labels[index]:
-            one_size += 1
-    return one_size / n
+    return torch.sum(singletons & covered).item() / n
 
 
 class Metrics:
