@@ -3,10 +3,10 @@ import math
 import torch
 from torch.utils.data import Dataset
 
-from torchcp.classification.scores import THR
+from torchcp.classification.score import THR
 from torchcp.classification.utils.metrics import Metrics
-from torchcp.classification.predictors import SplitPredictor
-from torchcp.classification.predictors.base import BasePredictor
+from torchcp.classification.predictor import SplitPredictor
+from torchcp.classification.predictor.base import BasePredictor
 
 
 @pytest.fixture
@@ -117,8 +117,8 @@ def test_predict(predictor, mock_score_function, mock_model, mock_dataset, q_hat
 
     logits = mock_model(mock_dataset.x)
     scores = mock_score_function(logits)
-    excepted_sets = [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
-    assert pred_sets == excepted_sets
+    excepted_sets = (scores<=q_hat).int()
+    assert torch.equal(pred_sets, excepted_sets)
 
 
 def test_invalid_predict_model(mock_score_function, mock_dataset):
@@ -136,8 +136,9 @@ def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, q_ha
 
     logits = mock_model(mock_dataset.x)
     scores = mock_score_function(logits)
-    excepted_sets = [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
+    excepted_sets = (scores<=q_hat).int()
+        
     metrics = Metrics()
     assert len(results) == 2
     assert results['Coverage_rate'] == metrics('coverage_rate')(excepted_sets, mock_dataset.labels)
-    assert results['Average_size'] == metrics('average_size')(excepted_sets, mock_dataset.labels)
+    assert results['Average_size'] == metrics('average_size')(excepted_sets)

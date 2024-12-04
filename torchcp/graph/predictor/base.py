@@ -10,7 +10,7 @@ from abc import abstractmethod
 import torch.nn.functional as F
 
 from torchcp.graph.utils.metrics import Metrics
-from torchcp.classification.predictors.base import BasePredictor
+from torchcp.classification.predictor.base import BasePredictor
 
 
 class BaseGraphPredictor(BasePredictor):

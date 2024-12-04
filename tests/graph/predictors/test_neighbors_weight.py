@@ -6,8 +6,8 @@ import networkx as nx
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 
-from torchcp.classification.scores import APS, THR
-from torchcp.graph.predictors.neighbors_weight import NAPSPredictor
+from torchcp.classification.score import APS, THR
+from torchcp.graph.predictor.neighbors_weight import NAPSPredictor
 
 @pytest.fixture
 def mock_graph_data():

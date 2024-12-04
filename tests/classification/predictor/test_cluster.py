@@ -5,8 +5,8 @@ from sklearn.cluster import KMeans
 import torch
 from torchcp.utils.common import DimensionError
 
-from torchcp.classification.scores import THR
-from torchcp.classification.predictors import ClusteredPredictor
+from torchcp.classification.score import THR
+from torchcp.classification.predictor import ClusteredPredictor
 
 
 @pytest.fixture

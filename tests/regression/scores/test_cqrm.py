@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.regression.scores import CQRM
+from torchcp.regression.score import CQRM
 
 
 @pytest.fixture

@@ -5,6 +5,8 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import DataLoader
+from typing import Dict, List
 
 from .split import SplitPredictor
 from .utils import build_DomainDetecor, IW
@@ -124,56 +126,75 @@ class WeightedPredictor(SplitPredictor):
             sets.extend(self.predict_with_logits(logits_instance, q_hat))
         return sets
 
-    def evaluate(self, val_dataloader):
+    def evaluate(self, val_dataloader: DataLoader) -> Dict[str, float]:
         """
-        Evaluate the prediction sets on a validation dataset.
+        Evaluate prediction sets on validation dataset using domain adaptation.
 
-        This function trains a domain classifier if it is not already provided, and then uses it to compute importance weights for the validation set. It then generates prediction sets for the validation set and computes evaluation metrics.
+        This method trains a domain classifier if not provided, computes importance 
+        weights for validation set, generates prediction sets and calculates metrics.
 
         Args:
-            val_dataloader (torch.utils.data.DataLoader): A dataloader of the validation set.
+            val_dataloader (DataLoader): Dataloader for validation set.
 
         Returns:
-            dict: A dictionary containing the coverage rate and average size of the prediction sets.
+            dict: Dictionary containing evaluation metrics:
+                - Coverage_rate: Empirical coverage rate on validation set
+                - Average_size: Average size of prediction sets
+
+        Raises:
+            ValueError: If calibration has not been performed first.
         """
-        
-        ###############
-        # train domain classifier
-        ###############
-        print(f'Training a domain classifier')
-        val_features_list = []
+        # Extract features from validation set
+        self._model.eval()
+        features_list: List[torch.Tensor] = []
         with torch.no_grad():
-            for examples in val_dataloader:
-                tmp_x, tmp_labels = examples[0].to(self._device), examples[1].to(self._device)
-                val_features_list.append(self.image_encoder(tmp_x))
-            target_image_features = torch.cat(val_features_list).float()
+            for batch in val_dataloader:
+                inputs = batch[0].to(self._device)
+                features = self.image_encoder(inputs)
+                features_list.append(features)
+        target_features = torch.cat(features_list, dim=0).float()  # (N_val x D)
 
-        ###############################
-        # Training domain detector
-        ###############################
+        # Train domain classifier if needed
         if not hasattr(self, "source_image_features"):
-            raise ValueError("Please calibrate first to get self.source_image_features.")
-        if self.domain_classifier == None:
-            self._train_domain_classifier(target_image_features)
+            raise ValueError("Please calibrate first to get source_image_features.")
+        
+        if self.domain_classifier is None:
+            self._train_domain_classifier(target_features)
 
+        # Compute importance weights
         self.IW = IW(self.domain_classifier).to(self._device)
-        w_cal = self.IW(self.source_image_features.to(self._device))
-        self.w_sorted = w_cal.sort(descending=False)[0]
+        weights_cal = self.IW(self.source_image_features.to(self._device))
+        self.w_sorted = torch.sort(weights_cal, descending=False)[0]
 
-        prediction_sets = []
-        labels_list = []
+        # Generate predictions
+        predictions_list: List[torch.Tensor] = []
+        labels_list: List[torch.Tensor] = []
+        
         with torch.no_grad():
-            for examples in val_dataloader:
-                tmp_x, tmp_label = examples[0].to(self._device), examples[1].to(self._device)
-                prediction_sets_batch = self.predict(tmp_x)
-                prediction_sets.extend(prediction_sets_batch)
-                labels_list.append(tmp_label)
-        val_labels = torch.cat(labels_list)
+            for batch in val_dataloader:
+                # Move batch to device and get predictions
+                inputs = batch[0].to(self._device)
+                labels = batch[1].to(self._device)
+                
+                # Get predictions as bool tensor (N x C)
+                batch_predictions = self.predict(inputs)
+                
+                # Accumulate predictions and labels
+                predictions_list.append(batch_predictions)
+                labels_list.append(labels)
 
-        result_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, val_labels),
-                       "Average_size": self._metric('average_size')(prediction_sets, val_labels)}
-        return result_dict
-    
+        # Concatenate all batches
+        val_predictions = torch.cat(predictions_list, dim=0)  # (N_val x C) 
+        val_labels = torch.cat(labels_list, dim=0)  # (N_val,)
+
+        # Compute evaluation metrics
+        metrics = {
+            "Coverage_rate": self._metric('coverage_rate')(val_predictions, val_labels),
+            "Average_size": self._metric('average_size')(val_predictions, val_labels)
+        }
+
+        return metrics
+        
     def _train_domain_classifier(self, target_image_features):
         source_labels = torch.zeros(self.source_image_features.shape[0]).to(self._device)
         target_labels = torch.ones(target_image_features.shape[0]).to(self._device)

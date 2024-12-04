@@ -17,9 +17,9 @@ from torch_geometric.transforms import RandomNodeSplit
 from torch_geometric.datasets import CitationFull, Amazon
 
 
-from torchcp.classification.scores import APS
-from torchcp.graph.scores import DAPS, SNAPS
-from torchcp.graph.predictors import GraphSplitPredictor, NAPSSplitPredictor
+from torchcp.classification.score import APS
+from torchcp.graph.score import DAPS, SNAPS
+from torchcp.graph.predictor import GraphSplitPredictor, NAPSSplitPredictor
 from torchcp.graph.utils.metrics import Metrics
 from transformers import set_seed
 

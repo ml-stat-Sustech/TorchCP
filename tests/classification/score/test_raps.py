@@ -1,7 +1,7 @@
 import pytest
 import torch
-from torchcp.classification.scores.raps import RAPS
-from torchcp.classification.scores.aps import APS
+from torchcp.classification.score.raps import RAPS
+from torchcp.classification.score.aps import APS
 
 @pytest.fixture
 def sample_data():

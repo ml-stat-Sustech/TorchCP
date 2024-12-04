@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.regression.scores import split
+from torchcp.regression.score import split
 
 @pytest.fixture
 def split_instance():

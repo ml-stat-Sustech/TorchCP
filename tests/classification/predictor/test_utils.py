@@ -2,7 +2,7 @@ import pytest
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchcp.classification.predictors.utils import build_DomainDetecor, MidFNN, FNN, Linear, SmallFNN, BigFNN, IW
+from torchcp.classification.predictor.utils import build_DomainDetecor, MidFNN, FNN, Linear, SmallFNN, BigFNN, IW
 
 @pytest.fixture
 def mock_device():

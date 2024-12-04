@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchcp.classification.scores.base import BaseScore
+from torchcp.classification.score.base import BaseScore
 
 
         

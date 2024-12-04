@@ -1,8 +1,8 @@
 import pytest
 import torch
-from torchcp.regression.scores import split
+from torchcp.regression.score import split
 from torchcp.regression.utils import build_regression_model
-from torchcp.regression.predictors import EnsemblePredictor
+from torchcp.regression.predictor import EnsemblePredictor
 
 @pytest.fixture
 def mock_model():

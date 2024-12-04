@@ -1,6 +1,6 @@
 import pytest
-from torchcp.regression.scores import split
-from torchcp.regression.predictors.base import BasePredictor
+from torchcp.regression.score import split
+from torchcp.regression.predictor.base import BasePredictor
 
 import pytest
 import torch

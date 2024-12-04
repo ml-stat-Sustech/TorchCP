@@ -1,7 +1,7 @@
 import pytest
 import torch
-from torchcp.classification.scores.topk import TOPK
-from torchcp.classification.scores.thr import THR
+from torchcp.classification.score.topk import TOPK
+from torchcp.classification.score.thr import THR
 
 
 @pytest.fixture

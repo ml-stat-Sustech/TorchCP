@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchcp.classification.scores.thr import THR
+from torchcp.classification.score.thr import THR
 
 @pytest.fixture
 def logits_2d():

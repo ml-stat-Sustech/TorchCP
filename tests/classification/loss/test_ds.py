@@ -1,8 +1,8 @@
 import pytest
 import torch
 from torchcp.classification.loss.ds import DSLoss
-from torchcp.classification.predictors import SplitPredictor as Predictor
-from torchcp.classification.scores import THR
+from torchcp.classification.predictor import SplitPredictor as Predictor
+from torchcp.classification.score import THR
 
 @pytest.fixture
 def ds_instance():

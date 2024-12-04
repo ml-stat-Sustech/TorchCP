@@ -3,8 +3,8 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from torchcp.classification.scores import THR
-from torchcp.graph.scores import SNAPS
+from torchcp.classification.score import THR
+from torchcp.graph.score import SNAPS
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.regression.scores import R2CCP
+from torchcp.regression.score import R2CCP
 from torchcp.regression.utils import calculate_midpoints
 
 

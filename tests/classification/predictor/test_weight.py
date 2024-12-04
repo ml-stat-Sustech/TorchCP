@@ -2,9 +2,9 @@ import pytest
 import torch
 from torch.utils.data import Dataset
 
-from torchcp.classification.scores import THR
-from torchcp.classification.predictors import WeightedPredictor
-from torchcp.classification.predictors.utils import build_DomainDetecor
+from torchcp.classification.score import THR
+from torchcp.classification.predictor import WeightedPredictor
+from torchcp.classification.predictor.utils import build_DomainDetecor
 
 
 class MyDataset(Dataset):

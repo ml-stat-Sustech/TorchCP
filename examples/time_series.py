@@ -6,7 +6,7 @@ from examples.utils import build_regression_model
 from regression import train
 from torchcp.regression import Metrics
 from torchcp.regression.loss import QuantileLoss
-from torchcp.regression.predictors import ACI, CQR
+from torchcp.regression.predictor import ACI, CQR
 from torchcp.utils import fix_randomness
 
 if __name__ == '__main__':

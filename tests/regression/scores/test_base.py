@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchcp.regression.scores.base import BaseScore
+from torchcp.regression.score.base import BaseScore
 
 
 class IncompleteScore(BaseScore):

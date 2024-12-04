@@ -10,7 +10,7 @@ import networkx as nx
 from scipy.optimize import brentq
 from torch_geometric.utils.convert import to_networkx
 
-from torchcp.classification.scores import APS
+from torchcp.classification.score import APS
 from .split import GraphSplitPredictor
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]

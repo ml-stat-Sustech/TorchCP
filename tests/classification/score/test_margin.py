@@ -1,7 +1,7 @@
 import pytest
 import torch
-from torchcp.classification.scores.margin import Margin
-from torchcp.classification.scores.aps import APS
+from torchcp.classification.score.margin import Margin
+from torchcp.classification.score.aps import APS
 
 @pytest.fixture
 def sample_data():

@@ -3,9 +3,9 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from torchcp.classification.scores import THR
-from torchcp.graph.scores import DAPS
-from torchcp.graph.scores.base import BaseScore
+from torchcp.classification.score import THR
+from torchcp.graph.score import DAPS
+from torchcp.graph.score.base import BaseScore
 
 
 @pytest.fixture

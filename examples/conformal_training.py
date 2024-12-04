@@ -23,8 +23,8 @@ import torch.optim as optim
 
 from .utils import build_dataset
 from torchcp.classification.loss import ConfTr
-from torchcp.classification.predictors import SplitPredictor
-from torchcp.classification.scores import THR
+from torchcp.classification.predictor import SplitPredictor
+from torchcp.classification.score import THR
 from torchcp.utils import fix_randomness
 
 

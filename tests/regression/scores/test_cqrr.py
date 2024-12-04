@@ -2,7 +2,7 @@
 
 import pytest
 import torch
-from torchcp.regression.scores import CQRR
+from torchcp.regression.score import CQRR
 
 
 @pytest.fixture

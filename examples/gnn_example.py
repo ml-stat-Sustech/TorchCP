@@ -11,9 +11,9 @@ import argparse
 import torch
 import torch.nn.functional as F
 
-from torchcp.classification.scores import APS
-from torchcp.graph.scores import DAPS
-from torchcp.graph.predictors import GraphSplitPredictor, NAPSPredictor
+from torchcp.classification.score import APS
+from torchcp.graph.score import DAPS
+from torchcp.graph.predictor import GraphSplitPredictor, NAPSPredictor
 from torchcp.utils import fix_randomness
 
 from torchcp.graph.utils.metrics import Metrics

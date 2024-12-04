@@ -1,7 +1,7 @@
 import pytest
 import torch
-from torchcp.regression.predictors import SplitPredictor
-from torchcp.regression.scores import split
+from torchcp.regression.predictor import SplitPredictor
+from torchcp.regression.score import split
 from torchcp.regression.utils import build_regression_model
 
 @pytest.fixture

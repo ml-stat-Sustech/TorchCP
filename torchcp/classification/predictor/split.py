@@ -7,6 +7,8 @@
 import math
 import torch
 import warnings
+from torch.utils.data import DataLoader
+from typing import Dict, List
 
 from torchcp.utils.common import calculate_conformal_value
 from .base import BasePredictor
@@ -107,26 +109,44 @@ class SplitPredictor(BasePredictor):
     # The evaluation process
     ############################
 
-    def evaluate(self, val_dataloader):
+    def evaluate(self, val_dataloader: DataLoader) -> Dict[str, float]:
         """
-        Evaluate the prediction sets on a validation dataset.
-
+        Evaluate prediction sets on validation dataset.
+        
         Args:
-            val_dataloader (torch.utils.data.DataLoader): A dataloader of the validation set.
-
+            val_dataloader (torch.utils.data.DataLoader): Dataloader for validation set.
+        
         Returns:
-            dict: A dictionary containing the coverage rate and average size of the prediction sets.
+            dict: Dictionary containing evaluation metrics:
+                - Coverage_rate: Empirical coverage rate on validation set
+                - Average_size: Average size of prediction sets
         """
-        prediction_sets = []
-        labels_list = []
+        predictions_list: List[torch.Tensor] = []
+        labels_list: List[torch.Tensor] = []
+        
+        # Evaluate in inference mode
+        self._model.eval()
         with torch.no_grad():
-            for examples in val_dataloader:
-                tmp_x, tmp_label = examples[0].to(self._device), examples[1].to(self._device)
-                prediction_sets_batch = self.predict(tmp_x)
-                prediction_sets.extend(prediction_sets_batch)
-                labels_list.append(tmp_label)
-        val_labels = torch.cat(labels_list)
+            for batch in val_dataloader:
+                # Move batch to device and get predictions
+                inputs = batch[0].to(self._device)
+                labels = batch[1].to(self._device) 
+                
+                # Get predictions as bool tensor (N x C)
+                batch_predictions = self.predict(inputs)
+                
+                # Accumulate predictions and labels
+                predictions_list.append(batch_predictions)
+                labels_list.append(labels)
 
-        res_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, val_labels),
-                    "Average_size": self._metric('average_size')(prediction_sets, val_labels)}
-        return res_dict
+        # Concatenate all batches
+        val_predictions = torch.cat(predictions_list, dim=0)  # (N_val x C)
+        val_labels = torch.cat(labels_list, dim=0)  # (N_val,)
+        
+        # Compute evaluation metrics
+        metrics = {
+            "Coverage_rate": self._metric('coverage_rate')(val_predictions, val_labels),
+            "Average_size": self._metric('average_size')(val_predictions, val_labels)
+        }
+        
+        return metrics

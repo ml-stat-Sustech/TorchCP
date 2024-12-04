@@ -1,7 +1,7 @@
 import pytest
 import torch
-from torchcp.regression.predictors import ACIPredictor
-from torchcp.regression.scores import CQR
+from torchcp.regression.predictor import ACIPredictor
+from torchcp.regression.score import CQR
 from torchcp.regression.utils import build_regression_model
 
 @pytest.fixture

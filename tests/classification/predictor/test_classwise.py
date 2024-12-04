@@ -5,9 +5,9 @@ import warnings
 import torch
 from torch.utils.data import Dataset
 
-from torchcp.classification.scores import THR
+from torchcp.classification.score import THR
 from torchcp.classification.utils.metrics import Metrics
-from torchcp.classification.predictors import ClassWisePredictor
+from torchcp.classification.predictor import ClassWisePredictor
 
 
 @pytest.fixture

@@ -1,8 +1,8 @@
 import pytest
 import torch
 from torchcp.classification.loss.confts import ConfTS
-from torchcp.classification.predictors import SplitPredictor as Predictor
-from torchcp.classification.scores import THR
+from torchcp.classification.predictor import SplitPredictor as Predictor
+from torchcp.classification.score import THR
 
 def test_confts_init_valid_params():
     predictor = Predictor(THR())

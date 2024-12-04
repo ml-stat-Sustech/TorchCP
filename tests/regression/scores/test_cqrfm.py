@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.regression.scores import CQRFM
+from torchcp.regression.score import CQRFM
 
 @pytest.fixture
 def cqrfm_instance():

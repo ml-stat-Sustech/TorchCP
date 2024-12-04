@@ -1,8 +1,8 @@
 import pytest
 import torch
 from torchcp.classification.loss.conftr import ConfTr
-from torchcp.classification.predictors import SplitPredictor as Predictor
-from torchcp.classification.scores import THR
+from torchcp.classification.predictor import SplitPredictor as Predictor
+from torchcp.classification.score import THR
 
 
 @pytest.fixture
@@ -82,6 +82,13 @@ def test_compute_classification_loss(conftr_instance):
     pred_sets = torch.sigmoid(torch.randn(10, 5))
     labels = torch.randint(0, 5, (10,))
     loss = conftr._ConfTr__compute_classification_loss(pred_sets, labels)
+    assert isinstance(loss, torch.Tensor)
+    
+def test_compute_conformalized_gnn_loss(conftr_instance):
+    conftr = conftr_instance
+    pred_sets = torch.sigmoid(torch.randn(10, 5))
+    labels = torch.randint(0, 5, (10,))
+    loss = conftr._ConfTr__compute_conformalized_gnn_loss(pred_sets, labels)
     assert isinstance(loss, torch.Tensor)
     
 def test_loss_transform_square():

@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchcp.classification.scores.knn import KNN
+from torchcp.classification.score.knn import KNN
 
 @pytest.fixture
 def sample_data():

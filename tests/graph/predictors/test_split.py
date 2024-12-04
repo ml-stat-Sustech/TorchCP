@@ -5,10 +5,10 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 
-from torchcp.classification.scores import THR
-from torchcp.graph.predictors import GraphSplitPredictor
+from torchcp.classification.score import THR
+from torchcp.graph.predictor import GraphSplitPredictor
 from torchcp.graph.utils import Metrics
-from torchcp.graph.predictors.base import BaseGraphPredictor
+from torchcp.graph.predictor.base import BaseGraphPredictor
 
 
 @pytest.fixture

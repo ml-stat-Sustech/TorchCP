@@ -83,10 +83,10 @@ class BasePredictor(object):
             q_hat (torch.Tensor): The calibrated threshold.
 
         Returns:
-            list: A list of prediction sets for each example.
+            torch.Tensor: A tensor of 0/1 values indicating the prediction set for each example.
         """
 
-        return [torch.argwhere(scores[i] <= q_hat).reshape(-1).tolist() for i in range(scores.shape[0])]
+        return (scores <= q_hat).int()
     
     
     def get_device(self):
