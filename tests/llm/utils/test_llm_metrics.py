@@ -20,7 +20,7 @@ def test_SSCL():
         prediction_sets, 
         prediction_set_loss
     )
-    assert isinstance(result, torch.Tensor)
+    assert isinstance(result, float)
     
     # Test with custom num_bins
     result_custom = METRICS_REGISTRY_LLM.get("SSCL")(
@@ -28,19 +28,18 @@ def test_SSCL():
         prediction_set_loss,
         num_bins=5
     )
-    assert isinstance(result_custom, torch.Tensor)
+    assert isinstance(result_custom, float)
 
 def test_average_metrics():
     prediction_sets = torch.tensor([[1, 0, 1], [0, 1, 1], [1, 1, 1]], dtype=torch.float32)
     
     # Test average_size
     avg_size = METRICS_REGISTRY_LLM.get("average_size")(prediction_sets)
-    assert isinstance(avg_size, torch.Tensor)
-    assert avg_size.dtype == torch.float32
+    assert isinstance(avg_size, float)
     
     # Test average_sample_size
     avg_sample_size = METRICS_REGISTRY_LLM.get("average_sample_size")(prediction_sets)
-    assert isinstance(avg_sample_size, torch.Tensor)
+    assert isinstance(avg_sample_size, float)
 
 def test_average_set_loss():
     prediction_sets = torch.tensor([[1, 0, 1], [0, 1, 1], [1, 1, 1]])
@@ -51,7 +50,7 @@ def test_average_set_loss():
         prediction_sets,
         prediction_set_loss
     )
-    assert isinstance(result, torch.Tensor)
+    assert isinstance(result, float)
     
 def test_metrics_call():
     metrics = Metrics()

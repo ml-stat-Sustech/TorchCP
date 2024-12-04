@@ -126,7 +126,19 @@ def test_invalid_predict_model(mock_score_function, mock_dataset):
     with pytest.raises(ValueError, match="Model is not defined"):
         predictor.predict(mock_dataset.x)
 
-
+def test_q_hat_value_error(mock_model, mock_score_function):
+    """Test that a ValueError is raised when self.q_hat is None and q_hat is not provided."""
+    predictor = SplitPredictor(score_function=mock_score_function, model=mock_model)
+    
+    # Ensure self.q_hat is None
+    predictor.q_hat = None
+    
+    logits = torch.rand(10, 5)
+    
+    with pytest.raises(ValueError, match="Ensure self.q_hat is not None. Please perform calibration first."):
+        predictor.predict_with_logits(logits)
+        
+        
 @pytest.mark.parametrize("q_hat", [0.5, 0.7])
 def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, q_hat):
 

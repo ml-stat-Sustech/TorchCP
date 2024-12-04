@@ -148,8 +148,8 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
     class_coverage = torch.zeros(num_classes, dtype=torch.float32)
     class_coverage[valid_classes] = class_covered[valid_classes].float() / class_total[valid_classes].float()
     
-    violation_nums = torch.sum(class_coverage < (1 - alpha)).item()
-    return violation_nums
+    violation_nums = torch.sum(class_coverage < (1 - alpha))
+    return violation_nums.item()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
@@ -319,7 +319,7 @@ def WSC(features, prediction_sets, labels, delta=0.1, M=1000, test_fraction=0.75
     wsc_star, v_star, a_star, b_star = calWSC(X_train, covered_train, y_train, delta=delta, M=M, random_state=random_state, verbose=verbose)
     # Estimate coverage
     coverage = wsc_vab(X_test, y_test, covered_test, v_star, a_star, b_star)
-    return coverage
+    return coverage.item()
     
 def wsc_vab(featreus, labels, covered, v, a, b):
     z = np.dot(featreus, v)

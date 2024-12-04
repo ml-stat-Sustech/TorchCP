@@ -36,21 +36,26 @@ def test_coverage_rate(mock_data):
     # Ensure the computed coverage rate is correct
     assert abs(result - expected_coverage_rate) <= 1e-1, f"Expected coverage_rate {expected_coverage_rate}, but got {result}"
 
+def test_column_validation():
+    # Test case 1: Valid even number of columns
+    valid_intervals = torch.tensor([[1.0, 2.0, 3.0, 4.0]])  # 4 columns (2 intervals)
+    assert coverage_rate(valid_intervals, torch.tensor([1.5])) >= 0
 
-def test_prediction_intervals_columns():
-    """Test validation of prediction intervals column count."""
-    # Test odd number of columns
-    odd_intervals = torch.tensor([[0.1, 0.2, 0.3]])  # 3 columns
-    with pytest.raises(ValueError, match="must be even"):
-        average_size(odd_intervals)
-    
-    # Test even number of columns
-    even_intervals = torch.tensor([[0.1, 0.2, 0.3, 0.4]])  # 4 columns
-    try:
-        result = average_size(even_intervals)
-        assert isinstance(result, float), "Result should be a float"
-    except ValueError:
-        pytest.fail("Unexpected ValueError for even number of columns")
+    # Test case 2: Invalid odd number of columns
+    invalid_intervals = torch.tensor([[1.0, 2.0, 3.0]])  # 3 columns
+    with pytest.raises(ValueError) as exc_info:
+        coverage_rate(invalid_intervals, torch.tensor([1.5]))
+    assert "must be even" in str(exc_info.value)
+
+    # Test case 3: Another valid case with multiple intervals
+    valid_multi = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]])  # 6 columns (3 intervals)
+    assert average_size(valid_multi) > 0
+
+    # Test case 4: Invalid case for average_size
+    invalid_avg = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0]])  # 5 columns
+    with pytest.raises(ValueError) as exc_info:
+        average_size(invalid_avg)
+    assert "must be even" in str(exc_info.value)
         
 def test_average_size():
     # Test data

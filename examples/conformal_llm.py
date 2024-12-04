@@ -228,9 +228,7 @@ def test_conformal_llm():
     all_labels = torch.from_numpy(data['labels'])
     all_scores = torch.from_numpy(data['scores'])
     diversity = torch.from_numpy(data['diversity'])
-    
-    breakpoint()
-    
+        
 
     epsilons = np.linspace(0, 1, 101)
     num_trials = 1

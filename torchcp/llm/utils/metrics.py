@@ -16,14 +16,14 @@ METRICS_REGISTRY_LLM = Registry("METRICS")
 def average_size(prediction_sets):
     """the average size of the prediction sets"""
     size_avg = torch.mean(prediction_sets)
-    return size_avg 
+    return size_avg.cpu().item()
 
 
 @METRICS_REGISTRY_LLM.register()
 def average_sample_size(prediction_sets):
     """the average number of sample size"""
     max_indices = prediction_sets.shape[1] - 1 - torch.argmax(prediction_sets.flip(1), dim=1)
-    return torch.mean(max_indices.float()) 
+    return torch.mean(max_indices.float()).cpu().item()
 
 
 @METRICS_REGISTRY_LLM.register()
@@ -42,7 +42,7 @@ def average_set_loss(prediction_sets, prediction_set_loss):
     max_indices = prediction_sets.shape[1] - 1 - torch.argmax(prediction_sets.flip(1).to(torch.int), dim=1)
 
     losses =  prediction_set_loss[torch.arange(prediction_sets.shape[0]), max_indices]
-    return torch.mean(losses.float())
+    return torch.mean(losses.float()).cpu().item()
 
 
 @METRICS_REGISTRY_LLM.register()
@@ -62,7 +62,7 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
     """
     
     prediction_sets = prediction_sets.to(torch.float32).clone().detach()
-    prediction_sizes = average_size(prediction_sets)
+    prediction_sizes = torch.sum(prediction_sets,dim=0)
     bins = torch.quantile(prediction_sizes, torch.linspace(0, 1, num_bins, dtype= prediction_sets.dtype))
     binids = torch.bucketize(prediction_sizes, torch.cat([torch.tensor([0]), torch.unique(bins)]))
 
@@ -72,7 +72,7 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
         num_kept_examples = torch.maximum(torch.sum(kept), torch.tensor(1, device=kept.device))
         Ls_mask_avg = torch.sum(prediction_set_loss * kept) / num_kept_examples
         L_worst_avg = max(L_worst_avg, Ls_mask_avg)
-    return L_worst_avg
+    return L_worst_avg.cpu().item()
 
 class Metrics:
     def __call__(self, metric) -> Any:

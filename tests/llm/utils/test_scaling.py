@@ -111,5 +111,18 @@ def test_recurrent_scaler_fit():
     model.predict(X)
     assert model.training == False 
 
+def test_recurrent_scaler_target_value_error():
+    """Test that a ValueError is raised when target is not 'set' or 'item'."""
+    with pytest.raises(ValueError, match="target must be one of \['set', 'item'\], but got invalid"):
+        RecurrentScaler(target='invalid')
+
+    # Test with valid targets to ensure no error is raised
+    try:
+        scaler_set = RecurrentScaler(target='set')
+        scaler_item = RecurrentScaler(target='item')
+    except ValueError:
+        pytest.fail("Unexpected ValueError for valid target values")
+    
+
 if __name__ == "__main__":
     pytest.main(["-v"])
