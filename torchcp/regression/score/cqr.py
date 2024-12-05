@@ -70,7 +70,7 @@ class CQR(BaseScore):
         prediction_intervals[..., 1] = predicts_batch[..., 1] + q_hat.view(1, q_hat.shape[0], 1)
         return prediction_intervals
         
-    def fit(self, train_dataloader, **kwargs):
+    def train(self, train_dataloader, **kwargs):
         """
         Trains the model on provided training data with :math:`[alpha/2, 1-alpha/2]` quantile regression loss.
 
@@ -104,5 +104,5 @@ class CQR(BaseScore):
         optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
         verbose = kwargs.get('verbose', True)
 
-        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
+        self._basetrain(model, epochs, train_dataloader, criterion, optimizer, verbose)
         return model

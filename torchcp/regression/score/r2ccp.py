@@ -36,7 +36,7 @@ class R2CCP(BaseScore):
         self._device = self.midpoints.device 
 
 
-    def fit(self, train_dataloader, **kwargs):
+    def train(self, train_dataloader, **kwargs):
         """
         Trains regression-to-classification model with the R2ccpLoss.
 
@@ -66,7 +66,7 @@ class R2CCP(BaseScore):
         optimizer = kwargs.get('optimizer', optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay))
         verbose = kwargs.get('verbose', True)
 
-        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
+        self._basetrain(model, epochs, train_dataloader, criterion, optimizer, verbose)
         return model
 
     def __call__(self, predicts, y_truth):

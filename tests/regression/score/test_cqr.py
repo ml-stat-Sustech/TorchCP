@@ -38,14 +38,14 @@ def test_generate_intervals(cqr_instance):
     assert torch.allclose(intervals, expected_intervals), "The generate_intervals method is not working as expected."
 
 
-def test_fit(cqr_instance, dummy_data):
+def test_train(cqr_instance, dummy_data):
     """
-    Test the fit method to ensure the model trains correctly.
+    Test the train method to ensure the model trains correctly.
     """
     train_dataloader, _ = dummy_data
     with pytest.raises(ValueError):
-        model = cqr_instance.fit(train_dataloader)
-    model = cqr_instance.fit(train_dataloader, alpha=0.1, epochs=5, verbose=False)
+        model = cqr_instance.train(train_dataloader)
+    model = cqr_instance.train(train_dataloader, alpha=0.1, epochs=5, verbose=False)
 
     # Check model output shape
     test_input = next(iter(train_dataloader))[0]

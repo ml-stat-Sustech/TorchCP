@@ -52,7 +52,7 @@ class EnsemblePredictor(SplitPredictor):
         else:
             self.aggregation_function = aggregation_function
 
-    def fit(self, train_dataloader, ensemble_num, subset_num, **kwargs):
+    def train(self, train_dataloader, ensemble_num, subset_num, **kwargs):
         """
         Trains an ensemble of models on randomly sampled subsets of the training data.
 
@@ -61,7 +61,7 @@ class EnsemblePredictor(SplitPredictor):
                                         providing batches of data for training.
             ensemble_num (int): The number of models to ensemble.
             subset_num (int): The size of the subset of data for training each individual model in the ensemble.
-            **kwargs: Additional parameters for the :func:`score_predictor.fit` method.
+            **kwargs: Additional parameters for the :func:`score_predictor.train` method.
                 - criterion (callable, optional): Loss function for training. If not provided, uses :func:`QuantileLoss`.
                 - alpha (float, optional): Significance level (e.g., 0.1) for quantiles, required if :attr:`criterion` is None.
                 - epochs (int, optional): Number of training epochs. Default is :math:`100`.
@@ -75,7 +75,7 @@ class EnsemblePredictor(SplitPredictor):
         Example::
         
             >>> predictor = Ensemble(model, score_predictor, aggregation_function)
-            >>> predictor.fit(train_dataloader=train_data_loader, ensemble_num=5, subset_num=500)
+            >>> predictor.train(train_dataloader=train_data_loader, ensemble_num=5, subset_num=500)
             
         .. note::
         
@@ -102,7 +102,7 @@ class EnsemblePredictor(SplitPredictor):
             subset = torch.utils.data.Subset(dataset, indices)
             subset_dataloader = torch.utils.data.DataLoader(subset, batch_size=batch_size)
             model_copy = copy.deepcopy(self._model)
-            self.score_function.fit(subset_dataloader, model=model_copy, **kwargs)
+            self.score_function.train(subset_dataloader, model=model_copy, **kwargs)
             self.model_list.append(model_copy)
             self.indices_list.append(indices)
 

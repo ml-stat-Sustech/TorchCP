@@ -104,7 +104,7 @@ def run_ensemble_experiment(
     
     predictor = EnsemblePredictor(model, score_function, aggregation_function)
     
-    predictor.fit(
+    predictor.train(
         train_dataloader=train_loader,
         ensemble_num=ensemble_num,
         subset_num=subset_num,

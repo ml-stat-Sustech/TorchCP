@@ -35,12 +35,12 @@ def test_generate_intervals(split_instance):
     expected_intervals = torch.tensor([[[0.1, 0.3]], [[0.7, 0.9]]])
     assert torch.allclose(intervals, expected_intervals), "The generate_intervals method is not working as expected."
 
-def test_fit(split_instance, dummy_data):
+def test_train(split_instance, dummy_data):
     """
-    Test the fit method to ensure the model trains correctly.
+    Test the train method to ensure the model trains correctly.
     """
     train_dataloader, _ = dummy_data
-    model = split_instance.fit(train_dataloader, epochs=5, verbose=False)
+    model = split_instance.train(train_dataloader, epochs=5, verbose=False)
     
     # Check model output shape
     test_input = next(iter(train_dataloader))[0]

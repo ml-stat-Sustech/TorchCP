@@ -40,7 +40,7 @@ class BaseScore(object):
         raise NotImplementedError
     
     @abstractmethod
-    def fit(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
+    def train(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
         """Trains the given model using the provided training data loader, criterion, and optimizer.
 
         Args:
@@ -53,7 +53,7 @@ class BaseScore(object):
         """
         raise NotImplementedError
     
-    def _train(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
+    def _basetrain(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
         """
         Trains the given model using the provided training data loader, criterion, and optimizer.
         

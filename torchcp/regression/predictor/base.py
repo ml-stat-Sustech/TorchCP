@@ -36,7 +36,7 @@ class BasePredictor(object):
         self._metric = Metrics()
         
     @abstractmethod
-    def fit(self, train_dataloader, **kwargs):
+    def train(self, train_dataloader, **kwargs):
         raise NotImplementedError
     
     @abstractmethod

@@ -93,14 +93,14 @@ def run_experiment(name, model, score_function, criterion, train_loader, cal_loa
     predictor = SplitPredictor(score_function=score_function, model=model)
     
     if hasattr(criterion, 'midpoints'):
-        predictor.fit(
+        predictor.train(
             train_dataloader=train_loader,
             epochs=epochs,
             criterion=criterion,
             optimizer=optimizer
         )
     else:
-        predictor.fit(
+        predictor.train(
             train_dataloader=train_loader,
             epochs=epochs,
             criterion=criterion,
