@@ -1,18 +1,13 @@
 import argparse
-from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
 from transformers import set_seed
 
 from torchcp.classification.score import APS
-from torchcp.graph.score import DAPS
-from torchcp.graph.trainer import ConfGNN
-from torchcp.classification.loss import ConfTr
+from torchcp.graph.trainer import CFGNNTrainer
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR
-from torchcp.graph.utils.metrics import Metrics
-from examples.utils import build_gnn_model, build_transductive_gnn_data, build_inductive_gnn_data
+from examples.utils import build_gnn_model, build_transductive_gnn_data
 
 
 def train_transductive(model, optimizer, graph_data, train_idx):
@@ -22,56 +17,6 @@ def train_transductive(model, optimizer, graph_data, train_idx):
     training_loss = F.cross_entropy(out[train_idx], graph_data.y[train_idx])
     training_loss.backward()
     optimizer.step()
-
-
-def run_experiment(confmodel, criterion, logits, graph_data, train_idx, val_idx, calib_train_idx, 
-                  calib_eval_idx, device, args, use_conftr=True):
-    epochs = 5000
-    best_valid_size = 10000
-    best_logits = logits
-    
-    optimizer = torch.optim.Adam(confmodel.parameters(), weight_decay=5e-4, lr=0.001)
-    predictor = SplitPredictor(APS(score_type="softmax"))
-    predictor._device = device
-
-    print(f'Starting {"ConfTr" if use_conftr else "CrossEntropy"} training...')
-    for epoch in tqdm(range(1, epochs + 1)):
-        confmodel.train()
-        optimizer.zero_grad()
-        
-        adjust_logits = confmodel(logits, graph_data.edge_index)
-        loss = F.cross_entropy(adjust_logits[train_idx], graph_data.y[train_idx])
-        
-        if use_conftr and epoch > 1000:
-            loss += criterion(adjust_logits[calib_train_idx], graph_data.y[calib_train_idx])
-
-        loss.backward()
-        optimizer.step()
-
-        # Validation Stage
-        confmodel.eval()
-        with torch.no_grad():
-            adjust_logits = confmodel(logits, graph_data.edge_index)
-
-        size_list = []
-        for _ in range(10):
-            val_perms = torch.randperm(val_idx.size(0))
-            valid_calib_idx = val_idx[val_perms[:int(len(val_idx) / 2)]]
-            valid_test_idx = val_idx[val_perms[int(len(val_idx) / 2):]]
-
-            predictor.calculate_threshold(
-                adjust_logits[valid_calib_idx], graph_data.y[valid_calib_idx], args.alpha)
-            pred_sets = predictor.predict_with_logits(adjust_logits[valid_test_idx])
-            size = predictor._metric('average_size')(pred_sets, graph_data.y[valid_test_idx])
-            size_list.append(size)
-
-        eff_valid = torch.mean(torch.tensor(size_list))
-
-        if eff_valid < best_valid_size:
-            best_valid_size = eff_valid
-            best_logits = adjust_logits
-
-    return evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args)
 
 
 def evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args):
@@ -133,35 +78,21 @@ if __name__ == '__main__':
     calib_train_idx = calib_test_idx[rand_perms[:int(calib_num * 0.5)]]
     calib_eval_idx = calib_test_idx[rand_perms[int(calib_num * 0.5):]]
 
-    train_calib_idx = calib_train_idx[int(len(calib_train_idx) / 2):]
-    train_test_idx = calib_train_idx[:int(len(calib_train_idx) / 2)]
-
-    # Run CrossEntropy experiment
-    confmodel_ce = ConfGNN(base_model='GCN',
-                       output_dim=graph_data.y.max().item() + 1,
-                       confnn_hidden_dim=64).to(device)
-    
-    criterion = ConfTr(weight=1.0,
-                    predictor=SplitPredictor(score_function=APS(score_type="softmax", randomized=False)),
-                    alpha=args.alpha,
-                    fraction=0.5,
-                    loss_type="cfgnn",
-                    target_size=0)
-
-    ce_coverage, ce_size = run_experiment(
-        confmodel_ce, criterion, logits, graph_data, train_idx, val_idx,
-        calib_train_idx, calib_eval_idx, device, args, use_conftr=False
-    )
+    predictor = SplitPredictor(APS(score_type="softmax"))
+    # Basic results
+    ce_coverage, ce_size = evaluate_model(logits, calib_eval_idx, predictor, graph_data, args)
 
     # Run ConfTr experiment
-    confmodel_conftr = ConfGNN(base_model='GCN',
-                           output_dim=graph_data.y.max().item() + 1,
-                           confnn_hidden_dim=64).to(device)
-
-    conftr_coverage, conftr_size = run_experiment(
-        confmodel_conftr, criterion, logits, graph_data, train_idx, val_idx,
-        calib_train_idx, calib_eval_idx, device, args, use_conftr=True
-    )
+    confmodel_conftr = CFGNNTrainer(out_channels=graph_data.y.max().item() + 1,
+                               hidden_channels=64,
+                               device=device)
+    best_logits = confmodel_conftr.train(pre_logits=logits,
+                         labels=graph_data.y,
+                         edge_index=graph_data.edge_index,
+                         train_idx=train_idx,
+                         val_idx=val_idx,
+                         calib_train_idx=calib_train_idx)
+    conftr_coverage, conftr_size = evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args)
 
     print("\nResults Comparison:")
     print(f"CrossEntropy - Coverage: {ce_coverage:.4f}, Size: {ce_size:.4f}")
