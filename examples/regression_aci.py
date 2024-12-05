@@ -103,7 +103,7 @@ def run_aci_experiment(
     predictor = ACIPredictor(model, score_function, gamma=gamma)
     
     # Train and evaluate
-    predictor.fit(
+    predictor.train(
         train_dataloader=train_loader,
         alpha=alpha,
         epochs=epochs,

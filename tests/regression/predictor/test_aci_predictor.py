@@ -25,10 +25,10 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
         gamma=0.1
     )
 
-    # Test fit method
+    # Test train method
     alpha = 0.1
-    aci_predictor.fit(train_dataloader, alpha=alpha)
-    assert aci_predictor.alpha == alpha, "Alpha should be set correctly during fitting."
+    aci_predictor.train(train_dataloader, alpha=alpha)
+    assert aci_predictor.alpha == alpha, "Alpha should be set correctly during training."
     assert aci_predictor.alpha_t == alpha, "Adaptive alpha_t should start with initial alpha."
 
     # Test predict method
@@ -61,7 +61,7 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
     train_dataloader, _, test_dataloader = mock_data
     aci_predictor = ACIPredictor(mock_model.to(device), mock_score_function, gamma=0.1)
 
-    aci_predictor.fit(train_dataloader, alpha=0.1)
+    aci_predictor.train(train_dataloader, alpha=0.1)
     x_batch, _ = next(iter(test_dataloader))
     x_batch = x_batch.to(device)
 

@@ -23,8 +23,8 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
         aggregation_function=aggregation_function
     )
 
-    # test fit method
-    ensemble_predictor.fit(train_dataloader, ensemble_num=3, subset_num=100)
+    # test train method
+    ensemble_predictor.train(train_dataloader, ensemble_num=3, subset_num=100)
     assert len(ensemble_predictor.model_list) == 3, "Ensemble should contain 3 models."
     assert len(ensemble_predictor.indices_list) == 3, "Each model should have corresponding indices."
 
@@ -52,7 +52,7 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
     ensemble_predictor.evaluate(test_dataloader, alpha=0.1, verbose=True)
 
     with pytest.raises(ValueError):
-        ensemble_predictor.fit(train_dataloader, ensemble_num=0, subset_num=100)
+        ensemble_predictor.train(train_dataloader, ensemble_num=0, subset_num=100)
 
 
     with pytest.raises(ValueError):
@@ -67,7 +67,7 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
     train_dataloader, cal_dataloader, test_dataloader = mock_data
     ensemble_predictor = EnsemblePredictor(mock_model.to(device), mock_score_function)
 
-    ensemble_predictor.fit(train_dataloader, ensemble_num=3, subset_num=100)
+    ensemble_predictor.train(train_dataloader, ensemble_num=3, subset_num=100)
     x_batch, _ = next(iter(test_dataloader))
     x_batch = x_batch.to(device)
 

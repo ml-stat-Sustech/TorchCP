@@ -38,10 +38,10 @@ def test_generate_intervals(cqrr_instance):
 
 def test_fit(cqrr_instance, dummy_data):
     """
-    Test the fit method to ensure the model trains correctly.
+    Test the train method to ensure the model trains correctly.
     """
     train_dataloader, _ = dummy_data
-    model = cqrr_instance.fit(train_dataloader, alpha=0.1, epochs=5, verbose=False)
+    model = cqrr_instance.train(train_dataloader, alpha=0.1, epochs=5, verbose=False)
 
     # Check model output shape
     test_input = next(iter(train_dataloader))[0]

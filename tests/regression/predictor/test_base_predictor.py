@@ -17,7 +17,7 @@ class PartialPredictor(BasePredictor):
         # Intentionally not implementing any abstract methods
 
 @pytest.mark.parametrize("method_name", [
-    "fit",
+    "train",
     "calculate_score",
     "generate_intervals",
     "predict",
@@ -33,7 +33,7 @@ def test_not_implemented_methods(method_name, mock_data, mock_score_function):
 
     # Define dummy arguments for each method
     dummy_args = {
-        "fit": (train_dataloader,),
+        "train": (train_dataloader,),
         "calculate_score": (torch.rand(10, 5), torch.rand(10,)),
         "generate_intervals": (torch.rand(10, 5), 0.5),
         "predict": (torch.rand(10, 5),),

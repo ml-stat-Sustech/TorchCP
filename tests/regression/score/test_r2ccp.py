@@ -43,12 +43,12 @@ def test_generate_intervals(r2ccp_instance):
     assert torch.all(torch.isclose(intervals, expected_intervals, atol=1e-1)), "The generate_intervals method is not working as expected."
 
 
-def test_fit(r2ccp_instance, dummy_data):
+def test_train(r2ccp_instance, dummy_data):
     """
-    Test the fit method to ensure the model trains correctly.
+    Test the train method to ensure the model trains correctly.
     """
     train_dataloader, _ = dummy_data
-    model = r2ccp_instance.fit(train_dataloader, alpha=0.1, epochs=5, verbose=False)
+    model = r2ccp_instance.train(train_dataloader, alpha=0.1, epochs=5, verbose=False)
 
     # Check model output shape
     test_input = next(iter(train_dataloader))[0]

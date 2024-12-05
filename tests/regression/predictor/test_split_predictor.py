@@ -24,13 +24,13 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
     # Extract mock data
     train_dataloader, cal_dataloader, test_dataloader = mock_data
 
-    # Step 1: Fit the model
+    # Step 1: train the model
     # case 1
-    split_predictor_nomodel.fit(train_dataloader)
+    split_predictor_nomodel.train(train_dataloader)
     for param in split_predictor_nomodel._model.parameters():
         assert param.grad is not None, "Model parameters should have gradients."
     # case 2
-    split_predictor.fit(train_dataloader)
+    split_predictor.train(train_dataloader)
     for param in split_predictor._model.parameters():
         assert param.grad is not None, "Model parameters should have gradients."
 
