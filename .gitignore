@@ -23,3 +23,6 @@ _tutorials/
 .history
 docs/buildA
 **/__pycache__/
+.vscode/
+.coverage
+torch_scae.egg-info
