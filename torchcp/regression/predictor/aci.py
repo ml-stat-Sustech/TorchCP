@@ -36,9 +36,9 @@ class ACIPredictor(SplitPredictor):
         self.gamma = gamma
         self.alpha_t = None
         
-    def fit(self, train_dataloader, alpha, **kwargs):
+    def train(self, train_dataloader, alpha, **kwargs):
         """
-        Fit and calibrate the predictor using the training data.
+        Train and calibrate the predictor using the training data.
 
         Args:
             train_dataloader (torch.utils.data.DataLoader): DataLoader for training data.
@@ -54,9 +54,9 @@ class ACIPredictor(SplitPredictor):
         .. note::
             This function is optional but recommended, because the training process for each score_function is different. 
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
-            If the fit function is not used, users should pass the trained model to the predictor at the beginning.
+            If the train function is not used, users should pass the trained model to the predictor at the beginning.
         """
-        super().fit(train_dataloader, alpha=alpha, **kwargs)
+        super().train(train_dataloader, alpha=alpha, **kwargs)
         super().calibrate(train_dataloader, alpha)
         self.alpha = alpha
         self.alpha_t = alpha

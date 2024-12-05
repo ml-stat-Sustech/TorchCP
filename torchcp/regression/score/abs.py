@@ -61,7 +61,7 @@ class ABS(BaseScore):
         prediction_intervals[..., 1] = predicts_batch + q_hat.view(1, q_hat.shape[0])
         return prediction_intervals
         
-    def fit(self, train_dataloader, **kwargs):
+    def train(self, train_dataloader, **kwargs):
         """
         Trains the model using the provided training data.
         
@@ -83,5 +83,5 @@ class ABS(BaseScore):
         optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
         verbose = kwargs.get('verbose', True)
 
-        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
+        self._basetrain(model, epochs, train_dataloader, criterion, optimizer, verbose)
         return model

@@ -23,7 +23,7 @@ class CQRM(CQR):
         Github: https://github.com/msesia/cqr-comparison
     """
 
-    def fit(self, train_dataloader, **kwargs):
+    def train(self, train_dataloader, **kwargs):
         """
         Trains the model on provided training data with :math:`[alpha/2, 1/2, 1-alpha/2]` quantile regression loss.
 
@@ -44,7 +44,7 @@ class CQRM(CQR):
         .. note::
             This function is optional but recommended, because the training process for each preditor's model is different. 
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
-            If the fit function is not used, users should pass the trained model to the predictor at the beginning.
+            If the train function is not used, users should pass the trained model to the predictor at the beginning.
         """
         device = kwargs.pop('device', None)
         model = kwargs.pop('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], 3, 64, 0.5).to(device))
@@ -61,7 +61,7 @@ class CQRM(CQR):
         optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))
         verbose = kwargs.get('verbose', True)
 
-        self._train(model, epochs, train_dataloader, criterion, optimizer, verbose)
+        self._basetrain(model, epochs, train_dataloader, criterion, optimizer, verbose)
         return model
 
     def __call__(self, predicts, y_truth):
