@@ -50,6 +50,22 @@ on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This co
 maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group at SUSTech.
 Comments, issues, contributions, and collaborations are all welcomed!
 
+
+
+# Updates
+## New features
+- Added new score functions and training methods for classification, including KNN, TOPK, C-Adapter, and ConfTS.
+- Introduced CP algorithms for graph node classification, such as DAPS, SNAPS, and NAPS.
+- Added new conformal algorithms for regression, including CQRFM, CQRR, CQRM, and Ensemble CP.
+- Introduced CP algorithms for LLMs.
+- Added unit-test and examples.
+
+## Improvements
+- Optimized the form of prediction sets to improve the computational efficiency.
+- Refactored the module design of Regression to improve the scalability.
+
+
+
 # Overview
 
 TorchCP has implemented the following methods:
