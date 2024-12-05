@@ -31,9 +31,9 @@
   <!-- <a href="https://github.com/microsoft/promptbench">
     <img src="imgs/promptbench_logo.png" alt="Logo" width="300">
   </a> -->
-
+<img src="./logo.png" width="300px" />
 <!-- <h3 align="center">USB</h3> -->
-![TorchCP_logo](./logo.png)
+<!-- ![TorchCP_logo](./logo.png) -->
 <p align="center">
     <strong>TorchCP</strong>: A Python toolbox for Conformal Prediction in Deep Learning.
     <br />
@@ -44,8 +44,8 @@
 </div>
 
 
-TorchCP is a Python toolbox for conformal prediction research on deep learning models, using PyTorch. Specifically, this
-toolbox has implemented some representative methods (including posthoc and training methods) for many tasks of conformal prediction, including: classification, regression, GNN, and LLM. We build the basic framework of TorchCP based 
+TorchCP is a Python toolbox for conformal prediction research on deep learning models, using PyTorch with strong GPU acceleration. Specifically, this
+toolbox has implemented serveral representative methods (including posthoc and training methods) for many tasks of conformal prediction, including: Classification, Regression, Node Classification, and LLM. We build the basic framework of TorchCP based 
 on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This codebase is still under construction and
 maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group at SUSTech.
 Comments, issues, contributions, and collaborations are all welcomed!
@@ -71,7 +71,6 @@ TorchCP has implemented the following methods:
 | 2016 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                     | The Computer Journal                  |                                                                                   | classification.score.knn           |
 | 2015 | [**Bias reduction through conditional conformal prediction**](https://dl.acm.org/doi/abs/10.3233/IDA-150786)                                                                 | Intell. Data Anal.   |                                                                                   | classification.score.margin        |
 | 2012 | [**Conditional Validity of Inductive Conformal Predictors**](https://proceedings.mlr.press/v25/vovk12.html)                                      | ACML'12      |                                                                                   | classification.predictor.classwise |
-| 2012 | [**Conditional Validity of Inductive Conformal Predictors**](https://proceedings.mlr.press/v25/vovk12.html)                                      | ACML'12      |                                                                                   | classification.predictor.classwise |
 | 2007 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                                  | The Computer Journal |                                                                                   | classification.score.knn            |
 
 ## Regression
@@ -84,7 +83,6 @@ TorchCP has implemented the following methods:
 | 2020 | [**A comparison of some conformal quantile regression methods**](https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261)                                                                                | Stat, 2020 | [Link](https://github.com/soroushzargar/DAPS)                                   |regression.score.cqm regression.score.cqrr  | |
 | 2020 | [**Conformal Prediction Interval for Dynamic Time-Series**](https://proceedings.mlr.press/v139/xu21h.html)                                                                         | ICML'21 | [Link](https://github.com/hamrel-cxu/EnbPI)                                   |regression.predictor.ensemble | support time series |
 | 2019 | [**Adaptive, Distribution-Free Prediction Intervals for Deep Networks**](https://proceedings.mlr.press/v108/kivaranovic20a.html)  | AISTATS'19              | [Link](https://github.com/yromano/cqr)                 | regression.score.cqrfm   |             |
-| 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS'19              | [Link](https://github.com/yromano/cqr)                 | regression.score.cqr   |             |
 | 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS'19              | [Link](https://github.com/yromano/cqr)                 | regression.score.cqr   |             |
 | 2017 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                   | JASA                 | [Link](https://github.com/ryantibs/conformal)          | regression.predictor.split |             |
 
@@ -113,9 +111,6 @@ TorchCP is still under active development. We will add the following features/it
 
 | Year | Title                                                                                                                                                                                                      | Venue      | Code                                                                   |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|---------------------------------------------------------------------------------|
-| 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878)                                                                                            | NeurIPS'22    | [Link](https://github.com/bat-sheva/conformal-learning)                         |
-| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                                                                                                                     | ICML'22       | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries)      |
-| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                                                                                                             | ICML'22       | [Link](https://github.com/ajfisch/conformal-fp)                                 |
 | 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878)                                                                                            | NeurIPS'22    | [Link](https://github.com/bat-sheva/conformal-learning)                         |
 | 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                                                                                                                     | ICML'22       | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries)      |
 | 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                                                                                                             | ICML'22       | [Link](https://github.com/ajfisch/conformal-fp)                                 |
@@ -175,9 +170,6 @@ print(result_dict["Coverage_rate"], result_dict["Average_size"])
 
 You may find more tutorials in [`examples`](https://github.com/ml-stat-Sustech/TorchCP/tree/master/examples) folder.
 
-## Documentation
-
-The documentation webpage is on readthedocs https://torchcp.readthedocs.io/en/latest/index.html.
 
 ## License
 
@@ -214,6 +206,13 @@ We welcome you to cite the following works:
   journal={arXiv preprint arXiv:2402.04344},
   year={2024}
 }
+
+@article{liu2024c,
+  title={C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets},
+  author={Liu, Kangdao and Zeng, Hao and Huang, Jianguo and Zhuang, Huiping and Vong, Chi-Man and Wei, Hongxin},
+  journal={arXiv preprint arXiv:2410.09408},
+  year={2024}
+}
 ```
 
 ## Contributors
@@ -227,16 +226,6 @@ We welcome you to cite the following works:
 
 
 
-[contributors-shield]: https://img.shields.io/github/contributors/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
-[contributors-url]: https://github.com/ml-stat-Sustech/TorchCP/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
-[forks-url]: https://github.com/ml-stat-Sustech/TorchCP/network/members
-[stars-shield]: https://img.shields.io/github/stars/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
-[stars-url]: https://github.com/ml-stat-Sustech/TorchCP/stargazers
-[issues-shield]: https://img.shields.io/github/issues/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
-[issues-url]: https://github.com/ml-stat-Sustech/TorchCP/issues
-[license-shield]: https://img.shields.io/github/license/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
-[license-url]: https://github.com/ml-stat-Sustech/TorchCP/blob/main/LICENSE.txt
 [contributors-shield]: https://img.shields.io/github/contributors/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
 [contributors-url]: https://github.com/ml-stat-Sustech/TorchCP/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
