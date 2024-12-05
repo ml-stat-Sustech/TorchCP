@@ -52,7 +52,7 @@ Comments, issues, contributions, and collaborations are all welcomed!
 
 
 
-# Updates of New Version
+# Updates of New Version (1.0.0)
 
 - Added new score functions and training methods for classification, including KNN, TOPK, C-Adapter, and ConfTS.
 - Introduced CP algorithms for graph node classification, such as DAPS, SNAPS, and NAPS.
