@@ -3,7 +3,6 @@
 *.pyc
 .DS_Store
 *.tar
-*.png
 .ipynb_checkpoints/
 .idea/
 *.pdf
