@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchcp.classification.loss.cd_loss import CDLoss
+from torchcp.classification.loss.cd import CDLoss
 from torchcp.classification.predictor import SplitPredictor as Predictor
 from torchcp.classification.score import THR
 

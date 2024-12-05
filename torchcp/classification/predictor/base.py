@@ -51,7 +51,7 @@ class BasePredictor(object):
             self._model.eval()
         self._device = get_device(model)
         self._metric = Metrics()
-        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("TS")(temperature)
+        self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("TS")(temperature).to(self._device)
 
     @abstractmethod
     def calibrate(self, cal_dataloader, alpha):
