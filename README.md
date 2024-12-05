@@ -17,7 +17,6 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
@@ -34,14 +33,11 @@
   </a> -->
 
 <!-- <h3 align="center">USB</h3> -->
-
+![TorchCP_logo](./logo.png)
 <p align="center">
-    <strong>TorchCP</strong>: A Python Library for Conformal Prediction.
-    <!-- <br />
-    <a href="https://github.com/microsoft/promptbench"><strong>Explore the docs »</strong></a>
-    <br /> -->
+    <strong>TorchCP</strong>: A Python toolbox for Conformal Prediction in Deep Learning.
     <br />
-    <a href="https://arxiv.org/abs/2402.12683">Paper</a>
+    <a href="https://arxiv.org/abs/2402.12683">Technical Report</a>
     ·
     <a href="https://torchcp.readthedocs.io/en/latest/">Documentation</a>
   </p>
@@ -49,8 +45,7 @@
 
 
 TorchCP is a Python toolbox for conformal prediction research on deep learning models, using PyTorch. Specifically, this
-toolbox has implemented some representative methods (including posthoc and training methods) for
-classification and regression tasks. We build the framework of TorchCP based
+toolbox has implemented some representative methods (including posthoc and training methods) for many tasks of conformal prediction, including: classification, regression, GNN, and LLM. We build the basic framework of TorchCP based 
 on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This codebase is still under construction and
 maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group at SUSTech.
 Comments, issues, contributions, and collaborations are all welcomed!
