@@ -1,1 +1,1 @@
-from .cfgnn import ConfGNN
+from .cfgnn import CFGNNTrainer
