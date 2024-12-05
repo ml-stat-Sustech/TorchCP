@@ -153,7 +153,7 @@ def setup_large_data():
 def test_wsc_normal_case():
     """Test WSC function with normal inputs"""
     # Prepare test data
-    n_samples, n_features, n_classes = 100, 10, 3
+    n_samples, n_features, n_classes = 1000, 10, 3
     features = torch.randn(n_samples, n_features)
     prediction_sets = torch.ones(n_samples, n_classes, dtype=torch.bool)
     labels = torch.randint(0, n_classes, (n_samples,))
