@@ -7,128 +7,172 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
 import sys
+from datetime import date
 
 sys.path.insert(0, os.path.abspath('../../'))
 
 from unittest.mock import Mock  # noqa: F401, E402
 
 # from sphinx.ext.autodoc.importer import _MockObject as Mock
-Mock.Module = object
-sys.modules['torch'] = Mock()
-sys.modules['numpy'] = Mock()
-sys.modules['numpy.linalg'] = Mock()
-sys.modules['scipy'] = Mock()
-sys.modules['scipy.optimize'] = Mock()
-sys.modules['scipy.interpolate'] = Mock()
-sys.modules['scipy.ndimage'] = Mock()
-sys.modules['scipy.ndimage.filters'] = Mock()
-sys.modules['tensorflow'] = Mock()
-sys.modules['theano'] = Mock()
-sys.modules['theano.tensor'] = Mock()
-sys.modules['torch'] = Mock()
-sys.modules['torch.autograd'] = Mock()
-sys.modules['torch.autograd.gradcheck'] = Mock()
-sys.modules['torch.distributions'] = Mock()
-sys.modules['torch.nn'] = Mock()
-sys.modules['torch.nn.functional'] = Mock()
-sys.modules['torch.optim'] = Mock()
-sys.modules['torch.nn.modules'] = Mock()
-sys.modules['torch.nn.modules.utils'] = Mock()
-sys.modules['torch.nn.modules.loss'] = Mock()
-sys.modules['torch.utils'] = Mock()
-sys.modules['torch.utils.model_zoo'] = Mock()
-sys.modules['torch.nn.init'] = Mock()
-sys.modules['torch.utils.data'] = Mock()
-sys.modules['torchvision'] = Mock()
-sys.modules['randomstate'] = Mock()
-sys.modules['scipy._lib'] = Mock()
-sys.modules['sklearn.cluster'] = Mock()
+# Mock.Module = object
+# sys.modules['torch'] = Mock()
+# sys.modules['numpy'] = Mock()
+# sys.modules['numpy.linalg'] = Mock()
+# sys.modules['scipy'] = Mock()
+# sys.modules['scipy.optimize'] = Mock()
+# sys.modules['scipy.interpolate'] = Mock()
+# sys.modules['scipy.ndimage'] = Mock()
+# sys.modules['scipy.ndimage.filters'] = Mock()
+# sys.modules['tensorflow'] = Mock()
+# sys.modules['theano'] = Mock()
+# sys.modules['theano.tensor'] = Mock()
+# sys.modules['torch'] = Mock()
+# sys.modules['torch.autograd'] = Mock()
+# sys.modules['torch.autograd.gradcheck'] = Mock()
+# sys.modules['torch.distributions'] = Mock()
+# sys.modules['torch.nn'] = Mock()
+# sys.modules['torch.nn.functional'] = Mock()
+# sys.modules['torch.optim'] = Mock()
+# sys.modules['torch.nn.modules'] = Mock()
+# sys.modules['torch.nn.modules.utils'] = Mock()
+# sys.modules['torch.nn.modules.loss'] = Mock()
+# sys.modules['torch.utils'] = Mock()
+# sys.modules['torch.utils.model_zoo'] = Mock()
+# sys.modules['torch.nn.init'] = Mock()
+# sys.modules['torch.utils.data'] = Mock()
+# sys.modules['torchvision'] = Mock()
+# sys.modules['randomstate'] = Mock()
+# sys.modules['scipy._lib'] = Mock()
+# sys.modules['sklearn.cluster'] = Mock()
 import torchcp
 
 project = 'TorchCP'
-copyright = '2023, ml-stat-Sustech'
+copyright = f'{date.today().year}, ml-stat-Sustech'
 author = 'ml-stat-Sustech'
 with open(os.path.join(os.path.abspath('../../'), 'torchcp/VERSION')) as f:
     version = f.read().strip()
 
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+# The full version, including alpha/beta/rc tags
+# from openbox import version as _version
+# release = str(_version)
 
+
+# -- General configuration ---------------------------------------------------
+
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# ones.
+# https://www.sphinx-doc.org/en/master/usage/extensions/index.html
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
-    # 'sphinx.ext.linkcode',
-    'nbsphinx',
-    'numpydoc',
-
+    'myst_parser',          # https://myst-parser.readthedocs.io
+    'sphinx_copybutton',    # https://sphinx-copybutton.readthedocs.io
+    'notfound.extension',   # https://sphinx-notfound-page.readthedocs.io
+    'sphinx.ext.autosectionlabel'
 ]
 
+# https://www.sphinx-doc.org/en/master/usage/extensions/autosectionlabel.html
+# example:
+#     rst:   :ref:`design principle <overview/overview:design principle>`
+#     md:    {ref}`design principle <overview/overview:design principle>`
+#            or [](<overview/overview:design principle>)  (hoverxref CANNOT identify this syntax!)
+# Make sure the target is unique
+autosectionlabel_prefix_document = True  # ref example: `dir/file:header`
+autosectionlabel_maxdepth = None  # Must be None. Or failed to build change_logs
+
+
+# myst_parser
+# documentation: https://myst-parser.readthedocs.io/en/latest/syntax/optional.html
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "fieldlist",
+    "html_admonition",
+    "html_image",
+    "linkify",  # pip install linkify-it-py
+    "replacements",
+    "smartquotes",
+    "strikethrough",
+    "substitution",
+    "tasklist",
+]
+# https://myst-parser.readthedocs.io/en/latest/syntax/optional.html#syntax-header-anchors
+myst_heading_anchors = 3  # e.g., [](../overview/overview.md#design-principle) (hoverxref CANNOT identify this syntax!)
+
+
+# Show tooltip when hover on the reference. Currently, only Read the Docs is supported as backend server!
+# https://sphinx-hoverxref.readthedocs.io/
+extensions += ['hoverxref.extension']
+hoverxref_auto_ref = True
+hoverxref_role_types = {
+    'ref': 'tooltip',
+}
+hoverxref_default_type = 'tooltip'  # 'modal' or 'tooltip'
+# hoverxref_sphinxtabs = True
+hoverxref_mathjax = True
+
+
+# Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-numpydoc_show_class_members = False
-exclude_patterns = []
-
-source_suffix = '.rst'
-
-# The master toctree document.
-master_doc = 'index'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = []
 
-# The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+language = 'en'
+root_doc = 'index'
 
-todo_include_todos = False
-
-
-# Resolve function for the linkcode extension.
-def linkcode_resolve(domain, info):
-    def find_source():
-        # try to find the file and line number, based on code from numpy:
-        # https://github.com/numpy/numpy/blob/master/doc/source/conf.py#L286
-        obj = sys.modules[info['module']]
-        for part in info['fullname'].split('.'):
-            obj = getattr(obj, part)
-        import inspect
-        import os
-        fn = inspect.getsourcefile(obj)
-        fn = os.path.relpath(fn, start=os.path.dirname(torchcp.__file__))
-        source, lineno = inspect.getsourcelines(obj)
-        return fn, lineno, lineno + len(source) - 1
-
-    if domain != 'py' or not info['module']:
-        return None
-    try:
-        filename = 'torchcp/%s#L%d-L%d' % find_source()
-    except Exception:
-        filename = info['module'].replace('.', '/') + '.py'
-    tag = 'master'
-    url = "https://github.com/ml-stat-Sustech/TorchCP/blob/%s/%s"
-    return url % (tag, filename)
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}
 
 
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+# html_static_path = ['_static']
 
-import sphinx_rtd_theme
+html_logo = '../../logo.png'
 
-html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
 
-# A list of files that should not be packed into the epub file.
-epub_exclude_files = ['search.html']
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+# default theme
+# html_theme = 'alabaster'
 
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = True
+# sphinx_rtd_theme (pip install sphinx_rtd_theme) (https://sphinx-rtd-theme.readthedocs.io/)
+# import sphinx_rtd_theme
+# html_theme = "sphinx_rtd_theme"
+# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+# html_theme_options = {
+#     'logo_only': True,
+#     'style_nav_header_background': 'black',
+# }
+
+# furo (pip install furo) (https://pradyunsg.me/furo/)
+
+if os.environ.get('READTHEDOCS') != 'True':
+    try:
+        import sphinx_rtd_theme
+    except ImportError:
+        pass  # assume we have sphinx >= 1.3
+    html_theme = 'sphinx_rtd_theme'
+

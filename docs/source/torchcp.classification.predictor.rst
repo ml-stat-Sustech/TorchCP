@@ -1,53 +1,53 @@
-torchcp.classification.predictors package
+torchcp.classification.predictor package
 =========================================
 
 Submodules
 ----------
 
-torchcp.classification.predictors.base module
+torchcp.classification.predictor.base module
 ---------------------------------------------
 
-.. automodule:: torchcp.classification.predictors.base
+.. automodule:: torchcp.classification.predictor.base
    :members:
    :undoc-members:
    :show-inheritance:
 
-torchcp.classification.predictors.classwise module
+torchcp.classification.predictor.classwise module
 --------------------------------------------------
 
-.. automodule:: torchcp.classification.predictors.classwise
+.. automodule:: torchcp.classification.predictor.classwise
    :members:
    :undoc-members:
    :show-inheritance:
 
-torchcp.classification.predictors.cluster module
+torchcp.classification.predictor.cluster module
 ------------------------------------------------
 
-.. automodule:: torchcp.classification.predictors.cluster
+.. automodule:: torchcp.classification.predictor.cluster
    :members:
    :undoc-members:
    :show-inheritance:
 
-torchcp.classification.predictors.split module
+torchcp.classification.predictor.split module
 ----------------------------------------------
 
-.. automodule:: torchcp.classification.predictors.split
+.. automodule:: torchcp.classification.predictor.split
    :members:
    :undoc-members:
    :show-inheritance:
 
-torchcp.classification.predictors.utils module
+torchcp.classification.predictor.utils module
 ----------------------------------------------
 
-.. automodule:: torchcp.classification.predictors.utils
+.. automodule:: torchcp.classification.predictor.utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-torchcp.classification.predictors.weight module
+torchcp.classification.predictor.weight module
 -----------------------------------------------
 
-.. automodule:: torchcp.classification.predictors.weight
+.. automodule:: torchcp.classification.predictor.weight
    :members:
    :undoc-members:
    :show-inheritance:
@@ -55,7 +55,9 @@ torchcp.classification.predictors.weight module
 Module contents
 ---------------
 
-.. automodule:: torchcp.classification.predictors
+.. automodule:: torchcp.classification.predictor
    :members:
    :undoc-members:
    :show-inheritance:
+
+

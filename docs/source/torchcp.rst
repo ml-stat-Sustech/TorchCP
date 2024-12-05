@@ -9,6 +9,8 @@ Subpackages
 
    torchcp.classification
    torchcp.regression
+   torchcp.graph
+   torchcp.llm
    torchcp.utils
 
 Module contents

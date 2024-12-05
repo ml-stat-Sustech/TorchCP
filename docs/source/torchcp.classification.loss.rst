@@ -12,6 +12,16 @@ torchcp.classification.loss.conftr module
    :undoc-members:
    :show-inheritance:
 
+----------
+
+torchcp.classification.loss.confts module
+-----------------------------------------
+
+.. automodule:: torchcp.classification.loss.confts
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

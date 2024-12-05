@@ -1,8 +1,8 @@
 :mod:`torchcp.classification`
 ==========================
 
-.. automodule:: torchcp.classification.scores
-Score functions
+.. automodule:: torchcp.classification.score
+score function
 -------
 
 ..  autosummary::
@@ -13,9 +13,33 @@ Score functions
     RAPS
     SAPS
     Margin
+    TOPK
+    KNN
 
-.. automodule:: torchcp.classification.predictors
-Predictors
+
+.. autoclass:: THR
+   :members:
+
+.. autoclass:: APS
+   :members:
+
+.. autoclass:: RAPS
+   :members:
+
+.. autoclass:: SAPS
+   :members:
+
+.. autoclass:: Margin
+   :members:
+
+.. autoclass:: TOPK
+   :members:
+
+.. autoclass:: KNN
+   :members:
+
+.. automodule:: torchcp.classification.predictor
+predictor
 -------
 
 ..  autosummary::
@@ -26,47 +50,48 @@ Predictors
     ClusteredPredictor
     WeightedPredictor
 
+.. autoclass:: SplitPredictor
+   :members:
+
+.. autoclass:: ClassWisePredictor
+   :members:
+
+.. autoclass:: ClusteredPredictor
+   :members:
+
+.. autoclass:: WeightedPredictor
+   :members:
+
+
 .. automodule:: torchcp.classification.loss
-Loss functions
+loss function
 -------
 
 ..  autosummary::
     :nosignatures:
 
     ConfTr
+    ConfTS 
+    CDLoss
 
-Detailed description
---------------------
-.. automodule:: torchcp.classification.scores
-..  autoclass:: THR
-    :members:
+.. autoclass:: ConfTr
+   :members:
 
-..  autoclass:: APS
-    :members:
+.. autoclass:: ConfTS
+   :members:
 
-..  autoclass:: RAPS
-    :members:
+.. autoclass:: CDLoss
+   :members:
 
-..  autoclass:: SAPS
-    :members:
+.. automodule:: torchcp.classification.utils
+utils
+-------
 
-..  autoclass:: Margin
-    :members:
+..  autosummary::
+    :nosignatures:
 
-.. automodule:: torchcp.classification.predictors
+    TS
 
-..  autoclass:: SplitPredictor
-    :members:
-
-..  autoclass:: ClassWisePredictor
-    :members:
-
-..  autoclass:: ClusteredPredictor
-    :members:
-
-..  autoclass:: WeightedPredictor
-    :members:
-
-..  autoclass:: ConfTr
-    :members:
+.. autoclass:: TS
+   :members:
 
