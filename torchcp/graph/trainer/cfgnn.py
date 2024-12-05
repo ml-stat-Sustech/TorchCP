@@ -38,6 +38,7 @@ class CFGNNTrainer:
             val_idx: The indices of the validation nodes.
             calib_train_idx: The indices of the training nodes for CF-GNN.
         hidden_channels (int): Number of hidden channels for the CF-GNN layers.
+        num_layers (int): The number of layers in the network.
         alpha (float, optional): The significance level for conformal prediction. Default is 0.1.
     """
     def __init__(
@@ -45,6 +46,7 @@ class CFGNNTrainer:
             backbone_model,
             graph_data,
             hidden_channels=64,
+            num_layers=2,
             alpha=0.1):
         if backbone_model is None:
             raise ValueError("backbone_model cannot be None.")
@@ -58,7 +60,8 @@ class CFGNNTrainer:
         num_classes = graph_data.y.max().item() + 1
         self.cfgnn = GNN_Multi_Layer(in_channels=num_classes,
                                      hidden_channels=hidden_channels,
-                                     out_channels=num_classes).to(self._device)
+                                     out_channels=num_classes,
+                                     num_layers=num_layers).to(self._device)
         self.optimizer = torch.optim.Adam(
             self.cfgnn.parameters(), weight_decay=5e-4, lr=0.001)
         self.pred_loss_fn = F.cross_entropy
