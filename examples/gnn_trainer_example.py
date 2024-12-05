@@ -83,15 +83,13 @@ if __name__ == '__main__':
     ce_coverage, ce_size = evaluate_model(logits, calib_eval_idx, predictor, graph_data, args)
 
     # Run ConfTr experiment
-    confmodel_conftr = CFGNNTrainer(out_channels=graph_data.y.max().item() + 1,
-                               hidden_channels=64,
-                               device=device)
-    best_logits = confmodel_conftr.train(pre_logits=logits,
-                         labels=graph_data.y,
-                         edge_index=graph_data.edge_index,
-                         train_idx=train_idx,
-                         val_idx=val_idx,
-                         calib_train_idx=calib_train_idx)
+    # breakpoint()
+    graph_data['train_idx'] = train_idx
+    graph_data['val_idx'] = test_idx
+    graph_data['calib_train_idx'] = calib_train_idx
+    confmodel_conftr = CFGNNTrainer(model,
+                                    graph_data)
+    best_logits = confmodel_conftr.train()
     conftr_coverage, conftr_size = evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args)
 
     print("\nResults Comparison:")
