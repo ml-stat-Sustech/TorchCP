@@ -1,13 +1,12 @@
-import pytest
 import math
-import warnings
-
+import pytest
 import torch
+import warnings
 from torch.utils.data import Dataset
 
+from torchcp.classification.predictor import ClassWisePredictor
 from torchcp.classification.score import THR
 from torchcp.classification.utils.metrics import Metrics
-from torchcp.classification.predictor import ClassWisePredictor
 
 
 @pytest.fixture
@@ -15,13 +14,14 @@ def mock_dataset():
     class MyDataset(Dataset):
         def __init__(self):
             self.x = torch.randn(100, 3)
-            self.labels = torch.randint(0, 3, (100, ))
+            self.labels = torch.randint(0, 3, (100,))
 
         def __len__(self):
             return len(self.x)
 
         def __getitem__(self, idx):
             return self.x[idx], self.labels[idx]
+
     return MyDataset()
 
 
@@ -34,6 +34,7 @@ def mock_model():
 
         def forward(self, x):
             return x
+
     return MockModel()
 
 
@@ -65,7 +66,7 @@ def test_invalid_initialization(mock_score_function, mock_model, temperature):
 @pytest.mark.parametrize("alpha", [0, 1, -0.1, 2])
 def test_invalid_calibrate_alpha(predictor, alpha):
     logits = torch.randn(100, 3)
-    labels = torch.randint(0, 3, (100, ))
+    labels = torch.randint(0, 3, (100,))
     with pytest.raises(ValueError, match="alpha should be a value"):
         predictor.calculate_threshold(logits, labels, alpha)
 
@@ -89,7 +90,7 @@ def test_calculate_threshold(predictor, mock_score_function, alpha):
     assert torch.equal(predictor.q_hat, excepted_qhat)
 
     logits = torch.randn(100, 3)
-    labels = torch.cat([torch.zeros((90, )), torch.ones((10, ))]).long()
+    labels = torch.cat([torch.zeros((90,)), torch.ones((10,))]).long()
     with warnings.catch_warnings(record=True) as warns:
         warnings.simplefilter("always")
         predictor.calculate_threshold(logits, labels, alpha)

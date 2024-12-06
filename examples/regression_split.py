@@ -5,11 +5,11 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset, ConcatDataset
 from transformers import set_seed
 
+from examples.utils import build_reg_data
 from torchcp.regression.loss import QuantileLoss, R2ccpLoss
 from torchcp.regression.predictor import SplitPredictor
 from torchcp.regression.score import ABS, CQR, CQRR, CQRM, CQRFM, R2CCP
 from torchcp.regression.utils import calculate_midpoints, build_regression_model
-from examples.utils import build_reg_data
 
 
 def prepare_dataset(X, y, train_ratio=0.4, cal_ratio=0.2, batch_size=100):
@@ -32,25 +32,25 @@ def prepare_dataset(X, y, train_ratio=0.4, cal_ratio=0.2, batch_size=100):
     split_index1 = int(len(indices) * train_ratio)
     split_index2 = int(len(indices) * (train_ratio + cal_ratio))
     part1, part2, part3 = np.split(indices, [split_index1, split_index2])
-    
+
     # Scale features
     scalerX = StandardScaler()
     scalerX = scalerX.fit(X[part1, :])
-    
+
     # Create datasets
     train_dataset = TensorDataset(
-        torch.from_numpy(scalerX.transform(X[part1, :])), 
+        torch.from_numpy(scalerX.transform(X[part1, :])),
         torch.from_numpy(y[part1])
     )
     cal_dataset = TensorDataset(
-        torch.from_numpy(scalerX.transform(X[part2, :])), 
+        torch.from_numpy(scalerX.transform(X[part2, :])),
         torch.from_numpy(y[part2])
     )
     test_dataset = TensorDataset(
-        torch.from_numpy(scalerX.transform(X[part3, :])), 
+        torch.from_numpy(scalerX.transform(X[part3, :])),
         torch.from_numpy(y[part3])
     )
-    
+
     # Create data loaders
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True
@@ -61,12 +61,12 @@ def prepare_dataset(X, y, train_ratio=0.4, cal_ratio=0.2, batch_size=100):
     test_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True
     )
-    
+
     return train_loader, cal_loader, test_loader, cal_dataset
 
 
-def run_experiment(name, model, score_function, criterion, train_loader, cal_loader, 
-                  test_loader, device, epochs=20, lr=0.01, alpha=0.1, **kwargs):
+def run_experiment(name, model, score_function, criterion, train_loader, cal_loader,
+                   test_loader, device, epochs=20, lr=0.01, alpha=0.1, **kwargs):
     """
     Run a single conformal prediction experiment.
     
@@ -87,11 +87,11 @@ def run_experiment(name, model, score_function, criterion, train_loader, cal_loa
     Returns:
         dict: Evaluation results
     """
-    print(f"\n{'='*20} {name} {'='*20}")
-    
+    print(f"\n{'=' * 20} {name} {'=' * 20}")
+
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     predictor = SplitPredictor(score_function=score_function, model=model)
-    
+
     if hasattr(criterion, 'midpoints'):
         predictor.train(
             train_dataloader=train_loader,
@@ -107,7 +107,7 @@ def run_experiment(name, model, score_function, criterion, train_loader, cal_loa
             optimizer=optimizer,
             **kwargs
         )
-    
+
     predictor.calibrate(cal_loader, alpha)
     results = predictor.evaluate(test_loader)
     print(f"Results: {results}")
@@ -117,19 +117,19 @@ def run_experiment(name, model, score_function, criterion, train_loader, cal_loa
 def main():
     """Main function to run regression conformal prediction experiments."""
     print("Starting regression conformal prediction experiments...")
-    
+
     # Setup
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     set_seed(seed=1)
     alpha = 0.1
     epochs = 20
     input_dim = None  # Will be set after loading data
-    
+
     # Load and prepare data
     X, y = build_reg_data(data_name="synthetic")
     input_dim = X.shape[1]
     train_loader, cal_loader, test_loader, cal_dataset = prepare_dataset(X, y)
-    
+
     # Define experiments
     experiments = [
         {
@@ -142,28 +142,28 @@ def main():
             "name": "Conformal Quantile Regression",
             "model": lambda: build_regression_model("NonLinearNet")(input_dim, 2, 64, 0.5),
             "score_function": CQR(),
-            "criterion": QuantileLoss([alpha/2, 1-alpha/2]),
+            "criterion": QuantileLoss([alpha / 2, 1 - alpha / 2]),
         },
         {
             "name": "CQRR",
             "model": lambda: build_regression_model("NonLinearNet")(input_dim, 2, 64, 0.5),
             "score_function": CQRR(),
-            "criterion": QuantileLoss([alpha/2, 1-alpha/2]),
+            "criterion": QuantileLoss([alpha / 2, 1 - alpha / 2]),
         },
         {
             "name": "CQRM",
             "model": lambda: build_regression_model("NonLinearNet")(input_dim, 3, 64, 0.5),
             "score_function": CQRM(),
-            "criterion": QuantileLoss([alpha/2, 0.5, 1-alpha/2]),
+            "criterion": QuantileLoss([alpha / 2, 0.5, 1 - alpha / 2]),
         },
         {
             "name": "CQRFM",
             "model": lambda: build_regression_model("NonLinearNet")(input_dim, 3, 64, 0.5),
             "score_function": CQRFM(),
-            "criterion": QuantileLoss([alpha/2, 0.5, 1-alpha/2]),
+            "criterion": QuantileLoss([alpha / 2, 0.5, 1 - alpha / 2]),
         },
     ]
-    
+
     # Run experiments and collect results
     results = {}
     for exp in experiments:
@@ -180,23 +180,23 @@ def main():
             epochs=epochs,
             alpha=alpha
         )
-    
+
     # Additional R2CCP experiment with special setup
     print("\nRunning R2CCP experiment...")
     K = 50
     train_and_cal_dataset = ConcatDataset([train_loader.dataset, cal_loader.dataset])
     train_and_cal_loader = torch.utils.data.DataLoader(
-        train_and_cal_dataset, 
-        batch_size=100, 
+        train_and_cal_dataset,
+        batch_size=100,
         shuffle=True,
         pin_memory=True
     )
-    
+
     midpoints = calculate_midpoints(train_and_cal_loader, K).to(device)
     model = build_regression_model("NonLinearNet_with_Softmax")(
         input_dim, K, 1000, 0
     ).to(device)
-    
+
     results["R2CCP"] = run_experiment(
         name="R2CCP",
         model=model,
@@ -210,7 +210,7 @@ def main():
         alpha=alpha,
         lr=1e-4
     )
-    
+
     # Print comparative results
     print("\nComparative Results:")
     print("-" * 80)

@@ -32,29 +32,27 @@ class TS(nn.Module):
     def forward(self, batch_logits):
         return batch_logits / self.temperature
 
-
-
     def optimze(self, dataloader, device, max_iters=10, lr=0.01, epsilon=0.01):
-       """
-       Tune the tempearature of the model (using the validation set).
-       We're going to set it to optimize NLL.
-       valid_loader (DataLoader): validation set loader
-       """
-       self.to(device)
-       nll_criterion = nn.CrossEntropyLoss().to(device)
-       
-       optimizer = torch.optim.SGD([self.temperature], lr=lr)
-       
-       for iter in range(max_iters):
-           T_old = self.temperature.item()
-           for x, targets in dataloader:
-               optimizer.zero_grad()
-               x = x.to(device)
-               x.requires_grad = True
-               out = x / self.temperature
-               loss = nll_criterion(out, targets.long().cuda())
-               
-               loss.backward()
-               optimizer.step()
-           if abs(T_old - self.temperature.item()) < epsilon:
-               break
+        """
+        Tune the tempearature of the model (using the validation set).
+        We're going to set it to optimize NLL.
+        valid_loader (DataLoader): validation set loader
+        """
+        self.to(device)
+        nll_criterion = nn.CrossEntropyLoss().to(device)
+
+        optimizer = torch.optim.SGD([self.temperature], lr=lr)
+
+        for iter in range(max_iters):
+            T_old = self.temperature.item()
+            for x, targets in dataloader:
+                optimizer.zero_grad()
+                x = x.to(device)
+                x.requires_grad = True
+                out = x / self.temperature
+                loss = nll_criterion(out, targets.long().cuda())
+
+                loss.backward()
+                optimizer.step()
+            if abs(T_old - self.temperature.item()) < epsilon:
+                break

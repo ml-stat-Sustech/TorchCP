@@ -1,12 +1,12 @@
-import pytest
 import math
+import pytest
 import torch
 from torch.utils.data import Dataset
 
-from torchcp.classification.score import THR
-from torchcp.classification.utils.metrics import Metrics
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.predictor.base import BasePredictor
+from torchcp.classification.score import THR
+from torchcp.classification.utils.metrics import Metrics
 
 
 @pytest.fixture
@@ -14,15 +14,16 @@ def mock_dataset():
     class MyDataset(Dataset):
         def __init__(self):
             self.x = torch.randn(100, 3)
-            self.labels = torch.randint(0, 3, (100, ))
+            self.labels = torch.randint(0, 3, (100,))
 
         def __len__(self):
             return len(self.x)
 
         def __getitem__(self, idx):
             return self.x[idx], self.labels[idx]
+
     return MyDataset()
-    
+
 
 @pytest.fixture
 def mock_model():
@@ -33,6 +34,7 @@ def mock_model():
 
         def forward(self, x):
             return x
+
     return MockModel()
 
 
@@ -50,13 +52,13 @@ def test_base_predictor_abstractmethod(mock_score_function):
     class Predictor(BasePredictor):
         def __init__(self, score_function):
             super().__init__(score_function)
-    
+
     predictor = Predictor(mock_score_function)
     with pytest.raises(NotImplementedError):
         predictor.calibrate(None, 0.1)
     with pytest.raises(NotImplementedError):
         predictor.predict(None)
-        
+
 
 def test_valid_initialization(predictor, mock_score_function, mock_model):
     assert predictor.score_function is mock_score_function
@@ -102,13 +104,14 @@ def test_invalid_calibrate_model(mock_score_function, mock_dataset):
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
 def test_calculate_threshold(predictor, mock_score_function, alpha):
     logits = torch.randn(100, 3)
-    labels = torch.randint(0, 3, (100, ))
+    labels = torch.randint(0, 3, (100,))
 
     predictor.calculate_threshold(logits, labels, alpha)
 
     scores = mock_score_function(logits, labels)
     excepted_qhat = torch.sort(scores).values[math.ceil((scores.shape[0] + 1) * (1 - alpha)) - 1]
     assert predictor.q_hat == excepted_qhat
+
 
 @pytest.mark.parametrize("q_hat", [0.5, 0.7])
 def test_predict(predictor, mock_score_function, mock_model, mock_dataset, q_hat):
@@ -117,7 +120,7 @@ def test_predict(predictor, mock_score_function, mock_model, mock_dataset, q_hat
 
     logits = mock_model(mock_dataset.x)
     scores = mock_score_function(logits)
-    excepted_sets = (scores<=q_hat).int()
+    excepted_sets = (scores <= q_hat).int()
     assert torch.equal(pred_sets, excepted_sets)
 
 
@@ -126,30 +129,30 @@ def test_invalid_predict_model(mock_score_function, mock_dataset):
     with pytest.raises(ValueError, match="Model is not defined"):
         predictor.predict(mock_dataset.x)
 
+
 def test_q_hat_value_error(mock_model, mock_score_function):
     """Test that a ValueError is raised when self.q_hat is None and q_hat is not provided."""
     predictor = SplitPredictor(score_function=mock_score_function, model=mock_model)
-    
+
     # Ensure self.q_hat is None
     predictor.q_hat = None
-    
+
     logits = torch.rand(10, 5)
-    
+
     with pytest.raises(ValueError, match="Ensure self.q_hat is not None. Please perform calibration first."):
         predictor.predict_with_logits(logits)
-        
-        
+
+
 @pytest.mark.parametrize("q_hat", [0.5, 0.7])
 def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, q_hat):
-
     cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
     predictor.q_hat = q_hat
     results = predictor.evaluate(cal_dataloader)
 
     logits = mock_model(mock_dataset.x)
     scores = mock_score_function(logits)
-    excepted_sets = (scores<=q_hat).int()
-        
+    excepted_sets = (scores <= q_hat).int()
+
     metrics = Metrics()
     assert len(results) == 2
     assert results['Coverage_rate'] == metrics('coverage_rate')(excepted_sets, mock_dataset.labels)

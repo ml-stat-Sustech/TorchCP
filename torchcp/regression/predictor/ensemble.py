@@ -9,8 +9,8 @@ import copy
 import torch
 
 from torchcp.utils.common import get_device
-from ..utils.metrics import Metrics
 from .split import SplitPredictor
+from ..utils.metrics import Metrics
 
 
 class EnsemblePredictor(SplitPredictor):
@@ -25,11 +25,10 @@ class EnsemblePredictor(SplitPredictor):
         - Github: https://github.com/hamrel-cxu/EnbPI
     
     2. EnCQR:
-        - Paper: Ensemble Conformalized Quantile Regression for Probabilistic 
-                Time Series Forecasting (Jensen et al., 2022)
+        - Paper: Ensemble Conformalized Quantile Regression for Probabilistic Time Series Forecasting (Jensen et al., 2022)
         - Link: https://ieeexplore.ieee.org/abstract/document/9940232
         - Github: https://github.com/FilippoMB/Ensemble-Conformalized-Quantile-Regression
-       
+        
     Args:
         model (torch.nn.Module): The base model to be used in the ensemble.
         score_function (torchcp.regression.scores): The method for calculating scores and prediction intervals.
@@ -41,7 +40,7 @@ class EnsemblePredictor(SplitPredictor):
                         - torch.median: Computes the median of the predictions.
                         - Custom function: Should accept a tensor and dimension as input, returning the result.
     """
-    
+
     def __init__(self, model, score_function, aggregation_function='mean'):
         super().__init__(score_function, model)
         if aggregation_function == 'mean':
@@ -91,7 +90,7 @@ class EnsemblePredictor(SplitPredictor):
         """
         if ensemble_num <= 0:
             raise ValueError("ensemble_num must be greater than 0")
-        
+
         self.model_list = []
         self.indices_list = []
 
@@ -149,7 +148,7 @@ class EnsemblePredictor(SplitPredictor):
             update_scores = self.calculate_score(aggr_pred_last, y_batch_last)
             self.scores = torch.cat([self.scores, update_scores], dim=0) if len(self.scores) > 0 else update_scores
             self.scores = self.scores[len(update_scores):]
-            
+
         self.q_hat = self._calculate_conformal_value(self.scores, alpha)
         x_batch = x_batch.to(self._device)
 
@@ -159,7 +158,7 @@ class EnsemblePredictor(SplitPredictor):
 
         predictions_tensor = torch.stack(model_predictions)
         aggregated_predict = self.aggregation_function(predictions_tensor, dim=0)
-        
+
         return self.generate_intervals(aggregated_predict, self.q_hat), aggregated_predict
 
     def evaluate(self, data_loader, alpha, verbose=True):
@@ -173,7 +172,7 @@ class EnsemblePredictor(SplitPredictor):
                         the width of the prediction intervals (e.g., 0.1 for 90% prediction intervals).
             verbose (bool): If True, prints the coverage rate and average size for each batch. 
                             Default is True.
-
+                            
         Returns:
             dict: A dictionary containing:
                 - "Total batches": The number of batches evaluated.
@@ -205,7 +204,7 @@ class EnsemblePredictor(SplitPredictor):
                 x_batch, y_batch = batch[0].to(self._device), batch[1].to(self._device)
                 prediction_intervals, aggr_pred_last = self.predict(alpha, x_batch, y_batch_last, aggr_pred_last)
                 y_batch_last = y_batch
-                
+
                 batch_coverage_rate = self._metric('coverage_rate')(prediction_intervals, y_batch)
                 batch_average_size = self._metric('average_size')(prediction_intervals)
 

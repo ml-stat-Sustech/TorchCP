@@ -1,10 +1,12 @@
 import pytest
 import torch
-from torchcp.utils.registry import Registry
+
 from torchcp.regression.utils.metrics import coverage_rate, average_size, Metrics
+from torchcp.utils.registry import Registry
 
 # Register the test metrics
 METRICS_REGISTRY_REGRESSION = Registry("METRICS")
+
 
 # Test Data Setup
 @pytest.fixture
@@ -34,7 +36,9 @@ def test_coverage_rate(mock_data):
     expected_coverage_rate = torch.sum(condition).cpu() / y_truth.shape[0]
 
     # Ensure the computed coverage rate is correct
-    assert abs(result - expected_coverage_rate) <= 1e-1, f"Expected coverage_rate {expected_coverage_rate}, but got {result}"
+    assert abs(
+        result - expected_coverage_rate) <= 1e-1, f"Expected coverage_rate {expected_coverage_rate}, but got {result}"
+
 
 def test_column_validation():
     # Test case 1: Valid even number of columns
@@ -56,7 +60,8 @@ def test_column_validation():
     with pytest.raises(ValueError) as exc_info:
         average_size(invalid_avg)
     assert "must be even" in str(exc_info.value)
-        
+
+
 def test_average_size():
     # Test data
     prediction_intervals = torch.tensor([
@@ -67,10 +72,10 @@ def test_average_size():
     # Call function
     result = average_size(prediction_intervals)
 
-
     expected = 0.8
 
     assert abs(result - expected) < 1e-6, f"Expected {expected}, got {result}"
+
 
 def test_average_size_invalid_shape():
     invalid_intervals = torch.tensor([0.1, 0.5, 0.2])  # Odd number of columns

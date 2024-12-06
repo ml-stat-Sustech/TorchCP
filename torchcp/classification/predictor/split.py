@@ -32,13 +32,13 @@ class SplitPredictor(BasePredictor):
     # The calibration process
     ############################
     def calibrate(self, cal_dataloader, alpha):
-        
+
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0, 1).")
-        
+
         if self._model is None:
             raise ValueError("Model is not defined. Please provide a valid model.")
-        
+
         self._model.eval()
         logits_list = []
         labels_list = []
@@ -73,11 +73,11 @@ class SplitPredictor(BasePredictor):
 
         Returns:
             list: A list of prediction sets for each instance in the batch.
-        """        
-        
+        """
+
         if self._model is None:
             raise ValueError("Model is not defined. Please provide a valid model.")
-        
+
         self._model.eval()
         x_batch = self._model(x_batch.to(self._device)).float()
         x_batch = self._logits_transformation(x_batch).detach()
@@ -124,18 +124,18 @@ class SplitPredictor(BasePredictor):
         """
         predictions_sets_list: List[torch.Tensor] = []
         labels_list: List[torch.Tensor] = []
-        
+
         # Evaluate in inference mode
         self._model.eval()
         with torch.no_grad():
             for batch in val_dataloader:
                 # Move batch to device and get predictions
                 inputs = batch[0].to(self._device)
-                labels = batch[1].to(self._device) 
-                
+                labels = batch[1].to(self._device)
+
                 # Get predictions as bool tensor (N x C)
                 batch_predictions = self.predict(inputs)
-                
+
                 # Accumulate predictions and labels
                 predictions_sets_list.append(batch_predictions)
                 labels_list.append(labels)
@@ -143,11 +143,11 @@ class SplitPredictor(BasePredictor):
         # Concatenate all batches
         val_prediction_sets = torch.cat(predictions_sets_list, dim=0)  # (N_val x C)
         val_labels = torch.cat(labels_list, dim=0)  # (N_val,)
-        
+
         # Compute evaluation metrics
         metrics = {
             "Coverage_rate": self._metric('coverage_rate')(val_prediction_sets, val_labels),
             "Average_size": self._metric('average_size')(val_prediction_sets, val_labels)
         }
-        
+
         return metrics

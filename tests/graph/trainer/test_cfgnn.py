@@ -1,14 +1,13 @@
 import pytest
-
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv, GATConv, SAGEConv, SGConv
 
 from torchcp.classification.loss import ConfTr
+from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
 from torchcp.graph.trainer.cfgnn import GNN_Multi_Layer
-from torchcp.classification.predictor import SplitPredictor
 
 
 @pytest.fixture
@@ -25,16 +24,16 @@ def mock_graph_data(device):
         [0, 1, 2, 3, 4],
         [1, 2, 3, 4, 0]
     ])
-    y = torch.randint(0, 10, (num_nodes, ))
+    y = torch.randint(0, 10, (num_nodes,))
     rand_perm = torch.randperm(num_nodes)
     train_idx = rand_perm[:20]
     val_idx = rand_perm[20:40]
     calib_train_idx = rand_perm[40:60]
 
-    return Data(x=x, edge_index=edge_index, y=y, 
-                num_nodes=num_nodes, 
-                train_idx=train_idx, 
-                val_idx=val_idx, 
+    return Data(x=x, edge_index=edge_index, y=y,
+                num_nodes=num_nodes,
+                train_idx=train_idx,
+                val_idx=val_idx,
                 calib_train_idx=calib_train_idx).to(device)
 
 
@@ -47,6 +46,7 @@ def mock_model(device):
 
         def forward(self, x, edge_index=None):
             return x
+
     return MockModel().to(device)
 
 
@@ -92,10 +92,9 @@ def test_invalid_initialization(mock_model, mock_graph_data):
 
 
 def test_train_each_epoch(mock_graph_data, mock_cfgnn_model, device):
-
     mock_cfgnn_model._train_each_epoch(500, mock_graph_data.x)
     mock_cfgnn_model._train_each_epoch(2000, mock_graph_data.x)
-    
+
 
 def test_evaluate(mock_graph_data, mock_cfgnn_model, device):
     results = mock_cfgnn_model._evaluate(mock_graph_data.x)

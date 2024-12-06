@@ -36,28 +36,28 @@ def train(model, device, train_loader, criterion, optimizer, epoch, use_conf=Fal
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        
+
         if use_conf:
             loss = criterion(output, target) + F.cross_entropy(output, target)
         else:
             loss = F.cross_entropy(output, target)
-            
+
         loss.backward()
         optimizer.step()
 
 
-def run_experiment(model, device, train_loader, cal_loader, test_loader, criterion, 
-                  optimizer, epochs, alpha, use_conf=False):
+def run_experiment(model, device, train_loader, cal_loader, test_loader, criterion,
+                   optimizer, epochs, alpha, use_conf=False):
     print(f"Starting to train the model with {'conformal loss' if use_conf else 'cross entropy'} ...")
-    
+
     for epoch in range(1, epochs + 1):
         train(model, device, train_loader, criterion, optimizer, epoch, use_conf)
-    
+
     score_function = THR()
     predictor = SplitPredictor(score_function, model)
     predictor.calibrate(cal_loader, alpha)
     result = predictor.evaluate(test_loader)
-    
+
     return result
 
 
@@ -65,18 +65,18 @@ def setup_data_and_model(device, batch_size=512):
     train_dataset = build_dataset("mnist")
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
-    
+
     test_dataset = build_dataset("mnist", data_mode='test')
     cal_dataset, test_dataset = torch.utils.data.random_split(test_dataset, [5000, 5000])
-    
+
     cal_loader = torch.utils.data.DataLoader(
         cal_dataset, batch_size=1600, shuffle=False, pin_memory=True)
     test_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=1600, shuffle=False, pin_memory=True)
-    
+
     model = Net().to(device)
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
-    
+
     return train_loader, cal_loader, test_loader, model, optimizer
 
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     epochs = 10
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     set_seed(seed=0)
-    
+
     losses = {
         "CE": None,  # Will use standard CrossEntropyLoss in training loop
         "ConfTr": lambda: ConfTr(
@@ -102,13 +102,13 @@ if __name__ == '__main__':
     }
 
     results = {}
-    
+
     for loss_name, loss_fn in losses.items():
-        print(f"\n{'='*20} {loss_name} {'='*20}")
-        
+        print(f"\n{'=' * 20} {loss_name} {'=' * 20}")
+
         # Setup fresh data and model for each experiment
         train_loader, cal_loader, test_loader, model, optimizer = setup_data_and_model(device)
-        
+
         # Run experiment
         result = run_experiment(
             model, device, train_loader, cal_loader, test_loader,
@@ -116,11 +116,11 @@ if __name__ == '__main__':
             optimizer, epochs, alpha,
             use_conf=(loss_name != "CE")
         )
-        
+
         results[loss_name] = result
         print(f"Result--Coverage_rate: {result['Coverage_rate']:.4f}, "
               f"Average_size: {result['Average_size']:.4f}")
-    
+
     # Print comparative results
     print("\nComparative Results:")
     print("-" * 60)

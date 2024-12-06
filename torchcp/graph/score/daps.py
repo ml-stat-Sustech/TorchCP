@@ -44,7 +44,7 @@ class DAPS(BaseScore):
             self._adj, base_scores) * (1 / (self._degs + 1e-10))[:, None]
 
         scores = self._neigh_coef * diffusion_scores + \
-            (1 - self._neigh_coef) * base_scores
+                 (1 - self._neigh_coef) * base_scores
 
         if labels is None:
             return scores

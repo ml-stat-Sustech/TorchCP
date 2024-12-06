@@ -38,10 +38,10 @@ def average_set_loss(prediction_sets, prediction_set_loss):
     Returns:
         torch.Tensor: The average set loss.
     """
-    
+
     max_indices = prediction_sets.shape[1] - 1 - torch.argmax(prediction_sets.flip(1).to(torch.int), dim=1)
 
-    losses =  prediction_set_loss[torch.arange(prediction_sets.shape[0]), max_indices]
+    losses = prediction_set_loss[torch.arange(prediction_sets.shape[0]), max_indices]
     return torch.mean(losses.float()).cpu().item()
 
 
@@ -60,10 +60,10 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
     Returns:
         torch.Tensor: The size-stratified conditional loss.
     """
-    
+
     prediction_sets = prediction_sets.to(torch.float32).clone().detach()
-    prediction_sizes = torch.sum(prediction_sets,dim=0)
-    bins = torch.quantile(prediction_sizes, torch.linspace(0, 1, num_bins, dtype= prediction_sets.dtype))
+    prediction_sizes = torch.sum(prediction_sets, dim=0)
+    bins = torch.quantile(prediction_sizes, torch.linspace(0, 1, num_bins, dtype=prediction_sets.dtype))
     binids = torch.bucketize(prediction_sizes, torch.cat([torch.tensor([0]), torch.unique(bins)]))
 
     L_worst_avg = -1
@@ -73,6 +73,7 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
         Ls_mask_avg = torch.sum(prediction_set_loss * kept) / num_kept_examples
         L_worst_avg = max(L_worst_avg, Ls_mask_avg)
     return L_worst_avg.cpu().item()
+
 
 class Metrics:
     def __call__(self, metric) -> Any:

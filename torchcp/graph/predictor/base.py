@@ -5,12 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import torch.nn.functional as F
 from abc import abstractmethod
 
-import torch.nn.functional as F
-
-from torchcp.graph.utils.metrics import Metrics
 from torchcp.classification.predictor.base import BasePredictor
+from torchcp.graph.utils.metrics import Metrics
 
 
 class BaseGraphPredictor(BasePredictor):

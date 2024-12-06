@@ -44,7 +44,7 @@ class BasePredictor(object):
     def __init__(self, score_function, model=None, temperature=1):
         if temperature <= 0:
             raise ValueError("temperature must be greater than 0.")
-        
+
         self.score_function = score_function
         self._model = model
         if self._model != None:
@@ -74,7 +74,7 @@ class BasePredictor(object):
         """
         raise NotImplementedError
 
-    def _generate_prediction_set(self, scores, q_hat : torch.Tensor):
+    def _generate_prediction_set(self, scores, q_hat: torch.Tensor):
         """
         Generate the prediction set with the threshold q_hat.
 
@@ -87,7 +87,6 @@ class BasePredictor(object):
         """
 
         return (scores <= q_hat).int()
-    
-    
+
     def get_device(self):
         return self._device

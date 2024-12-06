@@ -28,7 +28,8 @@ def test_call(r2ccp_instance):
 
     scores = r2ccp_instance(predicts, y_truth)
     expected_scores = torch.tensor([[-0.7], [-0.7]])
-    assert torch.all(torch.isclose(scores, expected_scores, atol=1e-1)), "The __call__ method is not working as expected."
+    assert torch.all(
+        torch.isclose(scores, expected_scores, atol=1e-1)), "The __call__ method is not working as expected."
 
 
 def test_generate_intervals(r2ccp_instance):
@@ -40,7 +41,8 @@ def test_generate_intervals(r2ccp_instance):
 
     intervals = r2ccp_instance.generate_intervals(predicts_batch, q_hat)
     expected_intervals = torch.tensor([[0, 0.5, 0.5, 1.0], [0, 0.5, 0.5, 1.0]])
-    assert torch.all(torch.isclose(intervals, expected_intervals, atol=1e-1)), "The generate_intervals method is not working as expected."
+    assert torch.all(torch.isclose(intervals, expected_intervals,
+                                   atol=1e-1)), "The generate_intervals method is not working as expected."
 
 
 def test_train(r2ccp_instance, dummy_data):

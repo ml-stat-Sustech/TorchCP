@@ -1,14 +1,13 @@
-import pytest
-
 import math
+import pytest
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 
 from torchcp.classification.score import THR
 from torchcp.graph.predictor import GraphSplitPredictor
-from torchcp.graph.utils import Metrics
 from torchcp.graph.predictor.base import BaseGraphPredictor
+from torchcp.graph.utils import Metrics
 
 
 @pytest.fixture
@@ -20,7 +19,7 @@ def mock_graph_data():
         [0, 1, 2, 3, 4],
         [1, 2, 3, 4, 0]
     ])
-    y = torch.randint(0, 3, (num_nodes, ))
+    y = torch.randint(0, 3, (num_nodes,))
     return Data(x=x, edge_index=edge_index, y=y, num_nodes=num_nodes)
 
 
@@ -33,6 +32,7 @@ def mock_model():
 
         def forward(self, x, edge_index=None):
             return x
+
     return MockModel()
 
 
@@ -60,6 +60,7 @@ def preprocess(mock_graph_data, mock_score_function, mock_model):
             self.scores = mock_score_function(mock_model(mock_graph_data.x))
             self.cal_scores = self.scores[self.cal_idx][self.label_mask[self.cal_idx]]
             self.logits = mock_model(mock_graph_data.x)
+
     return PreProcess()
 
 
@@ -67,7 +68,7 @@ def test_base_graph_predictor(mock_graph_data, mock_score_function):
     class TestPredictor(BaseGraphPredictor):
         def __init__(self, graph_data, score_function, model=None):
             super().__init__(graph_data, score_function, model)
-        
+
     predictor = TestPredictor(mock_graph_data, mock_score_function)
     with pytest.raises(NotImplementedError):
         predictor.calibrate(None, 0.1)
@@ -85,7 +86,6 @@ def test_initialization(predictor, mock_graph_data, mock_score_function, mock_mo
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
 def test_calculate(predictor, preprocess, alpha):
-
     predictor.calibrate(preprocess.cal_idx, alpha)
     quantile = torch.sort(preprocess.cal_scores).values[
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
@@ -95,7 +95,6 @@ def test_calculate(predictor, preprocess, alpha):
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
 def test_calculate_threshold(predictor, preprocess, alpha):
-
     predictor.calculate_threshold(
         preprocess.logits, preprocess.cal_idx, preprocess.label_mask, alpha)
     quantile = torch.sort(preprocess.cal_scores).values[

@@ -12,7 +12,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+
 from .confts import ConfTS
+
 
 class ConfTr(ConfTS):
     """
@@ -53,20 +55,21 @@ class ConfTr(ConfTS):
         >>> loss.backward()
     """
 
-    def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True, epsilon = 1e-4, loss_type="valid", target_size=1, loss_transform="square"):
+    def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True, epsilon=1e-4, loss_type="valid",
+                 target_size=1, loss_transform="square"):
 
         super(ConfTr, self).__init__(weight, predictor, alpha, fraction, soft_qunatile)
-        
+
         if loss_type not in ["valid", "classification", "probs", "coverage", "cfgnn"]:
-            raise ValueError('loss_type should be a value in ["valid", "classification", "probs", "coverage", "cfgnn"].')
+            raise ValueError(
+                'loss_type should be a value in ["valid", "classification", "probs", "coverage", "cfgnn"].')
         if target_size not in [0, 1]:
             raise ValueError("target_size should be 0 or 1.")
         if loss_transform not in ["square", "abs", "log"]:
             raise ValueError('loss_transform should be a value in ["square", "abs", "log"].')
         if epsilon <= 0:
             raise ValueError("epsilon must be greater than 0.")
-        
-        
+
         self.weight = weight
         self.predictor = predictor
         self.alpha = alpha
@@ -74,7 +77,7 @@ class ConfTr(ConfTS):
         self.loss_type = loss_type
         self.target_size = target_size
         self.soft_qunatile = soft_qunatile
-        self.epsilon= epsilon
+        self.epsilon = epsilon
 
         if loss_transform == "square":
             self.transform = torch.square
@@ -87,11 +90,10 @@ class ConfTr(ConfTS):
                                     "coverage": self.__compute_coverage_loss,
                                     "classification": self.__compute_classification_loss,
                                     "cfgnn": self.__compute_conformalized_gnn_loss,
-                                    }        
-        
-        
+                                    }
+
     def compute_loss(self, test_scores, test_labels, tau):
-        pred_sets = torch.sigmoid((tau - test_scores)/self.epsilon)
+        pred_sets = torch.sigmoid((tau - test_scores) / self.epsilon)
         loss = self.weight * self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
         return loss
 

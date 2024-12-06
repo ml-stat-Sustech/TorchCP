@@ -47,17 +47,17 @@ class Margin(APS):
 
     def _calculate_all_label(self, probs):
         batch_size, num_labels = probs.shape
-            
+
         values, indices = torch.topk(probs, k=2, dim=1)
-    
+
         max_values = values[:, 0].unsqueeze(1).expand(-1, num_labels)
         second_max_values = values[:, 1].unsqueeze(1).expand(-1, num_labels)
         max_indices = indices[:, 0].unsqueeze(1).expand(-1, num_labels)
         position_indices = torch.arange(num_labels).expand(batch_size, -1).to(probs.device)
-        
-        selected_values = torch.where(position_indices == max_indices, 
-                                    second_max_values, 
-                                    max_values)
-        
+
+        selected_values = torch.where(position_indices == max_indices,
+                                      second_max_values,
+                                      max_values)
+
         scores = selected_values - probs
         return scores

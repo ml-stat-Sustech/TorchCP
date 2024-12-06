@@ -47,7 +47,9 @@ class CQRM(CQR):
             If the train function is not used, users should pass the trained model to the predictor at the beginning.
         """
         device = kwargs.pop('device', None)
-        model = kwargs.pop('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], 3, 64, 0.5).to(device))
+        model = kwargs.pop('model',
+                           build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], 3, 64,
+                                                                  0.5).to(device))
         criterion = kwargs.pop('criterion', None)
         if criterion is None:
             alpha = kwargs.pop('alpha', None)
@@ -55,7 +57,7 @@ class CQRM(CQR):
                 raise ValueError("When 'criterion' is not provided, 'alpha' must be specified.")
             quantiles = [alpha / 2, 1 / 2, 1 - alpha / 2]
             criterion = QuantileLoss(quantiles)
-        
+
         epochs = kwargs.get('epochs', 100)
         lr = kwargs.get('lr', 0.01)
         optimizer = kwargs.get('optimizer', optim.Adam(model.parameters(), lr=lr))

@@ -1,9 +1,9 @@
 import numpy as np
+import pytest
 import torch
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset
 
-import pytest
 
 @pytest.fixture
 def mock_data():

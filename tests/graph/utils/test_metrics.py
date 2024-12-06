@@ -1,6 +1,8 @@
 import pytest
 import torch
+
 from torchcp.graph.utils import Metrics
+
 
 @pytest.fixture
 def mock_prediction_sets():
@@ -36,7 +38,7 @@ def test_average_size(mock_prediction_sets, mock_labels, metrics):
 
 def test_singleton_hit_ratio(mock_prediction_sets, mock_labels, metrics):
     result = metrics('singleton_hit_ratio')(mock_prediction_sets, mock_labels)
-    expected_ratio = 1/4
+    expected_ratio = 1 / 4
     assert result == expected_ratio
 
 
@@ -48,4 +50,3 @@ def test_metrics_registry(metrics):
 def test_empty_prediction_sets(metrics):
     with pytest.raises(AssertionError, match="The number of prediction set must be greater than 0."):
         metrics('singleton_hit_ratio')([], [])
-

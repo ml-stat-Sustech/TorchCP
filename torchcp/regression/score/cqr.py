@@ -13,6 +13,7 @@ from .base import BaseScore
 from ..loss import QuantileLoss
 from ..utils import build_regression_model
 
+
 class CQR(BaseScore):
     """
     Conformalized Quantile Regression (CQR) 
@@ -24,9 +25,10 @@ class CQR(BaseScore):
         Link: https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf
         Github: https://github.com/yromano/cqr
     """
+
     def __init__(self):
         super().__init__()
-        
+
     def __call__(self, predicts, y_truth):
         """
         Calculates the non-conformity scores for predictions.
@@ -47,7 +49,7 @@ class CQR(BaseScore):
         if len(y_truth.shape) == 1:
             y_truth = y_truth.unsqueeze(1)
         return torch.maximum(predicts[..., 0] - y_truth, y_truth - predicts[..., 1])
-    
+
     def generate_intervals(self, predicts_batch, q_hat):
         """
         Generates prediction intervals for a batch of predictions.
@@ -69,7 +71,7 @@ class CQR(BaseScore):
         prediction_intervals[..., 0] = predicts_batch[..., 0] - q_hat.view(1, q_hat.shape[0], 1)
         prediction_intervals[..., 1] = predicts_batch[..., 1] + q_hat.view(1, q_hat.shape[0], 1)
         return prediction_intervals
-        
+
     def train(self, train_dataloader, **kwargs):
         """
         Trains the model on provided training data with :math:`[alpha/2, 1-alpha/2]` quantile regression loss.
@@ -89,7 +91,9 @@ class CQR(BaseScore):
             ValueError: If :attr:`criterion` is not provided and :attr:`alpha` is not specified.
         """
         device = kwargs.get('device', None)
-        model = kwargs.get('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], 2, 64, 0.5).to(device))
+        model = kwargs.get('model',
+                           build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], 2, 64,
+                                                                  0.5).to(device))
         criterion = kwargs.get('criterion', None)
 
         if criterion is None:

@@ -1,9 +1,13 @@
 :mod:`torchcp.classification`
-==========================
+================================
 
-.. automodule:: torchcp.classification.scores
-Score functions
--------
+.. automodule:: torchcp.classification.score
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+score function
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -13,10 +17,35 @@ Score functions
     RAPS
     SAPS
     Margin
+    TOPK
+    KNN
 
-.. automodule:: torchcp.classification.predictors
-Predictors
--------
+
+.. autoclass:: THR
+   :members:
+
+.. autoclass:: APS
+   :members:
+
+.. autoclass:: RAPS
+   :members:
+
+.. autoclass:: SAPS
+   :members:
+
+.. autoclass:: Margin
+   :members:
+
+.. autoclass:: TOPK
+   :members:
+
+.. autoclass:: KNN
+   :members:
+
+.. automodule:: torchcp.classification.predictor
+
+predictor
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -26,47 +55,93 @@ Predictors
     ClusteredPredictor
     WeightedPredictor
 
+.. autoclass:: SplitPredictor
+   :members:
+
+.. autoclass:: ClassWisePredictor
+   :members:
+
+.. autoclass:: ClusteredPredictor
+   :members:
+
+.. autoclass:: WeightedPredictor
+   :members:
+
+
 .. automodule:: torchcp.classification.loss
-Loss functions
--------
+
+loss function
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
 
     ConfTr
+    ConfTS 
+    CDLoss
 
-Detailed description
---------------------
-.. automodule:: torchcp.classification.scores
-..  autoclass:: THR
-    :members:
+.. autoclass:: ConfTr
+   :members:
 
-..  autoclass:: APS
-    :members:
+.. autoclass:: ConfTS
+   :members:
 
-..  autoclass:: RAPS
-    :members:
+.. autoclass:: CDLoss
+   :members:
 
-..  autoclass:: SAPS
-    :members:
+.. automodule:: torchcp.classification.trainer
 
-..  autoclass:: Margin
-    :members:
+trainer
+--------------------------------
 
-.. automodule:: torchcp.classification.predictors
+..  autosummary::
+    :nosignatures:
 
-..  autoclass:: SplitPredictor
-    :members:
+    Trainer
+    OrdinalTrainer 
 
-..  autoclass:: ClassWisePredictor
-    :members:
+.. autoclass:: Trainer
+   :members:
 
-..  autoclass:: ClusteredPredictor
-    :members:
+.. autoclass:: OrdinalTrainer
+   :members:
 
-..  autoclass:: WeightedPredictor
-    :members:
+.. automodule:: torchcp.classification.utils.metrics
+   
+metrics
+--------------------------------
 
-..  autoclass:: ConfTr
-    :members:
+..  autosummary::
+    :nosignatures:
+   
+   coverage_rate
+   average_size
+   CovGap
+   VioClasses
+   DiffViolation
+   SSCV
+   WSC
+
+.. autofunction:: coverage_rate
+.. autofunction:: average_size
+.. autofunction:: CovGap
+.. autofunction:: VioClasses
+.. autofunction:: DiffViolation
+.. autofunction:: SSCV
+.. autofunction:: WSC
+
+.. automodule:: torchcp.classification.utils
+
+utils
+--------------------------------
+
+..  autosummary::
+    :nosignatures:
+   
+   TS
+
+.. autoclass:: TS
+   :members:
+
+
 

@@ -28,6 +28,7 @@ class ACIPredictor(SplitPredictor):
         Github: https://github.com/isgibbs/AdaptiveConformal
         
     """
+
     def __init__(self, model, score_function, gamma):
         super().__init__(score_function, model)
         if gamma <= 0:
@@ -35,7 +36,7 @@ class ACIPredictor(SplitPredictor):
 
         self.gamma = gamma
         self.alpha_t = None
-        
+
     def train(self, train_dataloader, alpha, **kwargs):
         """
         Train and calibrate the predictor using the training data.
@@ -60,7 +61,7 @@ class ACIPredictor(SplitPredictor):
         super().calibrate(train_dataloader, alpha)
         self.alpha = alpha
         self.alpha_t = alpha
-    
+
     def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last):
         """
         Calculate the error rate for the previous prediction intervals.
@@ -81,7 +82,7 @@ class ACIPredictor(SplitPredictor):
         err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
         err_t = torch.sum(w_s * err)
         return err_t
-        
+
     def predict(self, x_batch, x_batch_last=None, y_batch_last=None, pred_interval_last=None):
         """
         Generate prediction intervals for the input batch.
@@ -105,14 +106,13 @@ class ACIPredictor(SplitPredictor):
         else:
             err_t = self.calculate_err_rate(x_batch, y_batch_last, pred_interval_last)
             self.scores = self.calculate_score(self._model(x_batch).float(), y_batch_last)
-            
+
         self.alpha_t = max(0.0001, min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
-            
+
         self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
         predicts_batch = self._model(x_batch.to(self._device)).float()
         return self.generate_intervals(predicts_batch, self.q_hat)
-    
-    
+
     def evaluate(self, data_loader, verbose=True):
         """
         Evaluate the predictor on a dataset.
@@ -146,7 +146,7 @@ class ACIPredictor(SplitPredictor):
 
                 if verbose:
                     print(
-                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate:.4f}, Average size: {batch_average_size:.4f}, Alpha: {self.alpha_t:.2f}")   
+                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate:.4f}, Average size: {batch_average_size:.4f}, Alpha: {self.alpha_t:.2f}")
 
                 coverage_rates.append(batch_coverage_rate)
                 average_sizes.append(batch_average_size)
@@ -159,4 +159,3 @@ class ACIPredictor(SplitPredictor):
                     "Average_size": avg_average_size}
 
         return res_dict
-    

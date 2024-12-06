@@ -36,7 +36,7 @@ class RAPS(APS):
     """
 
     def __init__(self, score_type="softmax", randomized=True, penalty=0, kreg=0):
-        
+
         super().__init__(score_type=score_type, randomized=randomized)
         if penalty < 0:
             raise ValueError("The parameter 'penalty' must be a nonnegative value.")
@@ -60,7 +60,7 @@ class RAPS(APS):
         return scores
 
     def _calculate_single_label(self, probs, label):
-        
+
         indices, ordered, cumsum = self._sort_sum(probs)
         if self.randomized:
             U = torch.rand(indices.shape[0], device=probs.device)

@@ -55,7 +55,7 @@ class SplitPredictor(BasePredictor):
             self._model = self.score_function.train(train_dataloader, device=self._device, **kwargs)
         else:
             self._model = self.score_function.train(train_dataloader, model=self._model, device=self._device, **kwargs)
-        
+
     def calculate_score(self, predicts, y_truth):
         """
         Calculate the nonconformity scores based on the model's predictions and true values.
@@ -68,7 +68,7 @@ class SplitPredictor(BasePredictor):
             torch.Tensor: Computed scores for each prediction.
         """
         return self.score_function(predicts, y_truth)
-    
+
     def generate_intervals(self, predicts_batch, q_hat):
         """
         Generate prediction intervals based on the model's predictions and the conformal value.
@@ -91,7 +91,7 @@ class SplitPredictor(BasePredictor):
                 tmp_predicts = self._model(tmp_x).detach()
                 predicts_list.append(tmp_predicts)
                 y_truth_list.append(tmp_labels)
-                
+
         predicts = torch.cat(predicts_list).float().to(self._device)
         y_truth = torch.cat(y_truth_list).to(self._device)
         self.scores = self.calculate_score(predicts, y_truth)

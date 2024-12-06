@@ -1,25 +1,20 @@
-from tqdm import tqdm
 import numpy as np
+import os
+import os
 import pandas as pd
-
+import pathlib
+import requests
 import torch
 import torch.nn as nn
-
-import os
-from pathlib import Path
-import requests
-import os
-import pathlib
-
+import torch.nn.functional as F
 import torchvision.datasets as dset
 import torchvision.transforms as trn
 from PIL import Image
+from pathlib import Path
 from torch.utils.data import Dataset
-
-import torch.nn.functional as F
-
-from torch_geometric.nn import GCNConv, SAGEConv
 from torch_geometric.datasets import CitationFull
+from torch_geometric.nn import GCNConv, SAGEConv
+from tqdm import tqdm
 
 
 def get_dataset_dir():
@@ -51,8 +46,6 @@ def download_github(url, save_path):
         print(f"Files already downloaded: {save_path}")
     else:
         print(f"Download failed: {response.status_code}")
-
-
 
 
 def build_reg_data(data_name="community"):
@@ -104,7 +97,7 @@ def build_reg_data(data_name="community"):
         n = 10000
         X = np.random.rand(n, 5)
         y_wo_noise = 10 * np.sin(X[:, 0] * X[:, 1] * np.pi) + \
-            20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
+                     20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
         eplison = np.zeros(n)
         phi = theta = 0.8
         delta_t_1 = np.random.randn()
@@ -163,10 +156,7 @@ def build_regression_model(model_name="NonLinearNet"):
         raise NotImplementedError
 
 
-
-
 def build_dataset(dataset_name, data_mode="train", transform_mode="train"):
-
     if dataset_name == 'imagenet':
         usr_dir = os.path.expanduser('~')
         dataset_dir = os.path.join(usr_dir, "data")
@@ -203,7 +193,7 @@ def build_dataset(dataset_name, data_mode="train", transform_mode="train"):
 
     elif dataset_name == 'mnist':
         dataset_dir = get_dataset_dir()
-       
+
         transform = trn.Compose([
             trn.ToTensor(),
             trn.Normalize((0.1307,), (0.3081,))
@@ -284,11 +274,11 @@ def build_graph_dataset(dataset_name, device, ntrain_per_class=20, split_ratio=F
                 s[torch.randperm(s.shape[0])] for s in classes_idx_set]
 
             train_idx = torch.concat([s[: ntrain_per_class]
-                                    for s in shuffled_classes])
+                                      for s in shuffled_classes])
             val_idx = torch.concat(
                 [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
             test_idx = torch.concat([s[2 * ntrain_per_class:]
-                                    for s in shuffled_classes])
+                                     for s in shuffled_classes])
         else:
             num_nodes = graph_data.x.shape[0]
             rand_perm = torch.randperm(num_nodes)
@@ -399,7 +389,7 @@ def build_transductive_gnn_data(data_name, ntrain_per_class=20):
         val_idx = torch.concat(
             [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
         test_idx = torch.concat([s[2 * ntrain_per_class:]
-                                for s in shuffled_classes])
+                                 for s in shuffled_classes])
     else:
         raise NotImplementedError(
             f"The dataset {data_name} has not been implemented!")
@@ -412,7 +402,7 @@ def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
 
     if data_name in ['Computers']:
         graph_data = Amazon(data_dir, data_name,
-                     pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0].to(device)
+                            pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0].to(device)
         kwargs = {'batch_size': 512, 'num_workers': 6,
                   'persistent_workers': True}
         train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,
@@ -426,8 +416,9 @@ def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
     else:
         raise NotImplementedError(
             f"The dataset {data_name} has not been implemented!")
-    
+
     return graph_data, train_loader, subgraph_loader
+
 
 def build_gnn_model(model_name):
     if model_name == "GCN":
@@ -443,6 +434,7 @@ def build_gnn_model(model_name):
                 x = F.dropout(x, p=self._p_dropout, training=self.training)
                 x = self.conv2(x, edge_index, edge_weight)
                 return x
+
         return GCN
     elif model_name == "SAGE":
         class SAGE(nn.Module):
@@ -451,7 +443,7 @@ def build_gnn_model(model_name):
                 self.convs = torch.nn.ModuleList()
                 self.convs.append(SAGEConv(in_channels, hidden_channels))
                 self.convs.append(SAGEConv(hidden_channels, out_channels))
-                
+
                 self._p_dropout = p_dropout
 
             def forward(self, x, edge_index):
@@ -479,6 +471,7 @@ def build_gnn_model(model_name):
                         xs.append(x[:batch.batch_size].cpu())
                     x_all = torch.cat(xs, dim=0).to(device)
                 return x_all
+
         return SAGE
     else:
         raise NotImplementedError

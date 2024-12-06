@@ -55,7 +55,7 @@ class R2ccpLoss(nn.Module):
         >>> loss = loss_fn(preds, target)
         >>> loss.backward()
     """
-    
+
     def __init__(self, p, tau, midpoints):
         super().__init__()
         self.p = p
@@ -80,7 +80,7 @@ class R2ccpLoss(nn.Module):
 
         target = target.view(-1, 1)
         abs_diff = torch.abs(target - self.midpoints.to(preds.device).unsqueeze(0))
-        
+
         cross_entropy = torch.sum((abs_diff ** self.p) * preds, dim=1)
         shannon_entropy = torch.sum(preds * torch.log(preds.clamp_min(1e-10)), dim=1)
 

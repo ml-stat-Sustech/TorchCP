@@ -1,12 +1,11 @@
-import pytest
 import numpy as np
+import pytest
+import torch
 from sklearn.cluster import KMeans
 
-import torch
-from torchcp.utils.common import DimensionError
-
-from torchcp.classification.score import THR
 from torchcp.classification.predictor import ClusteredPredictor
+from torchcp.classification.score import THR
+from torchcp.utils.common import DimensionError
 
 
 @pytest.fixture
@@ -18,6 +17,7 @@ def mock_model():
 
         def forward(self, x):
             return x
+
     return MockModel()
 
 
@@ -56,13 +56,14 @@ def test_invalid_split_initialization(mock_score_function, mock_model):
         ClusteredPredictor(mock_score_function, mock_model, split="error")
 
 
-@pytest.mark.parametrize("alpha, ratio_clustering, num_clusters", 
+@pytest.mark.parametrize("alpha, ratio_clustering, num_clusters",
                          [(0.01, "auto", "auto"),
                           (0.05, "auto", "auto"),
                           (0.05, 0.5, "auto"),
                           (0.01, "auto", 2),
                           (0.01, 0.5, 2)])
-def test_ratio_and_num_cluster_calculate_threshold(mock_score_function, mock_model, alpha, ratio_clustering, num_clusters):
+def test_ratio_and_num_cluster_calculate_threshold(mock_score_function, mock_model, alpha, ratio_clustering,
+                                                   num_clusters):
     n_z, n_o, n_t = 10, 95, 200
     logits = torch.randn(n_z + n_o + n_t, 3)
     zeros = torch.zeros(n_z, dtype=torch.long)
@@ -76,7 +77,7 @@ def test_ratio_and_num_cluster_calculate_threshold(mock_score_function, mock_mod
     n_thresh = predictor._ClusteredPredictor__get_quantile_minimum(torch.tensor(alpha))
     n_min = torch.maximum(torch.tensor(n_z), n_thresh)
     num_remaining_classes = (n_z >= n_min).int() + (n_o >= n_min).int() + (n_t >= n_min).int()
-    n_clustering =(n_min * num_remaining_classes / (75 + num_remaining_classes)).to(torch.int32)
+    n_clustering = (n_min * num_remaining_classes / (75 + num_remaining_classes)).to(torch.int32)
 
     if num_clusters == "auto":
         assert predictor._ClusteredPredictor__num_clusters == torch.floor(n_clustering / 2).to(torch.int32)
@@ -85,7 +86,8 @@ def test_ratio_and_num_cluster_calculate_threshold(mock_score_function, mock_mod
     if ratio_clustering == "auto":
         assert torch.allclose(predictor._ClusteredPredictor__ratio_clustering, n_clustering / n_min)
     else:
-        assert torch.allclose(torch.tensor(predictor._ClusteredPredictor__ratio_clustering, dtype=torch.float32), torch.tensor(ratio_clustering, dtype=torch.float32))
+        assert torch.allclose(torch.tensor(predictor._ClusteredPredictor__ratio_clustering, dtype=torch.float32),
+                              torch.tensor(ratio_clustering, dtype=torch.float32))
 
 
 def test_clustering_calculate_threshold(mock_score_function, mock_model):
@@ -108,12 +110,13 @@ def test_clustering_calculate_threshold(mock_score_function, mock_model):
     logits = torch.randn(n0 + n1 + n2 + n3 + n4, 5)
     zeros = torch.zeros(n0, dtype=torch.long)
     ones = torch.ones(n1, dtype=torch.long)
-    twos = torch.full((n2, ), 2, dtype=torch.long)
-    threes = torch.full((n3, ), 3, dtype=torch.long)
-    fours = torch.full((n4, ), 4, dtype=torch.long)
+    twos = torch.full((n2,), 2, dtype=torch.long)
+    threes = torch.full((n3,), 3, dtype=torch.long)
+    fours = torch.full((n4,), 4, dtype=torch.long)
     labels = torch.cat([zeros, ones, twos, threes, fours])
 
-    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, ratio_clustering, num_clusters, split="doubledip")
+    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, ratio_clustering, num_clusters,
+                                   split="doubledip")
     predictor.calculate_threshold(logits, labels, alpha)
 
     scores = mock_score_function(logits, labels)
@@ -124,9 +127,9 @@ def test_clustering_calculate_threshold(mock_score_function, mock_model):
                                                                     sample_weight=np.sqrt(class_cts.numpy()))
     nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_)
     cluster_assignments = - torch.ones((5,), dtype=torch.int32)
-    for cls, remapped_cls in {1:0, 2:1, 3:2, 4:3}.items():
+    for cls, remapped_cls in {1: 0, 2: 1, 3: 2, 4: 3}.items():
         cluster_assignments[cls] = nonrare_class_cluster_assignments[remapped_cls]
-    
+
     assert torch.equal(predictor.cluster_assignments, cluster_assignments)
 
     result = predictor._ClusteredPredictor__compute_cluster_specific_qhats(cluster_assignments, scores, labels, alpha)
@@ -136,7 +139,7 @@ def test_clustering_calculate_threshold(mock_score_function, mock_model):
 @pytest.mark.parametrize("alpha", [0, 1, -0.1, 2])
 def test_invalid_calibrate_alpha(predictor, alpha):
     logits = torch.randn(100, 3)
-    labels = torch.randint(0, 3, (100, ))
+    labels = torch.randint(0, 3, (100,))
     with pytest.raises(ValueError, match="alpha should be a value"):
         predictor.calculate_threshold(logits, labels, alpha)
 
@@ -227,14 +230,14 @@ def test_remap_classes(predictor, alpha):
         rare_classes = torch.tensor([0, 3])
         remaining_idx = torch.ones(labels.shape, dtype=torch.bool)
         remaining_idx[:8] = False
-        remapped_labels = torch.zeros((116, ), dtype=torch.int32)
+        remapped_labels = torch.zeros((116,), dtype=torch.int32)
         remapped_labels[18:] = 1
         remapping = {1: 0, 2: 1}
     elif alpha == 0.05:
         rare_classes = torch.tensor([0, 1, 3])
         remaining_idx = torch.ones(labels.shape, dtype=torch.bool)
         remaining_idx[:26] = False
-        remapped_labels = torch.zeros((98, ), dtype=torch.int32)
+        remapped_labels = torch.zeros((98,), dtype=torch.int32)
         remapping = {2: 0}
     elif alpha == 0.01:
         rare_classes = torch.tensor([0, 1, 2, 3])
@@ -279,7 +282,8 @@ def test_compute_cluster_specific_qhats(predictor, alpha):
     twos = torch.full((200,), 2, dtype=torch.long)
     cal_true_labels = torch.cat([zeros, ones, twos])
 
-    result = predictor._ClusteredPredictor__compute_cluster_specific_qhats(cluster_assignments, cal_class_scores, cal_true_labels, alpha)
+    result = predictor._ClusteredPredictor__compute_cluster_specific_qhats(cluster_assignments, cal_class_scores,
+                                                                           cal_true_labels, alpha)
 
     assert result[0] == torch.tensor(int((1 - alpha) * 400))
     assert result[1] == torch.tensor(100 + int((1 - alpha) * 100))
@@ -296,7 +300,8 @@ def test_compute_class_specific_qhats(predictor, alpha):
     cal_true_clusters = torch.cat([zeros, ones, twos, threes])
     num_clusters = 3
 
-    result = predictor._ClusteredPredictor__compute_class_specific_qhats(cal_class_scores, cal_true_clusters, num_clusters, alpha)
+    result = predictor._ClusteredPredictor__compute_class_specific_qhats(cal_class_scores, cal_true_clusters,
+                                                                         num_clusters, alpha)
 
     assert result[0] == torch.tensor(int((1 - alpha) * 100))
     assert result[1] == torch.tensor(100 + int((1 - alpha) * 200))

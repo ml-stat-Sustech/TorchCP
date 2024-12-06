@@ -12,8 +12,9 @@ class BaseScore(ABC):
     """
     Abstract base class for all score functions.
     """
+
     # __metaclass__ = ABCMeta
-    
+
     def __init__(self) -> None:
         pass
 

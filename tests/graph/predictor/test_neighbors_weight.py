@@ -1,13 +1,13 @@
-import pytest
-import torch
-import random
-
 import networkx as nx
+import pytest
+import random
+import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.score import APS, THR
 from torchcp.graph.predictor.neighbors_weight import NAPSPredictor
+
 
 @pytest.fixture
 def mock_graph_data():
@@ -24,7 +24,7 @@ def mock_graph_data():
             edges.add((new_edge[1], new_edge[0]))
     edge_index = torch.tensor(list(edges)).T
 
-    y = torch.randint(0, 3, (num_nodes, ))
+    y = torch.randint(0, 3, (num_nodes,))
     test_mask = torch.zeros(num_nodes).bool()
     test_mask[torch.randperm(num_nodes)[:num_test]] = True
     return Data(x=x, edge_index=edge_index, y=y, num_nodes=num_nodes, test_mask=test_mask)
@@ -32,11 +32,13 @@ def mock_graph_data():
 
 @pytest.fixture
 def naps_predictor(mock_graph_data):
-    return NAPSPredictor(graph_data=mock_graph_data, score_function=APS(score_type="softmax"), cutoff=30, k=2, scheme="unif")
+    return NAPSPredictor(graph_data=mock_graph_data, score_function=APS(score_type="softmax"), cutoff=30, k=2,
+                         scheme="unif")
 
 
 def test_init_valid_naps_predictor(mock_graph_data):
-    predictor = NAPSPredictor(graph_data=mock_graph_data, score_function=APS(score_type="softmax"), cutoff=50, k=2, scheme="unif")
+    predictor = NAPSPredictor(graph_data=mock_graph_data, score_function=APS(score_type="softmax"), cutoff=50, k=2,
+                              scheme="unif")
 
     test_subgraph = mock_graph_data.subgraph(mock_graph_data.test_mask)
     excepted_G = to_networkx(test_subgraph).to_undirected()
@@ -59,8 +61,8 @@ def test_init_invalid_naps_predictor(mock_graph_data):
 
 
 def test_calculate_threshold_for_node(mock_graph_data):
-    naps_predictor = NAPSPredictor(graph_data=mock_graph_data, 
-                                   score_function=APS(score_type="softmax"), 
+    naps_predictor = NAPSPredictor(graph_data=mock_graph_data,
+                                   score_function=APS(score_type="softmax"),
                                    cutoff=130, k=2, scheme="unif")
     logits = mock_graph_data.x[mock_graph_data.test_mask]
     labels = mock_graph_data.y[mock_graph_data.test_mask]
@@ -81,7 +83,8 @@ def test_calculate_threshold_for_node(mock_graph_data):
 
 @pytest.mark.parametrize("scheme", ["unif", "linear", "geom"])
 def test_get_nbhd_weights(mock_graph_data, scheme):
-    predictor = NAPSPredictor(graph_data=mock_graph_data, score_function=APS(score_type="softmax"), cutoff=50, k=2, scheme=scheme)
+    predictor = NAPSPredictor(graph_data=mock_graph_data, score_function=APS(score_type="softmax"), cutoff=50, k=2,
+                              scheme=scheme)
     node_id = int(torch.where(mock_graph_data.test_mask)[0][0])
 
     node_ids, weights = predictor._get_nbhd_weights(node_id)
@@ -93,17 +96,17 @@ def test_get_nbhd_weights(mock_graph_data, scheme):
     assert torch.equal(node_ids, torch.tensor(list(neigh_depth.keys())))
 
     if scheme == "unif":
-        assert torch.allclose(weights, torch.ones((neigh_count, )))
+        assert torch.allclose(weights, torch.ones((neigh_count,)))
     elif scheme == 'linear':
         assert torch.allclose(weights, 1. / torch.tensor(list(neigh_depth.values())))
     elif scheme == 'geom':
-        assert torch.allclose(weights, 0.5**(torch.tensor(list(neigh_depth.values())) - 1))
+        assert torch.allclose(weights, 0.5 ** (torch.tensor(list(neigh_depth.values())) - 1))
 
 
 def test_calibrate_quantile(naps_predictor):
     logits = torch.tensor([])
-    labels = torch.randint(0, 3, (100, ))
-    weights = torch.ones((100, ), dtype=torch.float32)
+    labels = torch.randint(0, 3, (100,))
+    weights = torch.ones((100,), dtype=torch.float32)
     alpha = naps_predictor._calibrate_quantile(logits, labels, weights, alpha=0.05)
     assert alpha == 0.05
 
@@ -120,7 +123,7 @@ def test_calibrate_quantile(naps_predictor):
 
 def test_get_weighted_quantile(naps_predictor):
     scores = torch.tensor([0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5])
-    weights = torch.ones((9, ), dtype=torch.float32)
+    weights = torch.ones((9,), dtype=torch.float32)
 
     quantile = naps_predictor._get_weighted_quantile(scores, weights, alpha=0.5)
     assert quantile >= 0.3 and quantile < 0.35
@@ -136,8 +139,8 @@ def test_get_weighted_quantile(naps_predictor):
 
 
 def test_precompute_naps_sets(mock_graph_data):
-    naps_predictor = NAPSPredictor(graph_data=mock_graph_data, 
-                                   score_function=APS(score_type="softmax"), 
+    naps_predictor = NAPSPredictor(graph_data=mock_graph_data,
+                                   score_function=APS(score_type="softmax"),
                                    cutoff=130, k=2, scheme="unif")
     logits = mock_graph_data.x[mock_graph_data.test_mask]
     labels = mock_graph_data.y[mock_graph_data.test_mask]
@@ -156,10 +159,9 @@ def test_precompute_naps_sets(mock_graph_data):
 
     torch.manual_seed(42)
     pred_nodes, pred_sets = naps_predictor.precompute_naps_sets(logits, labels, alpha=0.1)
-    
+
     assert torch.equal(excepted_nodes, pred_nodes)
     assert torch.equal(excepted_sets, pred_sets)
-
 
 # def test_predict(naps_predictor):
 #     logits = torch.randn(100, 3)

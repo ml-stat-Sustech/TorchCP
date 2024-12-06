@@ -27,7 +27,7 @@ class ClassWisePredictor(SplitPredictor):
     """
 
     def __init__(self, score_function, model=None, temperature=1):
-        
+
         super(ClassWisePredictor, self).__init__(score_function, model, temperature)
         self.q_hat = None
 
@@ -42,7 +42,7 @@ class ClassWisePredictor(SplitPredictor):
         """
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0, 1).")
-        
+
         alpha = torch.tensor(alpha, device=self._device)
         logits = logits.to(self._device)
         labels = labels.to(self._device)
