@@ -37,7 +37,7 @@ def average_size(prediction_sets, labels):
 def singleton_hit_ratio(prediction_sets, labels):
     if len(prediction_sets) == 0:
         raise AssertionError("The number of prediction set must be greater than 0.")
-    n = len(prediction_sets[0])
+    n = len(prediction_sets)
     singletons = torch.sum(prediction_sets, dim=1) == 1
     covered = prediction_sets[torch.arange(len(labels)), labels]
 
