@@ -31,3 +31,5 @@ regex
 typing_extensions
 traitlets
 myst-parser
+sphinx-copybutton
+sphinx-notfound-page
