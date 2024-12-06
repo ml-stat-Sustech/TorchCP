@@ -71,8 +71,6 @@ class ConformalLM:
     
     
     def __init__(self, tokenizer=None, model =None,  epsilons = None, scaling_type= "none", scale_kwargs = None, set_score_function_name= "none", rejection=False, seed = 2024) -> None:
-        if epsilons is None or len(epsilons) == 0:
-            raise ValueError("epsilons must be non-empty")
         if scaling_type not in NAME_TO_SCALER:
             raise ValueError(f"Invalid scaling_type: {scaling_type}. Must be one of: {list(NAME_TO_SCALER.keys())}")
         if set_score_function_name not in NAME_TO_SCORE:

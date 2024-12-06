@@ -63,9 +63,6 @@ class TestConformalLM:
         return conformal_llm
 
     def test_initialization_invalid_params(self):
-        # Test invalid epsilons
-        with pytest.raises(ValueError):
-            ConformalLM(epsilons=torch.tensor([]))
 
         # Test invalid scaling_type
         with pytest.raises(ValueError):
