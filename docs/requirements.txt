@@ -33,4 +33,3 @@ traitlets
 myst-parser
 sphinx-copybutton
 sphinx-notfound-page
-hoverxref
