@@ -2,8 +2,9 @@
 ==========================
 
 .. automodule:: torchcp.regression.score
+
 score function
--------
+----------------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -35,8 +36,9 @@ score function
 
 
 .. automodule:: torchcp.regression.predictor
+
 predictor
--------
+----------------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -55,8 +57,9 @@ predictor
    :members:
 
 .. automodule:: torchcp.regression.loss
+
 loss
--------
+----------------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -69,3 +72,33 @@ loss
 
 .. autoclass:: R2ccpLoss
    :members:
+
+
+.. automodule:: torchcp.regression.utils.metrics
+   
+metrics
+----------------------------------------
+
+..  autosummary::
+    :nosignatures:
+
+    coverage_rate
+    average_size
+
+..  autofunction:: coverage_rate
+..  autofunction:: average_size
+
+
+.. automodule:: torchcp.regression.utils.utils
+   
+utils
+----------------------------------------
+
+
+..  autosummary::
+    :nosignatures:
+
+    calculate_midpoints
+
+..  autofunction:: calculate_midpoints
+   

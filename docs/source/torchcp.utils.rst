@@ -2,21 +2,20 @@
 ==========================
 
 .. automodule:: torchcp.utils
+
 Tools
--------
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
 
-    Registry
+    calculate_conformal_value
     get_device
+    Registry
+    
 
-
-Detailed description
---------------------
+..  autofunction:: calculate_conformal_value
+..  autofunction:: get_device
 
 ..  autoclass:: Registry
     :members:
-
-..  autofunction:: get_device
-

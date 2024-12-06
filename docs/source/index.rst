@@ -5,6 +5,7 @@
 
 Welcome to TorchCP!
 ===================================
+TorchCP is a Python toolbox for conformal prediction research on deep learning models, using PyTorch with strong GPU acceleration. Comments, issues, contributions, and collaborations are all welcomed!
 
 .. toctree::
    :maxdepth: 2

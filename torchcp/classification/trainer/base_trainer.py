@@ -7,6 +7,19 @@ from tqdm import tqdm
 import numpy as np
 
 class Trainer:
+    """
+    A general-purpose PyTorch model trainer.
+    
+    Args:
+        model: PyTorch model instance
+        optimizer: Optimizer instance
+        loss_fn: Single loss function or list of loss functions
+        device: Computing device (CPU/GPU)
+        verbose: Whether to show detailed logs
+        loss_weights: List of weights for multiple loss functions
+    """
+    
+
     def __init__(
         self,
         model: torch.nn.Module,
@@ -16,21 +29,7 @@ class Trainer:
         verbose: bool = True,
         loss_weights: Optional[List[float]] = None
     ):
-        """
-        Initialize the trainer
         
-        Args:
-            model: Model to be trained
-            optimizer: Optimization algorithm
-            loss_fn: Loss function(s). Can be:
-                    - A PyTorch loss module
-                    - A custom loss function
-                    - A list of loss functions for multi-loss training
-            device: Training device (CPU/GPU)
-            config: Dictionary of training configuration parameters
-            verbose: Whether to print training progress and logs
-            loss_weights: Weights for multiple loss functions if loss_fn is a list
-        """
         self.model = model
         self.optimizer = optimizer
         self.device = device

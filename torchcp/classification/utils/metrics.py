@@ -221,6 +221,7 @@ def SSCV(prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3], [4, 10
     Size-stratified coverage violation (SSCV).
     
     Paper: Uncertainty Sets for Image Classifiers using Conformal Prediction (Angelopoulos et al., 2020)
+    
     Link : https://iclr.cc/virtual/2021/spotlight/3435
     
     Args:

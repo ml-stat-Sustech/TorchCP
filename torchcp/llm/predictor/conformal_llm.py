@@ -61,7 +61,7 @@ class ConformalLM:
     Args:
         tokenizer (Any, optional): A tokenizer for the language model. Default is None.
         model (Any, optional): A language model based on PyTorch. Default is None.
-        epsilons (torch.Tensor, optional): The risk levels that need to be controlled. Default is DEFAULT_EPSILONS.
+        epsilons (torch.Tensor, optional): The risk levels that need to be controlled. Default is None.
         scaling_type (str, optional): The scaling type for scores. Default is "none". Score scaling method, one of {platt, bin, platt_bin, rnn, none}.
         scale_kwargs (dict, optional): The parameters for the scaling function. Default is None.
         set_score_function_name (str, optional): The name of the score function to use. Default is "none". Score function name, one of {geo, marginal, first_k, first_k_no_mask, max, sum, none}.
@@ -70,7 +70,7 @@ class ConformalLM:
     """
     
     
-    def __init__(self, tokenizer=None, model =None,  epsilons = DEFAULT_EPSILONS, scaling_type= "none", scale_kwargs = None, set_score_function_name= "none", rejection=False, seed = 2024) -> None:
+    def __init__(self, tokenizer=None, model =None,  epsilons = None, scaling_type= "none", scale_kwargs = None, set_score_function_name= "none", rejection=False, seed = 2024) -> None:
         if epsilons is None or len(epsilons) == 0:
             raise ValueError("epsilons must be non-empty")
         if scaling_type not in NAME_TO_SCALER:
@@ -81,6 +81,8 @@ class ConformalLM:
         self.tokenizer = tokenizer
         self.model = model
         
+        if epsilons is None:
+            epsilons = DEFAULT_EPSILONS
         self.epsilons = epsilons
         self.scaling_type = scaling_type
         self.scale_kwargs =scale_kwargs

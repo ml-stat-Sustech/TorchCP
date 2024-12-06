@@ -25,11 +25,10 @@ class EnsemblePredictor(SplitPredictor):
         - Github: https://github.com/hamrel-cxu/EnbPI
     
     2. EnCQR:
-        - Paper: Ensemble Conformalized Quantile Regression for Probabilistic 
-                Time Series Forecasting (Jensen et al., 2022)
+        - Paper: Ensemble Conformalized Quantile Regression for Probabilistic Time Series Forecasting (Jensen et al., 2022)
         - Link: https://ieeexplore.ieee.org/abstract/document/9940232
         - Github: https://github.com/FilippoMB/Ensemble-Conformalized-Quantile-Regression
-       
+        
     Args:
         model (torch.nn.Module): The base model to be used in the ensemble.
         score_function (torchcp.regression.scores): The method for calculating scores and prediction intervals.
@@ -173,7 +172,7 @@ class EnsemblePredictor(SplitPredictor):
                         the width of the prediction intervals (e.g., 0.1 for 90% prediction intervals).
             verbose (bool): If True, prints the coverage rate and average size for each batch. 
                             Default is True.
-
+                            
         Returns:
             dict: A dictionary containing:
                 - "Total batches": The number of batches evaluated.

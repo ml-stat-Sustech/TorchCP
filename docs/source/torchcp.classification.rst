@@ -1,9 +1,13 @@
 :mod:`torchcp.classification`
-==========================
+================================
 
 .. automodule:: torchcp.classification.score
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 score function
--------
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -39,8 +43,9 @@ score function
    :members:
 
 .. automodule:: torchcp.classification.predictor
+
 predictor
--------
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -64,8 +69,9 @@ predictor
 
 
 .. automodule:: torchcp.classification.loss
+
 loss function
--------
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
@@ -83,15 +89,59 @@ loss function
 .. autoclass:: CDLoss
    :members:
 
-.. automodule:: torchcp.classification.utils
-utils
--------
+.. automodule:: torchcp.classification.trainer
+
+trainer
+--------------------------------
 
 ..  autosummary::
     :nosignatures:
 
-    TS
+    Trainer
+    OrdinalTrainer 
+
+.. autoclass:: Trainer
+   :members:
+
+.. autoclass:: OrdinalTrainer
+   :members:
+
+.. automodule:: torchcp.classification.utils.metrics
+   
+metrics
+--------------------------------
+
+..  autosummary::
+    :nosignatures:
+   
+   coverage_rate
+   average_size
+   CovGap
+   VioClasses
+   DiffViolation
+   SSCV
+   WSC
+
+.. autofunction:: coverage_rate
+.. autofunction:: average_size
+.. autofunction:: CovGap
+.. autofunction:: VioClasses
+.. autofunction:: DiffViolation
+.. autofunction:: SSCV
+.. autofunction:: WSC
+
+.. automodule:: torchcp.classification.utils
+
+utils
+--------------------------------
+
+..  autosummary::
+    :nosignatures:
+   
+   TS
 
 .. autoclass:: TS
    :members:
+
+
 

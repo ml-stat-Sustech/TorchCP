@@ -14,6 +14,27 @@ from .base_trainer import Trainer
 
  
 class OrdinalTrainer(Trainer):
+    """
+    OrdinalTrainer is a class for training ordinal classifiers.
+
+    This class extends the Trainer class and provides methods for training, evaluating, and predicting with ordinal classifiers.
+    It supports various configurations and training strategies to handle ordinal data.
+
+    Args:
+        model (torch.nn.Module): The backbone model to be trained.
+        optimizer (torch.optim.Optimizer): Optimization algorithm.
+        loss_fn (Union[torch.nn.Module, Callable, List[Callable]]): Loss function(s). Can be:
+            - A PyTorch loss module
+            - A custom loss function
+            - A list of loss functions for multi-loss training.
+        device (torch.device): Training device (CPU/GPU).
+        verbose (bool, optional): Whether to print training progress and logs. Default is True.
+        loss_weights (Optional[List[float]], optional): Weights for multiple loss functions if loss_fn is a list. Default is None.
+        ordinal_config (Dict[str, Any], optional): Configuration for the ordinal classifier. Default is {"phi": "abs", "varphi": "abs"}.
+
+    Attributes:
+        model (OrdinalClassifier): The ordinal classifier model.
+    """
     def __init__(
         self,
         model: torch.nn.Module,
@@ -24,20 +45,6 @@ class OrdinalTrainer(Trainer):
         loss_weights: Optional[List[float]] = None,
         ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"}
     ):
-        """
-        Initialize the trainer
-        
-        Args:
-            model: The backbone model to be trained
-            optimizer: Optimization algorithm
-            loss_fn: Loss function(s). Can be:
-                    - A PyTorch loss module
-                    - A custom loss function
-                    - A list of loss functions for multi-loss training
-            device: Training device (CPU/GPU)
-            verbose: Whether to print training progress and logs
-            loss_weights: Weights for multiple loss functions if loss_fn is a list
-        """
         super().__init__(model, optimizer, loss_fn, device, verbose, loss_weights)
         self.model = OrdinalClassifier(model, **ordinal_config)
 
