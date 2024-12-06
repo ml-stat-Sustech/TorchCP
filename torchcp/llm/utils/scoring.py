@@ -4,6 +4,7 @@ import torch
 
 import torch.nn.functional as F
 
+
 def geometric(p, mask=None):
     """Score of a set is based on a geometric distribution approximation:
 
@@ -40,6 +41,7 @@ def first_k(X, mask=None):
     if mask is not None:
         scores = scores * mask
     return torch.cumsum(scores, dim=-1)
+
 
 def first_k_no_mask(X, mask=None):
     """Scores are equal to the number of draws."""

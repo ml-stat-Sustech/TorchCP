@@ -29,7 +29,7 @@ def test_call(cqr_instance):
 def test_generate_intervals(cqr_instance):
     """
     Test the generate_intervals method for prediction interval generation.
-    """ 
+    """
     predicts_batch = torch.tensor([[0.2, 0.7], [0.3, 0.8]])
     q_hat = torch.tensor([0.1])
 

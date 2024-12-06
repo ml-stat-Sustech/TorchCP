@@ -1,5 +1,4 @@
 import pytest
-
 import torch
 from torch_geometric.data import Data
 
@@ -39,7 +38,7 @@ def test_base_graph_scores(graph_data, base_score_function):
     class TestScores(BaseScore):
         def __init__(self, graph_data, base_score_function):
             super().__init__(graph_data, base_score_function)
-        
+
     score_function = TestScores(graph_data, base_score_function)
     with pytest.raises(NotImplementedError):
         score_function(None)
@@ -63,16 +62,16 @@ def test_daps_initialization(graph_data, base_score_function):
 
     edge_weight = torch.ones(graph_data.edge_index.shape[1])
     adj = torch.sparse_coo_tensor(
-            graph_data.edge_index,
-            edge_weight,
-            (graph_data.num_nodes, graph_data.num_nodes))
+        graph_data.edge_index,
+        edge_weight,
+        (graph_data.num_nodes, graph_data.num_nodes))
     assert are_sparse_tensors_equal(daps._adj, adj)
 
     edge_weight = graph_data.edge_weight
     adj = torch.sparse_coo_tensor(
-            graph_data.edge_index,
-            edge_weight,
-            (graph_data.num_nodes, graph_data.num_nodes))
+        graph_data.edge_index,
+        edge_weight,
+        (graph_data.num_nodes, graph_data.num_nodes))
     assert are_sparse_tensors_equal(daps._adj, adj)
 
     degs = torch.matmul(adj, torch.ones((adj.shape[0])))
@@ -92,32 +91,32 @@ def test_daps_call_without_labels(graph_data, base_score_function):
         [0.2, 0.8],
         [0.4, 0.6]
     ], dtype=torch.float32)
-    
+
     base_scores = base_score_function(logits)
 
     diffusion_scores = torch.tensor([
         [base_scores[1, 0], base_scores[1, 1]],
-        [(base_scores[0, 0]+base_scores[2, 0])/2, (base_scores[0, 1]+base_scores[2, 1])/2],
+        [(base_scores[0, 0] + base_scores[2, 0]) / 2, (base_scores[0, 1] + base_scores[2, 1]) / 2],
         [base_scores[1, 0], base_scores[1, 1]]
     ], dtype=torch.float32)
-    
+
     expected_scores = 0.5 * diffusion_scores + 0.5 * base_scores
-    
+
     scores = daps(logits)
     assert torch.allclose(scores, expected_scores, atol=1e-5)
 
 
 def test_daps_call_with_labels(graph_data, base_score_function):
     daps = DAPS(graph_data, base_score_function, neigh_coef=0.5)
-    
+
     logits = torch.tensor([
         [1.0, 0.5],
         [0.2, 0.8],
         [0.4, 0.6]
     ], dtype=torch.float32)
-    
+
     labels = torch.tensor([0, 1, 0], dtype=torch.long)
-    
+
     scores = daps(logits, labels)
     expected_scores = daps(logits)
     assert torch.allclose(scores, expected_scores[torch.arange(3), labels], atol=1e-5)

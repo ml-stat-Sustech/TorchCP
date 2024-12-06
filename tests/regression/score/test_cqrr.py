@@ -2,6 +2,7 @@
 
 import pytest
 import torch
+
 from torchcp.regression.score import CQRR
 
 
@@ -11,6 +12,7 @@ def cqrr_instance():
     Fixture to provide an instance of the CQRR class.
     """
     return CQRR()
+
 
 def test_call(cqrr_instance):
     """

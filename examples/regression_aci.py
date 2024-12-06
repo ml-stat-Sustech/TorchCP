@@ -5,11 +5,11 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset
 from transformers import set_seed
 
+from examples.utils import build_reg_data
 from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictor import ACIPredictor
 from torchcp.regression.score import CQR
 from torchcp.regression.utils import build_regression_model
-from examples.utils import build_reg_data
 
 
 def prepare_aci_dataset(X, y, train_ratio=0.5, batch_size=100):
@@ -30,11 +30,11 @@ def prepare_aci_dataset(X, y, train_ratio=0.5, batch_size=100):
     np.random.shuffle(indices)
     split_index = int(len(indices) * train_ratio)
     train_indices, test_indices = np.split(indices, [split_index])
-    
+
     # Scale features
     scalerX = StandardScaler()
     scalerX = scalerX.fit(X[train_indices, :])
-    
+
     # Create datasets
     train_dataset = TensorDataset(
         torch.from_numpy(scalerX.transform(X[train_indices, :])),
@@ -44,35 +44,35 @@ def prepare_aci_dataset(X, y, train_ratio=0.5, batch_size=100):
         torch.from_numpy(scalerX.transform(X[test_indices, :])),
         torch.from_numpy(y[test_indices])
     )
-    
+
     # Create data loaders
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, 
-        batch_size=batch_size, 
-        shuffle=True, 
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
         pin_memory=True
     )
     test_loader = torch.utils.data.DataLoader(
-        test_dataset, 
-        batch_size=batch_size, 
-        shuffle=False, 
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
         pin_memory=True
     )
-    
+
     return train_loader, test_loader
 
 
 def run_aci_experiment(
-    model, 
-    score_function, 
-    train_loader, 
-    test_loader,
-    device,
-    alpha=0.1,
-    epochs=20,
-    lr=0.01,
-    gamma=0.005,
-    verbose=True
+        model,
+        score_function,
+        train_loader,
+        test_loader,
+        device,
+        alpha=0.1,
+        epochs=20,
+        lr=0.01,
+        gamma=0.005,
+        verbose=True
 ):
     """
     Run Adaptive Conformal Inference experiment.
@@ -93,15 +93,15 @@ def run_aci_experiment(
         dict: Evaluation results
     """
     print("\nRunning Adaptive Conformal Inference experiment...")
-    
+
     # Setup training
     quantiles = [alpha / 2, 1 - alpha / 2]
     criterion = QuantileLoss(quantiles)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    
+
     # Initialize predictor
     predictor = ACIPredictor(model, score_function, gamma=gamma)
-    
+
     # Train and evaluate
     predictor.train(
         train_dataloader=train_loader,
@@ -110,10 +110,10 @@ def run_aci_experiment(
         criterion=criterion,
         optimizer=optimizer
     )
-    
+
     results = predictor.evaluate(test_loader, verbose=verbose)
     print(f"Results: {results}")
-    
+
     return results
 
 
@@ -122,20 +122,20 @@ def main():
     # Setup
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     set_seed(seed=1)
-    
+
     # Hyperparameters
     epochs = 20
     alpha = 0.1
     gamma = 0.005
     hidden_size = 64
     dropout = 0.5
-    
+
     print("Starting Adaptive Conformal Inference experiment...")
-    
+
     # Load and prepare data
     X, y = build_reg_data(data_name="synthetic")
     train_loader, test_loader = prepare_aci_dataset(X, y)
-    
+
     # Initialize model and score function
     model = build_regression_model("NonLinearNet")(
         input_dim=X.shape[1],
@@ -143,9 +143,9 @@ def main():
         hidden_size=hidden_size,
         dropout=dropout
     ).to(device)
-    
+
     score_function = CQR()
-    
+
     # Run experiment
     results = run_aci_experiment(
         model=model,
@@ -158,7 +158,7 @@ def main():
         gamma=gamma,
         verbose=True
     )
-    
+
     # Print detailed results
     print("\nFinal Results:")
     print("-" * 60)

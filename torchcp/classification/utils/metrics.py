@@ -5,10 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 #
 import numpy as np
-from typing import Any
 import torch
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from typing import Any
+
 from torchcp.utils.registry import Registry
 
 METRICS_REGISTRY_CLASSIFICATION = Registry("METRICS")
@@ -36,30 +37,28 @@ def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=
     """
     labels = labels.cpu()
     prediction_sets = prediction_sets.cpu()
-    
+
     if prediction_sets.shape[0] != len(labels):
         raise ValueError("The number of prediction sets must be equal to the number of labels.")
-    
+
     if coverage_type not in ["default", "macro"]:
         raise ValueError("coverage_type must be 'default' or 'macro'.")
-      
-    
+
     cvg = 0
-    
+
     covered = prediction_sets[torch.arange(len(labels)), labels]
 
     if coverage_type == "macro":
         if num_classes is None:
             raise ValueError("When coverage_type is 'macro', you must define the number of classes.")
-        
+
         class_counts = torch.bincount(labels, minlength=num_classes)
         class_covered = torch.bincount(labels[covered], minlength=num_classes)
-        
+
         class_coverage = torch.zeros_like(class_counts, dtype=torch.float)
         valid_classes = class_counts > 0
         class_coverage[valid_classes] = class_covered[valid_classes].float() / class_counts[valid_classes].float()
-        
-        
+
         cvg = class_coverage.mean().item()
     else:
         cvg = covered.float().mean().item()
@@ -68,7 +67,6 @@ def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels=None):
-    
     return torch.mean(torch.sum(prediction_sets, dim=1).float())
 
 
@@ -99,18 +97,18 @@ def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx=None):
 
     labels = labels.cpu()
     prediction_sets = prediction_sets.cpu()
-    
+
     covered = prediction_sets[torch.arange(len(labels)), labels]
     class_counts = torch.bincount(labels, minlength=num_classes)
     class_covered = torch.bincount(labels[covered], minlength=num_classes)
-    
+
     cls_coverage_rate = torch.zeros_like(class_counts, dtype=torch.float32)
     valid_classes = class_counts > 0
     cls_coverage_rate[valid_classes] = class_covered[valid_classes].float() / class_counts[valid_classes].float()
-    
+
     if shot_idx is not None:
         cls_coverage_rate = cls_coverage_rate[shot_idx]
-    
+
     overall_covgap = torch.mean(torch.abs(cls_coverage_rate - (1 - alpha))) * 100
     return overall_covgap.float().item()
 
@@ -134,20 +132,20 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
     """
     if prediction_sets.shape[0] != len(labels):
         raise ValueError("Number of prediction sets must match number of labels")
-    
+
     labels = labels.cpu()
     prediction_sets = prediction_sets.cpu()
     violation_nums = 0
-    
+
     covered = prediction_sets[torch.arange(len(labels)), labels]
-    
-    class_covered = torch.bincount(labels[covered], minlength=num_classes) 
-    class_total = torch.bincount(labels, minlength=num_classes) 
-    
+
+    class_covered = torch.bincount(labels[covered], minlength=num_classes)
+    class_total = torch.bincount(labels, minlength=num_classes)
+
     valid_classes = class_total > 0
     class_coverage = torch.zeros(num_classes, dtype=torch.float32)
     class_coverage[valid_classes] = class_covered[valid_classes].float() / class_total[valid_classes].float()
-    
+
     violation_nums = torch.sum(class_coverage < (1 - alpha))
     return violation_nums.item()
 
@@ -180,10 +178,10 @@ def DiffViolation(logits, prediction_sets, labels, alpha,
     labels = labels.cpu()
     logits = logits.cpu()
     prediction_sets = prediction_sets.cpu()
-    
+
     covered = prediction_sets[torch.arange(len(labels)), labels]
     set_sizes = prediction_sets.sum(dim=1)
-    
+
     sorted_indices = torch.argsort(logits, dim=1, descending=True)
     topk = torch.zeros(len(labels), dtype=torch.int32)
     for i, (indices, label) in enumerate(zip(sorted_indices, labels)):
@@ -195,16 +193,16 @@ def DiffViolation(logits, prediction_sets, labels, alpha,
     for stratum in strata_diff:
         stratum_mask = (topk >= stratum[0]) & (topk <= stratum[1])
         stratum_size = stratum_mask.sum().item()
-        
+
         ccss_diff[str(stratum)] = {'cnt': stratum_size}
-        
+
         if stratum_size == 0:
             ccss_diff[str(stratum)].update({'cvg': 0, 'sz': 0})
             continue
-            
+
         cvg = covered[stratum_mask].float().mean().item()
         sz = set_sizes[stratum_mask].float().mean().item()
-        
+
         ccss_diff[str(stratum)].update({
             'cvg': round(cvg, 3),
             'sz': round(sz, 3)
@@ -240,27 +238,26 @@ def SSCV(prediction_sets, labels, alpha, stratified_size=[[0, 1], [2, 3], [4, 10
     """
     if len(prediction_sets) != len(labels):
         raise ValueError("The number of prediction sets must be equal to the number of labels.")
-    
+
     if not isinstance(stratified_size, list) or not stratified_size:
         raise ValueError("stratified_size must be a non-empty list")
-    
+
     labels = labels.cpu()
     prediction_sets = prediction_sets.cpu()
-    
+
     size_array = prediction_sets.sum(dim=1)  # shape: (N,)
     correct_array = prediction_sets[torch.arange(len(labels)), labels]  # shape: (N,)
-    
+
     sscv = -1
     for stratum in stratified_size:
         stratum_mask = (size_array >= stratum[0]) & (size_array <= stratum[1])
         stratum_size = stratum_mask.sum()
-        
+
         if stratum_size > 0:
             stratum_coverage = correct_array[stratum_mask].float().mean()
             stratum_violation = torch.abs(1 - alpha - stratum_coverage).item()
             sscv = max(sscv, stratum_violation)
     return sscv
-
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
@@ -288,65 +285,72 @@ def WSC(features, prediction_sets, labels, delta=0.1, M=1000, test_fraction=0.75
          Float: the value of unbiased WSV.
     
     """
-    
+
     if not 0 < delta < 1:
-       raise ValueError("delta must be between 0 and 1")
+        raise ValueError("delta must be between 0 and 1")
     if not 0 < test_fraction < 1:
         raise ValueError("test_size must be between 0 and 1")
     if M <= 0:
         raise ValueError("M must be positive")
-    
+
     if len(features.shape) != 2:
         raise ValueError(f"features must be 2D tensor, got shape {features.shape}")
     if len(prediction_sets.shape) != 2:
         raise ValueError(f"prediction_sets must be 2D tensor, got shape {prediction_sets.shape}")
     if len(labels.shape) != 1:
         raise ValueError(f"labels must be 1D tensor, got shape {labels.shape}")
-    
+
     if features.shape[0] != len(labels):
-        raise ValueError(f"Number of samples mismatch: features has {features.shape[0]} samples but labels has {len(labels)} samples")
+        raise ValueError(
+            f"Number of samples mismatch: features has {features.shape[0]} samples but labels has {len(labels)} samples")
     if features.shape[0] != prediction_sets.shape[0]:
-        raise ValueError(f"Number of samples mismatch: features has {features.shape[0]} samples but prediction_sets has {prediction_sets.shape[0]} samples")
+        raise ValueError(
+            f"Number of samples mismatch: features has {features.shape[0]} samples but prediction_sets has {prediction_sets.shape[0]} samples")
     if prediction_sets.shape[1] != len(torch.unique(labels)):
-        raise ValueError(f"Number of classes mismatch: prediction_sets has {prediction_sets.shape[1]} classes but labels has {len(torch.unique(labels))} unique classes")
-    
-    
+        raise ValueError(
+            f"Number of classes mismatch: prediction_sets has {prediction_sets.shape[1]} classes but labels has {len(torch.unique(labels))} unique classes")
+
     features = features.cpu().numpy()
     labels_np = labels.cpu().numpy()
     covered = prediction_sets[np.arange(len(labels_np)), labels_np].cpu().numpy()
-    
-    X_train, X_test, y_train, y_test, covered_train, covered_test = train_test_split(features, labels_np, covered, test_size=test_fraction, random_state=random_state)
+
+    X_train, X_test, y_train, y_test, covered_train, covered_test = train_test_split(features, labels_np, covered,
+                                                                                     test_size=test_fraction,
+                                                                                     random_state=random_state)
     # Find adversarial parameters
-    wsc_star, v_star, a_star, b_star = calWSC(X_train, covered_train, y_train, delta=delta, M=M, random_state=random_state, verbose=verbose)
+    wsc_star, v_star, a_star, b_star = calWSC(X_train, covered_train, y_train, delta=delta, M=M,
+                                              random_state=random_state, verbose=verbose)
     # Estimate coverage
     coverage = wsc_vab(X_test, y_test, covered_test, v_star, a_star, b_star)
     return coverage.item()
-    
+
+
 def wsc_vab(featreus, labels, covered, v, a, b):
     z = np.dot(featreus, v)
     idx = (z >= a) & (z <= b)
     return np.mean(covered[idx])
-    
+
+
 def calWSC(X, y, covered, delta=0.1, M=1000, random_state=2020, verbose=True):
     rng = np.random.default_rng(random_state)
     n = len(y)
-    
+
     def wsc_v(X, covered, delta, v):
         z = np.dot(X, v)
         z_order = np.argsort(z)
         z_sorted = z[z_order]
         cover_ordered = covered[z_order]
-        
-        ai_max = int(np.round((1.0-delta)*n))
+
+        ai_max = int(np.round((1.0 - delta) * n))
         ai_best = 0
-        bi_best = n-1
+        bi_best = n - 1
         cover_min = 1
         for ai in np.arange(0, ai_max):
-            bi_min = np.minimum(ai+int(np.round(delta*n)),n-1)
-            coverage = np.cumsum(cover_ordered[ai:n]) / np.arange(1,n-ai+1)
-            coverage[np.arange(0,bi_min-ai)]=1
-            bi_star = ai+np.argmin(coverage)
-            cover_star = coverage[bi_star-ai]
+            bi_min = np.minimum(ai + int(np.round(delta * n)), n - 1)
+            coverage = np.cumsum(cover_ordered[ai:n]) / np.arange(1, n - ai + 1)
+            coverage[np.arange(0, bi_min - ai)] = 1
+            bi_star = ai + np.argmin(coverage)
+            cover_star = coverage[bi_star - ai]
             if cover_star < cover_min:
                 ai_best = ai
                 bi_best = bi_star
@@ -360,19 +364,19 @@ def calWSC(X, y, covered, delta=0.1, M=1000, random_state=2020, verbose=True):
 
     V = sample_sphere(M, p=X.shape[1])
     results = np.zeros((M, 4))
-    
+
     iterator = tqdm(range(M)) if verbose else range(M)
-    
+
     for m in iterator:
         wsc, a, b = wsc_v(X, covered, delta, V[m])
-        results[m] = [wsc, a, b, m]            
-        
+        results[m] = [wsc, a, b, m]
+
     idx_best = np.argmin(results[:, 0])
     wsc_star = results[idx_best, 0]
     a_star = results[idx_best, 1]
     b_star = results[idx_best, 2]
     v_star = V[int(results[idx_best, 3])]
-    
+
     return wsc_star, v_star, a_star, b_star
 
 

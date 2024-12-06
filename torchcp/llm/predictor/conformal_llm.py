@@ -3,20 +3,20 @@
 import collections
 import itertools
 import numpy as np
-from scipy.stats import binom
-
-from transformers import set_seed, StoppingCriteria, StoppingCriteriaList
 import torch
+from scipy.stats import binom
+from transformers import set_seed, StoppingCriteria, StoppingCriteriaList
 
 from torchcp.llm import Metrics
 from torchcp.llm.utils import scoring, scaling, loss
+
 
 class StoppingCriteriaSub(StoppingCriteria):
     def __init__(self, input_length=0, stop_ids=None):
         super().__init__()
         self.stop_ids = stop_ids
         self.input_length = input_length
-        
+
     def __call__(self, input_ids: torch.LongTensor, scores: torch.Tensor) -> bool:
         if self.stop_ids is None:
             return False
@@ -27,8 +27,8 @@ class StoppingCriteriaSub(StoppingCriteria):
             has_stop_ids.append(has_stop_id)
         has_stop_ids = torch.stack(has_stop_ids, dim=1)
         return (has_stop_ids.any(dim=1).all())
-    
-    
+
+
 NAME_TO_SCORE = {
     'geo': scoring.geometric,
     'marginal': scoring.marginal,
@@ -68,48 +68,48 @@ class ConformalLM:
         rejection (bool, optional): Indicates whether to use rejection sampling. Default is False.
         seed (int, optional): The random seed. Default is 2024.
     """
-    
-    
-    def __init__(self, tokenizer=None, model =None,  epsilons = None, scaling_type= "none", scale_kwargs = None, set_score_function_name= "none", rejection=False, seed = 2024) -> None:
+
+    def __init__(self, tokenizer=None, model=None, epsilons=None, scaling_type="none", scale_kwargs=None,
+                 set_score_function_name="none", rejection=False, seed=2024) -> None:
         if scaling_type not in NAME_TO_SCALER:
             raise ValueError(f"Invalid scaling_type: {scaling_type}. Must be one of: {list(NAME_TO_SCALER.keys())}")
         if set_score_function_name not in NAME_TO_SCORE:
-            raise ValueError(f"Invalid set_score_function_name: {set_score_function_name}. Must be one of: {list(NAME_TO_SCORE.keys())}")
-    
+            raise ValueError(
+                f"Invalid set_score_function_name: {set_score_function_name}. Must be one of: {list(NAME_TO_SCORE.keys())}")
+
         self.tokenizer = tokenizer
         self.model = model
-        
+
         if epsilons is None:
             epsilons = DEFAULT_EPSILONS
         self.epsilons = epsilons
         self.scaling_type = scaling_type
-        self.scale_kwargs =scale_kwargs
+        self.scale_kwargs = scale_kwargs
         self.rejection = rejection
         self.set_score_function = NAME_TO_SCORE[set_score_function_name]
         self.seed = seed
         self.metrics = Metrics()
-        
+
     def scaling(self, training_scores, training_labels):
         if self.scale_kwargs is None:
             self.scale_kwargs = {}
-        self.scaler = NAME_TO_SCALER[self.scaling_type](**self.scale_kwargs )
+        self.scaler = NAME_TO_SCALER[self.scaling_type](**self.scale_kwargs)
         self.scaler.fit(training_scores, training_labels)
-    
-    
+
     def tuning(self, tuning_scores, tuning_similarities, tuning_labels):
         tuning_scores = self.scaler.predict(tuning_scores)
-                
+
         self.candidate_configs = self.get_pareto_frontier(
             item_scores=tuning_scores,
             similarity_scores=tuning_similarities,
             item_labels=tuning_labels)
-        
+
     def calibrate(self, dataset, prompt_template):
-        
+
         repeat_per_prompt = 4
         num_return_sequences = 5
         stop_word_ids = [13, 1919, 2982, 869, 29889]
-        
+
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(device)
 
@@ -119,21 +119,23 @@ class ConformalLM:
             answer = sample['answer']
             input_text = prompt_template.format(question)
             input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids.to(device)
-            stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(stop_ids=stop_word_ids, input_length=input_ids.shape[1])])
+            stopping_criteria = StoppingCriteriaList(
+                [StoppingCriteriaSub(stop_ids=stop_word_ids, input_length=input_ids.shape[1])])
             kwargs = {
-                    "max_new_tokens": 100,
-                    "return_dict_in_generate": True,
-                    "output_scores": True,
-                    "stopping_criteria": stopping_criteria,
-                    "num_return_sequences": num_return_sequences,
-                    "do_sample":True,
-                }
+                "max_new_tokens": 100,
+                "return_dict_in_generate": True,
+                "output_scores": True,
+                "stopping_criteria": stopping_criteria,
+                "num_return_sequences": num_return_sequences,
+                "do_sample": True,
+            }
             for i in range(repeat_per_prompt):
                 set_seed(self.seed + i)
                 with torch.no_grad():
                     outputs = self.model.generate(input_ids, **kwargs)
 
-                transition_scores = self.model.compute_transition_scores(outputs.sequences, outputs.scores, normalize_logits=True)
+                transition_scores = self.model.compute_transition_scores(outputs.sequences, outputs.scores,
+                                                                         normalize_logits=True)
                 input_length = 1 if self.model.config.is_encoder_decoder else input_ids.shape[1]
                 generated_tokens = outputs.sequences[:, input_length:]
 
@@ -154,16 +156,17 @@ class ConformalLM:
                         'scores': scores.cpu().tolist(),
                         'decoded': self.tokenizer.decode(tokens)
                     })
-    
+
     def calibrate_configs(self, cal_scores, cal_similarities, cal_labels, alpha):
         cal_scores = self.scaler.predict(cal_scores)
-            
+
         self.best_valid_configs = torch.full((len(self.epsilons), 3), float('nan'))
         is_stopped = [False] * len(self.epsilons)
         for i in range(self.candidate_configs.shape[0]):
             config = self.candidate_configs[i]
-            prediction_sets = self.predict_with_config(config=config, item_scores=cal_scores, similarity_scores=cal_similarities)
-            
+            prediction_sets = self.predict_with_config(config=config, item_scores=cal_scores,
+                                                       similarity_scores=cal_similarities)
+
             avg_losses = self.metrics("average_set_loss")(prediction_sets, loss.set_losses_from_labels(cal_labels))
             for j, epsilon in enumerate(self.epsilons):
                 n = len(cal_labels)
@@ -172,8 +175,7 @@ class ConformalLM:
                     self.best_valid_configs[j] = config
                 else:
                     is_stopped[j] = True
-        
-        
+
     def get_pareto_frontier(self, item_scores, similarity_scores, item_labels):
         """Compute a pareto frontier."""
         lambda_1 = self.__select_lambdas(similarity_scores, max_lambdas=25)
@@ -186,14 +188,14 @@ class ConformalLM:
             config = torch.tensor(list(config), dtype=torch.float32, device=item_scores.device)
             configs.append(config)
             prediction_sets = self.predict_with_config(config=config,
-                item_scores=item_scores,
-                similarity_scores=similarity_scores)
-            
+                                                       item_scores=item_scores,
+                                                       similarity_scores=similarity_scores)
+
             losses = self.metrics("average_set_loss")(prediction_sets, loss.set_losses_from_labels(item_labels))
-            
+
             avg_preidction_size = self.metrics("average_size")(prediction_sets)
             avg_sample_size = self.metrics("average_sample_size")(prediction_sets)
-            costs.append((losses, avg_preidction_size+avg_sample_size))
+            costs.append((losses, avg_preidction_size + avg_sample_size))
 
         configs = torch.stack(configs)
         costs = torch.tensor(costs)
@@ -214,30 +216,28 @@ class ConformalLM:
         ordered_configs = pareto_configs[sort_idx]
 
         return ordered_configs
-    
-    
+
     def __select_lambdas(self, values, max_lambdas=1000):
         """Select unique quantiles of the empirical distribution."""
-        
+
         quantiles = torch.linspace(0, 1, max_lambdas, dtype=values.dtype, device=values.device)
         lambdas = torch.quantile(values, quantiles)
         lambdas = torch.unique(lambdas, sorted=True)
-        lambdas = torch.cat([torch.tensor([-float('inf')], dtype=values.dtype), 
-                            lambdas, 
-                            torch.tensor([float('inf')], dtype=values.dtype)])
+        lambdas = torch.cat([torch.tensor([-float('inf')], dtype=values.dtype),
+                             lambdas,
+                             torch.tensor([float('inf')], dtype=values.dtype)])
         return lambdas
-    
-    
+
     def evaluate(self, test_scores, test_similarities, test_labels):
-        
+
         trial_results = collections.defaultdict(list)
         trial_results['configs'] = self.best_valid_configs
-        
+
         for j, config in enumerate(self.best_valid_configs):
             prediction_sets = self.predict_with_config(config=config,
-                item_scores=test_scores,
-                similarity_scores=test_similarities)
-            
+                                                       item_scores=test_scores,
+                                                       similarity_scores=test_similarities)
+
             prediction_set_losses = loss.set_losses_from_labels(test_labels)
             avg_losses = self.metrics("average_set_loss")(prediction_sets, prediction_set_losses)
             avg_size = self.metrics("average_size")(prediction_sets)
@@ -248,13 +248,12 @@ class ConformalLM:
                 # Average set size.
                 avg_size=avg_size,
                 # Size-stratified conditional loss
-                avg_SSCL = self.metrics("SSCL")(prediction_sets, prediction_set_losses)
+                avg_SSCL=self.metrics("SSCL")(prediction_sets, prediction_set_losses)
             )
             for k, v in output.items():
                 trial_results[k].append(v)
         return trial_results
-            
-    
+
     def predict_with_config(self, config, item_scores, similarity_scores):
         """
         Construct the prediction set for a given config.
@@ -272,10 +271,9 @@ class ConformalLM:
         Returns:
             Dictionary of metrics (per lambda).
         """
-        
+
         item_scores = self.scaler.predict(item_scores)
-            
-            
+
         if torch.isnan(config).any():
             return torch.ones_like(item_scores)
 
@@ -308,21 +306,18 @@ class ConformalLM:
             kept_mask = quality_mask * similarity_mask
         else:
             kept_mask = torch.ones_like(item_scores)
-        
+
         # Compute set selections for all values of lambda.
         set_scores = self.set_score_function(item_scores, kept_mask)
         Set_indices = self.__get_C_cutoff(set_scores, lambda_3)
-        
-    
+
         temp_matrix = torch.ones_like(kept_mask) * torch.arange(kept_mask.shape[1])
-        
+
         temp_mask = temp_matrix <= Set_indices.unsqueeze(-1)
         prediction_mask = temp_mask * kept_mask
-        
+
         return prediction_mask.to(torch.float)
-    
-        
-    
+
     def __get_C_cutoff(self, set_scores, set_lambda):
         """Compute prediction sets C for given thresholds tau.
 
@@ -336,17 +331,13 @@ class ConformalLM:
                 Indices of the selected sets C for each example.
         """
         cummax_scores, _ = torch.cummax(set_scores, dim=-1)
-    
+
         # Create mask where cummax_scores < set_lambda
         mask = cummax_scores < set_lambda.unsqueeze(-1)
-        
+
         # Sum along the last dimension to get C_indices
         C_indices = torch.sum(mask, dim=-1)
-        
+
         # Clip C_indices to be within valid range
         C_indices = torch.clamp(C_indices, min=0, max=set_scores.shape[1] - 1)
         return C_indices
-    
-    
-
-

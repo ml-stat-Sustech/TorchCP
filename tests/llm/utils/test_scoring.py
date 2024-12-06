@@ -1,24 +1,26 @@
+import numpy as np
 import pytest
 import torch
-import numpy as np
 import torch.nn.functional as F
+
 from torchcp.llm.utils.scoring import geometric, marginal, first_k, first_k_no_mask, max, sum
+
 
 class TestScoringFunctions:
     @pytest.fixture
     def setup_basic_inputs(self):
         """Create basic test inputs"""
         p = torch.tensor([[0.1, 0.2, 0.3],
-                         [0.4, 0.5, 0.6]], dtype=torch.float32)
+                          [0.4, 0.5, 0.6]], dtype=torch.float32)
         mask = torch.tensor([[1., 1., 0.],
-                           [1., 0., 1.]], dtype=torch.float32)
+                             [1., 0., 1.]], dtype=torch.float32)
         return p, mask
 
     def test_geometric_basic(self, setup_basic_inputs):
         """Test basic functionality of geometric function"""
         p, _ = setup_basic_inputs
         result = geometric(p)
-        
+
         expected = -torch.cumsum(torch.log(torch.maximum(1 - p, torch.tensor(1e-8))), dim=-1)
         assert torch.allclose(result, expected, rtol=1e-5)
 
@@ -26,10 +28,10 @@ class TestScoringFunctions:
         """Test geometric function with mask"""
         p, mask = setup_basic_inputs
         result = geometric(p, mask)
-        
+
         masked_p = p * mask
         expected = -torch.cumsum(
-            torch.log(torch.maximum(1 - masked_p, torch.tensor(1e-8))), 
+            torch.log(torch.maximum(1 - masked_p, torch.tensor(1e-8))),
             dim=-1
         )
         assert torch.allclose(result, expected, rtol=1e-5)
@@ -38,13 +40,13 @@ class TestScoringFunctions:
         """Test basic functionality of marginal function"""
         p, _ = setup_basic_inputs
         result = marginal(p)
-        
+
         assert result.shape == p.shape
-        
+
         # 测试带掩码的情况
         result_masked = marginal(p)
         assert torch.allclose(result, result_masked)
-        
+
         # 测试数值范围
         assert torch.all(result > -float('inf'))
         assert torch.all(result < float('inf'))
@@ -54,7 +56,7 @@ class TestScoringFunctions:
         X = torch.zeros((2, 3))
         result = first_k(X)
         expected = torch.tensor([[1., 2., 3.],
-                               [1., 2., 3.]])
+                                 [1., 2., 3.]])
         assert torch.allclose(result, expected)
 
     def test_first_k_no_mask_basic(self):
@@ -62,25 +64,25 @@ class TestScoringFunctions:
         X = torch.zeros((2, 3))
         result = first_k_no_mask(X)
         expected = torch.tensor([[1., 2., 3.],
-                               [1., 2., 3.]])
+                                 [1., 2., 3.]])
         assert torch.allclose(result, expected)
 
     def test_max_basic(self, setup_basic_inputs):
         """Test basic functionality of max function"""
         X = torch.tensor([[1., 2., 3.],
-                         [3., 2., 1.]])
+                          [3., 2., 1.]])
         result = max(X)
         expected = torch.tensor([[1., 2., 3.],
-                               [3., 3., 3.]])
+                                 [3., 3., 3.]])
         assert torch.allclose(result, expected)
 
     def test_sum_basic(self, setup_basic_inputs):
         """Test basic functionality of sum function"""
         X = torch.tensor([[1., 2., 3.],
-                         [3., 2., 1.]])
+                          [3., 2., 1.]])
         result = sum(X)
         expected = torch.tensor([[1., 3., 6.],
-                               [3., 5., 6.]])
+                                 [3., 5., 6.]])
         assert torch.allclose(result, expected)
 
     @pytest.mark.parametrize("func", [geometric, marginal, first_k, max, sum])
@@ -142,6 +144,7 @@ class TestScoringFunctions:
         X_float64 = torch.rand((3, 4), dtype=torch.float64)
         result = first_k(X_float64)
         assert result.dtype == torch.float32  # first_k always returns float32
+
 
 if __name__ == "__main__":
     pytest.main(["-v"])

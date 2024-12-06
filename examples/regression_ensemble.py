@@ -5,11 +5,11 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset
 from transformers import set_seed
 
+from examples.utils import build_reg_data
 from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictor import EnsemblePredictor
 from torchcp.regression.score import ABS, CQR
 from torchcp.regression.utils import build_regression_model
-from examples.utils import build_reg_data
 
 
 def prepare_ensemble_dataset(X, y, train_ratio=0.5, batch_size=100):
@@ -29,11 +29,11 @@ def prepare_ensemble_dataset(X, y, train_ratio=0.5, batch_size=100):
     np.random.shuffle(indices)
     split_index = int(len(indices) * train_ratio)
     train_indices, test_indices = np.split(indices, [split_index])
-    
+
     # Scale features
     scalerX = StandardScaler()
     scalerX = scalerX.fit(X[train_indices, :])
-    
+
     # Create datasets
     train_dataset = TensorDataset(
         torch.from_numpy(scalerX.transform(X[train_indices, :])),
@@ -43,38 +43,38 @@ def prepare_ensemble_dataset(X, y, train_ratio=0.5, batch_size=100):
         torch.from_numpy(scalerX.transform(X[test_indices, :])),
         torch.from_numpy(y[test_indices])
     )
-    
+
     # Create data loaders
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, 
-        batch_size=batch_size, 
-        shuffle=True, 
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
         pin_memory=True
     )
     test_loader = torch.utils.data.DataLoader(
-        test_dataset, 
-        batch_size=batch_size, 
-        shuffle=False, 
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
         pin_memory=True
     )
-    
+
     return train_loader, test_loader
 
 
 def run_ensemble_experiment(
-    name,
-    model,
-    score_function,
-    criterion,
-    train_loader,
-    test_loader,
-    device,
-    alpha=0.1,
-    epochs=20,
-    lr=0.01,
-    ensemble_num=5,
-    subset_num=500,
-    verbose=True
+        name,
+        model,
+        score_function,
+        criterion,
+        train_loader,
+        test_loader,
+        device,
+        alpha=0.1,
+        epochs=20,
+        lr=0.01,
+        ensemble_num=5,
+        subset_num=500,
+        verbose=True
 ):
     """
     Run ensemble prediction experiment.
@@ -97,13 +97,13 @@ def run_ensemble_experiment(
     Returns:
         dict: Evaluation results
     """
-    print(f"\n{'='*20} {name} {'='*20}")
-    
+    print(f"\n{'=' * 20} {name} {'=' * 20}")
+
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     aggregation_function = torch.mean
-    
+
     predictor = EnsemblePredictor(model, score_function, aggregation_function)
-    
+
     predictor.train(
         train_dataloader=train_loader,
         ensemble_num=ensemble_num,
@@ -112,10 +112,10 @@ def run_ensemble_experiment(
         criterion=criterion,
         optimizer=optimizer
     )
-    
+
     results = predictor.evaluate(test_loader, alpha, verbose=verbose)
     print(f"Results: {results}")
-    
+
     return results
 
 
@@ -124,7 +124,7 @@ def main():
     # Setup
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     set_seed(seed=1)
-    
+
     # Hyperparameters
     epochs = 20
     alpha = 0.1
@@ -132,13 +132,13 @@ def main():
     dropout = 0.5
     ensemble_num = 5
     subset_num = 500
-    
+
     print("Starting ensemble prediction experiments...")
-    
+
     # Load and prepare data
     X, y = build_reg_data(data_name="synthetic")
     train_loader, test_loader = prepare_ensemble_dataset(X, y)
-    
+
     # Define experiments
     experiments = [
         {
@@ -155,10 +155,10 @@ def main():
                 X.shape[1], 2, hidden_dim, dropout
             ),
             "score_function": CQR(),
-            "criterion": QuantileLoss([alpha/2, 1-alpha/2]),
+            "criterion": QuantileLoss([alpha / 2, 1 - alpha / 2]),
         }
     ]
-    
+
     # Run experiments and collect results
     results = {}
     for exp in experiments:
@@ -177,7 +177,7 @@ def main():
             subset_num=subset_num,
             verbose=True
         )
-    
+
     # Print comparative results
     print("\nComparative Results:")
     print("-" * 80)

@@ -72,9 +72,9 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
-    'myst_parser',          # https://myst-parser.readthedocs.io
-    'sphinx_copybutton',    # https://sphinx-copybutton.readthedocs.io
-    'notfound.extension',   # https://sphinx-notfound-page.readthedocs.io
+    'myst_parser',  # https://myst-parser.readthedocs.io
+    'sphinx_copybutton',  # https://sphinx-copybutton.readthedocs.io
+    'notfound.extension',  # https://sphinx-notfound-page.readthedocs.io
     'sphinx.ext.autosectionlabel'
 ]
 
@@ -86,7 +86,6 @@ extensions = [
 # Make sure the target is unique
 autosectionlabel_prefix_document = True  # ref example: `dir/file:header`
 autosectionlabel_maxdepth = None  # Must be None. Or failed to build change_logs
-
 
 # myst_parser
 # documentation: https://myst-parser.readthedocs.io/en/latest/syntax/optional.html
@@ -108,7 +107,6 @@ myst_enable_extensions = [
 # https://myst-parser.readthedocs.io/en/latest/syntax/optional.html#syntax-header-anchors
 myst_heading_anchors = 3  # e.g., [](../overview/overview.md#design-principle) (hoverxref CANNOT identify this syntax!)
 
-
 # Show tooltip when hover on the reference. Currently, only Read the Docs is supported as backend server!
 # https://sphinx-hoverxref.readthedocs.io/
 extensions += ['hoverxref.extension']
@@ -119,7 +117,6 @@ hoverxref_role_types = {
 hoverxref_default_type = 'tooltip'  # 'modal' or 'tooltip'
 # hoverxref_sphinxtabs = True
 hoverxref_mathjax = True
-
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -137,7 +134,6 @@ source_suffix = {
     '.txt': 'markdown',
     '.md': 'markdown',
 }
-
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -175,4 +171,3 @@ if os.environ.get('READTHEDOCS') != 'True':
     except ImportError:
         pass  # assume we have sphinx >= 1.3
     html_theme = 'sphinx_rtd_theme'
-

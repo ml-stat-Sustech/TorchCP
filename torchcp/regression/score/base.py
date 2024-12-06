@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from torchcp.utils.common import get_device
 
+
 class BaseScore(object):
     """
     Abstract base class for all score functions.
@@ -28,7 +29,7 @@ class BaseScore(object):
             labels: the labels.
         """
         raise NotImplementedError
-    
+
     @abstractmethod
     def construct_interval(self, predicts_batch, q_hat):
         """Constructs the prediction interval for the given batch of predictions.
@@ -38,7 +39,7 @@ class BaseScore(object):
             q_hat: the quantile level.
         """
         raise NotImplementedError
-    
+
     @abstractmethod
     def train(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
         """Trains the given model using the provided training data loader, criterion, and optimizer.
@@ -52,7 +53,7 @@ class BaseScore(object):
             verbose: if True, displays a progress bar and loss information.
         """
         raise NotImplementedError
-    
+
     def _basetrain(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
         """
         Trains the given model using the provided training data loader, criterion, and optimizer.
@@ -65,7 +66,7 @@ class BaseScore(object):
             optimizer (torch.optim.Optimizer): The optimizer for updating the model parameters.
             verbose (bool, optional): If True, displays a progress bar and loss information. Defaults to True.
         """
-        
+
         model.train()
         device = get_device(model)
         if verbose:
@@ -88,11 +89,6 @@ class BaseScore(object):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                
+
         print("Training complete.")
         model.eval()
-    
-    
-    
-    
-    

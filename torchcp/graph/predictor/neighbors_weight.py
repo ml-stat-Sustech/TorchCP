@@ -5,8 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import torch
 import networkx as nx
+import torch
 from scipy.optimize import brentq
 from torch_geometric.utils.convert import to_networkx
 
@@ -125,13 +125,13 @@ class NAPSPredictor(GraphSplitPredictor):
 
         node_ids = torch.tensor(list(neigh_depth.keys()), device=self._device)
         if self._scheme == 'unif':
-            weights = torch.ones((neigh_count, ), device=self._device)
+            weights = torch.ones((neigh_count,), device=self._device)
         elif self._scheme == 'linear':
             weights = 1. / \
-                torch.tensor(list(neigh_depth.values()), device=self._device)
+                      torch.tensor(list(neigh_depth.values()), device=self._device)
         elif self._scheme == 'geom':
             weights = (
-                0.5)**(torch.tensor(list(neigh_depth.values()), device=self._device) - 1)
+                          0.5) ** (torch.tensor(list(neigh_depth.values()), device=self._device) - 1)
 
         return node_ids, weights
 
@@ -193,8 +193,11 @@ class NAPSPredictor(GraphSplitPredictor):
                 is equal to the desired significance level `(1 - alpha)`.
         """
         wtildes = weights / (weights.sum() + 1)
-        def critical_point_quantile(q): return (
-            wtildes * (scores <= q)).sum().item() - (1 - alpha)
+
+        def critical_point_quantile(q):
+            return (
+                    wtildes * (scores <= q)).sum().item() - (1 - alpha)
+
         try:
             q = brentq(critical_point_quantile, -1000, 1000)
         except ValueError:
@@ -274,4 +277,4 @@ class NAPSPredictor(GraphSplitPredictor):
             prediction_set_list.append(self._generate_prediction_set(
                 scores[index, :].reshape(1, -1), 1 - alphas[index]))
 
-        return torch.cat(prediction_set_list,dim=0)
+        return torch.cat(prediction_set_list, dim=0)

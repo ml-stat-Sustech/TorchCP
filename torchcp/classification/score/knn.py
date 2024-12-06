@@ -5,8 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 #
 import torch
-from .base import BaseScore
 from torch.utils.data import DataLoader, TensorDataset
+
+from .base import BaseScore
+
 
 class KNN(BaseScore):
     """
@@ -31,17 +33,17 @@ class KNN(BaseScore):
         >>> print(scores)
     """
 
-    def __init__(self, features, labels, num_classes, k=1, p=2, batch = None):
+    def __init__(self, features, labels, num_classes, k=1, p=2, batch=None):
         super().__init__()
         if not isinstance(k, int) or k < 1:
             raise ValueError("k must be an integer greater than or equal to 1.")
-        
+
         if not (isinstance(p, (float, int)) and p > 0) and p != "cosine":
             raise ValueError("p must be a positive float or 'cosine'.")
-        
+
         if not (isinstance(batch, int) and batch > 0) and batch != None:
             raise ValueError("batch must be None or a positive integer.")
-        
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_features = features.to(self.device)
         self.train_labels = labels.to(self.device)
@@ -75,19 +77,19 @@ class KNN(BaseScore):
         Returns:
             torch.Tensor: The non-conformity scores.
         """
-        
+
         features = features.to(self.device)
         if len(features.shape) == 1:
             features = features.unsqueeze(0)
         if self.batch != None:
             distances = []
-            dataset = TensorDataset(features) 
+            dataset = TensorDataset(features)
             dataloader = DataLoader(dataset, batch_size=self.batch, shuffle=False)
             for batch_feature in dataloader:
                 distances.append(self.transform(batch_feature[0], self.train_features))
                 del batch_feature
                 torch.cuda.empty_cache()
-                
+
             distances = torch.cat(distances)
         else:
             distances = self.transform(features, self.train_features)
@@ -108,7 +110,7 @@ class KNN(BaseScore):
         Returns:
             torch.Tensor: The non-conformity scores.
         """
-        
+
         labels_expanded = labels.unsqueeze(1).expand(-1, distances.size(1))
         same_label_mask = self.train_labels == labels_expanded
         diff_label_mask = ~same_label_mask

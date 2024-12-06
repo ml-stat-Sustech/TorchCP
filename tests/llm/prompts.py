@@ -127,9 +127,9 @@ A: Teapot Dome Scandal
 Q: Phil Collins appeared in which Spielberg film with Robin Williams?
 A: Hook""".split("\n")
 
-
 import torch
 from transformers import StoppingCriteria
+
 
 class StoppingCriteriaSub(StoppingCriteria):
     def __init__(self, input_length=0, stop_ids=None):

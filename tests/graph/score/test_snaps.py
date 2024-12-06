@@ -1,5 +1,4 @@
 import pytest
-
 import torch
 from torch_geometric.data import Data
 
@@ -62,7 +61,7 @@ def test_knn_processing(graph_data, base_score_function):
         if not torch.equal(tensor1.coalesce().values(), tensor2.coalesce().values()):
             return False
         return True
-    
+
     knn_edge = torch.tensor([
         [0, 1, 2],
         [1, 2, 0]
@@ -70,11 +69,11 @@ def test_knn_processing(graph_data, base_score_function):
     knn_weight = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
 
     adj_knn = torch.sparse_coo_tensor(
-        knn_edge, 
-        knn_weight, 
+        knn_edge,
+        knn_weight,
         (graph_data.num_nodes, graph_data.num_nodes))
     knn_degs = torch.matmul(adj_knn, torch.ones((adj_knn.shape[0])))
-    
+
     score_function = SNAPS(graph_data, base_score_function, knn_edge=knn_edge, knn_weight=knn_weight)
     assert are_sparse_tensors_equal(score_function._adj_knn, adj_knn)
     assert torch.equal(score_function._knn_degs, knn_degs)
@@ -86,8 +85,8 @@ def test_knn_processing(graph_data, base_score_function):
 
     knn_weight = torch.ones(knn_edge.shape[1])
     adj_knn = torch.sparse_coo_tensor(
-        knn_edge, 
-        knn_weight, 
+        knn_edge,
+        knn_weight,
         (graph_data.num_nodes, graph_data.num_nodes))
     knn_degs = torch.matmul(adj_knn, torch.ones((adj_knn.shape[0])))
     assert are_sparse_tensors_equal(score_function._adj_knn, adj_knn)
@@ -100,7 +99,8 @@ def test_snaps_call_without_labels(graph_data, base_score_function):
         [1, 2, 0]
     ], dtype=torch.long)
     knn_weight = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
-    snaps = SNAPS(graph_data, base_score_function, lambda_val=0.4, mu_val=0.25, knn_edge=knn_edge, knn_weight=knn_weight)
+    snaps = SNAPS(graph_data, base_score_function, lambda_val=0.4, mu_val=0.25, knn_edge=knn_edge,
+                  knn_weight=knn_weight)
 
     logits = torch.tensor([
         [1.0, 0.5],
@@ -116,12 +116,12 @@ def test_snaps_call_without_labels(graph_data, base_score_function):
     ], dtype=torch.float32)
     neigh_scores = torch.tensor([
         [base_scores[1, 0], base_scores[1, 1]],
-        [(base_scores[0, 0]+base_scores[2, 0])/2, (base_scores[0, 1]+base_scores[2, 1])/2],
+        [(base_scores[0, 0] + base_scores[2, 0]) / 2, (base_scores[0, 1] + base_scores[2, 1]) / 2],
         [base_scores[1, 0], base_scores[1, 1]]
     ], dtype=torch.float32)
-    
+
     expected_scores = 0.35 * base_scores + 0.4 * similarity_scores + 0.25 * neigh_scores
-    
+
     scores = snaps(logits)
     assert torch.allclose(scores, expected_scores, atol=1e-5)
 
@@ -132,7 +132,8 @@ def test_snaps_call_with_labels(graph_data, base_score_function):
         [1, 2, 0]
     ], dtype=torch.long)
     knn_weight = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
-    snaps = SNAPS(graph_data, base_score_function, lambda_val=0.4, mu_val=0.25, knn_edge=knn_edge, knn_weight=knn_weight)
+    snaps = SNAPS(graph_data, base_score_function, lambda_val=0.4, mu_val=0.25, knn_edge=knn_edge,
+                  knn_weight=knn_weight)
 
     logits = torch.tensor([
         [1.0, 0.5],

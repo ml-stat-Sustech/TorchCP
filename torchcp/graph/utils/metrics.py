@@ -5,17 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import torch
 import numpy as np
+import torch
 from typing import Any
 
+from torchcp.classification.utils.metrics import average_size as graph_average_size
+from torchcp.classification.utils.metrics import coverage_rate as graph_coverage_rate
 from torchcp.utils.registry import Registry
 
-from torchcp.classification.utils.metrics import coverage_rate as graph_coverage_rate
-from torchcp.classification.utils.metrics import average_size as graph_average_size
-
-
 METRICS_REGISTRY_GRAPH = Registry("METRICS")
+
 
 #########################################
 # Marginal coverage metric
@@ -25,7 +24,6 @@ METRICS_REGISTRY_GRAPH = Registry("METRICS")
 @METRICS_REGISTRY_GRAPH.register()
 def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=None):
     return graph_coverage_rate(prediction_sets, labels, coverage_type=coverage_type, num_classes=num_classes)
-
 
 
 @METRICS_REGISTRY_GRAPH.register()

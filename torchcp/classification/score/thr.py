@@ -34,7 +34,7 @@ class THR(BaseScore):
 
     def __init__(self, score_type="softmax"):
         super().__init__()
-        
+
         self.score_type = score_type
         if score_type == "identity":
             self.transform = lambda x: x
@@ -45,7 +45,8 @@ class THR(BaseScore):
         elif score_type == "log":
             self.transform = lambda x: torch.log(x)
         else:
-            raise ValueError(f"Score type '{score_type}' is not implemented. Options are 'softmax', 'identity', 'log_softmax', or 'log'.")
+            raise ValueError(
+                f"Score type '{score_type}' is not implemented. Options are 'softmax', 'identity', 'log_softmax', or 'log'.")
 
     def __call__(self, logits, label=None):
         """
@@ -58,10 +59,10 @@ class THR(BaseScore):
         Returns:
             torch.Tensor: The non-conformity scores.
         """
-        
+
         if len(logits.shape) > 2:
             raise ValueError("dimension of logits are at most 2.")
-        
+
         if len(logits.shape) == 1:
             logits = logits.unsqueeze(0)
         probs = self.transform(logits)

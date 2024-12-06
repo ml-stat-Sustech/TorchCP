@@ -1,18 +1,16 @@
-import torch
-from torch.utils.data import DataLoader
-from typing import Optional, Dict, Any, Callable, Union, List
 import logging
-import time
-from tqdm import tqdm
 import numpy as np
-
-
+import time
+import torch
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from typing import Optional, Dict, Any, Callable, Union, List
 
 from .base_trainer import Trainer
 
- 
+
 class OrdinalTrainer(Trainer):
     """
     OrdinalTrainer is a class for training ordinal classifiers.
@@ -35,19 +33,19 @@ class OrdinalTrainer(Trainer):
     Attributes:
         model (OrdinalClassifier): The ordinal classifier model.
     """
+
     def __init__(
-        self,
-        model: torch.nn.Module,
-        optimizer: torch.optim.Optimizer,
-        loss_fn: Union[torch.nn.Module, Callable, List[Callable]],
-        device: torch.device,
-        verbose: bool = True,
-        loss_weights: Optional[List[float]] = None,
-        ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"}
+            self,
+            model: torch.nn.Module,
+            optimizer: torch.optim.Optimizer,
+            loss_fn: Union[torch.nn.Module, Callable, List[Callable]],
+            device: torch.device,
+            verbose: bool = True,
+            loss_weights: Optional[List[float]] = None,
+            ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"}
     ):
         super().__init__(model, optimizer, loss_fn, device, verbose, loss_weights)
         self.model = OrdinalClassifier(model, **ordinal_config)
-
 
 
 class OrdinalClassifier(nn.Module):
@@ -79,7 +77,7 @@ class OrdinalClassifier(nn.Module):
         >>> output = model(x)
         >>> print(output)
     """
-    
+
     def __init__(self, classifier, phi="abs", varphi="abs"):
         super().__init__()
         self.classifier = classifier
@@ -92,8 +90,9 @@ class OrdinalClassifier(nn.Module):
         if phi not in phi_options:
             raise NotImplementedError(f"phi function '{self.phi}' is not implemented. Options are 'abs' and 'square'.")
         if varphi not in varphi_options:
-            raise NotImplementedError(f"varphi function '{self.varphi}' is not implemented. Options are 'abs' and 'square'.")
-        
+            raise NotImplementedError(
+                f"varphi function '{self.varphi}' is not implemented. Options are 'abs' and 'square'.")
+
         self.phi_function = phi_options[phi]
         self.varphi_function = varphi_options[phi]
 

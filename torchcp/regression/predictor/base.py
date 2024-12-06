@@ -9,9 +9,10 @@
 import torch.nn as nn
 from abc import ABCMeta, abstractmethod
 
-from torchcp.utils.common import get_device
 from torchcp.utils.common import calculate_conformal_value
+from torchcp.utils.common import get_device
 from ..utils.metrics import Metrics
+
 
 class BasePredictor(object):
     """
@@ -34,15 +35,15 @@ class BasePredictor(object):
             self._device = None
         self.score_function = score_function
         self._metric = Metrics()
-        
+
     @abstractmethod
     def train(self, train_dataloader, **kwargs):
         raise NotImplementedError
-    
+
     @abstractmethod
     def calculate_score(self, predicts, y_truth):
         raise NotImplementedError
-    
+
     @abstractmethod
     def generate_intervals(self, predicts_batch, q_hat):
         raise NotImplementedError
@@ -59,7 +60,7 @@ class BasePredictor(object):
             torch.Tensor: Prediction intervals, shape (batch_size, 2).
         """
         raise NotImplementedError
-    
+
     @abstractmethod
     def evaluate(self, data_loader):
         """

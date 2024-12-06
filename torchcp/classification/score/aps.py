@@ -38,11 +38,10 @@ class APS(THR):
         >>> print(scores)
     """
 
-    def __init__(self, score_type="softmax", randomized=True ):
+    def __init__(self, score_type="softmax", randomized=True):
         super().__init__(score_type)
         self.randomized = randomized
-        
-        
+
     def _calculate_all_label(self, probs):
         """
         Calculate non-conformity scores for all labels.
@@ -99,9 +98,7 @@ class APS(THR):
             U = torch.rand(indices.shape[0], device=probs.device)
         else:
             U = torch.zeros(indices.shape[0], device=probs.device)
-            
-        idx = torch.where(indices == label.view(-1, 1))
-        scores = cumsum[idx] - U * ordered[idx] 
-        return scores
-    
 
+        idx = torch.where(indices == label.view(-1, 1))
+        scores = cumsum[idx] - U * ordered[idx]
+        return scores

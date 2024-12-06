@@ -33,8 +33,7 @@ class R2CCP(BaseScore):
     def __init__(self, midpoints):
         super().__init__()
         self.midpoints = midpoints
-        self._device = self.midpoints.device 
-
+        self._device = self.midpoints.device
 
     def train(self, train_dataloader, **kwargs):
         """
@@ -56,7 +55,9 @@ class R2CCP(BaseScore):
         """
         device = kwargs.get('device', self._device)
         self._device = device
-        model = kwargs.get('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], len(self.midpoints), 1000, 0).to(self._device))
+        model = kwargs.get('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1],
+                                                                           len(self.midpoints), 1000, 0).to(
+            self._device))
         epochs = kwargs.get('epochs', 100)
         p = kwargs.get('p', 0.5)
         tau = kwargs.get('tau', 0.2)
@@ -72,10 +73,10 @@ class R2CCP(BaseScore):
     def __call__(self, predicts, y_truth):
         interval = self.__find_interval(self.midpoints, y_truth)
         scores = self.__calculate_linear_interpolation(interval, predicts, y_truth, self.midpoints)
-        return - scores   # since r2ccp calculates conformity score instead of nonconformity score
+        return - scores  # since r2ccp calculates conformity score instead of nonconformity score
 
     def generate_intervals(self, predicts_batch, q_hat):
-        q_hat = - q_hat   # since r2ccp calculates conformity score instead of nonconformity score
+        q_hat = - q_hat  # since r2ccp calculates conformity score instead of nonconformity score
         K = predicts_batch.shape[1]
         N = predicts_batch.shape[0]
         midpoints_expanded = self.midpoints.unsqueeze(0).expand(N, K)

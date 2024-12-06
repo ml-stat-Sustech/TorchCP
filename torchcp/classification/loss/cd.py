@@ -1,9 +1,7 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-
-
 
 # Copyright (c) 2023-present, SUSTech-ML.
 # All rights reserved.
@@ -20,6 +18,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from .base import BaseLoss
 
+
 class CDLoss(BaseLoss):
     """
     Method: Conformal Discriminative Loss  (CDLoss)
@@ -33,24 +32,21 @@ class CDLoss(BaseLoss):
         epsilon (float, optional): A temperature value. Default is 1e-4.
     """
 
-    def __init__(self, weight, predictor, epsilon = 1e-4):
-
+    def __init__(self, weight, predictor, epsilon=1e-4):
         super(CDLoss, self).__init__(weight, predictor)
         if epsilon <= 0:
             raise ValueError("epsilon must be greater than 0.")
-        
-        self.epsilon  = epsilon
+
+        self.epsilon = epsilon
         self.weight = weight
         self.predictor = predictor
-        
-    def forward(self, logits, labels):
 
+    def forward(self, logits, labels):
         all_scores = self.predictor.score_function(logits)
         label_scores = self.predictor.score_function(logits, labels)
         label_scores = label_scores.unsqueeze(1).expand_as(all_scores)
         # Computing the probability of each label contained in the prediction set.
-        pred_sets = torch.sigmoid((all_scores-label_scores)/self.epsilon)
+        pred_sets = torch.sigmoid((all_scores - label_scores) / self.epsilon)
         loss = self.weight * torch.mean(pred_sets)
-        
-        return loss
 
+        return loss

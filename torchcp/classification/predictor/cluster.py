@@ -37,20 +37,20 @@ class ClusteredPredictor(ClassWisePredictor):
         __split (str): The method to split the dataset into clustering dataset and calibration set.
     """
 
-    def __init__(self, score_function, model=None, temperature=1, ratio_clustering="auto", num_clusters="auto", split='random',
+    def __init__(self, score_function, model=None, temperature=1, ratio_clustering="auto", num_clusters="auto",
+                 split='random',
                  ):
         super(ClusteredPredictor, self).__init__(score_function, model, temperature)
-        
+
         if ratio_clustering != "auto" and not (0 < ratio_clustering < 1):
             raise ValueError("ratio_clustering should be 'auto' or a value in (0, 1).")
-        
+
         if num_clusters != "auto" and not (isinstance(num_clusters, int) and num_clusters > 0):
             raise ValueError("num_clusters should be 'auto' or a positive integer.")
-        
+
         if split not in ['proportional', 'doubledip', 'random']:
             raise ValueError("split should be one of 'proportional', 'doubledip', or 'random'.")
-        
-        
+
         self.__ratio_clustering = ratio_clustering
         self.__num_clusters = num_clusters
         self.__split = split
@@ -64,10 +64,10 @@ class ClusteredPredictor(ClassWisePredictor):
             labels (torch.Tensor): The ground truth labels.
             alpha (float): The significance level.
         """
-        
+
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0, 1).")
-        
+
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         num_classes = logits.shape[1]
@@ -109,10 +109,11 @@ class ClusteredPredictor(ClassWisePredictor):
 
             # Compute embedding for each class and get class counts
             embeddings, class_cts = self.__embed_all_classes(filtered_scores, filtered_labels)
-            kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10,random_state = 2023).fit(X=embeddings.detach().cpu().numpy(),
-                                                                                sample_weight=np.sqrt(
-                                                                                    class_cts.detach().cpu().numpy()),
-                                                                                )
+            kmeans = KMeans(n_clusters=int(self.__num_clusters), n_init=10, random_state=2023).fit(
+                X=embeddings.detach().cpu().numpy(),
+                sample_weight=np.sqrt(
+                    class_cts.detach().cpu().numpy()),
+                )
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_, device=self._device)
 
             cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)
@@ -121,7 +122,7 @@ class ClusteredPredictor(ClassWisePredictor):
                 cluster_assignments[cls] = nonrare_class_cluster_assignments[remapped_cls]
         else:
             cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)
-        self.cluster_assignments =  cluster_assignments
+        self.cluster_assignments = cluster_assignments
         # 5) Compute qhats for each cluster
 
         self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments,
@@ -141,7 +142,7 @@ class ClusteredPredictor(ClassWisePredictor):
         Returns:
             tuple: A tuple containing clustering scores, clustering labels, calibration scores, and calibration labels.
         """
-        
+
         if self.__split == 'proportional':
             # Split dataset along with fraction "frac_clustering"
             num_classes = classes_statistics.shape[0]

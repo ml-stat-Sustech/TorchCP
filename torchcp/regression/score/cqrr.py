@@ -9,6 +9,7 @@ import torch
 
 from .cqr import CQR
 
+
 class CQRR(CQR):
     """
     CQR-R
@@ -18,7 +19,7 @@ class CQRR(CQR):
         Link: https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261
         Github: https://github.com/msesia/cqr-comparison
     """
-    
+
     def __call__(self, predicts, y_truth):
         if len(predicts.shape) == 2:
             predicts = predicts.unsqueeze(1)

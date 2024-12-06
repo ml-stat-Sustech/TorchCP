@@ -71,8 +71,8 @@ class SNAPS(BaseScore):
             self._adj, base_scores) * (1 / (self._degs + 1e-10))[:, None]
 
         scores = (1 - self._lambda_val - self._mu_val) * base_scores + \
-            self._lambda_val * similarity_scores + \
-            self._mu_val * neigh_scores
+                 self._lambda_val * similarity_scores + \
+                 self._mu_val * neigh_scores
 
         if labels is None:
             return scores

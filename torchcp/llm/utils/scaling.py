@@ -1,11 +1,12 @@
 """Utilities for score scaling."""
 
 import torch
-import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 from torch.utils.data import DataLoader, RandomSampler, TensorDataset
 from tqdm import tqdm
+
 
 class BaseScaler:
     """Straight through scaler."""
@@ -15,17 +16,17 @@ class BaseScaler:
 
     def predict(self, X):
         return X
-    
-    
+
+
 class LogisticRegression(nn.Module):
     def __init__(self, dtype=torch.float32):
         super(LogisticRegression, self).__init__()
         self.linear = nn.Linear(1, 1)
         self.dtype = dtype
-        
+
         self.linear.weight.data = self.linear.weight.data.to(dtype)
         self.linear.bias.data = self.linear.bias.data.to(dtype)
-    
+
     def forward(self, x):
         x = x.to(self.dtype)
         return torch.sigmoid(self.linear(x))
@@ -33,30 +34,31 @@ class LogisticRegression(nn.Module):
 
 class PlattScaler(BaseScaler):
     """Parametric calibration using logistic regression on uncalibrated scores."""
-    
+
     def __init__(self, **kwargs):
         super(PlattScaler, self).__init__()
         self.clf = LogisticRegression()
         self.optimizer = optim.SGD(self.clf.parameters(), lr=0.01)
         self.loss_fn = nn.BCELoss()
         self.num_epochs = kwargs.get('num_epochs', 100)
-    
+
     def fit(self, X, y):
         X = X.reshape(-1, 1)
-        y = y.reshape(-1,1)
-        
+        y = y.reshape(-1, 1)
+
         for epoch in range(self.num_epochs):
             self.optimizer.zero_grad()
             outputs = self.clf(X)
             loss = self.loss_fn(outputs, y.to(self.clf.dtype))
             loss.backward()
             self.optimizer.step()
-    
+
     def predict(self, X):
         self.clf.eval()
         with torch.no_grad():
             scaled = self.clf(X.reshape(-1, 1))
         return scaled.reshape(X.shape)
+
 
 class BinningScaler(BaseScaler):
     """Non-parametric equal-mass histogram regression on uncalibrated scores."""
@@ -116,14 +118,14 @@ class RecurrentScaler(BaseScaler, nn.Module):
     """RNN calibration of C given sequential scores."""
 
     def __init__(
-        self,
-        hidden_size=64,
-        num_layers=2,
-        num_iters=100,
-        batch_size=128,
-        dropout=0.0,
-        target='set',
-        verbose = True
+            self,
+            hidden_size=64,
+            num_layers=2,
+            num_iters=100,
+            batch_size=128,
+            dropout=0.0,
+            target='set',
+            verbose=True
     ):
         super(RecurrentScaler, self).__init__()
         if target not in ['set', 'item']:
@@ -131,9 +133,9 @@ class RecurrentScaler(BaseScaler, nn.Module):
         self.num_iters = num_iters
         self.batch_size = batch_size
         self.target = target
-        self.verbose =  verbose
+        self.verbose = verbose
         self.rnn = nn.RNN(
-           input_size=1,
+            input_size=1,
             hidden_size=hidden_size,
             num_layers=num_layers,
             dropout=dropout,
@@ -161,7 +163,7 @@ class RecurrentScaler(BaseScaler, nn.Module):
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         self.train()
         if self.verbose:
-            loader  = tqdm(loader)
+            loader = tqdm(loader)
         for X_batch, y_batch in loader:
             out = self.forward(X_batch)
             loss = F.binary_cross_entropy_with_logits(out, y_batch)

@@ -1,24 +1,30 @@
 import pytest
 import torch
+
 from torchcp.regression.predictor import SplitPredictor
 from torchcp.regression.score import ABS
 from torchcp.regression.utils import build_regression_model
+
 
 @pytest.fixture
 def mock_model():
     return build_regression_model("NonLinearNet")(5, 1, 64, 0.5)
 
+
 @pytest.fixture
 def mock_score_function():
     return ABS()
+
 
 @pytest.fixture
 def split_predictor(mock_model, mock_score_function):
     return SplitPredictor(score_function=mock_score_function, model=mock_model)
 
+
 @pytest.fixture
 def split_predictor_nomodel(mock_score_function):
     return SplitPredictor(score_function=mock_score_function)
+
 
 def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
     # Extract mock data
@@ -44,5 +50,6 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
     eval_res = split_predictor.evaluate(test_dataloader)
     assert "Coverage_rate" in eval_res, "Coverage rate should be part of evaluation results."
     assert "Average_size" in eval_res, "Average size should be part of evaluation results."
-    assert abs(eval_res['Coverage_rate'] - 0.9) < 5e-2, f"Coverage rate {eval_res['Coverage_rate']} should be close to 0.9"
+    assert abs(
+        eval_res['Coverage_rate'] - 0.9) < 5e-2, f"Coverage rate {eval_res['Coverage_rate']} should be close to 0.9"
     assert eval_res["Average_size"] > 0, "Average size should be greater than 0."

@@ -1,6 +1,8 @@
 import pytest
 import torch
-from torchcp.regression.loss import QuantileLoss 
+
+from torchcp.regression.loss import QuantileLoss
+
 
 def test_quantile_loss_computation():
     """Test the forward computation of QuantileLoss."""
@@ -14,7 +16,7 @@ def test_quantile_loss_computation():
 
     # Compute the loss
     loss = loss_fn(preds, target)
-    expected_loss = 0.17 
+    expected_loss = 0.17
 
     assert torch.isclose(loss, torch.tensor(expected_loss), atol=1e-4), f"Loss mismatch: {loss} != {expected_loss}"
 
@@ -25,11 +27,11 @@ def test_batch_size_mismatch():
     loss_fn = QuantileLoss(quantiles=quantiles)
 
     preds = torch.tensor([[0.1, 0.5, 0.9]])
-    target = torch.tensor([[0.3], [0.4]]) 
+    target = torch.tensor([[0.3], [0.4]])
 
-    with pytest.raises(ValueError, match=f"Batch size mismatch between predictions and targets. Got preds: {preds.size(0)}, target: {target.size(0)}"):
+    with pytest.raises(ValueError,
+                       match=f"Batch size mismatch between predictions and targets. Got preds: {preds.size(0)}, target: {target.size(0)}"):
         loss_fn(preds, target)
-
 
 
 def test_zero_quantile():

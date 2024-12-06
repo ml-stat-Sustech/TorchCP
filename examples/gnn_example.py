@@ -5,19 +5,17 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import os
 import argparse
-
+import os
 import torch
 import torch.nn.functional as F
-
-from torchcp.classification.score import APS
-from torchcp.graph.score import DAPS
-from torchcp.graph.predictor import GraphSplitPredictor, NAPSPredictor
 from transformers import set_seed
 
-from torchcp.graph.utils.metrics import Metrics
 from examples.utils import build_transductive_gnn_data, build_inductive_gnn_data, build_gnn_model
+from torchcp.classification.score import APS
+from torchcp.graph.predictor import GraphSplitPredictor, NAPSPredictor
+from torchcp.graph.score import DAPS
+from torchcp.graph.utils.metrics import Metrics
 
 
 def train_transductive(model, optimizer, graph_data, train_idx):

@@ -5,16 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torch_geometric.nn import GCNConv, GATConv, SAGEConv, SGConv
+from tqdm import tqdm
 
-from torchcp.classification.score import THR, APS
 from torchcp.classification.loss import ConfTr
 from torchcp.classification.predictor import SplitPredictor
+from torchcp.classification.score import THR, APS
 
 
 class CFGNNTrainer:
@@ -41,8 +40,9 @@ class CFGNNTrainer:
         num_layers (int): The number of layers in the network.
         alpha (float, optional): The significance level for conformal prediction. Default is 0.1.
     """
+
     def __init__(
-            self, 
+            self,
             backbone_model,
             graph_data,
             hidden_channels=64,
@@ -52,7 +52,7 @@ class CFGNNTrainer:
             raise ValueError("backbone_model cannot be None.")
         if graph_data is None:
             raise ValueError("graph_data cannot be None.")
-        
+
         self.backbone_model = backbone_model
         self.graph_data = graph_data
         self._device = self.graph_data.x.device
@@ -66,11 +66,11 @@ class CFGNNTrainer:
             self.cfgnn.parameters(), weight_decay=5e-4, lr=0.001)
         self.pred_loss_fn = F.cross_entropy
         self.cf_loss_fn = ConfTr(weight=1.0,
-                              predictor=SplitPredictor(score_function=THR(score_type="softmax")),
-                              alpha=alpha,
-                              fraction=0.5,
-                              loss_type="cfgnn",
-                              target_size=0)
+                                 predictor=SplitPredictor(score_function=THR(score_type="softmax")),
+                                 alpha=alpha,
+                                 fraction=0.5,
+                                 loss_type="cfgnn",
+                                 target_size=0)
         self.predictor = SplitPredictor(APS(score_type="softmax"))
         self.alpha = alpha
 
@@ -83,7 +83,6 @@ class CFGNNTrainer:
             pre_logits: The preprocessed logits from backbone model.
         """
 
-
         self.cfgnn.train()
         self.optimizer.zero_grad()
 
@@ -91,7 +90,8 @@ class CFGNNTrainer:
         loss = self.pred_loss_fn(adjust_logits[self.graph_data.train_idx], self.graph_data.y[self.graph_data.train_idx])
 
         if epoch >= 1000:
-            eff_loss = self.cf_loss_fn(adjust_logits[self.graph_data.calib_train_idx], self.graph_data.y[self.graph_data.calib_train_idx])
+            eff_loss = self.cf_loss_fn(adjust_logits[self.graph_data.calib_train_idx],
+                                       self.graph_data.y[self.graph_data.calib_train_idx])
             loss += eff_loss
 
         loss.backward()
@@ -111,7 +111,7 @@ class CFGNNTrainer:
         self.cfgnn.eval()
         with torch.no_grad():
             adjust_logits = self.cfgnn(pre_logits, self.graph_data.edge_index)
-        
+
         size_list = []
         for _ in range(10):
             val_perms = torch.randperm(self.graph_data.val_idx.size(0))
@@ -125,7 +125,7 @@ class CFGNNTrainer:
             size = self.predictor._metric('average_size')(
                 pred_sets, self.graph_data.y[valid_test_idx])
             size_list.append(size)
-        
+
         return torch.mean(torch.tensor(size_list)), adjust_logits
 
     def train(self, n_epochs=5000):
@@ -154,9 +154,9 @@ class CFGNNTrainer:
             if eff_valid < best_valid_size:
                 best_valid_size = eff_valid
                 best_logits = adjust_logits
-        
+
         return best_logits
-    
+
 
 class GNN_Multi_Layer(nn.Module):
     """

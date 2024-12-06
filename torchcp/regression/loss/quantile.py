@@ -67,7 +67,8 @@ class QuantileLoss(nn.Module):
 
         """
         if preds.size(0) != target.size(0):
-            raise ValueError(f"Batch size mismatch between predictions and targets. Got preds: {preds.size(0)}, target: {target.size(0)}")
+            raise ValueError(
+                f"Batch size mismatch between predictions and targets. Got preds: {preds.size(0)}, target: {target.size(0)}")
 
         losses = []
         for i, q in enumerate(self.quantiles):

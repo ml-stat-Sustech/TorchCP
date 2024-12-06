@@ -1,71 +1,78 @@
 import pytest
+import pytest
+import torch
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
+
 from torchcp.classification.utils.conf_calibration import ConfCalibrator, Identity, TS, ConfCalibrator_REGISTRY
 
-import pytest
-import torch
-from torch.utils.data import DataLoader, TensorDataset
 
 @pytest.fixture
 def device():
-   return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 @pytest.fixture
 def test_data():
-   n_samples, n_classes = 100, 10
-   logits = torch.randn(n_samples, n_classes)
-   targets = torch.randint(0, n_classes, (n_samples,))
-   dataset = TensorDataset(logits, targets)
-   return DataLoader(dataset, batch_size=32)
+    n_samples, n_classes = 100, 10
+    logits = torch.randn(n_samples, n_classes)
+    targets = torch.randint(0, n_classes, (n_samples,))
+    dataset = TensorDataset(logits, targets)
+    return DataLoader(dataset, batch_size=32)
+
 
 def test_conf_calibrator_registry_valid():
-   ts = ConfCalibrator.registry_ConfCalibrator("TS")
-   assert ts.__name__ == "TS"
-   identity = ConfCalibrator.registry_ConfCalibrator("Identity")
-   assert identity.__name__ == "Identity"
+    ts = ConfCalibrator.registry_ConfCalibrator("TS")
+    assert ts.__name__ == "TS"
+    identity = ConfCalibrator.registry_ConfCalibrator("Identity")
+    assert identity.__name__ == "Identity"
+
 
 def test_conf_calibrator_registry_invalid():
-   with pytest.raises(NameError):
-       ConfCalibrator.registry_ConfCalibrator("NonExistent")
+    with pytest.raises(NameError):
+        ConfCalibrator.registry_ConfCalibrator("NonExistent")
 
-       
 
 def test_identity_forward():
-   identity = Identity()
-   x = torch.randn(16, 10)
-   out = identity(x)
-   assert torch.equal(out, x)
+    identity = Identity()
+    x = torch.randn(16, 10)
+    out = identity(x)
+    assert torch.equal(out, x)
+
 
 def test_ts_init():
-   ts = TS(temperature=2.0)
-   assert ts.temperature.item() == 2.0
+    ts = TS(temperature=2.0)
+    assert ts.temperature.item() == 2.0
+
 
 def test_ts_forward():
-   ts = TS(temperature=2.0)
-   x = torch.randn(16, 10)
-   out = ts(x)
-   assert out.shape == x.shape
-   assert torch.allclose(out, x / 2.0)
+    ts = TS(temperature=2.0)
+    x = torch.randn(16, 10)
+    out = ts(x)
+    assert out.shape == x.shape
+    assert torch.allclose(out, x / 2.0)
+
 
 def test_ts_optimization(device, test_data):
-   ts = TS().to(device)
-   init_temp = ts.temperature.item()
-   
-   # Test optimization with default parameters
-   ts.optimze(test_data, device)
-   final_temp = ts.temperature.item()
-   assert init_temp != final_temp
-   assert final_temp > 0
-   
-   # Test optimization with custom parameters
-   ts = TS().to(device)
-   ts.optimze(test_data, device, max_iters=5, lr=0.02, epsilon=0.02)
-   assert ts.temperature.item() > 0
+    ts = TS().to(device)
+    init_temp = ts.temperature.item()
+
+    # Test optimization with default parameters
+    ts.optimze(test_data, device)
+    final_temp = ts.temperature.item()
+    assert init_temp != final_temp
+    assert final_temp > 0
+
+    # Test optimization with custom parameters
+    ts = TS().to(device)
+    ts.optimze(test_data, device, max_iters=5, lr=0.02, epsilon=0.02)
+    assert ts.temperature.item() > 0
+
 
 def test_ts_early_stopping(device, test_data):
-   ts = TS().to(device)
-   ts.temperature = nn.Parameter(torch.tensor(1.0))
-   ts.optimze(test_data, device, epsilon=float('inf'))  # Force early stopping
-   assert (ts.temperature.item() - 1.0) < float('inf')
+    ts = TS().to(device)
+    ts.temperature = nn.Parameter(torch.tensor(1.0))
+    ts.optimze(test_data, device, epsilon=float('inf'))  # Force early stopping
+    assert (ts.temperature.item() - 1.0) < float('inf')

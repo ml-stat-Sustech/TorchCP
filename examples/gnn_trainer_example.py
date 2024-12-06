@@ -1,13 +1,12 @@
 import argparse
-
 import torch
 import torch.nn.functional as F
 from transformers import set_seed
 
+from examples.utils import build_gnn_model, build_transductive_gnn_data
+from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
 from torchcp.graph.trainer import CFGNNTrainer
-from torchcp.classification.predictor import SplitPredictor
-from examples.utils import build_gnn_model, build_transductive_gnn_data
 
 
 def train_transductive(model, optimizer, graph_data, train_idx):
@@ -24,7 +23,7 @@ def evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args):
     size_list = []
     calib_num = min(1000, int(calib_eval_idx.shape[0] / 2))
     calib_fraction = 0.5
-    
+
     for _ in range(100):
         eval_perms = torch.randperm(calib_eval_idx.size(0))
         eval_calib_idx = calib_eval_idx[eval_perms[:int(calib_num * calib_fraction)]]
@@ -40,7 +39,7 @@ def evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args):
         coverage_list.append(coverage)
         size_list.append(size)
 
-    return (torch.mean(torch.tensor(coverage_list)), 
+    return (torch.mean(torch.tensor(coverage_list)),
             torch.mean(torch.tensor(size_list)))
 
 

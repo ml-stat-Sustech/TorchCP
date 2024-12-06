@@ -14,6 +14,7 @@ import warnings
 
 __all__ = ["calculate_conformal_value", "get_device", "DimensionError"]
 
+
 class DimensionError(Exception):
     pass
 

@@ -3,6 +3,7 @@ import torch
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset, DataLoader, TensorDataset
 
+
 @pytest.fixture
 def dummy_data():
     """

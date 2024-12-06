@@ -1,32 +1,41 @@
 import pytest
 import torch
 import torch.nn as nn
-from torchcp.classification.predictor.base import BasePredictor 
+
+from torchcp.classification.predictor.base import BasePredictor
 from torchcp.classification.utils import ConfCalibrator
+
 
 class DummyModel(nn.Module):
     """A simple model for testing"""
+
     def __init__(self):
         super().__init__()
         self.fc = nn.Linear(10, 3)
-    
+
     def forward(self, x):
         return self.fc(x)
 
+
 class ConcretePredictor(BasePredictor):
     """Concrete implementation of BasePredictor for testing"""
+
     def calibrate(self, cal_dataloader, alpha):
         pass
 
     def predict(self, x_batch):
         pass
 
+
 @pytest.fixture
 def dummy_score_function():
     """Score function fixture"""
+
     def score_fn(logits, labels):
         return 1 - logits[torch.arange(len(labels)), labels]
+
     return score_fn
+
 
 def test_base_predictor_initialization():
     """Test BasePredictor initialization with various parameters"""
@@ -47,9 +56,10 @@ def test_base_predictor_initialization():
     # Test invalid temperature
     with pytest.raises(ValueError, match="temperature must be greater than 0"):
         ConcretePredictor(score_fn, model, temperature=0)
-    
+
     with pytest.raises(ValueError, match="temperature must be greater than 0"):
         ConcretePredictor(score_fn, model, temperature=-1)
+
 
 def test_device_handling():
     """Test device handling functionality"""
@@ -75,6 +85,7 @@ def test_device_handling():
         predictor = ConcretePredictor(score_fn, model)
         assert predictor.get_device() == torch.device('cuda:0')
 
+
 def test_generate_prediction_set():
     """Test _generate_prediction_set method"""
     score_fn = lambda x, y: x
@@ -84,7 +95,7 @@ def test_generate_prediction_set():
     scores = torch.tensor([0.1, 0.5, 0.8, 0.3, 0.9])
     q_hat = torch.tensor(0.6)
     expected = torch.tensor([1, 1, 0, 1, 0])
-    
+
     result = predictor._generate_prediction_set(scores, q_hat)
     assert torch.equal(result, expected)
 
@@ -106,13 +117,15 @@ def test_generate_prediction_set():
     result = predictor._generate_prediction_set(scores, q_hat)
     assert torch.equal(result, expected)
 
+
 def test_abstract_methods():
     """Test abstract methods raise NotImplementedError"""
     with pytest.raises(NotImplementedError):
         BasePredictor(lambda x, y: x).calibrate(None, 0.1)
-        
+
     with pytest.raises(NotImplementedError):
         BasePredictor(lambda x, y: x).predict(torch.randn(10, 5))
+
 
 def test_logits_transformation():
     """Test logits transformation with different temperatures"""
@@ -131,15 +144,16 @@ def test_logits_transformation():
     expected = logits / 2.0
     assert torch.allclose(transformed, expected)
 
+
 @pytest.mark.parametrize("batch_size", [1, 16, 32])
 def test_prediction_set_shapes(batch_size):
     """Test prediction set generation with different batch sizes"""
     score_fn = lambda x, y: x
     predictor = ConcretePredictor(score_fn)
-    
+
     scores = torch.randn(batch_size, 10)  # 10 classes
     q_hat = torch.tensor(0.5)
-    
+
     result = predictor._generate_prediction_set(scores, q_hat)
     assert result.shape == scores.shape
     assert result.dtype == torch.int

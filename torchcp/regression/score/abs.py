@@ -25,9 +25,10 @@ class ABS(BaseScore):
         Link: https://arxiv.org/abs/1604.04173
         Github: https://github.com/ryantibs/conformal
     """
+
     def __init__(self):
         super().__init__()
-        
+
     def __call__(self, predicts, y_truth):
         """
         Calculates the score used for conformal prediction, which measures the deviation 
@@ -43,7 +44,7 @@ class ABS(BaseScore):
         if len(y_truth.shape) == 1:
             y_truth = y_truth.unsqueeze(1)
         return torch.abs(predicts - y_truth)
-    
+
     def generate_intervals(self, predicts_batch, q_hat):
         """
         Generate prediction intervals by adjusting predictions with the calibrated :attr:`q_hat` threshold.
@@ -60,7 +61,7 @@ class ABS(BaseScore):
         prediction_intervals[..., 0] = predicts_batch - q_hat.view(1, q_hat.shape[0])
         prediction_intervals[..., 1] = predicts_batch + q_hat.view(1, q_hat.shape[0])
         return prediction_intervals
-        
+
     def train(self, train_dataloader, **kwargs):
         """
         Trains the model using the provided training data.
@@ -76,7 +77,9 @@ class ABS(BaseScore):
                 - verbose (bool, optional): If True, prints training progress. Defaults to True.
         """
         device = kwargs.get('device', None)
-        model = kwargs.get('model', build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], 1, 64, 0.5).to(device))
+        model = kwargs.get('model',
+                           build_regression_model("NonLinearNet")(next(iter(train_dataloader))[0].shape[1], 1, 64,
+                                                                  0.5).to(device))
         epochs = kwargs.get('epochs', 100)
         criterion = kwargs.get('criterion', nn.MSELoss())
         lr = kwargs.get('lr', 0.01)

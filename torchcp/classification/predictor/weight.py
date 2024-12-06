@@ -28,12 +28,12 @@ class WeightedPredictor(SplitPredictor):
     """
 
     def __init__(self, score_function, model=None, temperature=1, image_encoder=None, domain_classifier=None):
-        
+
         super().__init__(score_function, model, temperature)
 
         if image_encoder is None:
             raise ValueError("image_encoder cannot be None.")
-        
+
         self.image_encoder = image_encoder.to(self._device)
         self.domain_classifier = domain_classifier
 
@@ -78,13 +78,12 @@ class WeightedPredictor(SplitPredictor):
         """
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0, 1).")
-        
+
         self.alpha = alpha
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)
         self.scores[:logits.shape[0]] = self.score_function(logits, labels)
         self.scores[logits.shape[0]] = torch.tensor(torch.inf).to(self._device)
         self.scores_sorted = self.scores.sort()[0]
-
 
     def predict(self, x_batch):
         """
@@ -98,7 +97,7 @@ class WeightedPredictor(SplitPredictor):
         """
         if not hasattr(self, "scores_sorted"):
             raise ValueError("Please calibrate first to get self.scores_sorted.")
-        
+
         bs = x_batch.shape[0]
         with torch.no_grad():
             image_features = self.image_encoder(x_batch.to(self._device)).float()
@@ -117,7 +116,7 @@ class WeightedPredictor(SplitPredictor):
         predictions_sets_list = []
         for index, (logits_instance, q_hat) in enumerate(zip(logits, q_hat_batch)):
             predictions_sets_list.append(self.predict_with_logits(logits_instance, q_hat))
-            
+
         predictions_sets = torch.cat(predictions_sets_list, dim=0)  # (N_val x C)
         return predictions_sets
 
@@ -152,7 +151,7 @@ class WeightedPredictor(SplitPredictor):
         # Train domain classifier if needed
         if not hasattr(self, "source_image_features"):
             raise ValueError("Please calibrate first to get source_image_features.")
-        
+
         if self.domain_classifier is None:
             self._train_domain_classifier(target_features)
 
@@ -164,16 +163,16 @@ class WeightedPredictor(SplitPredictor):
         # Generate predictions
         predictions_list: List[torch.Tensor] = []
         labels_list: List[torch.Tensor] = []
-        
+
         with torch.no_grad():
             for batch in val_dataloader:
                 # Move batch to device and get predictions
                 inputs = batch[0].to(self._device)
                 labels = batch[1].to(self._device)
-                
+
                 # Get predictions as bool tensor (N x C)
                 batch_predictions = self.predict(inputs)
-                
+
                 # Accumulate predictions and labels
                 predictions_list.append(batch_predictions)
                 labels_list.append(labels)
@@ -189,7 +188,7 @@ class WeightedPredictor(SplitPredictor):
         }
 
         return metrics
-        
+
     def _train_domain_classifier(self, target_image_features):
         source_labels = torch.zeros(self.source_image_features.shape[0]).to(self._device)
         target_labels = torch.ones(target_image_features.shape[0]).to(self._device)

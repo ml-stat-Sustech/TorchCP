@@ -2,7 +2,9 @@ import pytest
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from torchcp.classification.predictor.utils import build_DomainDetecor, MidFNN, FNN, Linear, SmallFNN, BigFNN, IW
+
 
 @pytest.fixture
 def mock_device():
@@ -51,7 +53,7 @@ def test_fnn_foward():
     out_train = fnn(x, True)
     out_eval = fnn(x, False)
     assert not torch.allclose(out_train, out_eval)
-    
+
     fnn.model.eval()
     excepted_out = F.softmax(fnn.model(x), dim=1)
     assert torch.allclose(out_eval, excepted_out)

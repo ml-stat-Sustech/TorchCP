@@ -8,11 +8,11 @@ __all__ = ["ConfTS"]
 
 import numpy as np
 import torch
-
 import torch.nn.functional as F
 from torch import Tensor
 
 from .base import BaseLoss
+
 
 class ConfTS(BaseLoss):
     """
@@ -43,13 +43,13 @@ class ConfTS(BaseLoss):
     def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True):
 
         super(ConfTS, self).__init__(weight, predictor)
-        
+
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0,1).")
-        
+
         if not (0 < fraction < 1):
             raise ValueError("fraction should be a value in (0,1).")
-        
+
         self.weight = weight
         self.predictor = predictor
         self.soft_qunatile = soft_qunatile
@@ -57,7 +57,6 @@ class ConfTS(BaseLoss):
         self.alpha = alpha
         self.device = predictor.get_device()
 
-       
     def forward(self, logits, labels):
         logits = logits.to(self.device)
         labels = labels.to(self.device)
@@ -74,11 +73,11 @@ class ConfTS(BaseLoss):
         else:
             self.predictor.calculate_threshold(cal_logits.detach(), cal_labels.detach(), self.alpha)
             tau = self.predictor.q_hat
-        
+
         test_scores = self.predictor.score_function(test_logits)
-        
+
         return self.compute_loss(test_scores, test_labels, tau)
-    
+
     def compute_loss(self, test_scores, test_labels, tau):
         return self.weight * torch.mean((tau - test_scores[range(test_scores.shape[0]), test_labels]) ** 2)
 
@@ -111,10 +110,10 @@ class ConfTS(BaseLoss):
         return P_hat
 
     def _soft_quantile(self, scores: Tensor,
-                        q: float,
-                        dim=-1,
-                        **kwargs
-                        ) -> Tensor:
+                       q: float,
+                       dim=-1,
+                       **kwargs
+                       ) -> Tensor:
         # swap requested dim with final dim
         dims = list(range(len(scores.shape)))
         dims[-1], dims[dim] = dims[dim], dims[-1]

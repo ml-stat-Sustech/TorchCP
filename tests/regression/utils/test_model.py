@@ -1,6 +1,7 @@
 import pytest
 import torch
 import torch.nn as nn
+
 from torchcp.regression.utils.model import NonLinearNet, Softmax, build_regression_model
 
 
@@ -23,8 +24,10 @@ def test_non_linear_net_initialization():
     # Check that base_model is a Sequential container with the correct layers
     assert isinstance(model.base_model, nn.Sequential), f"Expected Sequential, got {type(model.base_model)}"
     assert len(model.base_model) == 7, f"Expected 7 layers, got {len(model.base_model)}"
-    assert isinstance(model.base_model[0], nn.Linear), f"Expected first layer to be nn.Linear, got {type(model.base_model[0])}"
-    assert isinstance(model.base_model[1], nn.ReLU), f"Expected second layer to be nn.ReLU, got {type(model.base_model[1])}"
+    assert isinstance(model.base_model[0],
+                      nn.Linear), f"Expected first layer to be nn.Linear, got {type(model.base_model[0])}"
+    assert isinstance(model.base_model[1],
+                      nn.ReLU), f"Expected second layer to be nn.ReLU, got {type(model.base_model[1])}"
 
 
 def test_non_linear_net_forward(mock_input):
@@ -54,7 +57,8 @@ def test_softmax_forward(mock_input):
     assert output.shape == (mock_input.shape[0], 2), f"Expected output shape (10, 2), got {output.shape}"
 
     # Check that output is a probability distribution (sum of softmax output should be 1 for each sample)
-    assert torch.allclose(output.sum(dim=1), torch.ones(mock_input.shape[0]), atol=1e-6), "Softmax output doesn't sum to 1"
+    assert torch.allclose(output.sum(dim=1), torch.ones(mock_input.shape[0]),
+                          atol=1e-6), "Softmax output doesn't sum to 1"
 
 
 def test_build_regression_model():

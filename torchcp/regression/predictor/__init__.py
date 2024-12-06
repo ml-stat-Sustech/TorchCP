@@ -1,3 +1,3 @@
-from .split import SplitPredictor
-from .ensemble import EnsemblePredictor
 from .aci import ACIPredictor
+from .ensemble import EnsemblePredictor
+from .split import SplitPredictor
