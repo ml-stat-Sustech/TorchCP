@@ -6,26 +6,13 @@
 #
 
 
-import random
 import math
+import numpy as np
+import random
+import torch
 import warnings
 
-import numpy as np
-import torch
-
-__all__ = ["fix_randomness", "DimensionError", "get_device"]
-
-
-def fix_randomness(seed=0):
-    """
-    Fix the random seed for python, torch, numpy.
-
-    :param seed: the random seed
-    """
-    np.random.seed(seed=seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    random.seed(seed)
+__all__ = ["calculate_conformal_value", "get_device", "DimensionError"]
 
 
 class DimensionError(Exception):
@@ -34,11 +21,16 @@ class DimensionError(Exception):
 
 def get_device(model):
     """
-    Get the device of Torch model.
+    Get the device of a PyTorch model.
 
-    :param model: a Pytorch model. If None, it uses GPU when the cuda is available, otherwise it uses CPU。
+    This function determines the device (CPU or GPU) on which the model's parameters are located.
+    If the model is None, it defaults to using GPU if available, otherwise it uses CPU.
 
-    :return: the device in use
+    Args:
+        model (torch.nn.Module or None): A PyTorch model. If None, the function checks for GPU availability.
+
+    Returns:
+        torch.device: The device on which the model's parameters are located, or the default device (CPU or GPU).
     """
     if model is None:
         if not torch.cuda.is_available():
@@ -51,28 +43,39 @@ def get_device(model):
     return device
 
 
-def calculate_conformal_value(scores, alpha, default_q_hat = torch.inf):
+def calculate_conformal_value(scores, alpha, default_q_hat=torch.inf):
     """
-    Calculate the 1-alpha quantile of scores.
+    Calculate the 1-alpha quantile of scores for conformal prediction.
+
+    This function computes the threshold value (quantile) used to construct prediction sets based on the given
+    non-conformity scores and significance level alpha. If the scores are empty or the quantile value exceeds 1,
+    it returns the default_q_hat value.
+
+    Args:
+        scores (torch.Tensor): Non-conformity scores.
+        alpha (float): Significance level, must be between 0 and 1.
+        default_q_hat (torch.Tensor or str, optional): Default threshold value to use if scores are empty or invalid.
+            If set to "max", it uses the maximum value of scores. Default is torch.inf.
+
+    Returns:
+        torch.Tensor: The threshold value used to construct prediction sets.
     
-    :param scores: non-conformity scores.
-    :param alpha: a significance level.
-    
-    :return: the threshold which is use to construct prediction sets.
+    Raises:
+        ValueError: If alpha is not between 0 and 1.
     """
     if default_q_hat == "max":
         default_q_hat = torch.max(scores)
     if alpha >= 1 or alpha <= 0:
-            raise ValueError("Significance level 'alpha' must be in [0,1].")
+        raise ValueError("Significance level 'alpha' must be in [0,1].")
     if len(scores) == 0:
         warnings.warn(
             f"The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as {default_q_hat}.")
         return default_q_hat
     N = scores.shape[0]
-    qunatile_value = math.ceil(N + 1) * (1 - alpha) / N
+    qunatile_value = math.ceil((N + 1) * (1 - alpha)) / N
     if qunatile_value > 1:
         warnings.warn(
             f"The value of quantile exceeds 1. It should be a value in [0,1]. To avoid program crash, the threshold is set as {default_q_hat}.")
         return default_q_hat
 
-    return torch.quantile(scores, qunatile_value, dim=0).to(scores.device)
+    return torch.quantile(scores, qunatile_value, dim=0, interpolation='lower').to(scores.device)
