@@ -31,7 +31,7 @@
   <!-- <a href="https://github.com/microsoft/promptbench">
     <img src="imgs/promptbench_logo.png" alt="Logo" width="300">
   </a> -->
-<img src="./logo.png" width="300px" />
+<img src="https://raw.githubusercontent.com/ml-stat-Sustech/TorchCP/master/logo.png" width="300px" />
 <!-- <h3 align="center">USB</h3> -->
 <!-- ![TorchCP_logo](./logo.png) -->
 <p align="center">
