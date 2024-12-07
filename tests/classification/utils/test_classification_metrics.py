@@ -58,8 +58,8 @@ def test_average_size(setup_basic_data):
     """Test average set size calculation"""
     prediction_sets, _ = setup_basic_data
     avg_size = average_size(prediction_sets)
-    assert isinstance(avg_size, torch.Tensor)
-    assert avg_size.item() > 0
+    assert isinstance(avg_size, float)
+    assert avg_size > 0
 
 
 def test_covgap(setup_basic_data):

@@ -67,7 +67,7 @@ def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def average_size(prediction_sets, labels=None):
-    return torch.mean(torch.sum(prediction_sets, dim=1).float())
+    return torch.mean(torch.sum(prediction_sets, dim=1).float()).item()
 
 
 #########################################
