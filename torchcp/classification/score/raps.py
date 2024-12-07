@@ -21,7 +21,7 @@ class RAPS(APS):
     
     Args:
         penalty (float): The weight of regularization. When penalty = 0, RAPS=APS.
-        kreg (int, optional): The rank of regularization which is an integer in [0, labels_num]. Default is 0.
+        kreg (int, optional): The rank of regularization which is an integer in [0, classes_num]. Default is 0.
         score_type (str, optional): The type of score to use. Default is "softmax".
         randomized (bool, optional): Whether to use randomized scores. Default is True.
         
@@ -68,6 +68,5 @@ class RAPS(APS):
             U = torch.zeros(indices.shape[0], device=probs.device)
         idx = torch.where(indices == label.view(-1, 1))
         reg = torch.maximum(self.__penalty * (idx[1] + 1 - self.__kreg), torch.tensor(0).to(probs.device))
-        idx_minus_one = (idx[0], idx[1] - 1)
-        scores = cumsum[idx_minus_one] - U * ordered[idx] + reg
+        scores = cumsum[idx] - U * ordered[idx] + reg
         return scores

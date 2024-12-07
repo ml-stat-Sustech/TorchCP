@@ -66,7 +66,7 @@ def setup_data_and_model(device, batch_size=512):
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
 
-    test_dataset = build_dataset("mnist", data_mode='test')
+    test_dataset = build_dataset("mnist", data_mode='test',)
     cal_dataset, test_dataset = torch.utils.data.random_split(test_dataset, [5000, 5000])
 
     cal_loader = torch.utils.data.DataLoader(

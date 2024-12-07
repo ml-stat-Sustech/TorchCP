@@ -31,6 +31,12 @@ def get_model_dir():
     path.mkdir(parents=True, exist_ok=True)
     return dataset_dir
 
+def get_others_dir():
+    dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/others')
+    path = Path(dataset_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    return dataset_dir
+
 
 def download_github(url, save_path):
     raw_url = url.replace(
