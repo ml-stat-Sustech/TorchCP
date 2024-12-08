@@ -118,8 +118,8 @@ if __name__ == '__main__':
         )
 
         results[loss_name] = result
-        print(f"Result--Coverage_rate: {result['Coverage_rate']:.4f}, "
-              f"Average_size: {result['Average_size']:.4f}")
+        print(f"Result--Coverage_rate: {result['coverage_rate']:.4f}, "
+              f"Average_size: {result['average_size']:.4f}")
 
     # Print comparative results
     print("\nComparative Results:")
@@ -127,4 +127,4 @@ if __name__ == '__main__':
     print(f"{'Method':<10} {'Coverage Rate':<15} {'Average Size':<15}")
     print("-" * 60)
     for method, result in results.items():
-        print(f"{method:<10} {result['Coverage_rate']:.4f}{'':8} {result['Average_size']:.4f}")
+        print(f"{method:<10} {result['coverage_rate']:.4f}{'':8} {result['average_size']:.4f}")

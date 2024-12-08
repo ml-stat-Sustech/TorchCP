@@ -71,8 +71,8 @@ class BasePredictor(object):
             
         Returns:
             dict: A dictionary containing the coverage rate and average interval size with keys:
-            - Coverage_rate (float): The coverage rate of the prediction intervals.
-            - Average_size (float): The average size of the prediction intervals.
+            - coverage_rate (float): The coverage rate of the prediction intervals.
+            - average_size (float): The average size of the prediction intervals.
         """
         raise NotImplementedError
 

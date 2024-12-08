@@ -155,5 +155,5 @@ def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, q_ha
 
     metrics = Metrics()
     assert len(results) == 2
-    assert results['Coverage_rate'] == metrics('coverage_rate')(excepted_sets, mock_dataset.labels)
-    assert results['Average_size'] == metrics('average_size')(excepted_sets)
+    assert results['coverage_rate'] == metrics('coverage_rate')(excepted_sets, mock_dataset.labels)
+    assert results['average_size'] == metrics('average_size')(excepted_sets)

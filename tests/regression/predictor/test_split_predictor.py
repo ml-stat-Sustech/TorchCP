@@ -48,8 +48,8 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
 
     # Step 3: Evaluate the model
     eval_res = split_predictor.evaluate(test_dataloader)
-    assert "Coverage_rate" in eval_res, "Coverage rate should be part of evaluation results."
-    assert "Average_size" in eval_res, "Average size should be part of evaluation results."
+    assert "coverage_rate" in eval_res, "Coverage rate should be part of evaluation results."
+    assert "average_size" in eval_res, "Average size should be part of evaluation results."
     assert abs(
-        eval_res['Coverage_rate'] - 0.9) < 5e-2, f"Coverage rate {eval_res['Coverage_rate']} should be close to 0.9"
-    assert eval_res["Average_size"] > 0, "Average size should be greater than 0."
+        eval_res['coverage_rate'] - 0.9) < 5e-2, f"Coverage rate {eval_res['coverage_rate']} should be close to 0.9"
+    assert eval_res["average_size"] > 0, "Average size should be greater than 0."

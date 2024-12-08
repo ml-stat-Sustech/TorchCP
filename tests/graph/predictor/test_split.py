@@ -150,9 +150,9 @@ def test_evaluate(predictor, mock_graph_data, preprocess, alpha):
     results = predictor.evaluate(preprocess.eval_idx)
     metrics = Metrics()
     assert len(results) == 3
-    assert results['Coverage_rate'] == metrics('coverage_rate')(
+    assert results['coverage_rate'] == metrics('coverage_rate')(
         excepted_sets, mock_graph_data.y[preprocess.eval_idx])
-    assert results['Average_size'] == metrics('average_size')(
+    assert results['average_size'] == metrics('average_size')(
         excepted_sets, mock_graph_data.y[preprocess.eval_idx])
-    assert results['Singleton_hit_ratio'] == metrics('singleton_hit_ratio')(
+    assert results['singleton_hit_ratio'] == metrics('singleton_hit_ratio')(
         excepted_sets, mock_graph_data.y[preprocess.eval_idx])

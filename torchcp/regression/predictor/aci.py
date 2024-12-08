@@ -154,8 +154,8 @@ class ACIPredictor(SplitPredictor):
         avg_coverage_rate = sum(coverage_rates) / len(coverage_rates)
         avg_average_size = sum(average_sizes) / len(average_sizes)
 
-        res_dict = {"Total batches": index + 1,
-                    "Coverage_rate": avg_coverage_rate,
-                    "Average_size": avg_average_size}
+        res_dict = {"total batches": index + 1,
+                    "coverage_rate": avg_coverage_rate,
+                    "average_size": avg_average_size}
 
         return res_dict

@@ -46,9 +46,9 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
 
     # Test evaluate method
     eval_results = aci_predictor.evaluate(test_dataloader, verbose=False)
-    assert eval_results["Total batches"] > 0, "Evaluation should process at least one batch."
-    assert eval_results["Coverage_rate"] > 0, "Average coverage rate should be greater than 0."
-    assert eval_results["Average_size"] > 0, "Average interval size should be greater than 0."
+    assert eval_results["total batches"] > 0, "Evaluation should process at least one batch."
+    assert eval_results["coverage_rate"] > 0, "Average coverage rate should be greater than 0."
+    assert eval_results["average_size"] > 0, "Average interval size should be greater than 0."
 
     # Test evaluate method with verbose=True
     aci_predictor.evaluate(test_dataloader, verbose=True)

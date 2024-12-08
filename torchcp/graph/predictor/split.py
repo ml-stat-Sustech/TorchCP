@@ -143,8 +143,8 @@ class GraphSplitPredictor(BaseGraphPredictor):
                                  self._graph_data.edge_index)
         prediction_sets = self.predict_with_logits(logits, eval_idx)
 
-        res_dict = {"Coverage_rate": self._metric('coverage_rate')(prediction_sets, self._graph_data.y[eval_idx]),
-                    "Average_size": self._metric('average_size')(prediction_sets, self._graph_data.y[eval_idx]),
-                    "Singleton_hit_ratio": self._metric('singleton_hit_ratio')(prediction_sets,
+        res_dict = {"coverage_rate": self._metric('coverage_rate')(prediction_sets, self._graph_data.y[eval_idx]),
+                    "average_size": self._metric('average_size')(prediction_sets, self._graph_data.y[eval_idx]),
+                    "singleton_hit_ratio": self._metric('singleton_hit_ratio')(prediction_sets,
                                                                                self._graph_data.y[eval_idx])}
         return res_dict

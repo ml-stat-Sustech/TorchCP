@@ -183,8 +183,8 @@ class WeightedPredictor(SplitPredictor):
 
         # Compute evaluation metrics
         metrics = {
-            "Coverage_rate": self._metric('coverage_rate')(val_predictions, val_labels),
-            "Average_size": self._metric('average_size')(val_predictions, val_labels)
+            "coverage_rate": self._metric('coverage_rate')(val_predictions, val_labels),
+            "average_size": self._metric('average_size')(val_predictions, val_labels)
         }
 
         return metrics

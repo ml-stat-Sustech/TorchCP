@@ -217,8 +217,8 @@ def main():
     print(f"{'Method':<30} {'Coverage Rate':<20} {'Average Width':<20}")
     print("-" * 80)
     for method, result in results.items():
-        print(f"{method:<30} {result['Coverage_rate']:.4f}{'':<16} "
-              f"{result['Average_size']:.4f}")
+        print(f"{method:<30} {result['coverage_rate']:.4f}{'':<16} "
+              f"{result['average_size']:.4f}")
 
 
 if __name__ == "__main__":

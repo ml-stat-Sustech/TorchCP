@@ -146,8 +146,8 @@ class SplitPredictor(BasePredictor):
 
         # Compute evaluation metrics
         metrics = {
-            "Coverage_rate": self._metric('coverage_rate')(val_prediction_sets, val_labels),
-            "Average_size": self._metric('average_size')(val_prediction_sets, val_labels)
+            "coverage_rate": self._metric('coverage_rate')(val_prediction_sets, val_labels),
+            "average_size": self._metric('average_size')(val_prediction_sets, val_labels)
         }
 
         return metrics

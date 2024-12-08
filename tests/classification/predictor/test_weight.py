@@ -159,7 +159,7 @@ def test_evaluate(simple_score_function, sample_data):
     metrics = predictor.evaluate(sample_data)
 
     assert isinstance(metrics, dict)
-    assert "Coverage_rate" in metrics
-    assert "Average_size" in metrics
-    assert 0 <= metrics["Coverage_rate"] <= 1
-    assert metrics["Average_size"] >= 0
+    assert "coverage_rate" in metrics
+    assert "average_size" in metrics
+    assert 0 <= metrics["coverage_rate"] <= 1
+    assert metrics["average_size"] >= 0
