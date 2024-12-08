@@ -62,7 +62,7 @@ class ConfTr(ConfTS):
 
         if loss_type not in ["valid", "classification", "probs", "coverage", "cfgnn"]:
             raise ValueError(
-                'loss_type should be a value in ["valid", "classification", "probs", "coverage", "cfgnn"].')
+                'loss_type should be a value in ["valid", "classification", "probs", "coverage"].')
         if target_size not in [0, 1]:
             raise ValueError("target_size should be 0 or 1.")
         if loss_transform not in ["square", "abs", "log"]:
@@ -89,7 +89,6 @@ class ConfTr(ConfTS):
                                     "probs": self.__compute_probabilistic_size_loss,
                                     "coverage": self.__compute_coverage_loss,
                                     "classification": self.__compute_classification_loss,
-                                    "cfgnn": self.__compute_conformalized_gnn_loss,
                                     }
 
     def compute_loss(self, test_scores, test_labels, tau):
@@ -100,7 +99,7 @@ class ConfTr(ConfTS):
     def __compute_hinge_size_loss(self, pred_sets, labels):
         return torch.mean(
             self.transform(
-                torch.maximum(torch.sum(pred_sets, dim=1) - self.target_size, torch.tensor(0).to(pred_sets.device))))
+                torch.relu(torch.sum(pred_sets, dim=1) - self.target_size)))
 
     def __compute_probabilistic_size_loss(self, pred_sets, labels):
         classes = pred_sets.shape[1]
@@ -136,5 +135,3 @@ class ConfTr(ConfTS):
         # Return the mean loss
         return torch.mean(loss)
 
-    def __compute_conformalized_gnn_loss(self, pred_sets, labels):
-        return torch.mean(torch.relu(torch.sum(pred_sets, dim=1) - self.target_size))

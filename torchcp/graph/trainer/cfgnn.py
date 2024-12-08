@@ -69,7 +69,7 @@ class CFGNNTrainer:
                                  predictor=SplitPredictor(score_function=THR(score_type="softmax")),
                                  alpha=alpha,
                                  fraction=0.5,
-                                 loss_type="cfgnn",
+                                 loss_type="classification",
                                  target_size=0)
         self.predictor = SplitPredictor(APS(score_type="softmax"))
         self.alpha = alpha
