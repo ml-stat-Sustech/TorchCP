@@ -105,7 +105,7 @@ class ACIPredictor(SplitPredictor):
             err_t = self.alpha
         else:
             err_t = self.calculate_err_rate(x_batch, y_batch_last, pred_interval_last)
-            self.scores = self.calculate_score(self._model(x_batch).float(), y_batch_last)
+            self.scores = self.calculate_score(self._model(x_batch_last).float(), y_batch_last)
 
         self.alpha_t = max(0.0001, min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
 
