@@ -31,8 +31,8 @@ class BaseScore(object):
         raise NotImplementedError
 
     @abstractmethod
-    def construct_interval(self, predicts_batch, q_hat):
-        """Constructs the prediction interval for the given batch of predictions.
+    def generate_intervals(self, predicts_batch, q_hat):
+        """Generate the prediction interval for the given batch of predictions.
 
         Args:
             predicts_batch: the batch of predictions.
