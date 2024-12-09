@@ -88,16 +88,6 @@ def build_reg_data(data_name="community"):
         X = data.iloc[:, 0:100].values
         y = data.iloc[:, 100].values
 
-        # imputer = SimpleImputer(missing_values = 'NaN', strategy = 'mean')
-
-        # imputer = imputer.fit(data[['OtherPerCap']])
-        # data[['OtherPerCap']] = imputer.transform(data[['OtherPerCap']])
-        data['OtherPerCap'] = data['OtherPerCap'].astype("float")
-        mean_value = data['OtherPerCap'].mean()
-        data['OtherPerCap'].fillna(value=mean_value, inplace=True)
-        data = data.dropna(axis=1)
-        X = data.iloc[:, 0:100].values
-        y = data.iloc[:, 100].values
     elif data_name == "synthetic":
 
         n = 10000
