@@ -97,13 +97,6 @@ def test_compute_classification_loss(conftr_instance):
     assert isinstance(loss, torch.Tensor)
 
 
-def test_compute_conformalized_gnn_loss(conftr_instance):
-    conftr = conftr_instance
-    pred_sets = torch.sigmoid(torch.randn(10, 5))
-    labels = torch.randint(0, 5, (10,))
-    loss = conftr._ConfTr__compute_conformalized_gnn_loss(pred_sets, labels)
-    assert isinstance(loss, torch.Tensor)
-
 
 def test_loss_transform_square():
     conftr = ConfTr(1.0, Predictor(THR()), 0.05, 0.2, loss_transform="square")

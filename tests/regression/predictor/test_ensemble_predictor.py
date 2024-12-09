@@ -47,7 +47,7 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
     # Test evaluate method with verbose=True
     ensemble_predictor.evaluate(test_dataloader, alpha=0.1, verbose=True)
 
-    assert "Total batches" in eval_res, "Evaluation should return total batches."
+    assert "total batches" in eval_res, "Evaluation should return total batches."
     assert eval_res["total batches"] > 0, "There should be at least one batch evaluated."
     assert eval_res["coverage_rate"] > 0, "Coverage rate should be greater than 0."
     assert eval_res["average_size"] > 0, "Interval size should be greater than 0."
