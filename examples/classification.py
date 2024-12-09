@@ -60,7 +60,6 @@ def run_experiment(score_function, model_name, alpha, cal_logits,cal_labels, tes
     print(f"Experiment--Data : ImageNet, Model : {model_name}, Score : {score_function.__class__.__name__}, Predictor : {predictor.__class__.__name__}, Alpha : {alpha}, Randomized : {randomized}")
     
     predictor.calculate_threshold(cal_logits, cal_labels, alpha)
-    print(predictor.q_hat)
     prediction_sets = predictor.predict_with_logits(test_logits)
     metrics = Metrics()
     print("Evaluating prediction sets...")
