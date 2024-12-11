@@ -69,9 +69,9 @@ def test_default_q_hat_max_normal_case():
     """Test when default_q_hat is 'max' and scores is not empty"""
     scores = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     alpha = 0.1
-    result = calculate_conformal_value(scores, alpha, default_q_hat="max")
-
-    assert result == 5.0
+    with pytest.warns(UserWarning, match="The value of quantile exceeds 1"):
+        result = calculate_conformal_value(scores, alpha, default_q_hat="max")
+        assert result == 5.0
 
 
 def test_calculate_conformal_value():
