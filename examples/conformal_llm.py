@@ -13,7 +13,7 @@ from datasets import load_dataset
 from tqdm.auto import tqdm
 from transformers import LlamaForCausalLM, LlamaTokenizer, set_seed, StoppingCriteriaList
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 from examples.llm.prompts import few_shot_qa, StoppingCriteriaSub
 from examples.utils import get_dataset_dir
@@ -22,7 +22,7 @@ from torchcp.llm.predictor import ConformalLM
 
 
 def preprocess_data(dataset_name, model_path, output_path):
-    dataset = get_dataset(dataset_name)
+    dataset = get_dataset(dataset_name, max_predict_samples=30)
 
     few_shot_size = 32
     score_type = "transition"
@@ -138,6 +138,10 @@ def preprocess_data(dataset_name, model_path, output_path):
             labels = [exact_match(p, answers) for p in predictions]
             all_scores.append(scores)
             all_labels.append(labels)
+            print(example['question'])
+            print(predictions)
+            print(scores)
+            print(labels)
         return np.array(all_labels), np.array(all_scores)
 
     def normalize_text(s):
@@ -179,7 +183,7 @@ def preprocess_data(dataset_name, model_path, output_path):
         return diversity
 
     results = []
-    for sample in tqdm(dataset):
+    for sample in tqdm(dataset, desc="Generating samples"):
         result = run_triviaqa(sample)
         result = fix_eos(result)
         results.append(result)
