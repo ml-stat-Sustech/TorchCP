@@ -1,5 +1,4 @@
-# Copyright (c) 2018-present, Royal Bank of Canada and other authors.
-# See the AUTHORS.txt file for a list of contributors.
+# Copyright (c) 2023-present, SUSTech-ML.
 # All rights reserved.
 #
 # This source code is licensed under the license found in the

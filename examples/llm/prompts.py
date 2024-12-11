@@ -1,3 +1,10 @@
+# Copyright (c) 2023-present, SUSTech-ML.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+#
+
 few_shot_qa = """Q: Which American-born Sinclair won the Nobel Prize for Literature in 1930?
 A: Sinclair Lewis
 Q: Where in England was Dame Judi Dench born?
