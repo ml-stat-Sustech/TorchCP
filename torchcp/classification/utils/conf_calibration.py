@@ -57,7 +57,7 @@ class TS(nn.Module):
                 x = x.to(device)
                 x.requires_grad = True
                 out = x / self.temperature
-                loss = nll_criterion(out, targets.long().cuda())
+                loss = nll_criterion(out, targets.long().to(device))
 
                 loss.backward()
                 optimizer.step()

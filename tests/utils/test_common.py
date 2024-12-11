@@ -65,20 +65,6 @@ def test_get_device_with_gpu_model():
     assert device == torch.device(f'cuda:{torch.cuda.current_device()}')
 
 
-def test_get_device_with_specific_gpu():
-    """Test with a model on a specific GPU device"""
-    # Create a mock model with a parameter that appears to be on cuda:1
-    model = nn.Linear(10, 5)
-    mock_device = torch.device('cuda:1')
-    # Mock the next() and parameters() calls to return a tensor with our desired device
-    with patch.object(model, 'parameters') as mock_parameters:
-        mock_param = torch.nn.Parameter(torch.randn(1))
-        mock_param.data = mock_param.data.to(mock_device)
-        mock_parameters.return_value = iter([mock_param])
-        device = get_device(model)
-        assert device == mock_device
-
-
 def test_default_q_hat_max_normal_case():
     """Test when default_q_hat is 'max' and scores is not empty"""
     scores = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])

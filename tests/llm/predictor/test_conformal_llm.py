@@ -211,7 +211,7 @@ class TestConformalLM:
         assert (cutoff >= 0).all()
         assert (cutoff < set_scores.shape[1]).all()
 
-    @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+    # @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
     def test_calibrate_with_model(self, setup_basic_model):
         # This test only runs if CUDA is available
         dataset = [

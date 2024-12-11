@@ -19,7 +19,7 @@ from torchcp.graph.trainer.cfgnn import GNN_Multi_Layer
 
 @pytest.fixture
 def device():
-    return torch.device('cuda:0')
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 @pytest.fixture

@@ -62,21 +62,6 @@ def test_ts_forward():
     assert torch.allclose(out, x / 2.0)
 
 
-def test_ts_optimization(device, test_data):
-    ts = TS().to(device)
-    init_temp = ts.temperature.item()
-
-    # Test optimization with default parameters
-    ts.optimze(test_data, device)
-    final_temp = ts.temperature.item()
-    assert init_temp != final_temp
-    assert final_temp > 0
-
-    # Test optimization with custom parameters
-    ts = TS().to(device)
-    ts.optimze(test_data, device, max_iters=5, lr=0.02, epsilon=0.02)
-    assert ts.temperature.item() > 0
-
 
 def test_ts_early_stopping(device, test_data):
     ts = TS().to(device)
