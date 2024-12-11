@@ -132,6 +132,12 @@ To install from TestPyPI server, run
 pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 ```
 
+## Unit Test
+TorchCP achieves 100% unit test coverage. You can use the following command to test the code implementation:
+```
+pytest --cov=torchcp tests
+```
+
 ## Examples
 
 Here, we provide a simple example for a classification task, with THR score and SplitPredictor.
