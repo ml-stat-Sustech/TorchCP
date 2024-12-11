@@ -14,8 +14,7 @@ import torch
 from scipy.stats import binom
 from transformers import set_seed, StoppingCriteria, StoppingCriteriaList
 
-from torchcp.llm import Metrics
-from torchcp.llm.utils import scoring, scaling, loss
+from torchcp.llm.utils import Metrics, scoring, scaling, loss
 
 
 class StoppingCriteriaSub(StoppingCriteria):

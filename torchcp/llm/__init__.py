@@ -6,4 +6,4 @@
 #
 
 from .predictor import *
-from .utils import Metrics
+from .utils import *
