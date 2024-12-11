@@ -1,8 +1,8 @@
-torch~=2.2.0
-torchvision~=0.17.0
+torch==2.2.0 --extra-index-url https://download.pytorch.org/whl/cu121
+torchvision==0.17.0 --extra-index-url https://download.pytorch.org/whl/cu121
 torch-geometric~=2.6.1
 transformers~=4.47.0
-numpy>=1.26.4
+numpy~=1.26.0
 setuptools>=70.0.0
 tqdm>=4.66.6
 scikit-learn>=1.5.0
