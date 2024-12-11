@@ -5,9 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-# The reference repository is https://github.com/aangelopoulos/conformal_classification
-
-
 import torch
 
 from .aps import APS

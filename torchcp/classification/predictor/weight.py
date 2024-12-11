@@ -1,5 +1,8 @@
+# Copyright (c) 2023-present, SUSTech-ML.
+# All rights reserved.
 #
-# Reference paper: "Conformal Prediction Under Covariate Shift"
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
 #
 
 import torch

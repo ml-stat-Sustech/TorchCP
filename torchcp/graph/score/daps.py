@@ -5,8 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-# The reference repository is https://github.com/soroushzargar/DAPS
-
 import torch
 
 from .base import BaseScore

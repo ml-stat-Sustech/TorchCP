@@ -5,5 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .base_trainer import Trainer
-from .ordinal_trainer import OrdinalTrainer
+from .predictor import *
+from .score import *
+from .trainer import *
+from .utils import Metrics
