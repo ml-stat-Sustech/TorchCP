@@ -381,6 +381,17 @@ def calWSC(X, y, covered, delta=0.1, M=1000, random_state=2020, verbose=True):
     return wsc_star, v_star, a_star, b_star
 
 
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def singleton_hit_ratio(prediction_sets, labels):
+    if len(prediction_sets) == 0:
+        raise AssertionError("The number of prediction set must be greater than 0.")
+    n = len(prediction_sets)
+    singletons = torch.sum(prediction_sets, dim=1) == 1
+    covered = prediction_sets[torch.arange(len(labels)), labels]
+
+    return torch.sum(singletons & covered).item() / n
+
+
 class Metrics:
 
     def __call__(self, metric) -> Any:

@@ -8,7 +8,7 @@
 import torch.nn.functional as F
 from abc import ABCMeta, abstractmethod
 
-from torchcp.graph.utils.metrics import Metrics
+from torchcp.classification.utils.metrics import Metrics
 
 
 class BasePredictor(object):
