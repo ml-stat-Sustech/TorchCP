@@ -20,12 +20,12 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     train_dataloader, _, test_dataloader = mock_data
 
     with pytest.raises(ValueError, match="gamma must be greater than 0."):
-        ACIPredictor(mock_model, mock_score_function, gamma=0)
+        ACIPredictor(mock_score_function, mock_model, gamma=0)
 
     # Initialize ACIPredictor
     aci_predictor = ACIPredictor(
-        model=mock_model,
         score_function=mock_score_function,
+        model=mock_model,
         gamma=0.1
     )
 
@@ -50,7 +50,6 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     aci_predictor.evaluate(test_dataloader, retrain_gap=0, update_alpha_gap=0)
     aci_predictor.evaluate(test_dataloader, retrain_gap=2, update_alpha_gap=3)
     
-
     # Test exception for missing arguments
     with pytest.raises(ValueError):
         aci_predictor.predict(x_batch, y_lookback=torch.rand(10), pred_interval_lookback=None)
@@ -62,7 +61,7 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
         pytest.skip("CUDA is not available.")
 
     train_dataloader, _, test_dataloader = mock_data
-    aci_predictor = ACIPredictor(mock_model.to(device), mock_score_function, gamma=0.1)
+    aci_predictor = ACIPredictor(mock_score_function, mock_model.to(device), gamma=0.1)
 
     aci_predictor.train(train_dataloader, alpha=0.1)
     x_batch, _ = next(iter(test_dataloader))

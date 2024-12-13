@@ -100,7 +100,7 @@ def run_aci_experiment(
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     # Initialize predictor
-    predictor = ACIPredictor(model, score_function, gamma=gamma)
+    predictor = ACIPredictor(score_function, model, gamma=gamma)
 
     # Train and evaluate
     predictor.train(
