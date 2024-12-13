@@ -6,6 +6,9 @@
 #
 
 import torch
+import math
+import warnings
+from tqdm import tqdm
 
 from .split import SplitPredictor
 
@@ -36,6 +39,7 @@ class ACIPredictor(SplitPredictor):
 
         self.gamma = gamma
         self.alpha_t = None
+        self.model_backbone = model
 
     def train(self, train_dataloader, alpha, **kwargs):
         """
@@ -61,6 +65,7 @@ class ACIPredictor(SplitPredictor):
         super().calibrate(train_dataloader, alpha)
         self.alpha = alpha
         self.alpha_t = alpha
+        self.train_dataloader = train_dataloader
 
     def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last):
         """
@@ -82,80 +87,87 @@ class ACIPredictor(SplitPredictor):
         err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
         err_t = torch.sum(w_s * err)
         return err_t
-
-    def predict(self, x_batch, x_batch_last=None, y_batch_last=None, pred_interval_last=None):
-        """
-        Generate prediction intervals for the input batch.
-
-        Args:
-            x_batch (torch.Tensor): Input features for the current batch.
-            x_batch_last (torch.Tensor): Input features from the last step.
-            y_batch_last (torch.Tensor, optional): Labels from the last step. Defaults to None.
-            pred_interval_last (torch.Tensor, optional): Previous prediction intervals. Defaults to None.
-
-        Returns:
-            torch.Tensor: Prediction intervals for the input batch.
-        """
-        if not ((x_batch_last is None) == (y_batch_last is None) == (pred_interval_last is None)):
-            raise ValueError("x_batch_last, y_batch_last and pred_interval_last must either be provided or be None.")
+    
+    def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=False):
         self._model.eval()
         x_batch = x_batch.to(self._device)
+        if x_lookback is not None:
+            x_lookback = x_lookback.to(self._device)
+        if y_lookback is not None:
+            y_lookback = y_lookback.to(self._device)
+        
+        if (x_lookback is not None) and (y_lookback is None):
+            raise ValueError("x_lookback, y_lookback must either be provided or be None.")
+        
+        if (x_lookback is not None) and (y_lookback is not None) and (pred_interval_lookback is None):
+            predicts_batch = self._model(x_batch.to(self._device)).float()
+            pred_interval_lookback = self.generate_intervals(predicts_batch, self.q_hat)
+        
+        if train == True:
+            if (x_lookback is not None) and (y_lookback is not None):
+                back_dataset = torch.utils.data.TensorDataset(x_lookback, y_lookback)
+                self.back_dataloader = torch.utils.data.DataLoader(back_dataset, batch_size=min(self.train_dataloader.batch_size, 
+                                                                    math.floor(len(x_lookback)/2)), shuffle=False)
+                super().train(self.back_dataloader, alpha=self.alpha, model=self.model_backbone, verbose=False)
+            else:
+                warnings.warn("Training is enabled but x_lookback and y_lookback are not provided. The model will not be retrained.", UserWarning)
+        
+        if update_alpha == True:
+            if (x_lookback is not None) and (y_lookback is not None):
+                err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback)
+                self.scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
+            else:
+                err_t = self.alpha
 
-        if y_batch_last is None:
-            err_t = self.alpha
-        else:
-            err_t = self.calculate_err_rate(x_batch, y_batch_last, pred_interval_last)
-            self.scores = self.calculate_score(self._model(x_batch_last).float(), y_batch_last)
-
-        self.alpha_t = max(0.0001, min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
-
-        self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
+            self.alpha_t = max(0.0001, min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
+            self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
+        
         predicts_batch = self._model(x_batch.to(self._device)).float()
         return self.generate_intervals(predicts_batch, self.q_hat)
+        
+    def evaluate(self, data_loader, lookback=200, retrain_gap=1, update_alpha_gap=1):
+        train_dataset = self.train_dataloader.dataset
+        if lookback > len(train_dataset):
+            raise ValueError("lookback cannot be set above the length of train_dataloader")
+        
+        ts_dataloader = torch.utils.data.DataLoader(data_loader.dataset, batch_size=1, shuffle=False, pin_memory=True)
+        samples = [train_dataset[i] for i in range(len(train_dataset) - lookback, len(train_dataset))]
 
-    def evaluate(self, data_loader, verbose=True):
-        """
-        Evaluate the predictor on a dataset.
+        x_lookback = torch.stack([sample[0] for sample in samples]).to(self._device)
+        y_lookback = torch.stack([sample[1] for sample in samples]).to(self._device)
+        pred_interval_lookback = self.predict(x_lookback)
 
-        Args:
-            data_loader (torch.utils.data.DataLoader): DataLoader for evaluation data.
-            verbose (bool, optional): Whether to print evaluation metrics. Defaults to True.
-
-        Returns:
-            dict: Dictionary containing evaluation metrics:
-                  - Total batches
-                  - Average coverage rate
-                  - Average prediction interval size
-        """
-        coverage_rates = []
-        average_sizes = []
-
-        with torch.no_grad():
-            x_batch_last = None
-            y_batch_last = None
-            pred_interval_last = None
-            for index, batch in enumerate(data_loader):
-                x_batch, y_batch = batch[0].to(self._device), batch[1].to(self._device)
-                prediction_intervals = self.predict(x_batch, x_batch_last, y_batch_last, pred_interval_last)
-                x_batch_last = x_batch
-                y_batch_last = y_batch
-                pred_interval_last = prediction_intervals
-
-                batch_coverage_rate = self._metric('coverage_rate')(prediction_intervals, y_batch)
-                batch_average_size = self._metric('average_size')(prediction_intervals)
-
-                if verbose:
-                    print(
-                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate:.4f}, Average size: {batch_average_size:.4f}, Alpha: {self.alpha_t:.2f}")
-
-                coverage_rates.append(batch_coverage_rate)
-                average_sizes.append(batch_average_size)
-
-        avg_coverage_rate = sum(coverage_rates) / len(coverage_rates)
-        avg_average_size = sum(average_sizes) / len(average_sizes)
-
-        res_dict = {"Total batches": index + 1,
-                    "Coverage_rate": avg_coverage_rate,
-                    "Average_size": avg_average_size}
-
+        y_list, predict_list = [], []
+        for idx, (x, y) in enumerate(tqdm(ts_dataloader, desc="Processing Evaluation")):
+            x = x.to(self._device)
+            y = y.to(self._device)
+            if (retrain_gap != 0) and (idx % retrain_gap == 0) and (update_alpha_gap != 0) and (idx % update_alpha_gap == 0):
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=True, update_alpha=True)
+            elif (retrain_gap != 0) and (idx % retrain_gap == 0):
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=True, update_alpha=False)
+            elif (update_alpha_gap != 0) and (idx % update_alpha_gap == 0):
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=False, update_alpha=True)
+            else:
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=False, update_alpha=False)
+            y_list.append(y)
+            predict_list.append(pred_interval)
+            pred_interval_lookback = torch.cat([pred_interval_lookback, pred_interval], dim=0)[-lookback:]
+            x_lookback = torch.cat([x_lookback, x], dim=0)[-lookback:]
+            y_lookback = torch.cat([y_lookback, y], dim=0)[-lookback:]
+            
+        predicts = torch.cat(predict_list, dim=0).to(self._device)
+        test_y = torch.cat(y_list).to(self._device)
+        
+        res_dict = {
+            "Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
+            "Average_size": self._metric('average_size')(predicts)
+        }
         return res_dict
