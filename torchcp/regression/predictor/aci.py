@@ -91,13 +91,14 @@ class ACIPredictor(SplitPredictor):
     def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=False):
         self._model.eval()
         x_batch = x_batch.to(self._device)
+        
+        if (x_lookback is None) != (y_lookback is None):
+            raise ValueError("x_lookback, y_lookback must either be provided or be None.")
+        
         if x_lookback is not None:
             x_lookback = x_lookback.to(self._device)
         if y_lookback is not None:
             y_lookback = y_lookback.to(self._device)
-        
-        if (x_lookback is not None) and (y_lookback is None):
-            raise ValueError("x_lookback, y_lookback must either be provided or be None.")
         
         if (x_lookback is not None) and (y_lookback is not None) and (pred_interval_lookback is None):
             predicts_batch = self._model(x_batch.to(self._device)).float()
@@ -119,7 +120,7 @@ class ACIPredictor(SplitPredictor):
             else:
                 err_t = self.alpha
 
-            self.alpha_t = max(0.0001, min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
+            self.alpha_t = max(1/(self.scores.shape[0]+1), min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
             self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
         
         predicts_batch = self._model(x_batch.to(self._device)).float()
