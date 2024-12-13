@@ -21,8 +21,9 @@ class ACIPredictor(SplitPredictor):
     distribution is allowed to vary over time in an unknown fashion.
     
     Args:
-        model (torch.nn.Module): A PyTorch model capable of outputting quantile values.
         score_function (torchcp.regression.scores): A class that implements the score function.
+        model (torch.nn.Module): A PyTorch model capable of outputting quantile values. 
+            The model should be an initialization model that has not been trained.
         gamma (float): Step size parameter for adaptive adjustment of alpha. Must be greater than 0.
         
     Reference:  
@@ -32,8 +33,8 @@ class ACIPredictor(SplitPredictor):
         
     """
 
-    def __init__(self, model, score_function, gamma):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model, gamma):
+        super().__init__(score_function, None)
         if gamma <= 0:
             raise ValueError("gamma must be greater than 0.")
 
@@ -57,9 +58,9 @@ class ACIPredictor(SplitPredictor):
                 - verbose (bool, optional): If True, prints training progress.
             
         .. note::
-            This function is optional but recommended, because the training process for each score_function is different. 
+            This function is necessary for ACI predictor. 
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
-            If the train function is not used, users should pass the trained model to the predictor at the beginning.
+            If the user wants to fully control the training process, it can be achieved by rewriting the :func:`train` of the score function.
         """
         super().train(train_dataloader, alpha=alpha, **kwargs)
         super().calibrate(train_dataloader, alpha)
@@ -89,6 +90,54 @@ class ACIPredictor(SplitPredictor):
         return err_t
     
     def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=False):
+        """
+        Generates conformal prediction intervals for a given batch of input data. 
+        This function can also optionally retrain the model or update the conformal 
+        score threshold (alpha) based on historical data.
+
+        Args:
+            x_batch (Tensor): A batch of input features for which predictions and 
+                prediction intervals are to be generated. Shape depends on the model's 
+                input requirements (e.g., [batch_size, num_features]).
+                
+            x_lookback (Tensor, optional): Historical input features used for retraining 
+                or updating model calibration. If provided, `y_lookback` must also be provided. 
+                Default is `None`.
+                
+            y_lookback (Tensor, optional): Historical target values corresponding to 
+                `x_lookback`. Used for retraining or updating model calibration. If provided, 
+                `x_lookback` must also be provided. Default is `None`.
+                
+            pred_interval_lookback (Tensor, optional): Previously generated prediction intervals 
+                that can be used for calibration. If not provided, prediction intervals will 
+                be computed using the model's predictions and the current quantile value `q_hat`.
+                Default is `None`.
+
+            train (bool, optional): Whether to retrain the model using the `x_lookback` and 
+                `y_lookback` data. If `True`, both `x_lookback` and `y_lookback` must be provided. 
+                If `False`, the model will not be retrained. Default is `False`.
+
+            update_alpha (bool, optional): Whether to update the conformal score threshold (`alpha`)
+                based on the error rate observed in the prediction intervals. If `True`, both 
+                `x_lookback` and `y_lookback` must be provided. Default is `False`.
+
+        Returns:
+            Prediction intervals (Tensor): The conformal prediction intervals for the input batch `x_batch`
+        
+        Raises:
+            ValueError: If `x_lookback` is provided but `y_lookback` is not, or vice versa. 
+                Both must be provided together or both must be `None`.
+
+        Notes:
+            - If `train` is set to `True` but `x_lookback` and `y_lookback` are not provided, 
+            the function will issue a warning and skip retraining.
+            - If `update_alpha` is set to `True` but `x_lookback` and `y_lookback` are not provided, 
+            the function will use the current value of `alpha` instead of recalibrating it.
+            - The conformal score threshold (`alpha`) is updated using a time-decayed approach, 
+            where the rate of adjustment depends on the parameter `gamma`.
+        """
+        if self._model is None:
+            raise ValueError("The predict function must be called after the train function is called")
         self._model.eval()
         x_batch = x_batch.to(self._device)
         
@@ -107,9 +156,9 @@ class ACIPredictor(SplitPredictor):
         if train == True:
             if (x_lookback is not None) and (y_lookback is not None):
                 back_dataset = torch.utils.data.TensorDataset(x_lookback, y_lookback)
-                self.back_dataloader = torch.utils.data.DataLoader(back_dataset, batch_size=min(self.train_dataloader.batch_size, 
+                back_dataloader = torch.utils.data.DataLoader(back_dataset, batch_size=min(self.train_dataloader.batch_size, 
                                                                     math.floor(len(x_lookback)/2)), shuffle=False)
-                super().train(self.back_dataloader, alpha=self.alpha, model=self.model_backbone, verbose=False)
+                self._model = self.score_function.train(back_dataloader, model=self.model_backbone, device=self._device, verbose=False)
             else:
                 warnings.warn("Training is enabled but x_lookback and y_lookback are not provided. The model will not be retrained.", UserWarning)
         
@@ -127,6 +176,49 @@ class ACIPredictor(SplitPredictor):
         return self.generate_intervals(predicts_batch, self.q_hat)
         
     def evaluate(self, data_loader, lookback=200, retrain_gap=1, update_alpha_gap=1):
+        """
+        Evaluate the model using a test dataset and compute performance metrics such as 
+        coverage rate and average prediction interval size. The evaluation process 
+        optionally includes periodic retraining of the model and updating of the conformal 
+        score threshold (`alpha`).
+
+        Args:
+            data_loader (torch.utils.data.DataLoader): The data loader for the evaluation dataset. 
+                It should provide batches of input features and ground-truth labels for testing.
+            
+            lookback (int, optional): The number of historical data points (from the training dataset) 
+                to use for initializing lookback buffers (`x_lookback`, `y_lookback`, and 
+                `pred_interval_lookback`). This value must be less than or equal to the size of the 
+                training dataset. Default is 200.
+
+            retrain_gap (int, optional): The interval (in terms of number of test samples processed) 
+                at which the model is retrained using the lookback data. If set to 0, retraining is 
+                disabled. Default is 1.
+
+            update_alpha_gap (int, optional): The interval (in terms of number of test samples processed) 
+                at which the conformal score threshold (`alpha`) is updated using the lookback data. 
+                If set to 0, updating `alpha` is disabled. Default is 1.
+
+        Returns:
+            dict: A dictionary containing the following metrics:
+                - "Coverage_rate" (float): The proportion of true labels that fall within the 
+                predicted intervals.
+                - "Average_size" (float): The average size of the prediction intervals.
+
+        Raises:
+            ValueError: If `lookback` is greater than the size of the training dataset.
+
+        Notes:
+            - The lookback buffers (`x_lookback`, `y_lookback`, and `pred_interval_lookback`) are 
+            initialized using the last `lookback` samples from the training dataset.
+            - During the evaluation process:
+                - If `retrain_gap` > 0, the model is retrained periodically (every `retrain_gap` 
+                samples) using the lookback buffers.
+                - If `update_alpha_gap` > 0, the conformal score threshold (`alpha`) is updated 
+                periodically (every `update_alpha_gap` samples) based on the lookback buffers.
+            - The lookback buffers are updated dynamically after processing each test sample 
+            with the latest predictions, inputs, and ground-truth labels from the evaluation dataset.
+        """
         train_dataset = self.train_dataloader.dataset
         if lookback > len(train_dataset):
             raise ValueError("lookback cannot be set above the length of train_dataloader")
