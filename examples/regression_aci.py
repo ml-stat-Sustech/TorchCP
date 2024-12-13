@@ -111,7 +111,7 @@ def run_aci_experiment(
         optimizer=optimizer
     )
 
-    results = predictor.evaluate(test_loader, verbose=verbose)
+    results = predictor.evaluate(test_loader)
     print(f"Results: {results}")
 
     return results
