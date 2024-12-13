@@ -78,3 +78,17 @@ class BasePredictor(object):
                 the specific conformal prediction method implemented.
         """
         raise NotImplementedError
+
+    def _generate_prediction_set(self, scores, q_hat):
+        """
+        Generate the prediction set with the threshold q_hat.
+
+        Args:
+            scores (torch.Tensor): The non-conformity scores of {(x,y_1),..., (x,y_K)}.
+            q_hat (torch.Tensor): The calibrated threshold.
+
+        Returns:
+            torch.Tensor: A tensor of 0/1 values indicating the prediction set for each example.
+        """
+
+        return (scores <= q_hat).int()

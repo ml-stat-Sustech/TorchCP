@@ -14,7 +14,7 @@ from torch_geometric.data import Data
 from torchcp.classification.score import THR
 from torchcp.graph.predictor import SplitPredictor
 from torchcp.graph.predictor.base import BasePredictor
-from torchcp.graph.utils import Metrics
+from torchcp.classification.utils import Metrics
 
 
 @pytest.fixture

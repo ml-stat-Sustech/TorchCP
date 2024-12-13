@@ -15,7 +15,7 @@ from examples.utils import build_transductive_gnn_data, build_inductive_gnn_data
 from torchcp.classification.score import APS
 from torchcp.graph.predictor import SplitPredictor, NAPSPredictor
 from torchcp.graph.score import DAPS
-from torchcp.graph.utils.metrics import Metrics
+from torchcp.classification import Metrics
 
 
 def train_transductive(model, optimizer, graph_data, train_idx):
