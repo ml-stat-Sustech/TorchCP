@@ -62,7 +62,9 @@ class SplitPredictor(BasePredictor):
                 train_dataloader, model=self._model, device=self._device, **kwargs
             )
         else:
-            raise ValueError("No model provided and self._model is not set. Please provide a model or set self._model before training.")
+            self._model = self.score_function.train(
+                train_dataloader, device=self._device, **kwargs
+            )
 
 
     def calculate_score(self, predicts, y_truth):

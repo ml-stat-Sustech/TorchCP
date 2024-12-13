@@ -11,7 +11,7 @@ class IncompleteScore(BaseScore):
 
 @pytest.mark.parametrize("method_name", [
     "__call__",
-    "construct_interval",
+    "generate_intervals",
     "train",
 ])
 def test_not_implemented_methods(method_name, dummy_data):
@@ -21,13 +21,11 @@ def test_not_implemented_methods(method_name, dummy_data):
     incomplete_score = IncompleteScore()
     train_dataloader, _ = dummy_data
 
-    # Define dummy arguments for each method
     dummy_args = {
         "__call__": (torch.rand(10, 5), torch.rand(10, )),
-        "construct_interval": (torch.rand(10, 5), 0.5),
-        "train": (None, 10, train_dataloader, None, None),  # None values for model and criterion
+        "generate_intervals": (torch.rand(10, 5), 0.5),
+        "train": (None, 10, train_dataloader, None, None), 
     }
 
     with pytest.raises(NotImplementedError):
-        # Dynamically call the method
         getattr(incomplete_score, method_name)(*dummy_args[method_name])
