@@ -6,13 +6,12 @@
 #
 
 import torch.nn.functional as F
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 
-from torchcp.classification.predictor.base import BasePredictor
 from torchcp.graph.utils.metrics import Metrics
 
 
-class BaseGraphPredictor(BasePredictor):
+class BasePredictor(object):
     """
     Abstract base class for all conformal predictors designed for graph data.
 
@@ -30,8 +29,14 @@ class BaseGraphPredictor(BasePredictor):
             A PyTorch model used for predictions on the graph. Defaults to `None`.
     """
 
+    __metaclass__ = ABCMeta
+
     def __init__(self, graph_data, score_function, model=None):
-        super(BaseGraphPredictor, self).__init__(score_function, model)
+
+        self.score_function = score_function
+        self._model = model
+        if self._model != None:
+            self._model.eval()
 
         self._graph_data = graph_data
         self._label_mask = F.one_hot(graph_data.y).bool()

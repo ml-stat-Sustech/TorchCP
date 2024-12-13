@@ -8,10 +8,10 @@
 import torch
 
 from torchcp.utils.common import calculate_conformal_value
-from .base import BaseGraphPredictor
+from .base import BasePredictor
 
 
-class GraphSplitPredictor(BaseGraphPredictor):
+class SplitPredictor(BasePredictor):
     """
     Method: Split Conformal Prediction (Vovk et a., 2005).
     Paper: Algorithmic Learning in a Random World

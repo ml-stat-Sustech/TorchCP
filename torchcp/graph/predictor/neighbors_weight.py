@@ -11,12 +11,12 @@ from scipy.optimize import brentq
 from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.score import APS
-from .split import GraphSplitPredictor
+from .split import SplitPredictor
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
 
 
-class NAPSPredictor(GraphSplitPredictor):
+class NAPSPredictor(SplitPredictor):
     """
     Method: Neighbourhood Adaptive Prediction Sets
     Paper: Distribution Free Prediction Sets for Node Classification (Clarkson et al., 2023)

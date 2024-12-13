@@ -13,7 +13,7 @@ from transformers import set_seed
 
 from examples.utils import build_transductive_gnn_data, build_inductive_gnn_data, build_gnn_model
 from torchcp.classification.score import APS
-from torchcp.graph.predictor import GraphSplitPredictor, NAPSPredictor
+from torchcp.graph.predictor import SplitPredictor, NAPSPredictor
 from torchcp.graph.score import DAPS
 from torchcp.graph.utils.metrics import Metrics
 
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     score_function = DAPS(neigh_coef=0.5,
                           base_score_function=APS(score_type="softmax"),
                           graph_data=graph_data)
-    predictor = GraphSplitPredictor(graph_data, score_function, model)
+    predictor = SplitPredictor(graph_data, score_function, model)
 
     n_calib = 500
     perm = torch.randperm(test_idx.shape[0])
