@@ -19,12 +19,19 @@ class Trainer:
     A general-purpose PyTorch model trainer.
     
     Args:
-        model: PyTorch model instance
-        optimizer: Optimizer instance
-        loss_fn: Single loss function or list of loss functions
-        device: Computing device (CPU/GPU)
-        verbose: Whether to show detailed logs
-        loss_weights: List of weights for multiple loss functions
+        model (torch.nn.Module): Neural network model to train
+        optimizer (torch.optim.Optimizer): Optimization algorithm
+        loss_fn (Union[torch.nn.Module, Callable, List[Callable]]): Loss function(s)
+        loss_weights (Optional[List[float]]): Weights for multiple losses
+        device (torch.device): Device to run on (CPU/GPU)
+        verbose (bool): Whether to show training progress
+
+    Examples:
+        >>> model = MyModel()
+        >>> optimizer = torch.optim.Adam(model.parameters())
+        >>> loss_fn = nn.CrossEntropyLoss()
+        >>> trainer = Trainer(model, optimizer, loss_fn)
+        >>> trainer.train(train_loader, val_loader, num_epochs=10)
     """
 
     def __init__(
@@ -32,22 +39,38 @@ class Trainer:
             model: torch.nn.Module,
             optimizer: torch.optim.Optimizer,
             loss_fn: Union[torch.nn.Module, Callable, List[Callable]],
-            device: torch.device,
+            loss_weights: Optional[List[float]] = None,
+            device: torch.device = None,
             verbose: bool = True,
-            loss_weights: Optional[List[float]] = None
     ):
-
-        self.model = model
+        if device is None:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
+            
+        self.model = model.to(self.device)
+        
         self.optimizer = optimizer
-        self.device = device
         self.verbose = verbose
-
-        # Handle single or multiple loss functions
-        self.loss_fn = loss_fn
-        self.loss_weights = loss_weights
+                
         if isinstance(loss_fn, list):
-            assert loss_weights is not None, "Must provide weights when using multiple loss functions"
-            assert len(loss_fn) == len(loss_weights), "Number of loss functions must match number of weights"
+            num_losses = len(loss_fn)
+                    
+            if loss_weights is None:
+                self.loss_weights = torch.ones(num_losses, device=self.device)
+            else:
+                if len(loss_weights) != num_losses:
+                    raise ValueError(f"Number of loss functions must match number of weights")
+                self.loss_weights = torch.tensor(loss_weights, device=self.device)
+        else:
+            if loss_weights is None:
+                self.loss_weights = torch.ones(1, device=self.device)
+            else:
+                if isinstance(loss_weights,list):
+                    raise ValueError("Expected a single loss function, got a list of loss weights")
+                self.loss_weights = torch.tensor(loss_weights, device=self.device)
+            
+        self.loss_fn = loss_fn
 
         # Setup logging
         if self.verbose:
@@ -75,7 +98,7 @@ class Trainer:
                 total_loss += weight * loss
             return total_loss
         else:
-            return self.loss_fn(output, target)
+            return self.loss_fn(output, target)*self.loss_weights
 
     def train_epoch(self, train_loader: DataLoader) -> Dict[str, float]:
         """

@@ -19,17 +19,12 @@ from .confts import ConfTS
 
 class ConfTr(ConfTS):
     """
-    Method: Conformal Training  (ConfTr)
-    Paper: Learning Optimal Conformal Classifiers (Stutz et al., 2021)
-    Link: https://arxiv.org/abs/2110.09192
-    Github: https://github.com/google-deepmind/conformal_training
+    Conformal Training (ConfTr) Loss Implementation.
     
-    The class implements conformal training for neural networks. It supports
-    multiple loss functions and allows for flexible configuration of the training
-    process.
+    A method for training neural networks with built-in conformal prediction guarantees.
+    Optimizes models to output efficient prediction sets while maintaining coverage.
 
     Args:
-        weight (float): The weight of each loss function. Must be greater than 0.
         predictor (torchcp.classification.Predictor): An instance of the CP predictor class.
         alpha (float): The significance level for each training batch.
         fraction (float): The fraction of the calibration set in each training batch.
@@ -42,11 +37,6 @@ class ConfTr(ConfTS):
         loss_transform (str, optional): A transform for loss. Default is "square".
             Can be "square", "abs", or "log".
         
-        
-    Shape:
-        - Input: :math:`(N, *)` where :math:`*` means any number of additional dimensions.
-        - Output: scalar representing the computed loss.
-        
     Examples::
         >>> predictor = torchcp.classification.SplitPredictor()
         >>> conftr = ConfTr(weight=1.0, predictor=predictor, alpha=0.05, fraction=0.2, loss_type="valid")
@@ -54,12 +44,17 @@ class ConfTr(ConfTS):
         >>> labels = torch.randint(0, 2, (100,))
         >>> loss = conftr(logits, labels)
         >>> loss.backward()
+        
+    Reference:
+        Stutz et al. "Learning Optimal Conformal Classifiers", ICLR 2021, https://arxiv.org/abs/2110.09192
+        
+        Github: https://github.com/google-deepmind/conformal_training
     """
 
-    def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True, epsilon=1e-4, loss_type="valid",
+    def __init__(self, predictor, alpha, fraction, soft_qunatile=True, epsilon=1e-4, loss_type="valid",
                  target_size=1, loss_transform="square"):
 
-        super(ConfTr, self).__init__(weight, predictor, alpha, fraction, soft_qunatile)
+        super(ConfTr, self).__init__(predictor, alpha, fraction, soft_qunatile)
 
         if loss_type not in ["valid", "classification", "probs", "coverage", "cfgnn"]:
             raise ValueError(
@@ -71,7 +66,6 @@ class ConfTr(ConfTS):
         if epsilon <= 0:
             raise ValueError("epsilon must be greater than 0.")
 
-        self.weight = weight
         self.predictor = predictor
         self.alpha = alpha
         self.fraction = fraction
@@ -94,8 +88,7 @@ class ConfTr(ConfTS):
 
     def compute_loss(self, test_scores, test_labels, tau):
         pred_sets = torch.sigmoid((tau - test_scores) / self.epsilon)
-        loss = self.weight * self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
-        return loss
+        return self.loss_functions_dict[self.loss_type](pred_sets, test_labels)
 
     def __compute_hinge_size_loss(self, pred_sets, labels):
         return torch.mean(

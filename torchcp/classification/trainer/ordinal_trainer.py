@@ -46,13 +46,15 @@ class OrdinalTrainer(Trainer):
             model: torch.nn.Module,
             optimizer: torch.optim.Optimizer,
             loss_fn: Union[torch.nn.Module, Callable, List[Callable]],
-            device: torch.device,
-            verbose: bool = True,
             loss_weights: Optional[List[float]] = None,
-            ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"}
+            device: torch.device = None,
+            verbose: bool = True,
+            ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"},
+
     ):
-        super().__init__(model, optimizer, loss_fn, device, verbose, loss_weights)
+        super().__init__(model, optimizer, loss_fn,loss_weights,  device, verbose)
         self.model = OrdinalClassifier(model, **ordinal_config)
+        self.model.to(device)
 
 
 class OrdinalClassifier(nn.Module):

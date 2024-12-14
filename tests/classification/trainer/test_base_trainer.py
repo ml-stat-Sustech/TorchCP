@@ -103,7 +103,7 @@ def test_trainer_initialization(model, optimizer, loss_fn, device):
     - Optimizer is correctly set
     - Loss function is correctly set
     """
-    trainer = Trainer(model, optimizer, loss_fn, device)
+    trainer = Trainer(model = model, optimizer=optimizer,loss_fn= loss_fn, device=device)
     assert trainer.model == model
     assert trainer.optimizer == optimizer
     assert trainer.loss_fn == loss_fn
@@ -123,11 +123,10 @@ def test_multiple_loss_functions(model, optimizer, device):
         model,
         optimizer,
         loss_fns,
-        device,
-        loss_weights=loss_weights
+        loss_weights,
+        device
     )
     assert trainer.loss_fn == loss_fns
-    assert trainer.loss_weights == loss_weights
 
 
 def test_init_validation_errors(model, optimizer, device):
@@ -141,12 +140,17 @@ def test_init_validation_errors(model, optimizer, device):
     """
     loss_fns = [nn.CrossEntropyLoss(), nn.MSELoss()]
 
-    with pytest.raises(AssertionError, match="Must provide weights when using multiple loss functions"):
-        Trainer(model, optimizer, loss_fns, device)
 
     loss_weights = [0.6]
-    with pytest.raises(AssertionError, match="Number of loss functions must match number of weights"):
-        Trainer(model, optimizer, loss_fns, device, loss_weights=loss_weights)
+    with pytest.raises(ValueError, match="Number of loss functions must match number of weights"):
+        Trainer(model, optimizer, loss_fns, device=device, loss_weights=loss_weights)
+        
+        
+    loss_fns = nn.CrossEntropyLoss()
+    loss_weights = [0.6]
+    with pytest.raises(ValueError, match="Expected a single loss function, got a list of loss weights"):
+        Trainer(model, optimizer, loss_fns, device=device, loss_weights=loss_weights)
+
 
 
 def test_calculate_loss(trainer):
@@ -176,8 +180,8 @@ def test_multiple_loss_calculation(model, optimizer, device):
         model,
         optimizer,
         loss_fns,
-        device,
-        loss_weights=loss_weights
+        loss_weights,
+        device
     )
 
     # Create output and target with compatible shapes
@@ -214,8 +218,8 @@ def test_train_epoch_multiple_losses(model, optimizer, device, train_loader):
         model,
         optimizer,
         loss_fns,
-        device,
-        loss_weights=loss_weights
+        loss_weights,
+        device
     )
     metrics = trainer.train_epoch(train_loader)
     assert 'loss' in metrics
@@ -249,8 +253,8 @@ def test_validation_multiple_losses(model, optimizer, device, val_loader):
         model,
         optimizer,
         loss_fns,
-        device,
-        loss_weights=loss_weights
+        loss_weights,
+        device
     )
     metrics = trainer.validate(val_loader)
     assert 'val_loss' in metrics
@@ -325,7 +329,7 @@ def test_verbose_mode(model, optimizer, loss_fn, device, train_loader, val_loade
         model,
         optimizer,
         loss_fn,
-        device,
+        device=device,
         verbose=False
     )
 
@@ -352,9 +356,49 @@ def test_logging_configuration(model, optimizer, loss_fn, device, train_loader, 
         model,
         optimizer,
         loss_fn,
-        device,
+        device=device,
         verbose=verbose
     )
 
     # Verify training runs without errors
     trainer.train(train_loader, val_loader, num_epochs=1)
+    
+    
+def test_trainer_device_initialization(model, optimizer, loss_fn):
+    """
+    Test initialization of Trainer with default device
+    
+    Verifies that:
+    - Trainer initializes with the correct device
+    """
+    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fn)
+    assert trainer.device == torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def test_trainer_loss_weights_initialization(model, optimizer, loss_fn, device):
+    """
+    Test initialization of Trainer with single loss function and weights
+    
+    Verifies that:
+    - Trainer initializes with correct loss weights
+    """
+    # Change from list [1.0] to scalar 1.0
+    loss_weight = 1.0  
+    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fn, loss_weights=loss_weight, device=device)
+    assert torch.equal(trainer.loss_weights, torch.tensor(loss_weight, device=device))
+
+def test_trainer_multiple_loss_weights_initialization(model, optimizer, device):
+    """
+    Test initialization of Trainer with multiple loss functions and weights
+    
+    Verifies that:
+    - Trainer initializes with correct loss weights for multiple loss functions
+    """
+    loss_fns = [nn.CrossEntropyLoss(), nn.MSELoss()]
+    loss_weights = [0.6, 0.4]
+    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fns, loss_weights=loss_weights, device=device)
+    assert torch.equal(trainer.loss_weights, torch.tensor(loss_weights, device=device))
+    
+    
+    loss_fns = [nn.CrossEntropyLoss(), nn.MSELoss()]
+    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fns, device=device)
+    assert torch.equal(trainer.loss_weights, torch.ones(len(loss_fns), device=device))

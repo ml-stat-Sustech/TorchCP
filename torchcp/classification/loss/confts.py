@@ -17,19 +17,16 @@ from .base import BaseLoss
 
 class ConfTS(BaseLoss):
     """
-    Method: Conformal Temperature Scaling  (ConfTS)
-    Paper: Delving into temperature scaling for adaptive conformal prediction (Xi et al., 2023)
-    Link: https://arxiv.org/abs/2402.04344
+    Conformal Temperature Scaling (ConfTS).
         
     The class implements the loss function of conformal temperature scaling. It supports
     multiple loss functions and allows for flexible configuration of the training
     process.
 
     Args:
-        weight (float): The weight of each loss function. Must be greater than 0.
         predictor (torchcp.classification.Predictor): An instance of the CP predictor class.
         fraction (float): The fraction of the calibration set in each training batch.
-            Must be a value in (0, 1).
+            Must be a value in (0, 1). Default is 0.5.
         soft_qunatile (bool, optional): Whether to use soft quantile. Default is True.
 
     Examples::
@@ -39,11 +36,15 @@ class ConfTS(BaseLoss):
         >>> labels = torch.randint(0, 2, (100,))
         >>> loss = conftr(logits, labels)
         >>> loss.backward()
+        
+    Reference:
+        Xi et al. "Delving into Temperature Scaling for Adaptive Conformal Prediction" (2023), https://arxiv.org/abs/2402.04344
+        
     """
 
-    def __init__(self, weight, predictor, alpha, fraction, soft_qunatile=True):
+    def __init__(self, predictor, alpha, fraction=0.5, soft_qunatile=True):
 
-        super(ConfTS, self).__init__(weight, predictor)
+        super(ConfTS, self).__init__(predictor)
 
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0,1).")
@@ -51,7 +52,6 @@ class ConfTS(BaseLoss):
         if not (0 < fraction < 1):
             raise ValueError("fraction should be a value in (0,1).")
 
-        self.weight = weight
         self.predictor = predictor
         self.soft_qunatile = soft_qunatile
         self.fraction = fraction
@@ -80,7 +80,7 @@ class ConfTS(BaseLoss):
         return self.compute_loss(test_scores, test_labels, tau)
 
     def compute_loss(self, test_scores, test_labels, tau):
-        return self.weight * torch.mean((tau - test_scores[range(test_scores.shape[0]), test_labels]) ** 2)
+        return torch.mean((tau - test_scores[range(test_scores.shape[0]), test_labels]) ** 2)
 
     def __neural_sort(self,
                       scores: Tensor,

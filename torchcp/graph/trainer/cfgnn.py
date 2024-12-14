@@ -65,8 +65,7 @@ class CFGNNTrainer:
         self.optimizer = torch.optim.Adam(
             self.cfgnn.parameters(), weight_decay=5e-4, lr=0.001)
         self.pred_loss_fn = F.cross_entropy
-        self.cf_loss_fn = ConfTr(weight=1.0,
-                                 predictor=SplitPredictor(score_function=THR(score_type="softmax")),
+        self.cf_loss_fn = ConfTr(predictor=SplitPredictor(score_function=THR(score_type="softmax")),
                                  alpha=alpha,
                                  fraction=0.5,
                                  loss_type="classification",
