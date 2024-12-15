@@ -70,10 +70,6 @@ if __name__ == '__main__':
         train_transductive(model, optimizer, graph_data, train_idx)
 
     model.eval()
-    #######################################
-    # Construct kNN for SNAPS
-    #######################################
-    knn_edge, knn_weight = compute_adj_knn(graph_data.x, k=20)
 
     scoring_methods = [APS(score_type="softmax"),
                        DAPS(graph_data=graph_data,
@@ -82,7 +78,7 @@ if __name__ == '__main__':
                        SNAPS(graph_data=graph_data,
                              base_score_function=APS(score_type="softmax"),
                              xi=1 / 3, mu=1 / 3,
-                             knn_edge=knn_edge, knn_weight=knn_weight)]
+                             features=graph_data.x, k=20)]
 
     n_calib = 500
     perm = torch.randperm(test_idx.shape[0])
