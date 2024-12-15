@@ -5,9 +5,22 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import pytest
 import torch
 from math import sqrt
 from torchcp.graph.utils import compute_adj_knn
+
+
+def test_invalid_compute_adj_knn():
+    features = torch.tensor([
+        [1.0, 0.0, 1.0, 0.0, 1.0],
+        [0.0, 1.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 1.0],
+        [0.0, 1.0, 0.0, 0.0, 1.0],
+        [0.0, 1.0, 1.0, 0.0, 1.0]
+    ])
+    with pytest.raises(ValueError, match="The number of nodes cannot be less than k"):
+        compute_adj_knn(features, 6)
 
 def test_compute_adj_knn():
     features = torch.tensor([

@@ -51,17 +51,20 @@ def test_invalid_lambda_muues(graph_data, base_score_function, xi, mu):
     with pytest.raises(ValueError, match="The summation of 'xi' and 'mu' must not be greater than 1."):
         SNAPS(graph_data, base_score_function, xi=0.6, mu=0.6)
 
+    with pytest.raises(ValueError, match="knn_edge and features cannot both be non-None"):
+        SNAPS(graph_data, base_score_function, knn_edge=graph_data.edge_index, features=graph_data.x)
+
 
 def test_valid_initialization(graph_data, base_score_function):
-    model = SNAPS(graph_data, base_score_function, xi=0.3, mu=0.3)
-    assert model._xi == 0.3
-    assert model._mu == 0.3
+    score_function = SNAPS(graph_data, base_score_function, xi=0.3, mu=0.3, k=2)
+    assert score_function._xi == 0.3
+    assert score_function._mu == 0.3
 
-    model = SNAPS(graph_data, base_score_function, features=graph_data.x, k=2)
+    score_function = SNAPS(graph_data, base_score_function, features=graph_data.x, k=2)
     excepted_adjknn = torch.tensor([[0, 11/(5 * sqrt(5)), 17 / sqrt(305)],
                                     [11/(5 * sqrt(5)), 0, 39 / (5 * sqrt(61))],
                                     [17 / sqrt(305), 39 / (5 * sqrt(61)), 0]])
-    assert torch.allclose(model._adj_knn.to_dense(), excepted_adjknn)
+    assert torch.allclose(score_function._adj_knn.to_dense(), excepted_adjknn)
 
 
 def test_knn_processing(graph_data, base_score_function):
@@ -93,7 +96,10 @@ def test_knn_processing(graph_data, base_score_function):
     assert torch.equal(score_function._knn_degs, knn_degs)
 
     score_function = SNAPS(graph_data, base_score_function, knn_edge=None, knn_weight=knn_weight)
-    assert score_function._adj_knn is None
+    excepted_adjknn = torch.tensor([[0, 11/(5 * sqrt(5)), 17 / sqrt(305)],
+                                    [11/(5 * sqrt(5)), 0, 39 / (5 * sqrt(61))],
+                                    [17 / sqrt(305), 39 / (5 * sqrt(61)), 0]])
+    assert torch.allclose(score_function._adj_knn.to_dense(), excepted_adjknn)
 
     score_function = SNAPS(graph_data, base_score_function, knn_edge=knn_edge, knn_weight=None)
 

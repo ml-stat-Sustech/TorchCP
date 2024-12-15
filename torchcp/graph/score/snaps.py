@@ -6,6 +6,7 @@
 #
 
 import torch
+import warnings
 
 from .base import BaseScore
 from torchcp.graph.utils import compute_adj_knn
@@ -57,21 +58,23 @@ class SNAPS(BaseScore):
         self._xi = xi
         self._mu = mu
 
-        if features is not None:
+        if features is not None and knn_edge is not None:
+            raise ValueError(
+                "knn_edge and features cannot both be non-None.")
+        elif features is not None:
             knn_edge, knn_weight = compute_adj_knn(features, k)
+        elif knn_edge is None:
+            knn_edge, knn_weight = compute_adj_knn(graph_data.x, graph_data.num_nodes - 1)
 
-        if knn_edge is not None:
-            if knn_weight is None:
-                knn_weight = torch.ones(
-                    knn_edge.shape[1]).to(self._device)
-            self._adj_knn = torch.sparse_coo_tensor(
-                knn_edge,
-                knn_weight,
-                (self._n_vertices, self._n_vertices))
-            self._knn_degs = torch.matmul(self._adj_knn, torch.ones(
-                (self._adj_knn.shape[0])).to(self._device))
-        else:
-            self._adj_knn = None
+        if knn_weight is None:
+            knn_weight = torch.ones(
+                knn_edge.shape[1]).to(self._device)
+        self._adj_knn = torch.sparse_coo_tensor(
+            knn_edge,
+            knn_weight,
+            (self._n_vertices, self._n_vertices))
+        self._knn_degs = torch.matmul(self._adj_knn, torch.ones(
+            (self._adj_knn.shape[0])).to(self._device))
 
     def __call__(self, logits, labels=None):
         base_scores = self._base_score_function(logits)
