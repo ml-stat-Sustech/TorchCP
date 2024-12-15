@@ -38,23 +38,23 @@ def base_score_function():
     return THR(score_type="softmax")
 
 
-@pytest.mark.parametrize("lambda_val", [-0.1, 1.1])
-@pytest.mark.parametrize("mu_val", [-0.1, 1.1])
-def test_invalid_lambda_mu_values(graph_data, base_score_function, lambda_val, mu_val):
-    with pytest.raises(ValueError, match="The parameter 'lambda_val' must be a value between 0 and 1."):
-        SNAPS(graph_data, base_score_function, lambda_val=lambda_val)
+@pytest.mark.parametrize("xi", [-0.1, 1.1])
+@pytest.mark.parametrize("mu", [-0.1, 1.1])
+def test_invalid_lambda_muues(graph_data, base_score_function, xi, mu):
+    with pytest.raises(ValueError, match="The parameter 'xi' must be a value between 0 and 1."):
+        SNAPS(graph_data, base_score_function, xi=xi)
 
-    with pytest.raises(ValueError, match="The parameter 'mu_val' must be a value between 0 and 1."):
-        SNAPS(graph_data, base_score_function, mu_val=mu_val)
+    with pytest.raises(ValueError, match="The parameter 'mu' must be a value between 0 and 1."):
+        SNAPS(graph_data, base_score_function, mu=mu)
 
-    with pytest.raises(ValueError, match="The summation of 'lambda_val' and 'mu_val' must not be greater than 1."):
-        SNAPS(graph_data, base_score_function, lambda_val=0.6, mu_val=0.6)
+    with pytest.raises(ValueError, match="The summation of 'xi' and 'mu' must not be greater than 1."):
+        SNAPS(graph_data, base_score_function, xi=0.6, mu=0.6)
 
 
 def test_valid_initialization(graph_data, base_score_function):
-    model = SNAPS(graph_data, base_score_function, lambda_val=0.3, mu_val=0.3)
-    assert model._lambda_val == 0.3
-    assert model._mu_val == 0.3
+    model = SNAPS(graph_data, base_score_function, xi=0.3, mu=0.3)
+    assert model._xi == 0.3
+    assert model._mu == 0.3
 
 
 def test_knn_processing(graph_data, base_score_function):
@@ -106,7 +106,7 @@ def test_snaps_call_without_labels(graph_data, base_score_function):
         [1, 2, 0]
     ], dtype=torch.long)
     knn_weight = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
-    snaps = SNAPS(graph_data, base_score_function, lambda_val=0.4, mu_val=0.25, knn_edge=knn_edge,
+    snaps = SNAPS(graph_data, base_score_function, xi=0.4, mu=0.25, knn_edge=knn_edge,
                   knn_weight=knn_weight)
 
     logits = torch.tensor([
@@ -139,7 +139,7 @@ def test_snaps_call_with_labels(graph_data, base_score_function):
         [1, 2, 0]
     ], dtype=torch.long)
     knn_weight = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
-    snaps = SNAPS(graph_data, base_score_function, lambda_val=0.4, mu_val=0.25, knn_edge=knn_edge,
+    snaps = SNAPS(graph_data, base_score_function, xi=0.4, mu=0.25, knn_edge=knn_edge,
                   knn_weight=knn_weight)
 
     logits = torch.tensor([
