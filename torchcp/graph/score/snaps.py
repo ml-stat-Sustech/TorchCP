@@ -18,33 +18,35 @@ class SNAPS(BaseScore):
     Github:
 
     Parameters:
-        lambda_val (float): 
-            The weight parameter for neighborhood-based scores, where 0 <= lambda_val <= 1.
+        xi (float): 
+            The weight parameter for neighborhood-based scores, where 0 <= xi <= 1.
 
-        mu_val (float): 
-            The weight parameter for similarity-based scores, where 0 <= mu_val <= 1.
+        mu (float): 
+            The weight parameter for similarity-based scores, where 0 <= mu <= 1.
 
         knn_edge (torch.Tensor, optional): 
-            An edge list representing the k-nearest neighbors (k-NN) for each node.
+            An edge list representing the k-nearest neighbors (k-NN) for each node. It may be constructed based on
+            the similarity of nodes' feature. The shape is (2, E), where E is the number of edges in the kNN graph.
+            The first row contains the source node indices, and the second row contains the target node indices.
 
         knn_weight (torch.Tensor, optional): 
             The weights associated with each k-NN edge, if applicable. Defaults to uniform weights.
     """
 
-    def __init__(self, graph_data, base_score_function, lambda_val=1 / 3, mu_val=1 / 3, knn_edge=None, knn_weight=None):
+    def __init__(self, graph_data, base_score_function, xi=1 / 3, mu=1 / 3, knn_edge=None, knn_weight=None):
         super(SNAPS, self).__init__(graph_data, base_score_function)
-        if lambda_val < 0 or lambda_val > 1:
+        if xi < 0 or xi > 1:
             raise ValueError(
-                "The parameter 'lambda_val' must be a value between 0 and 1.")
-        if mu_val < 0 or mu_val > 1:
+                "The parameter 'xi' must be a value between 0 and 1.")
+        if mu < 0 or mu > 1:
             raise ValueError(
-                "The parameter 'mu_val' must be a value between 0 and 1.")
-        if lambda_val + mu_val > 1:
+                "The parameter 'mu' must be a value between 0 and 1.")
+        if xi + mu > 1:
             raise ValueError(
-                "The summation of 'lambda_val' and 'mu_val' must not be greater than 1.")
+                "The summation of 'xi' and 'mu' must not be greater than 1.")
 
-        self._lambda_val = lambda_val
-        self._mu_val = mu_val
+        self._xi = xi
+        self._mu = mu
 
         if knn_edge is not None:
             if knn_weight is None:
@@ -70,9 +72,9 @@ class SNAPS(BaseScore):
         neigh_scores = torch.linalg.matmul(
             self._adj, base_scores) * (1 / (self._degs + 1e-10))[:, None]
 
-        scores = (1 - self._lambda_val - self._mu_val) * base_scores + \
-                 self._lambda_val * similarity_scores + \
-                 self._mu_val * neigh_scores
+        scores = (1 - self._xi - self._mu) * base_scores + \
+                 self._xi * similarity_scores + \
+                 self._mu * neigh_scores
 
         if labels is None:
             return scores
