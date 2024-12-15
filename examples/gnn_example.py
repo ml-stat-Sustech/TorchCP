@@ -11,10 +11,10 @@ import torch
 import torch.nn.functional as F
 from transformers import set_seed
 
-from examples.utils import build_transductive_gnn_data, build_inductive_gnn_data, build_gnn_model
+from examples.utils import build_transductive_gnn_data, build_inductive_gnn_data, build_gnn_model, compute_adj_knn
 from torchcp.classification.score import APS
 from torchcp.graph.predictor import SplitPredictor, NAPSPredictor
-from torchcp.graph.score import DAPS
+from torchcp.graph.score import DAPS, SNAPS
 from torchcp.classification import Metrics
 
 
@@ -70,17 +70,29 @@ if __name__ == '__main__':
         train_transductive(model, optimizer, graph_data, train_idx)
 
     model.eval()
-    score_function = DAPS(neigh_coef=0.5,
-                          base_score_function=APS(score_type="softmax"),
-                          graph_data=graph_data)
-    predictor = SplitPredictor(graph_data, score_function, model)
+    #######################################
+    # Construct kNN for SNAPS
+    #######################################
+    knn_edge, knn_weight = compute_adj_knn(graph_data.x, k=20)
+
+    scoring_methods = [APS(score_type="softmax"),
+                       DAPS(graph_data=graph_data,
+                            base_score_function=APS(score_type="softmax"),
+                            neigh_coef=0.5),
+                       SNAPS(graph_data=graph_data,
+                             base_score_function=APS(score_type="softmax"),
+                             xi=1 / 3, mu=1 / 3,
+                             knn_edge=knn_edge, knn_weight=knn_weight)]
 
     n_calib = 500
     perm = torch.randperm(test_idx.shape[0])
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
-    predictor.calibrate(cal_idx, args.alpha)
-    print(predictor.evaluate(eval_idx))
+
+    for score_function in scoring_methods:
+        predictor = SplitPredictor(graph_data, score_function, model)
+        predictor.calibrate(cal_idx, args.alpha)
+        print(predictor.evaluate(eval_idx))
 
     #######################################
     # Loading dataset and a model for inductive
