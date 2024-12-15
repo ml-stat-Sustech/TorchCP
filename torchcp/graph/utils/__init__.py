@@ -5,7 +5,4 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .predictor import *
-from .score import *
-from .trainer import *
-from .utils import *
+from common import compute_adj_knn

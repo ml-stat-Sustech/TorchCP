@@ -8,6 +8,7 @@
 import torch
 
 from .base import BaseScore
+from torchcp.graph.utils import compute_adj_knn
 
 
 class SNAPS(BaseScore):
@@ -33,7 +34,15 @@ class SNAPS(BaseScore):
             The weights associated with each k-NN edge, if applicable. Defaults to uniform weights.
     """
 
-    def __init__(self, graph_data, base_score_function, xi=1 / 3, mu=1 / 3, knn_edge=None, knn_weight=None):
+    def __init__(self, 
+                 graph_data, 
+                 base_score_function, 
+                 xi=1 / 3, 
+                 mu=1 / 3, 
+                 knn_edge=None, 
+                 knn_weight=None,
+                 features=None, 
+                 k=20):
         super(SNAPS, self).__init__(graph_data, base_score_function)
         if xi < 0 or xi > 1:
             raise ValueError(
@@ -47,6 +56,9 @@ class SNAPS(BaseScore):
 
         self._xi = xi
         self._mu = mu
+
+        if features is not None:
+            knn_edge, knn_weight = compute_adj_knn(features, k)
 
         if knn_edge is not None:
             if knn_weight is None:
