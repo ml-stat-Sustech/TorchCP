@@ -12,16 +12,15 @@ from .base import BaseScore
 
 class THR(BaseScore):
     """
-    Methd: Threshold conformal predictors 
-    Paper: Least Ambiguous Set-Valued Classifiers with Bounded Error Levels (Sadinle et al., 2016).
-    paper : https://arxiv.org/abs/1609.00451
+    Threshold conformal predictors 
     
     Args:
-        score_type (str, optional): A transformation on logits. Default is "softmax". 
-            Options are "softmax", "identity", "log_softmax", or "log".
+        score_type (Union[str, Callable], optional): A transformation on logits. Default is "softmax". 
+            If str: Options are "softmax", "identity", "log_softmax", or "log".
+            If callable: Custom transformation function that takes tensor input and returns tensor output.
 
     Attributes:
-        score_type (str): The type of score transformation.
+        score_type (Union[str, Callable]): The type of score transformation.
         transform (callable): The transformation function applied to logits.
         
     Examples::
@@ -29,25 +28,35 @@ class THR(BaseScore):
         >>> logits = torch.tensor([[2.0, 1.0, 0.1], [0.5, 2.5, 1.0]])
         >>> scores_all = thr(logits)
         
-        >>> labels = torch.tensor([0, 1])
-        >>> scores_single = thr(logits, labels)
+        >>> # Using custom function
+        >>> custom_transform = lambda x: x.sigmoid()
+        >>> thr = THR(score_type=custom_transform)
+        >>> scores_custom = thr(logits)
+        
+    References:
+        Sadinle, M. et al., (2016). Least ambiguous set-valued classifiers with bounded error levels. Journal of the American Statistical Association, 111(515), 1648-1658.
+        
+        Link : https://arxiv.org/abs/1609.00451
     """
 
     def __init__(self, score_type="softmax"):
         super().__init__()
 
         self.score_type = score_type
-        if score_type == "identity":
-            self.transform = lambda x: x
-        elif score_type == "softmax":
-            self.transform = lambda x: torch.softmax(x, dim=- 1)
-        elif score_type == "log_softmax":
-            self.transform = lambda x: torch.log_softmax(x, dim=-1)
-        elif score_type == "log":
-            self.transform = lambda x: torch.log(x)
+        if callable(score_type):
+            self.transform = score_type
         else:
-            raise ValueError(
-                f"Score type '{score_type}' is not implemented. Options are 'softmax', 'identity', 'log_softmax', or 'log'.")
+            if score_type == "identity":
+                self.transform = lambda x: x
+            elif score_type == "softmax":
+                self.transform = lambda x: torch.softmax(x, dim=-1)
+            elif score_type == "log_softmax":
+                self.transform = lambda x: torch.log_softmax(x, dim=-1)
+            elif score_type == "log":
+                self.transform = lambda x: torch.log(x)
+            else:
+                raise ValueError(
+                    f"Score type '{score_type}' is not implemented. Options are 'softmax', 'identity', 'log_softmax', 'log', or a callable function.")
 
     def __call__(self, logits, label=None):
         """
