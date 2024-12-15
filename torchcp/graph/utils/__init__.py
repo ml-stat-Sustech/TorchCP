@@ -5,4 +5,4 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from common import compute_adj_knn
+from .common import compute_adj_knn
