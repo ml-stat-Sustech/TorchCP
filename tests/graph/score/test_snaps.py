@@ -6,6 +6,7 @@
 #
 
 import pytest
+from math import sqrt
 import torch
 from torch_geometric.data import Data
 
@@ -55,6 +56,12 @@ def test_valid_initialization(graph_data, base_score_function):
     model = SNAPS(graph_data, base_score_function, xi=0.3, mu=0.3)
     assert model._xi == 0.3
     assert model._mu == 0.3
+
+    model = SNAPS(graph_data, base_score_function, features=graph_data.x, k=2)
+    excepted_adjknn = torch.tensor([[0, 11/(5 * sqrt(5)), 17 / sqrt(305)],
+                                    [11/(5 * sqrt(5)), 0, 39 / (5 * sqrt(61))],
+                                    [17 / sqrt(305), 39 / (5 * sqrt(61)), 0]])
+    assert torch.allclose(model._adj_knn.to_dense(), excepted_adjknn)
 
 
 def test_knn_processing(graph_data, base_score_function):
