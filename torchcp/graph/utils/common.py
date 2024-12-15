@@ -8,6 +8,21 @@
 import torch
 
 def compute_adj_knn(features, k=20):
+    """
+    Compute the k-nearest neighbor (k-NN) graph adjacency matrix for a given feature matrix.
+
+    Args:
+        features (torch.Tensor): A tensor of shape (N, D) where N is the number of nodes 
+                                 and D is the dimensionality of the features.
+        k (int): The number of nearest neighbors to consider for each node. Default is 20.
+
+    Returns:
+        tuple:
+            - knn_edge (torch.Tensor): A tensor of shape (2, E) containing the edge indices 
+                                      of the k-NN graph in COO format (source, target).
+            - knn_weights (torch.Tensor): A tensor of shape (E,) containing the similarity 
+                                          weights of the edges in the k-NN graph.
+    """
     if features.shape[0] < k:
         raise ValueError(
                 "The number of nodes cannot be less than k.")

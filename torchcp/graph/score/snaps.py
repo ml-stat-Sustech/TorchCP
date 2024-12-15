@@ -17,22 +17,25 @@ class SNAPS(BaseScore):
     Method: Similarity-Navigated Adaptive Prediction Sets
     Paper: Similarity-Navigated Conformal Prediction for Graph Neural Networks (Song et al., 2024)
     Link: https://arxiv.org/pdf/2405.14303
-    Github:
+    Github: https://github.com/janqsong/SNAPS
 
     Parameters:
         xi (float): 
             The weight parameter for neighborhood-based scores, where 0 <= xi <= 1.
-
         mu (float): 
             The weight parameter for similarity-based scores, where 0 <= mu <= 1.
-
         knn_edge (torch.Tensor, optional): 
             An edge list representing the k-nearest neighbors (k-NN) for each node. It may be constructed based on
             the similarity of nodes' feature. The shape is (2, E), where E is the number of edges in the kNN graph.
             The first row contains the source node indices, and the second row contains the target node indices.
-
         knn_weight (torch.Tensor, optional): 
             The weights associated with each k-NN edge, if applicable. Defaults to uniform weights.
+        features (torch.Tensor, optional): 
+            A tensor of node features used to compute the k-NN graph if `knn_edge` is not provided.
+            The shape is (N, D), where N is the number of nodes and D is the dimensionality of the features.
+            Defaults to None.
+        k (int, optional): 
+            The number of nearest neighbors to consider when constructing the k-NN graph. Defaults to 20.
     """
 
     def __init__(self, 
