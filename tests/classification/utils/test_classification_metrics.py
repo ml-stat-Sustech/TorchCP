@@ -10,7 +10,7 @@ import pytest
 import torch
 
 from torchcp.classification.utils.metrics import (coverage_rate, average_size, CovGap, VioClasses,
-                                                  DiffViolation, SSCV, WSC, Metrics)
+                                                  DiffViolation, SSCV, WSC, singleton_hit_ratio, Metrics)
 
 
 @pytest.fixture
@@ -291,7 +291,7 @@ def test_edge_cases():
     cvg = coverage_rate(zero_preds, labels)
     assert cvg == 0.0
 
-    # Test with all-one prediction sets
+# Test with all-one prediction sets
     one_preds = torch.ones((5, 3), dtype=torch.bool)
     cvg = coverage_rate(one_preds, labels)
     assert cvg == 1.0
@@ -325,3 +325,39 @@ def test_random_data(create_random_data):
     cvg = coverage_rate(prediction_sets, labels)
     assert isinstance(cvg, float)
     assert 0 <= cvg <= 1
+    
+    
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_singleton_hit_ratio(device):
+    if device == "cuda" and not torch.cuda.is_available():
+        pytest.skip("CUDA not available")
+        
+    # Test empty input
+    with pytest.raises(AssertionError):
+        singleton_hit_ratio(torch.empty(0, 3), torch.empty(0))
+
+    # Test perfect singleton hit (100%)
+    prediction_sets = torch.tensor([
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ], device=device)
+    labels = torch.tensor([0, 1, 2], device=device)
+    assert singleton_hit_ratio(prediction_sets, labels) == 1.0
+
+    # Test zero singleton hit (0%)
+    prediction_sets = torch.tensor([
+        [1, 1, 0],
+        [1, 1, 1],
+        [0, 1, 1]
+    ], device=device)
+    labels = torch.tensor([0, 1, 2], device=device)
+    assert singleton_hit_ratio(prediction_sets, labels) == 0.0
+
+    # Test mixed case
+    prediction_sets = torch.tensor([
+        [1, 0, 0],  # singleton, hit
+        [1, 1, 0],  # not singleton
+        [0, 1, 0],  # singleton, miss
+        [0, 0, 1]   # singleton, hit
+    ], device=device)

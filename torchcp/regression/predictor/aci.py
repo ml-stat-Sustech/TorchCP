@@ -34,7 +34,7 @@ class ACIPredictor(SplitPredictor):
     """
 
     def __init__(self, score_function, model, gamma):
-        super().__init__(score_function, None)
+        super().__init__(score_function, model)
         if gamma <= 0:
             raise ValueError("gamma must be greater than 0.")
 
@@ -139,7 +139,6 @@ class ACIPredictor(SplitPredictor):
         if self._model is None:
             raise ValueError("The predict function must be called after the train function is called")
         self._model.eval()
-        x_batch = x_batch.to(self._device)
         
         if (x_lookback is None) != (y_lookback is None):
             raise ValueError("x_lookback, y_lookback must either be provided or be None.")
@@ -158,7 +157,7 @@ class ACIPredictor(SplitPredictor):
                 back_dataset = torch.utils.data.TensorDataset(x_lookback, y_lookback)
                 back_dataloader = torch.utils.data.DataLoader(back_dataset, batch_size=min(self.train_dataloader.batch_size, 
                                                                     math.floor(len(x_lookback)/2)), shuffle=False)
-                self._model = self.score_function.train(back_dataloader, model=self.model_backbone, device=self._device, verbose=False)
+                self._model = self.score_function.train(back_dataloader, model=self.model_backbone, alpha= self.alpha, device=self._device, verbose=False)
             else:
                 warnings.warn("Training is enabled but x_lookback and y_lookback are not provided. The model will not be retrained.", UserWarning)
         
@@ -261,7 +260,7 @@ class ACIPredictor(SplitPredictor):
         test_y = torch.cat(y_list).to(self._device)
         
         res_dict = {
-            "Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
-            "Average_size": self._metric('average_size')(predicts)
+            "coverage_rate": self._metric('coverage_rate')(predicts, test_y),
+            "average_size": self._metric('average_size')(predicts)
         }
         return res_dict

@@ -51,8 +51,8 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     # Test evaluate method
 
     eval_results = aci_predictor.evaluate(test_dataloader)
-    assert eval_results["Coverage_rate"] > 0, "Average coverage rate should be greater than 0."
-    assert eval_results["Average_size"] > 0, "Average interval size should be greater than 0."
+    assert eval_results["coverage_rate"] > 0, "Average coverage rate should be greater than 0."
+    assert eval_results["average_size"] > 0, "Average interval size should be greater than 0."
 
     # Test evaluate method with other arguments
     aci_predictor.evaluate(test_dataloader, retrain_gap=0, update_alpha_gap=0)
@@ -65,6 +65,7 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_device_support(mock_data, mock_model, mock_score_function, device):
+    print(device)
     if device == "cuda" and not torch.cuda.is_available():
         pytest.skip("CUDA is not available.")
 
