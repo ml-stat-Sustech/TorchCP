@@ -41,6 +41,7 @@ class ACIPredictor(SplitPredictor):
         self.gamma = gamma
         self.alpha_t = None
         self.model_backbone = model
+        self.train_indicate = False
 
     def train(self, train_dataloader, alpha, **kwargs):
         """
@@ -67,6 +68,7 @@ class ACIPredictor(SplitPredictor):
         self.alpha = alpha
         self.alpha_t = alpha
         self.train_dataloader = train_dataloader
+        self.train_indicate = True
 
     def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last):
         """
@@ -136,7 +138,7 @@ class ACIPredictor(SplitPredictor):
             - The conformal score threshold (`alpha`) is updated using a time-decayed approach, 
             where the rate of adjustment depends on the parameter `gamma`.
         """
-        if self._model is None:
+        if self.train_indicate is False:
             raise ValueError("The predict function must be called after the train function is called")
         self._model.eval()
         

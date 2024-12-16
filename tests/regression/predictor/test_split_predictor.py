@@ -33,7 +33,7 @@ def split_predictor_nomodel(mock_score_function):
     return SplitPredictor(score_function=mock_score_function)
 
 
-def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
+def test_workflow(mock_data, split_predictor, split_predictor_nomodel, mock_model):
     # Extract mock data
     train_dataloader, cal_dataloader, test_dataloader = mock_data
 
@@ -43,6 +43,10 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel):
     for param in split_predictor_nomodel._model.parameters():
         assert param.grad is not None, "Model parameters should have gradients."
     # case 2
+    split_predictor_nomodel.train(train_dataloader, model=mock_model)
+    for param in split_predictor_nomodel._model.parameters():
+        assert param.grad is not None, "Model parameters should have gradients."
+    # case 3
     split_predictor.train(train_dataloader)
     for param in split_predictor._model.parameters():
         assert param.grad is not None, "Model parameters should have gradients."
