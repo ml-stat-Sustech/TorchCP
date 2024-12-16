@@ -27,6 +27,9 @@ Changelog
 ------------------
 * Introduced R2CCP in regression task.
 
+0.1.2 (2023-12-24)
+------------------
+* Introduced the ReadtheDocs documentation for TorchCP.
 
 0.1.1 (2023-12-24)
 ------------------
