@@ -10,6 +10,7 @@ Changelog
 * Fixed the bug where logo was not displayed in PyPi
 * Updated the requirements.txt and examples for classification
 * Added a trainer for Temperature Scaling
+* Added the Changelog page in the ReadtheDocs documentation
 
 1.0.0 (2024-12-06)
 ------------------
