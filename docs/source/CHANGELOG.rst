@@ -28,6 +28,11 @@ Changelog
 * Introduced R2CCP in regression task.
 
 
+0.1.1 (2023-12-24)
+------------------
+* Introduced Margin score in classification task.
+
+
 0.1.0 (2023-12-23)
 ------------------
 * Introduced CP algorithms for classification, including ConfTr, THR, APS, RAPS, SAPS, Classwise CP, Clustered CP and Weighted CP.
