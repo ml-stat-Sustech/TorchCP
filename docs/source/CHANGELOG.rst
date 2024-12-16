@@ -22,6 +22,12 @@ Changelog
 * Optimized the form of prediction sets to improve the computational efficiency.
 * Refactored the module design of Regression to improve the scalability.
 
+
+0.1.3 (2024-02-22)
+------------------
+* Introduced R2CCP in regression task.
+
+
 0.1.0 (2023-12-23)
 ------------------
 * Introduced CP algorithms for classification, including ConfTr, THR, APS, RAPS, SAPS, Classwise CP, Clustered CP and Weighted CP.
