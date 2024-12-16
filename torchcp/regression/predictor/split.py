@@ -6,10 +6,8 @@
 #
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
 
-from .base import BasePredictor
+from torchcp.regression.predictor.base import BasePredictor
 
 
 class SplitPredictor(BasePredictor):

@@ -8,9 +8,9 @@
 import torch
 import torch.optim as optim
 
-from .cqr import CQR
-from ..loss import QuantileLoss
-from ..utils import build_regression_model
+from torchcp.regression.score.cqr import CQR
+from torchcp.regression.loss import QuantileLoss
+from torchcp.regression.utils import build_regression_model
 
 
 class CQRM(CQR):

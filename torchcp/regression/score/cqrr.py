@@ -7,7 +7,7 @@
 
 import torch
 
-from .cqr import CQR
+from torchcp.regression.score.cqr import CQR
 
 
 class CQRR(CQR):

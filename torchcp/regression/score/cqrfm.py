@@ -7,7 +7,7 @@
 
 import torch
 
-from .cqrm import CQRM
+from torchcp.regression.score.cqrm import CQRM
 
 
 class CQRFM(CQRM):

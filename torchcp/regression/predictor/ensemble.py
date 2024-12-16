@@ -8,9 +8,7 @@
 import copy
 import torch
 
-from torchcp.utils.common import get_device
-from .split import SplitPredictor
-from ..utils.metrics import Metrics
+from torchcp.regression.predictor.split import SplitPredictor
 
 
 class EnsemblePredictor(SplitPredictor):

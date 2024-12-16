@@ -10,7 +10,7 @@ import math
 import warnings
 from tqdm import tqdm
 
-from .split import SplitPredictor
+from torchcp.regression.predictor.split import SplitPredictor
 
 
 class ACIPredictor(SplitPredictor):

@@ -11,7 +11,7 @@ from abc import ABCMeta, abstractmethod
 
 from torchcp.utils.common import calculate_conformal_value
 from torchcp.utils.common import get_device
-from ..utils.metrics import Metrics
+from torchcp.regression.utils.metrics import Metrics
 
 
 class BasePredictor(object):
