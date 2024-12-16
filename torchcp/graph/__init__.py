@@ -8,4 +8,4 @@
 from .predictor import *
 from .score import *
 from .trainer import *
-from .utils import Metrics
+from .utils import *

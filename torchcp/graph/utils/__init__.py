@@ -5,4 +5,4 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .metrics import Metrics
+from .common import compute_adj_knn

@@ -12,9 +12,9 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 
 from torchcp.classification.score import THR
-from torchcp.graph.predictor import GraphSplitPredictor
-from torchcp.graph.predictor.base import BaseGraphPredictor
-from torchcp.graph.utils import Metrics
+from torchcp.graph.predictor import SplitPredictor
+from torchcp.graph.predictor.base import BasePredictor
+from torchcp.classification.utils import Metrics
 
 
 @pytest.fixture
@@ -50,7 +50,7 @@ def mock_score_function():
 
 @pytest.fixture
 def predictor(mock_graph_data, mock_score_function, mock_model):
-    return GraphSplitPredictor(mock_graph_data, mock_score_function, mock_model)
+    return SplitPredictor(mock_graph_data, mock_score_function, mock_model)
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def preprocess(mock_graph_data, mock_score_function, mock_model):
 
 
 def test_base_graph_predictor(mock_graph_data, mock_score_function):
-    class TestPredictor(BaseGraphPredictor):
+    class TestPredictor(BasePredictor):
         def __init__(self, graph_data, score_function, model=None):
             super().__init__(graph_data, score_function, model)
 

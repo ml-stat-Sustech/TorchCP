@@ -6,13 +6,12 @@
 #
 
 import torch.nn.functional as F
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 
-from torchcp.classification.predictor.base import BasePredictor
-from torchcp.graph.utils.metrics import Metrics
+from torchcp.classification.utils.metrics import Metrics
 
 
-class BaseGraphPredictor(BasePredictor):
+class BasePredictor(object):
     """
     Abstract base class for all conformal predictors designed for graph data.
 
@@ -30,8 +29,14 @@ class BaseGraphPredictor(BasePredictor):
             A PyTorch model used for predictions on the graph. Defaults to `None`.
     """
 
+    __metaclass__ = ABCMeta
+
     def __init__(self, graph_data, score_function, model=None):
-        super(BaseGraphPredictor, self).__init__(score_function, model)
+
+        self.score_function = score_function
+        self._model = model
+        if self._model != None:
+            self._model.eval()
 
         self._graph_data = graph_data
         self._label_mask = F.one_hot(graph_data.y).bool()
@@ -73,3 +78,17 @@ class BaseGraphPredictor(BasePredictor):
                 the specific conformal prediction method implemented.
         """
         raise NotImplementedError
+
+    def _generate_prediction_set(self, scores, q_hat):
+        """
+        Generate the prediction set with the threshold q_hat.
+
+        Args:
+            scores (torch.Tensor): The non-conformity scores of {(x,y_1),..., (x,y_K)}.
+            q_hat (torch.Tensor): The calibrated threshold.
+
+        Returns:
+            torch.Tensor: A tensor of 0/1 values indicating the prediction set for each example.
+        """
+
+        return (scores <= q_hat).int()
