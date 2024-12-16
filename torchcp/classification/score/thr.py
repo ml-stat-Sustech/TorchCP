@@ -15,12 +15,12 @@ class THR(BaseScore):
     Threshold conformal predictors 
     
     Args:
-        score_type (Union[str, Callable], optional): A transformation on logits. Default is "softmax". 
-            If str: Options are "softmax", "identity", "log_softmax", or "log".
-            If callable: Custom transformation function that takes tensor input and returns tensor output.
+        score_type (Union[str, Callable], optional): Specifies how to transform logits.
+            - If str: Use predefined functions {"softmax", "identity", "log_softmax", "log"}
+            - If callable: Custom function that takes and returns torch.Tensor
+            Defaults to "softmax".
 
     Attributes:
-        score_type (Union[str, Callable]): The type of score transformation.
         transform (callable): The transformation function applied to logits.
         
     Examples::
@@ -41,8 +41,9 @@ class THR(BaseScore):
 
     def __init__(self, score_type="softmax"):
         super().__init__()
-
+        
         self.score_type = score_type
+
         if callable(score_type):
             self.transform = score_type
         else:
