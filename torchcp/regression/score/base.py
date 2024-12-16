@@ -31,8 +31,8 @@ class BaseScore(object):
         raise NotImplementedError
 
     @abstractmethod
-    def construct_interval(self, predicts_batch, q_hat):
-        """Constructs the prediction interval for the given batch of predictions.
+    def generate_intervals(self, predicts_batch, q_hat):
+        """Generate the prediction interval for the given batch of predictions.
 
         Args:
             predicts_batch: the batch of predictions.
@@ -82,6 +82,7 @@ class BaseScore(object):
                         running_loss = (running_loss * max(0, index) + loss.data.cpu().numpy()) / (index + 1)
                         _tqdm.set_postfix({"loss": f"{running_loss:.6f}"})
                     _tqdm.update(1)
+            print("Training complete.")
         else:
             for tmp_x, tmp_y in train_dataloader:
                 outputs = model(tmp_x.to(device))
@@ -89,6 +90,5 @@ class BaseScore(object):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-        print("Training complete.")
+        
         model.eval()

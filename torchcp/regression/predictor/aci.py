@@ -6,6 +6,9 @@
 #
 
 import torch
+import math
+import warnings
+from tqdm import tqdm
 
 from .split import SplitPredictor
 
@@ -18,8 +21,9 @@ class ACIPredictor(SplitPredictor):
     distribution is allowed to vary over time in an unknown fashion.
     
     Args:
-        model (torch.nn.Module): A PyTorch model capable of outputting quantile values.
         score_function (torchcp.regression.scores): A class that implements the score function.
+        model (torch.nn.Module): A PyTorch model capable of outputting quantile values. 
+            The model should be an initialization model that has not been trained.
         gamma (float): Step size parameter for adaptive adjustment of alpha. Must be greater than 0.
         
     Reference:  
@@ -29,13 +33,14 @@ class ACIPredictor(SplitPredictor):
         
     """
 
-    def __init__(self, model, score_function, gamma):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model, gamma):
+        super().__init__(score_function, None)
         if gamma <= 0:
             raise ValueError("gamma must be greater than 0.")
 
         self.gamma = gamma
         self.alpha_t = None
+        self.model_backbone = model
 
     def train(self, train_dataloader, alpha, **kwargs):
         """
@@ -53,14 +58,15 @@ class ACIPredictor(SplitPredictor):
                 - verbose (bool, optional): If True, prints training progress.
             
         .. note::
-            This function is optional but recommended, because the training process for each score_function is different. 
+            This function is necessary for ACI predictor. 
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
-            If the train function is not used, users should pass the trained model to the predictor at the beginning.
+            If the user wants to fully control the training process, it can be achieved by rewriting the :func:`train` of the score function.
         """
         super().train(train_dataloader, alpha=alpha, **kwargs)
         super().calibrate(train_dataloader, alpha)
         self.alpha = alpha
         self.alpha_t = alpha
+        self.train_dataloader = train_dataloader
 
     def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last):
         """
@@ -82,80 +88,180 @@ class ACIPredictor(SplitPredictor):
         err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
         err_t = torch.sum(w_s * err)
         return err_t
-
-    def predict(self, x_batch, x_batch_last=None, y_batch_last=None, pred_interval_last=None):
+    
+    def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=False):
         """
-        Generate prediction intervals for the input batch.
+        Generates conformal prediction intervals for a given batch of input data. 
+        This function can also optionally retrain the model or update the conformal 
+        score threshold (alpha) based on historical data.
 
         Args:
-            x_batch (torch.Tensor): Input features for the current batch.
-            x_batch_last (torch.Tensor): Input features from the last step.
-            y_batch_last (torch.Tensor, optional): Labels from the last step. Defaults to None.
-            pred_interval_last (torch.Tensor, optional): Previous prediction intervals. Defaults to None.
+            x_batch (Tensor): A batch of input features for which predictions and 
+                prediction intervals are to be generated. Shape depends on the model's 
+                input requirements (e.g., [batch_size, num_features]).
+                
+            x_lookback (Tensor, optional): Historical input features used for retraining 
+                or updating model calibration. If provided, `y_lookback` must also be provided. 
+                Default is `None`.
+                
+            y_lookback (Tensor, optional): Historical target values corresponding to 
+                `x_lookback`. Used for retraining or updating model calibration. If provided, 
+                `x_lookback` must also be provided. Default is `None`.
+                
+            pred_interval_lookback (Tensor, optional): Previously generated prediction intervals 
+                that can be used for calibration. If not provided, prediction intervals will 
+                be computed using the model's predictions and the current quantile value `q_hat`.
+                Default is `None`.
+
+            train (bool, optional): Whether to retrain the model using the `x_lookback` and 
+                `y_lookback` data. If `True`, both `x_lookback` and `y_lookback` must be provided. 
+                If `False`, the model will not be retrained. Default is `False`.
+
+            update_alpha (bool, optional): Whether to update the conformal score threshold (`alpha`)
+                based on the error rate observed in the prediction intervals. If `True`, both 
+                `x_lookback` and `y_lookback` must be provided. Default is `False`.
 
         Returns:
-            torch.Tensor: Prediction intervals for the input batch.
+            Prediction intervals (Tensor): The conformal prediction intervals for the input batch `x_batch`
+        
+        Raises:
+            ValueError: If `x_lookback` is provided but `y_lookback` is not, or vice versa. 
+                Both must be provided together or both must be `None`.
+
+        Notes:
+            - If `train` is set to `True` but `x_lookback` and `y_lookback` are not provided, 
+            the function will issue a warning and skip retraining.
+            - If `update_alpha` is set to `True` but `x_lookback` and `y_lookback` are not provided, 
+            the function will use the current value of `alpha` instead of recalibrating it.
+            - The conformal score threshold (`alpha`) is updated using a time-decayed approach, 
+            where the rate of adjustment depends on the parameter `gamma`.
         """
-        if not ((x_batch_last is None) == (y_batch_last is None) == (pred_interval_last is None)):
-            raise ValueError("x_batch_last, y_batch_last and pred_interval_last must either be provided or be None.")
+        if self._model is None:
+            raise ValueError("The predict function must be called after the train function is called")
         self._model.eval()
         x_batch = x_batch.to(self._device)
+        
+        if (x_lookback is None) != (y_lookback is None):
+            raise ValueError("x_lookback, y_lookback must either be provided or be None.")
+        
+        if x_lookback is not None:
+            x_lookback = x_lookback.to(self._device)
+        if y_lookback is not None:
+            y_lookback = y_lookback.to(self._device)
+        
+        if (x_lookback is not None) and (y_lookback is not None) and (pred_interval_lookback is None):
+            predicts_batch = self._model(x_batch.to(self._device)).float()
+            pred_interval_lookback = self.generate_intervals(predicts_batch, self.q_hat)
+        
+        if train == True:
+            if (x_lookback is not None) and (y_lookback is not None):
+                back_dataset = torch.utils.data.TensorDataset(x_lookback, y_lookback)
+                back_dataloader = torch.utils.data.DataLoader(back_dataset, batch_size=min(self.train_dataloader.batch_size, 
+                                                                    math.floor(len(x_lookback)/2)), shuffle=False)
+                self._model = self.score_function.train(back_dataloader, model=self.model_backbone, device=self._device, verbose=False)
+            else:
+                warnings.warn("Training is enabled but x_lookback and y_lookback are not provided. The model will not be retrained.", UserWarning)
+        
+        if update_alpha == True:
+            if (x_lookback is not None) and (y_lookback is not None):
+                err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback)
+                self.scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
+            else:
+                err_t = self.alpha
 
-        if y_batch_last is None:
-            err_t = self.alpha
-        else:
-            err_t = self.calculate_err_rate(x_batch, y_batch_last, pred_interval_last)
-            self.scores = self.calculate_score(self._model(x_batch).float(), y_batch_last)
-
-        self.alpha_t = max(0.0001, min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
-
-        self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
+            self.alpha_t = max(1/(self.scores.shape[0]+1), min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
+            self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
+        
         predicts_batch = self._model(x_batch.to(self._device)).float()
         return self.generate_intervals(predicts_batch, self.q_hat)
-
-    def evaluate(self, data_loader, verbose=True):
+        
+    def evaluate(self, data_loader, lookback=200, retrain_gap=1, update_alpha_gap=1):
         """
-        Evaluate the predictor on a dataset.
+        Evaluate the model using a test dataset and compute performance metrics such as 
+        coverage rate and average prediction interval size. The evaluation process 
+        optionally includes periodic retraining of the model and updating of the conformal 
+        score threshold (`alpha`).
 
         Args:
-            data_loader (torch.utils.data.DataLoader): DataLoader for evaluation data.
-            verbose (bool, optional): Whether to print evaluation metrics. Defaults to True.
+            data_loader (torch.utils.data.DataLoader): The data loader for the evaluation dataset. 
+                It should provide batches of input features and ground-truth labels for testing.
+            
+            lookback (int, optional): The number of historical data points (from the training dataset) 
+                to use for initializing lookback buffers (`x_lookback`, `y_lookback`, and 
+                `pred_interval_lookback`). This value must be less than or equal to the size of the 
+                training dataset. Default is 200.
+
+            retrain_gap (int, optional): The interval (in terms of number of test samples processed) 
+                at which the model is retrained using the lookback data. If set to 0, retraining is 
+                disabled. Default is 1.
+
+            update_alpha_gap (int, optional): The interval (in terms of number of test samples processed) 
+                at which the conformal score threshold (`alpha`) is updated using the lookback data. 
+                If set to 0, updating `alpha` is disabled. Default is 1.
 
         Returns:
-            dict: Dictionary containing evaluation metrics:
-                  - Total batches
-                  - Average coverage rate
-                  - Average prediction interval size
+            dict: A dictionary containing the following metrics:
+                - "Coverage_rate" (float): The proportion of true labels that fall within the 
+                predicted intervals.
+                - "Average_size" (float): The average size of the prediction intervals.
+
+        Raises:
+            ValueError: If `lookback` is greater than the size of the training dataset.
+
+        Notes:
+            - The lookback buffers (`x_lookback`, `y_lookback`, and `pred_interval_lookback`) are 
+            initialized using the last `lookback` samples from the training dataset.
+            - During the evaluation process:
+                - If `retrain_gap` > 0, the model is retrained periodically (every `retrain_gap` 
+                samples) using the lookback buffers.
+                - If `update_alpha_gap` > 0, the conformal score threshold (`alpha`) is updated 
+                periodically (every `update_alpha_gap` samples) based on the lookback buffers.
+            - The lookback buffers are updated dynamically after processing each test sample 
+            with the latest predictions, inputs, and ground-truth labels from the evaluation dataset.
         """
-        coverage_rates = []
-        average_sizes = []
+        train_dataset = self.train_dataloader.dataset
+        if lookback > len(train_dataset):
+            raise ValueError("lookback cannot be set above the length of train_dataloader")
+        
+        ts_dataloader = torch.utils.data.DataLoader(data_loader.dataset, batch_size=1, shuffle=False, pin_memory=True)
+        samples = [train_dataset[i] for i in range(len(train_dataset) - lookback, len(train_dataset))]
 
-        with torch.no_grad():
-            x_batch_last = None
-            y_batch_last = None
-            pred_interval_last = None
-            for index, batch in enumerate(data_loader):
-                x_batch, y_batch = batch[0].to(self._device), batch[1].to(self._device)
-                prediction_intervals = self.predict(x_batch, x_batch_last, y_batch_last, pred_interval_last)
-                x_batch_last = x_batch
-                y_batch_last = y_batch
-                pred_interval_last = prediction_intervals
+        x_lookback = torch.stack([sample[0] for sample in samples]).to(self._device)
+        y_lookback = torch.stack([sample[1] for sample in samples]).to(self._device)
+        pred_interval_lookback = self.predict(x_lookback)
 
-                batch_coverage_rate = self._metric('coverage_rate')(prediction_intervals, y_batch)
-                batch_average_size = self._metric('average_size')(prediction_intervals)
 
-                if verbose:
-                    print(
-                        f"Batch: {index + 1}, Coverage rate: {batch_coverage_rate:.4f}, Average size: {batch_average_size:.4f}, Alpha: {self.alpha_t:.2f}")
-
-                coverage_rates.append(batch_coverage_rate)
-                average_sizes.append(batch_average_size)
-
-        avg_coverage_rate = sum(coverage_rates) / len(coverage_rates)
-        avg_average_size = sum(average_sizes) / len(average_sizes)
-
-        res_dict = {"total batches": index + 1,
-                    "coverage_rate": avg_coverage_rate,
-                    "average_size": avg_average_size}
-
+        y_list, predict_list = [], []
+        for idx, (x, y) in enumerate(tqdm(ts_dataloader, desc="Processing Evaluation")):
+            x = x.to(self._device)
+            y = y.to(self._device)
+            if (retrain_gap != 0) and (idx % retrain_gap == 0) and (update_alpha_gap != 0) and (idx % update_alpha_gap == 0):
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=True, update_alpha=True)
+            elif (retrain_gap != 0) and (idx % retrain_gap == 0):
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=True, update_alpha=False)
+            elif (update_alpha_gap != 0) and (idx % update_alpha_gap == 0):
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=False, update_alpha=True)
+            else:
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
+                                             train=False, update_alpha=False)
+            y_list.append(y)
+            predict_list.append(pred_interval)
+            pred_interval_lookback = torch.cat([pred_interval_lookback, pred_interval], dim=0)[-lookback:]
+            x_lookback = torch.cat([x_lookback, x], dim=0)[-lookback:]
+            y_lookback = torch.cat([y_lookback, y], dim=0)[-lookback:]
+            
+        predicts = torch.cat(predict_list, dim=0).to(self._device)
+        test_y = torch.cat(y_list).to(self._device)
+        
+        res_dict = {
+            "Coverage_rate": self._metric('coverage_rate')(predicts, test_y),
+            "Average_size": self._metric('average_size')(predicts)
+        }
         return res_dict

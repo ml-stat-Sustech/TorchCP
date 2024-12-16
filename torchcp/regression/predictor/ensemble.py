@@ -41,7 +41,7 @@ class EnsemblePredictor(SplitPredictor):
                         - Custom function: Should accept a tensor and dimension as input, returning the result.
     """
 
-    def __init__(self, model, score_function, aggregation_function='mean'):
+    def __init__(self, score_function, model, aggregation_function='mean'):
         super().__init__(score_function, model)
         if aggregation_function == 'mean':
             self.aggregation_function = torch.mean

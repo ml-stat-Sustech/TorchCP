@@ -24,15 +24,15 @@ def mock_score_function():
 
 
 def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
-    train_dataloader, cal_dataloader, test_dataloader = mock_data
+    train_dataloader, _, test_dataloader = mock_data
 
     with pytest.raises(ValueError, match="gamma must be greater than 0."):
-        ACIPredictor(mock_model, mock_score_function, gamma=0)
+        ACIPredictor(mock_score_function, mock_model, gamma=0)
 
     # Initialize ACIPredictor
     aci_predictor = ACIPredictor(
-        model=mock_model,
         score_function=mock_score_function,
+        model=mock_model,
         gamma=0.1
     )
 
@@ -48,21 +48,19 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     assert prediction_intervals is not None, "Prediction intervals should not be None."
     assert prediction_intervals.shape[0] == x_batch.shape[0], "Prediction intervals should match batch size."
 
-    # test calibrate method
-    aci_predictor.calibrate(cal_dataloader, alpha=0.1)
-
     # Test evaluate method
-    eval_results = aci_predictor.evaluate(test_dataloader, verbose=False)
-    assert eval_results["total batches"] > 0, "Evaluation should process at least one batch."
-    assert eval_results["coverage_rate"] > 0, "Average coverage rate should be greater than 0."
-    assert eval_results["average_size"] > 0, "Average interval size should be greater than 0."
 
-    # Test evaluate method with verbose=True
-    aci_predictor.evaluate(test_dataloader, verbose=True)
+    eval_results = aci_predictor.evaluate(test_dataloader)
+    assert eval_results["Coverage_rate"] > 0, "Average coverage rate should be greater than 0."
+    assert eval_results["Average_size"] > 0, "Average interval size should be greater than 0."
 
+    # Test evaluate method with other arguments
+    aci_predictor.evaluate(test_dataloader, retrain_gap=0, update_alpha_gap=0)
+    aci_predictor.evaluate(test_dataloader, retrain_gap=2, update_alpha_gap=3)
+    
     # Test exception for missing arguments
     with pytest.raises(ValueError):
-        aci_predictor.predict(x_batch, y_batch_last=torch.rand(10), pred_interval_last=None)
+        aci_predictor.predict(x_batch, y_lookback=torch.rand(10), pred_interval_lookback=None)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -71,7 +69,7 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
         pytest.skip("CUDA is not available.")
 
     train_dataloader, _, test_dataloader = mock_data
-    aci_predictor = ACIPredictor(mock_model.to(device), mock_score_function, gamma=0.1)
+    aci_predictor = ACIPredictor(mock_score_function, mock_model.to(device), gamma=0.1)
 
     aci_predictor.train(train_dataloader, alpha=0.1)
     x_batch, _ = next(iter(test_dataloader))

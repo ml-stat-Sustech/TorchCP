@@ -29,8 +29,8 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
 
     # initialize EnsemblePredictor
     ensemble_predictor = EnsemblePredictor(
-        model=mock_model,
         score_function=mock_score_function,
+        model=mock_model,
         aggregation_function=aggregation_function
     )
 
@@ -75,7 +75,7 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
         pytest.skip("CUDA is not available.")
 
     train_dataloader, cal_dataloader, test_dataloader = mock_data
-    ensemble_predictor = EnsemblePredictor(mock_model.to(device), mock_score_function)
+    ensemble_predictor = EnsemblePredictor(mock_score_function, mock_model.to(device))
 
     ensemble_predictor.train(train_dataloader, ensemble_num=3, subset_num=100)
     x_batch, _ = next(iter(test_dataloader))

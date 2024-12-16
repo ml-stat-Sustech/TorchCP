@@ -35,7 +35,7 @@ class SplitPredictor(BasePredictor):
     def train(self, train_dataloader, **kwargs):
         """
         Trains the model using the provided train_dataloader and score_function.
-        
+
         Args:
             train_dataloader (DataLoader): DataLoader for the training data.
             **kwargs: Additional keyword arguments for training configuration.
@@ -45,16 +45,27 @@ class SplitPredictor(BasePredictor):
                 - lr (float, optional): Learning rate for the optimizer.
                 - optimizer (torch.optim.Optimizer, optional): Optimizer for training.
                 - verbose (bool, optional): If True, prints training progress.
-            
+
         .. note::
             This function is optional but recommended, because the training process for each score_function is different. 
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
             If the train function is not used, users should pass the trained model to the predictor at the beginning.
         """
-        if self._model is None:
-            self._model = self.score_function.train(train_dataloader, device=self._device, **kwargs)
+        model = kwargs.pop('model', None)
+
+        if model is not None:
+            self._model = self.score_function.train(
+                train_dataloader, model=model, device=self._device, **kwargs
+            )
+        elif self._model is not None:
+            self._model = self.score_function.train(
+                train_dataloader, model=self._model, device=self._device, **kwargs
+            )
         else:
-            self._model = self.score_function.train(train_dataloader, model=self._model, device=self._device, **kwargs)
+            self._model = self.score_function.train(
+                train_dataloader, device=self._device, **kwargs
+            )
+
 
     def calculate_score(self, predicts, y_truth):
         """

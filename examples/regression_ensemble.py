@@ -109,7 +109,7 @@ def run_ensemble_experiment(
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     aggregation_function = torch.mean
 
-    predictor = EnsemblePredictor(model, score_function, aggregation_function)
+    predictor = EnsemblePredictor(score_function, model, aggregation_function)
 
     predictor.train(
         train_dataloader=train_loader,

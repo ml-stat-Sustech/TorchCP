@@ -107,7 +107,7 @@ def run_aci_experiment(
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     # Initialize predictor
-    predictor = ACIPredictor(model, score_function, gamma=gamma)
+    predictor = ACIPredictor(score_function, model, gamma=gamma)
 
     # Train and evaluate
     predictor.train(
@@ -118,7 +118,7 @@ def run_aci_experiment(
         optimizer=optimizer
     )
 
-    results = predictor.evaluate(test_loader, verbose=verbose)
+    results = predictor.evaluate(test_loader)
     print(f"Results: {results}")
 
     return results
