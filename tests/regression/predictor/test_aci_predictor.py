@@ -97,7 +97,6 @@ def test_aci_predictor_wrong_workflow(mock_data, mock_model, mock_score_function
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_device_support(mock_data, mock_model, mock_score_function, device):
-    print(device)
     if device == "cuda" and not torch.cuda.is_available():
         pytest.skip("CUDA is not available.")
 
