@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Optional, Dict, Any, Callable, Union, List
 
-from .base_trainer import Trainer
+from torchcp.classification.trainer.base_trainer import Trainer
 
 
 class OrdinalTrainer(Trainer):

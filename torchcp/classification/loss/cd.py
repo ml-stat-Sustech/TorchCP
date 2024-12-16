@@ -16,8 +16,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import Tensor
-from .base import BaseLoss
+
+from torchcp.classification.loss.base import BaseLoss
 
 
 class CDLoss(BaseLoss):

@@ -5,13 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import torch
+
 from abc import ABCMeta, abstractmethod
+
+import warnings
+import torch
 
 from torchcp.classification.utils import ConfCalibrator
 from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils.common import get_device
-import warnings
+
 
 
 class BasePredictor(object):

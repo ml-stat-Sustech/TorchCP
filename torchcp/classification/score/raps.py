@@ -7,7 +7,7 @@
 
 import torch
 
-from .aps import APS
+from torchcp.classification.score.aps import APS
 
 
 class RAPS(APS):

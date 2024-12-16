@@ -11,7 +11,7 @@ from scipy.optimize import brentq
 from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.score import APS
-from .split import SplitPredictor
+from torchcp.graph.predictor.split import SplitPredictor
 
 DEFAULT_SCHEMES = ["unif", "linear", "geom"]
 

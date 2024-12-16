@@ -11,8 +11,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from typing import Dict, List
 
-from .split import SplitPredictor
-from .utils import build_DomainDetecor, IW
+from torchcp.classification.predictor.split import SplitPredictor
+from torchcp.classification.predictor.utils import build_DomainDetecor, IW
 
 
 class WeightedPredictor(SplitPredictor):

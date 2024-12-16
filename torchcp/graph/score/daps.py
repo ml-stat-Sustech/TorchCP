@@ -7,7 +7,7 @@
 
 import torch
 
-from .base import BaseScore
+from torchcp.graph.score.base import BaseScore
 
 
 class DAPS(BaseScore):

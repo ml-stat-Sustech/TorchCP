@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
-from .confts import ConfTS
+from torchcp.classification.loss.confts import ConfTS
 
 
 class ConfTr(ConfTS):

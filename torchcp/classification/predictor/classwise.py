@@ -6,9 +6,8 @@
 #
 
 import torch
-import warnings
 
-from .split import SplitPredictor
+from torchcp.classification.predictor.split import SplitPredictor
 
 
 class ClassWisePredictor(SplitPredictor):

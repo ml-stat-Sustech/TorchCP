@@ -8,7 +8,7 @@
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from .base import BaseScore
+from torchcp.classification.score.base import BaseScore
 
 
 class KNN(BaseScore):

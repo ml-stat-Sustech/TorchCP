@@ -7,7 +7,7 @@
 
 import torch
 
-from .thr import THR
+from torchcp.classification.score.thr import THR
 
 
 class TOPK(THR):

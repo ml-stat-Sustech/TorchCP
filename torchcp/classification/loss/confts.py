@@ -12,7 +12,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from .base import BaseLoss
+from torchcp.classification.loss.base import BaseLoss
 
 
 class ConfTS(BaseLoss):

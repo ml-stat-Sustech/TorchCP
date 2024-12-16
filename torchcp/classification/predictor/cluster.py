@@ -10,7 +10,7 @@ import torch
 from sklearn.cluster import KMeans
 
 from torchcp.utils.common import DimensionError
-from .classwise import ClassWisePredictor
+from torchcp.classification.predictor.classwise import ClassWisePredictor
 
 
 class ClusteredPredictor(ClassWisePredictor):
