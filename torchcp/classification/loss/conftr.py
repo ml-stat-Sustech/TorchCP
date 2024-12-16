@@ -39,7 +39,7 @@ class ConfTr(ConfTS):
         
     Examples::
         >>> predictor = torchcp.classification.SplitPredictor()
-        >>> conftr = ConfTr(weight=1.0, predictor=predictor, alpha=0.05, fraction=0.2, loss_type="valid")
+        >>> conftr = ConfTr(predictor=predictor, alpha=0.05, fraction=0.2, loss_type="valid")
         >>> logits = torch.randn(100, 10)
         >>> labels = torch.randint(0, 2, (100,))
         >>> loss = conftr(logits, labels)

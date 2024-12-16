@@ -139,3 +139,23 @@ def test_output_scaling(temp_model):
     expected_ratio = 3.0 / 1.5
     actual_ratio = (output1 / output2).mean().item()
     assert actual_ratio == pytest.approx(expected_ratio, rel=1e-5)
+    
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_device_consistency(temp_model, device):
+    if device == "cuda" and not torch.cuda.is_available():
+        pytest.skip("CUDA not available")
+    
+    device = torch.device("cuda:0" if device == "cuda" else "cpu")
+    # Move model to device
+    temp_model = temp_model.to(device)
+    
+    # Create input on same device
+    x = torch.randn(4, 10).to(device)
+    
+    # Forward pass
+    output = temp_model(x)
+    
+    # Check device consistency
+    assert output.device == torch.device(device)
+    assert temp_model.temperature.device == torch.device(device)
+    assert next(temp_model.base_model.parameters()).device == torch.device(device)

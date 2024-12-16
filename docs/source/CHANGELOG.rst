@@ -6,10 +6,10 @@ Changelog
 ------------------
 
 * Fixed the bugs of the RAPS score function and covgap in classification task
-* Refactored the classification.loss, graph.score.SNAPS and regression.predictor.aci
+* Refactored the classification.loss, graph.score.snaps and regression.predictor.aci
 * Fixed the bug where logo was not displayed in PyPi
 * Updated the requirements.txt and examples for classification
-* Added a trainer for Temperature Scaling
+* Added the trainer for Temperature Scaling and ConfTS in classification.trainer
 * Added the Changelog page in the ReadtheDocs documentation
 
 1.0.0 (2024-12-06)

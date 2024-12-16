@@ -30,11 +30,11 @@ class ConfTS(BaseLoss):
         soft_qunatile (bool, optional): Whether to use soft quantile. Default is True.
 
     Examples::
-        >>> predictor = torchcp.classification.SplitPredictor()
-        >>> conftr = ConfTS(weight=1.0, predictor=predictor, fraction=0.2)
+        >>> predictor = torchcp.classification.SplitPredictor(score_function=APS(score_type="softmax", randomized=False))
+        >>> confts = ConfTS(predictor=predictor, fraction=0.2)
         >>> logits = torch.randn(100, 10)
         >>> labels = torch.randint(0, 2, (100,))
-        >>> loss = conftr(logits, labels)
+        >>> loss = confts(logits, labels)
         >>> loss.backward()
         
     Reference:
@@ -132,12 +132,12 @@ class ConfTS(BaseLoss):
             squeeze = True
             q = [q]
         q = torch.tensor(q, dtype=torch.float, device=scores.device)
+        
         indices = (1 - q) * (n + 1) - 1
         indices_low = torch.floor(indices).long()
         indices_frac = indices - indices_low
         indices_high = indices_low + 1
         # select quantiles from computed scores:
-
         quantiles = sorted_scores[..., torch.cat([indices_low, indices_high])]
         quantiles = quantiles[..., :q.shape[0]] + indices_frac * (
                 quantiles[..., q.shape[0]:] - quantiles[..., :q.shape[0]])
