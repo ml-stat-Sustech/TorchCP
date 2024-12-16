@@ -129,6 +129,7 @@ metrics
 .. autofunction:: DiffViolation
 .. autofunction:: SSCV
 .. autofunction:: WSC
+.. autofunction:: singleton_hit_ratio
 
 .. automodule:: torchcp.classification.utils
 

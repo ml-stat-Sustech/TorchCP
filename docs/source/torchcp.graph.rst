@@ -26,10 +26,10 @@ predictor
 ..  autosummary::
     :nosignatures:
 
-    GraphSplitPredictor
+    SplitPredictor
     NAPSPredictor
 
-.. autoclass:: GraphSplitPredictor
+.. autoclass:: SplitPredictor
    :members:
 
 .. autoclass:: NAPSPredictor
@@ -47,20 +47,3 @@ trainer
 
 .. autoclass:: CFGNNTrainer
    :members:
-
-.. automodule:: torchcp.graph.utils.metrics
-
-metrics
------------------------------
-
-..  autosummary::
-    :nosignatures:
-   
-   coverage_rate
-   average_size
-   singleton_hit_ratio
-
-
-.. autofunction:: coverage_rate
-.. autofunction:: average_size
-.. autofunction:: singleton_hit_ratio

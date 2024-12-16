@@ -23,6 +23,7 @@ TorchCP is a Python toolbox for conformal prediction research on deep learning m
    torchcp.graph
    torchcp.llm
    torchcp.utils
+   CHANGELOG.rst
 
 
 Indices and tables

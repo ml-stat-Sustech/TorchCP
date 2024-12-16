@@ -34,3 +34,5 @@ myst-parser
 sphinx-copybutton
 sphinx-notfound-page
 sphinx-hoverxref
+torch-geometric~=2.6.1
+transformers
