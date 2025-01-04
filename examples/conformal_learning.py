@@ -12,7 +12,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from transformers import set_seed
 from torchcp.classification.trainer import ConfLearnTrainer
-from utils import Model_Ex1
+from .utils import Model_Ex1
 
 
 class ClassNNet(nn.Module):
