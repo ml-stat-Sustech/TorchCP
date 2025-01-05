@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import os
 import torch
 import torch.nn as nn
 import numpy as np
@@ -12,7 +13,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from transformers import set_seed
 from torchcp.classification.trainer import ConfLearnTrainer
-from .utils import Model_Ex1
+from examples.utils import Model_Ex1, get_others_dir
 
 
 class ClassNNet(nn.Module):
@@ -113,16 +114,10 @@ def setup_data_and_model(device):
     Z_tr_score = np.ones(len(Y_tr_score))
     Z_augmented = np.concatenate((Z_train, Z_tr_score), 0)
 
-
     # Initialize loader for training data 
     X_train = torch.from_numpy(X_augmented).float().to(device)
     Y_train = torch.from_numpy(Y_augmented).long().to(device)
-    if np.sum(np.unique(Z_augmented) > 0) > 0:
-        eval_conf_train = True
-    else:
-        eval_conf_train = False
     Z_train = torch.from_numpy(Z_augmented).long().to(device)
-
     train_dataset = ClassifierDataset(X_train, Y_train, Z_train)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
@@ -131,7 +126,7 @@ def setup_data_and_model(device):
     Y_hout = torch.from_numpy(Y_hout).long().to(device)
     Z_hout = torch.ones(Y_hout.shape).long().to(device)
     val_dataset = ClassifierDataset(X_hout, Y_hout, Z_hout)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
     model = ClassNNet(num_features=p, num_classes=K, use_dropout=False).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -141,15 +136,31 @@ def setup_data_and_model(device):
 
 if __name__ == '__main__':
     alpha = 0.1
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
     set_seed(seed=0)
 
     batch_size = 750
     lr = 0.001
     mu = 0.2
 
+    checkpoint_path = os.path.join(get_others_dir(), "conflearn")
+
     train_loader, val_loader, model, optimizer = setup_data_and_model(device)
 
-    conf_trainer = ConfLearnTrainer(model, optimizer, device)
-    conf_trainer.train(train_loader, val_loader, num_epochs=4000)
+    conflearn_trainer = ConfLearnTrainer(model, optimizer, device=device)
+    conflearn_trainer.train(train_loader, val_loader, checkpoint_path=checkpoint_path, num_epochs=10)
     
+    # For early stopping loss
+    conflearn_trainer_loss = ConfLearnTrainer(model, optimizer, device=device)
+    if os.path.exists(checkpoint_path + "_loss"):
+        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_loss")
+    else:
+       conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_final")
+
+    # For early stopping acc
+    conflearn_trainer_acc = ConfLearnTrainer(model, optimizer, device=device)
+    if os.path.exists(checkpoint_path + "_acc"):
+        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_acc")
+    else:
+       conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_final")
+
