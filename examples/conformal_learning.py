@@ -9,12 +9,14 @@ import os
 import torch
 import torch.nn as nn
 import numpy as np
+import pandas as pd
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from transformers import set_seed
 from torchcp.classification.trainer import ConfLearnTrainer
 from examples.utils import Model_Ex1, get_others_dir
-
+from torchcp.classification.predictor import SplitPredictor
+from torchcp.classification.score import APS
 
 class ClassNNet(nn.Module):
     def __init__(self, num_features, num_classes, use_dropout=False):
@@ -80,6 +82,91 @@ class ClassifierDataset(Dataset):
 
     def __len__ (self):
         return len(self.X_data)
+    
+
+class CommonDataset(Dataset):
+    def __init__(self, X_data, Y_data):
+        self.X_data = X_data
+        self.Y_data = Y_data
+
+    def __getitem__(self, index):
+        return self.X_data[index], self.Y_data[index]
+
+    def __len__ (self):
+        return len(self.X_data)
+    
+
+class Oracle:
+    def __init__(self, model):
+        self.model = model
+    
+    def fit(self, X, y):
+        return self
+
+    def predict(self, X):
+        return self.model.sample_Y(X)        
+
+    def predict_proba(self, X):
+        if(len(X.shape)==1):
+            X = X.reshape((1,X.shape[0]))
+        prob = self.model.compute_prob(X)
+        prob = np.clip(prob, 1e-6, 1.0)
+        prob = prob / prob.sum(axis=1)[:,None]
+        return prob
+    
+
+def difficulty_oracle(S_oracle, size_cutoff=1):
+    size_oracle = np.array([len(S) for S in S_oracle])
+    easy_idx = np.where(size_oracle<=size_cutoff)[0]
+    hard_idx = np.where(size_oracle>size_cutoff)[0]
+    return easy_idx, hard_idx
+
+
+def evaluate_predictions(S, X, y, hard_idx=None, conditional=True, linear=False):
+    # Marginal coverage
+    marg_coverage = np.mean([y[i] in S[i] for i in range(len(y))])
+        
+    if conditional:
+        y_hard = y[hard_idx]
+        S_hard = [S[i] for i in hard_idx]
+
+        # Evaluate conditional coverage
+        wsc_coverage = np.mean([y_hard[i] in S_hard[i] for i in range(len(y_hard))])
+
+        # Evaluate conditional size
+        size_hard = np.mean([len(S[i]) for i in hard_idx])
+        size_easy = np.mean([len(S[i]) for i in range(len(y)) if i not in hard_idx])   
+        size_hard_median = np.median([len(S[i]) for i in hard_idx])
+        size_easy_median = np.median([len(S[i]) for i in range(len(y)) if i not in hard_idx])   
+
+        n_hard = len(hard_idx)
+        n_easy = len(y) - len(hard_idx)
+            
+    else:
+        wsc_coverage = None
+
+    # Size and size conditional on coverage
+    size = np.mean([len(S[i]) for i in range(len(y))])     
+    size_median = np.median([len(S[i]) for i in range(len(y))])
+    idx_cover = np.where([y[i] in S[i] for i in range(len(y))])[0]
+    size_cover = np.mean([len(S[i]) for i in idx_cover])
+    # Combine results
+    out = pd.DataFrame({'Coverage': [marg_coverage], 'Conditional coverage': [wsc_coverage],
+                        'Size': [size], 'Size (median)': [size_median], 
+                        'Size-hard': [size_hard], 'Size-easy': [size_easy],
+                        'Size-hard (median)': [size_hard_median], 'Size-easy (median)': [size_easy_median],
+                        'n-hard': [n_hard], 'n-easy': [n_easy],
+                        'Size conditional on cover': [size_cover]})
+    return out
+
+
+def eval_predictions(X, Y, box, data="unknown", plot=False,  printing=True):
+    Y_pred = box.predict(X)
+    class_error = np.mean(Y!=Y_pred)
+    if printing:
+        print("Classification error on {:s} data: {:.1f}%".format(data, class_error*100))
+    return (class_error*100)
+    
 
 def setup_data_and_model(device):
     p = 100         # Number of features
@@ -90,6 +177,7 @@ def setup_data_and_model(device):
 
     n_train = 4800  # Number of data samples
     n_hout = 2000   # Number of hold out samples
+    n_calib = 10000 # Number of calibration samples
     n_test = 2000   # Number of test samples
 
     data_model = Model_Ex1(K, p, delta_1, delta_2, a)   # Data generating model
@@ -103,6 +191,9 @@ def setup_data_and_model(device):
 
     X_hout = data_model.sample_X(n_hout)                # Generate independent hold-out data
     Y_hout = data_model.sample_Y(X_hout)
+
+    X_calib = data_model.sample_X(n_calib)              # Generate independent calibration data
+    Y_calib = data_model.sample_Y(X_calib)
 
     X_test = data_model.sample_X(n_test, test=True)     # Generate independent test data
     Y_test = data_model.sample_Y(X_test)
@@ -128,10 +219,24 @@ def setup_data_and_model(device):
     val_dataset = ClassifierDataset(X_hout, Y_hout, Z_hout)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
+    # Initialize loader for calibration data 
+    X_calib = torch.from_numpy(X_calib).float().to(device)
+    Y_calib = torch.from_numpy(Y_calib).long().to(device)
+    cal_dataset = CommonDataset(X_calib, Y_calib)
+    cal_loader = DataLoader(cal_dataset, batch_size=100, shuffle=True, drop_last=True)
+
+    # Initialize loader for test data 
+    X_test = torch.from_numpy(X_test).float().to(device)
+    Y_test = torch.from_numpy(Y_test).long().to(device)
+    test_dataset = CommonDataset(X_test, Y_test)
+    test_loader = DataLoader(test_dataset, batch_size=100, shuffle=True, drop_last=True)
+
+    oracle = Oracle(data_model)
+
     model = ClassNNet(num_features=p, num_classes=K, use_dropout=False).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    return train_loader, val_loader, model, optimizer
+    return train_loader, val_loader, cal_loader, X_test, Y_test, oracle, model, optimizer
 
 
 if __name__ == '__main__':
@@ -145,7 +250,7 @@ if __name__ == '__main__':
 
     checkpoint_path = os.path.join(get_others_dir(), "conflearn")
 
-    train_loader, val_loader, model, optimizer = setup_data_and_model(device)
+    train_loader, val_loader, cal_loader, X_test, Y_test, oracle, model, optimizer = setup_data_and_model(device)
 
     conflearn_trainer = ConfLearnTrainer(model, optimizer, device=device)
     conflearn_trainer.train(train_loader, val_loader, checkpoint_path=checkpoint_path, num_epochs=10)
@@ -164,3 +269,30 @@ if __name__ == '__main__':
     else:
        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_final")
 
+    black_boxes = [oracle, conflearn_trainer, conflearn_trainer_loss, conflearn_trainer_acc]
+
+    sc_methods = []
+    for i in range(len(black_boxes)):
+       sc_method = SplitPredictor(APS(), black_boxes[i].model)
+       sc_method.calibrate(cal_loader)
+       sc_methods.append(sc_method)
+
+    results = pd.DataFrame()
+
+    sc_method_oracle = SplitPredictor(APS(), oracle.model)
+    prob_true = oracle.model(X_test)
+    sc_method_oracle.q_hat = 1 - alpha
+    S_oracle = sc_method_oracle.predict(X_test)
+
+    easy_idx, hard_idx = difficulty_oracle(S_oracle)
+
+    for k in range(len(black_boxes)):
+        sets = sc_methods[k].predict(X_test)
+        res = evaluate_predictions(sets, X_test, Y_test, hard_idx, conditional=True)  
+        res['Error'] = eval_predictions(X_test, Y_test, black_boxes[k], data="test")
+
+        results = pd.concat([results, res])
+        
+    results = results.reset_index()
+
+    print(results)

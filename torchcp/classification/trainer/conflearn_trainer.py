@@ -212,3 +212,16 @@ class ConfLearnTrainer:
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         return checkpoint
+    
+    def predict(self, test_loader):
+        y_pred_list = []
+        with torch.no_grad():
+            self.model.eval()
+            for X_batch, _ in test_loader:
+                X_batch = X_batch.to(self.device)
+                y_test_pred = self.model(X_batch)
+                y_pred_softmax = torch.log_softmax(y_test_pred, dim = 1)
+                _, y_pred_tags = torch.max(y_pred_softmax, dim = 1)
+                y_pred_list.append(y_pred_tags.cpu().numpy())
+        y_pred = np.concatenate(y_pred_list)
+        return y_pred
