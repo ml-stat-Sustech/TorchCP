@@ -17,6 +17,7 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
+[![Latest Tag][tag-shield]][tag-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
@@ -248,3 +249,6 @@ We welcome you to cite the following works:
 [license-shield]: https://img.shields.io/github/license/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
 
 [license-url]: https://github.com/ml-stat-Sustech/TorchCP/blob/main/LICENSE.txt
+
+[tag-shield]: https://img.shields.io/github/v/tag/ml-stat-Sustech/TorchCP?style=for-the-badge&label=version
+[tag-url]: https://github.com/ml-stat-Sustech/TorchCP/tags
