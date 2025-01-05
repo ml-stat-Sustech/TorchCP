@@ -35,7 +35,7 @@ class ACIPredictor(SplitPredictor):
 
     def __init__(self, score_function, model, gamma):
         super().__init__(score_function, model)
-        if gamma <= 0:
+        if (gamma is not None) and (gamma <= 0):
             raise ValueError("gamma must be greater than 0.")
 
         self.gamma = gamma
@@ -70,7 +70,7 @@ class ACIPredictor(SplitPredictor):
         self.train_dataloader = train_dataloader
         self.train_indicate = True
 
-    def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last):
+    def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last, weight=True):
         """
         Calculate the error rate for the previous prediction intervals.
 
@@ -83,15 +83,18 @@ class ACIPredictor(SplitPredictor):
             float: Weighted error rate based on historical predictions.
         """
         steps_t = len(y_batch_last)
-        w_s = (steps_t - torch.arange(steps_t)).to(self._device)
-        w_s = torch.pow(0.95, w_s)
-        w_s = w_s / torch.sum(w_s)
         err = x_batch.new_zeros(steps_t, self.q_hat.shape[0])
         err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
-        err_t = torch.sum(w_s * err)
+        if weight:
+            w_s = (steps_t - torch.arange(steps_t)).to(self._device)
+            w_s = torch.pow(0.95, w_s)
+            w_s = w_s / torch.sum(w_s)
+            err_t = torch.sum(w_s * err)
+        else:
+            err_t = torch.sum(err)
         return err_t
     
-    def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=False):
+    def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=True):
         """
         Generates conformal prediction intervals for a given batch of input data. 
         This function can also optionally retrain the model or update the conformal 
@@ -151,8 +154,8 @@ class ACIPredictor(SplitPredictor):
             y_lookback = y_lookback.to(self._device)
         
         if (x_lookback is not None) and (y_lookback is not None) and (pred_interval_lookback is None):
-            predicts_batch = self._model(x_batch.to(self._device)).float()
-            pred_interval_lookback = self.generate_intervals(predicts_batch, self.q_hat)
+            predicts_batch_lookback = self._model(x_lookback.to(self._device)).float()
+            pred_interval_lookback = self.generate_intervals(predicts_batch_lookback, self.q_hat)
         
         if train == True:
             if (x_lookback is not None) and (y_lookback is not None):
@@ -163,17 +166,19 @@ class ACIPredictor(SplitPredictor):
             else:
                 warnings.warn("Training is enabled but x_lookback and y_lookback are not provided. The model will not be retrained.", UserWarning)
         
-        if update_alpha == True:
-            if (x_lookback is not None) and (y_lookback is not None):
-                err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback)
-                self.scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
-            else:
-                err_t = self.alpha
-
-            self.alpha_t = max(1/(self.scores.shape[0]+1), min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
-            self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
+        with torch.no_grad():
+            predicts_batch = self._model(x_batch.to(self._device)).float()
         
-        predicts_batch = self._model(x_batch.to(self._device)).float()
+        if (update_alpha == True) and (x_lookback is not None) and (y_lookback is not None):
+            return self.generate_aci_intervals(x_batch, x_lookback, y_lookback, pred_interval_lookback, predicts_batch)
+
+        return self.generate_intervals(predicts_batch, self.q_hat)
+    
+    def generate_aci_intervals(self, x_batch, x_lookback, y_lookback, pred_interval_lookback, predicts_batch):
+        err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback, weight=True)
+        self.scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
+        self.alpha_t = max(1/(self.scores.shape[0]+1), min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
+        self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
         return self.generate_intervals(predicts_batch, self.q_hat)
         
     def evaluate(self, data_loader, lookback=200, retrain_gap=1, update_alpha_gap=1):
