@@ -89,9 +89,9 @@ class ACIPredictor(SplitPredictor):
             w_s = (steps_t - torch.arange(steps_t)).to(self._device)
             w_s = torch.pow(0.95, w_s)
             w_s = w_s / torch.sum(w_s)
-            err_t = torch.sum(w_s * err)
         else:
-            err_t = torch.sum(err)
+            w_s = torch.ones(steps_t, device=self._device) / steps_t
+        err_t = torch.sum(w_s * err)
         return err_t
     
     def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=True):

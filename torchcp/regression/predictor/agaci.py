@@ -46,7 +46,7 @@ class AgACIPredictor(ACIPredictor):
         Returns:
         - weighted_intervals: The weighted confidence intervals
         """
-        err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback, weight=True)
+        err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback, weight=False)
         scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
 
         intervals_list = []

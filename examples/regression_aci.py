@@ -244,7 +244,7 @@ def main():
         alpha=0.1,
         epochs=20,
         lr=0.01,
-        gamma_list=[0.001, 0.005, 0.1],
+        gamma_list=[0.001, 0.003, 0.005, 0.01],
         threshold=[-999, 999], 
         aggregation_function='mean',
         verbose=True
