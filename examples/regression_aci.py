@@ -14,7 +14,7 @@ from transformers import set_seed
 
 from examples.utils import build_reg_data
 from torchcp.regression.loss import QuantileLoss
-from torchcp.regression.predictor import ACIPredictor
+from torchcp.regression.predictor import ACIPredictor, AgACIPredictor
 from torchcp.regression.score import CQR
 from torchcp.regression.utils import build_regression_model
 
@@ -123,6 +123,65 @@ def run_aci_experiment(
 
     return results
 
+def run_agaci_experiment(
+        model,
+        score_function,
+        train_loader,
+        test_loader,
+        device,
+        alpha=0.1,
+        epochs=20,
+        lr=0.01,
+        gamma_list=[0.001, 0.005, 0.1],
+        threshold=[-999, 999], 
+        aggregation_function='mean',
+        verbose=True
+):
+    """
+    Run Aggregation Adaptive Conformal Inference experiment.
+    
+    Args:
+        model (nn.Module): Neural network model
+        score_function: Conformal score function
+        train_loader: Training data loader
+        test_loader: Test data loader
+        device: Computing device
+        alpha (float): Significance level
+        epochs (int): Number of training epochs
+        lr (float): Learning rate
+        gamma_list (list): ACI hyperparameter list
+        threshold (list): Intervals lower and upper threshold
+        aggregation_function (str or function): aggregation function
+        verbose (bool): Whether to print detailed results
+    
+    Returns:
+        dict: Evaluation results
+    """
+    print("\nRunning Adaptive Conformal Inference experiment...")
+
+    # Setup training
+    quantiles = [alpha / 2, 1 - alpha / 2]
+    criterion = QuantileLoss(quantiles)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    # Initialize predictor
+    predictor = AgACIPredictor(score_function, model, gamma_list=gamma_list, \
+        aggregation_function=aggregation_function, threshold=threshold)
+
+    # Train and evaluate
+    predictor.train(
+        train_dataloader=train_loader,
+        alpha=alpha,
+        epochs=epochs,
+        criterion=criterion,
+        optimizer=optimizer
+    )
+
+    results = predictor.evaluate(test_loader)
+    print(f"Results: {results}")
+
+    return results
+
 
 def main():
     """Main function to run ACI experiment."""
@@ -153,16 +212,41 @@ def main():
 
     score_function = CQR()
 
+    # # Run experiment
+    # results = run_aci_experiment(
+    #     model=model,
+    #     score_function=score_function,
+    #     train_loader=train_loader,
+    #     test_loader=test_loader,
+    #     device=device,
+    #     alpha=alpha,
+    #     epochs=epochs,
+    #     gamma=gamma,
+    #     verbose=True
+    # )
+
+    # # Print detailed results
+    # print("\nFinal Results:")
+    # print("-" * 60)
+    # for metric, value in results.items():
+    #     if isinstance(value, (float, np.float32, np.float64)):
+    #         print(f"{metric:<30} {value:.4f}")
+    #     else:
+    #         print(f"{metric:<30} {value}")
+            
     # Run experiment
-    results = run_aci_experiment(
-        model=model,
-        score_function=score_function,
-        train_loader=train_loader,
-        test_loader=test_loader,
-        device=device,
-        alpha=alpha,
-        epochs=epochs,
-        gamma=gamma,
+    results = run_agaci_experiment(
+        model,
+        score_function,
+        train_loader,
+        test_loader,
+        device,
+        alpha=0.1,
+        epochs=20,
+        lr=0.01,
+        gamma_list=[0.001, 0.005, 0.1],
+        threshold=[-999, 999], 
+        aggregation_function='mean',
         verbose=True
     )
 
