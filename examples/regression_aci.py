@@ -212,27 +212,27 @@ def main():
 
     score_function = CQR()
 
-    # # Run experiment
-    # results = run_aci_experiment(
-    #     model=model,
-    #     score_function=score_function,
-    #     train_loader=train_loader,
-    #     test_loader=test_loader,
-    #     device=device,
-    #     alpha=alpha,
-    #     epochs=epochs,
-    #     gamma=gamma,
-    #     verbose=True
-    # )
+    # Run experiment
+    results = run_aci_experiment(
+        model=model,
+        score_function=score_function,
+        train_loader=train_loader,
+        test_loader=test_loader,
+        device=device,
+        alpha=alpha,
+        epochs=epochs,
+        gamma=gamma,
+        verbose=True
+    )
 
-    # # Print detailed results
-    # print("\nFinal Results:")
-    # print("-" * 60)
-    # for metric, value in results.items():
-    #     if isinstance(value, (float, np.float32, np.float64)):
-    #         print(f"{metric:<30} {value:.4f}")
-    #     else:
-    #         print(f"{metric:<30} {value}")
+    # Print detailed results
+    print("\nFinal Results:")
+    print("-" * 60)
+    for metric, value in results.items():
+        if isinstance(value, (float, np.float32, np.float64)):
+            print(f"{metric:<30} {value:.4f}")
+        else:
+            print(f"{metric:<30} {value}")
             
     # Run experiment
     results = run_agaci_experiment(
