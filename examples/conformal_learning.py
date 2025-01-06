@@ -178,51 +178,37 @@ class Oracle:
         return prob
 
 
-def difficulty_oracle(S_oracle, size_cutoff=1):
-    size_oracle = np.array([len(S) for S in S_oracle])
-    easy_idx = np.where(size_oracle <= size_cutoff)[0]
-    hard_idx = np.where(size_oracle > size_cutoff)[0]
+def difficulty_oracle(sets_oracle, size_cutoff=1):
+    size_oracle = torch.sum(sets_oracle, dim=1)
+    easy_idx = torch.where(size_oracle <= size_cutoff)[0]
+    hard_idx = torch.where(size_oracle > size_cutoff)[0]
     return easy_idx, hard_idx
 
 
-def evaluate_predictions(S, X, y, hard_idx=None, conditional=True, linear=False):
-    # Marginal coverage
-    marg_coverage = np.mean([y[i] in S[i] for i in range(len(y))])
+def evaluate_predictions(pred_sets, labels, easy_idx=None, hard_idx=None, conditional=True):
+    # Marginal Coverage and Size
+    marg_coverage = torch.mean(pred_sets[torch.arange(pred_sets.shape[0]), labels].float()).item()
+    size = torch.mean(torch.sum(pred_sets, dim=1).float()).item()
 
     if conditional:
-        y_hard = y[hard_idx]
-        S_hard = [S[i] for i in hard_idx]
+        y_hard = labels[hard_idx]
+        S_easy = pred_sets[easy_idx]
+        S_hard = pred_sets[hard_idx]
 
         # Evaluate conditional coverage
-        wsc_coverage = np.mean([y_hard[i] in S_hard[i]
-                               for i in range(len(y_hard))])
+        wsc_coverage = torch.mean(S_hard[torch.arange(S_hard.shape[0]), y_hard].float()).item()
 
         # Evaluate conditional size
-        size_hard = np.mean([len(S[i]) for i in hard_idx])
-        size_easy = np.mean([len(S[i])
-                            for i in range(len(y)) if i not in hard_idx])
-        size_hard_median = np.median([len(S[i]) for i in hard_idx])
-        size_easy_median = np.median(
-            [len(S[i]) for i in range(len(y)) if i not in hard_idx])
-
-        n_hard = len(hard_idx)
-        n_easy = len(y) - len(hard_idx)
-
+        size_easy = torch.mean(torch.sum(S_easy, dim=1).float()).item()
+        size_hard = torch.mean(torch.sum(S_hard, dim=1).float()).item()
     else:
         wsc_coverage = None
+        size_easy = None
+        size_hard = None
 
-    # Size and size conditional on coverage
-    size = np.mean([len(S[i]) for i in range(len(y))])
-    size_median = np.median([len(S[i]) for i in range(len(y))])
-    idx_cover = np.where([y[i] in S[i] for i in range(len(y))])[0]
-    size_cover = np.mean([len(S[i]) for i in idx_cover])
     # Combine results
     out = pd.DataFrame({'Coverage': [marg_coverage], 'Conditional coverage': [wsc_coverage],
-                        'Size': [size], 'Size (median)': [size_median],
-                        'Size-hard': [size_hard], 'Size-easy': [size_easy],
-                        'Size-hard (median)': [size_hard_median], 'Size-easy (median)': [size_easy_median],
-                        'n-hard': [n_hard], 'n-easy': [n_easy],
-                        'Size conditional on cover': [size_cover]})
+                        'Size': [size], 'Size-hard': [size_hard], 'Size-easy': [size_easy]})
     return out
 
 
@@ -353,37 +339,25 @@ if __name__ == '__main__':
     # Evaluation for Conformal Learning
     #######################################
 
-    black_boxes = [conflearn_trainer,
-                   conflearn_trainer_loss, conflearn_trainer_acc]
-
-    sc_methods = []
-    for i in range(len(black_boxes)):
-        sc_method = SplitPredictor(APS(), black_boxes[i].model)
-        sc_method.calibrate(cal_loader, alpha)
-        sc_methods.append(sc_method)
-
-    results = pd.DataFrame()
-
+    # Oracle results and recognize hard samples
     sc_method_oracle = SplitPredictor(APS(score_type="identity"))
     sc_method_oracle._device = device
     pred_prob_oracle = oracle.predict_proba(X_test.cpu().numpy())
     sets_oracle = sc_method_oracle.predict_with_logits(
         torch.tensor(pred_prob_oracle), 1 - alpha)
-    row_indices, col_indices = sets_oracle.nonzero(as_tuple=True)
-    sets_oracle = [col_indices[row_indices == i].tolist()
-                   for i in range(sets_oracle.size(0))]
-
     easy_idx, hard_idx = difficulty_oracle(sets_oracle)
 
+    # Results of Split Conformal Prediction for Conformal Learning
+    black_boxes = [conflearn_trainer,
+                   conflearn_trainer_loss, conflearn_trainer_acc]
 
-    for k in range(len(black_boxes)):
-        sets = sc_methods[k].predict(X_test)
-        row_indices, col_indices = sets.nonzero(as_tuple=True)
-        sets = [col_indices[row_indices == i].tolist()
-                for i in range(sets.size(0))]
+    results = pd.DataFrame()
+    for i in range(len(black_boxes)):
+        sc_method = SplitPredictor(APS(), black_boxes[i].model)
+        sc_method.calibrate(cal_loader, alpha)
+        pred_sets = sc_method.predict(X_test)
 
-        res = evaluate_predictions(
-            sets, X_test, Y_test, hard_idx, conditional=True)
+        res = evaluate_predictions(pred_sets, Y_test, easy_idx, hard_idx, conditional=True)
         # res['Error'] = eval_predictions(X_test, Y_test, black_boxes[k], data="test")
 
         results = pd.concat([results, res])
