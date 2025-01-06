@@ -160,7 +160,7 @@ def evaluate_predictions(S, X, y, hard_idx=None, conditional=True, linear=False)
     return out
 
 
-def eval_predictions(X, Y, box, data="unknown", plot=False,  printing=True):
+def eval_predictions(X, Y, box, data="unknown", printing=True):
     Y_pred = box.predict(X)
     class_error = np.mean(Y!=Y_pred)
     if printing:
@@ -242,7 +242,7 @@ def setup_data_and_model(device):
 if __name__ == '__main__':
     alpha = 0.1
     device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
-    set_seed(seed=0)
+    set_seed(seed=42)
 
     batch_size = 750
     lr = 0.001
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     train_loader, val_loader, cal_loader, X_test, Y_test, oracle, model, optimizer = setup_data_and_model(device)
 
     conflearn_trainer = ConfLearnTrainer(model, optimizer, device=device)
-    conflearn_trainer.train(train_loader, val_loader, checkpoint_path=checkpoint_path, num_epochs=10)
+    conflearn_trainer.train(train_loader, val_loader, checkpoint_path=checkpoint_path, num_epochs=4000)
     
     # For early stopping loss
     conflearn_trainer_loss = ConfLearnTrainer(model, optimizer, device=device)
@@ -271,28 +271,32 @@ if __name__ == '__main__':
 
     black_boxes = [conflearn_trainer, conflearn_trainer_loss, conflearn_trainer_acc]
 
-    # breakpoint()
+
     sc_methods = []
     for i in range(len(black_boxes)):
        sc_method = SplitPredictor(APS(), black_boxes[i].model)
-       sc_method.calibrate(cal_loader)
+       sc_method.calibrate(cal_loader, alpha)
        sc_methods.append(sc_method)
-
-    
 
     results = pd.DataFrame()
 
-    sc_method_oracle = SplitPredictor(APS(), oracle.model)
-    prob_true = oracle.model(X_test)
-    sc_method_oracle.q_hat = 1 - alpha
-    S_oracle = sc_method_oracle.predict(X_test)
+    sc_method_oracle = SplitPredictor(APS(score_type="identity"))
+    sc_method_oracle._device = device
+    pred_prob_oracle = oracle.predict_proba(X_test.cpu().numpy())
+    sets_oracle = sc_method_oracle.predict_with_logits(torch.tensor(pred_prob_oracle), 1 - alpha)
+    row_indices, col_indices = sets_oracle.nonzero(as_tuple=True)
+    sets_oracle = [col_indices[row_indices == i].tolist() for i in range(sets_oracle.size(0))]
 
-    easy_idx, hard_idx = difficulty_oracle(S_oracle)
+    easy_idx, hard_idx = difficulty_oracle(sets_oracle)
+    
 
     for k in range(len(black_boxes)):
         sets = sc_methods[k].predict(X_test)
+        row_indices, col_indices = sets.nonzero(as_tuple=True)
+        sets = [col_indices[row_indices == i].tolist() for i in range(sets.size(0))]
+
         res = evaluate_predictions(sets, X_test, Y_test, hard_idx, conditional=True)
-        res['Error'] = eval_predictions(X_test, Y_test, black_boxes[k], data="test")
+        # res['Error'] = eval_predictions(X_test, Y_test, black_boxes[k], data="test")
 
         results = pd.concat([results, res])
         
