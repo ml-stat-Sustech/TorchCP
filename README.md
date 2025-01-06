@@ -173,7 +173,8 @@ print(predict_sets)
 # Evaluating the coverage rate and average set size on a given dataset.
 ########################################
 result_dict = predictor.evaluate(test_dataloader)
-print(result_dict["coverage_rate"], result_dict["average_size"])
+print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
+print(f"Average Set Size: {result_dict['average_size']:.4f}")
 
 ```
 
