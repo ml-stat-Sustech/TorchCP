@@ -43,20 +43,20 @@ class ClassNNet(nn.Module):
         x = self.layer_1(x)
         x = self.relu(x)
         if self.use_dropout:
-          x = self.dropout(x)
-          x = self.batchnorm1(x)
+            x = self.dropout(x)
+            x = self.batchnorm1(x)
 
         z2 = self.layer_2(x)
         x = self.relu(z2)
         if self.use_dropout:
-          x = self.dropout(x)
-          x = self.batchnorm2(x)
+            x = self.dropout(x)
+            x = self.batchnorm2(x)
 
         z3 = self.layer_3(x)
         x = self.relu(z3)
         if self.use_dropout:
-          x = self.dropout(x)
-          x = self.batchnorm3(x)
+            x = self.dropout(x)
+            x = self.batchnorm3(x)
         x = self.layer_4(x)
         x = self.relu(x)
         
@@ -67,9 +67,9 @@ class ClassNNet(nn.Module):
         x = self.layer_5(x)
            
         if extract_features:
-          return x, torch.cat([z2,z3],1)
+            return x, torch.cat([z2,z3],1)
         else:
-          return x
+            return x
         
 class ClassifierDataset(Dataset):
     def __init__(self, X_data, y_data, z_data):
@@ -269,13 +269,16 @@ if __name__ == '__main__':
     else:
        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_final")
 
-    black_boxes = [oracle, conflearn_trainer, conflearn_trainer_loss, conflearn_trainer_acc]
+    black_boxes = [conflearn_trainer, conflearn_trainer_loss, conflearn_trainer_acc]
 
+    # breakpoint()
     sc_methods = []
     for i in range(len(black_boxes)):
        sc_method = SplitPredictor(APS(), black_boxes[i].model)
        sc_method.calibrate(cal_loader)
        sc_methods.append(sc_method)
+
+    
 
     results = pd.DataFrame()
 
@@ -288,7 +291,7 @@ if __name__ == '__main__':
 
     for k in range(len(black_boxes)):
         sets = sc_methods[k].predict(X_test)
-        res = evaluate_predictions(sets, X_test, Y_test, hard_idx, conditional=True)  
+        res = evaluate_predictions(sets, X_test, Y_test, hard_idx, conditional=True)
         res['Error'] = eval_predictions(X_test, Y_test, black_boxes[k], data="test")
 
         results = pd.concat([results, res])
