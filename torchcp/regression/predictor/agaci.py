@@ -6,14 +6,33 @@
 #
 
 import torch
-import math
-import warnings
-from tqdm import tqdm
-import typing
 
 from torchcp.regression.predictor.aci import ACIPredictor
 
 class AgACIPredictor(ACIPredictor):
+    """
+    Online Expert Aggregation Adaptive Conformal Inference.
+    
+    A parameter-free method that adaptively builds upon ACI based on online expert aggregation.
+    
+    Args:
+        score_function (torchcp.regression.scores): A class that implements the score function.
+        model (torch.nn.Module): A PyTorch model capable of outputting quantile values.
+            The model should be an initialization model that has not been trained.
+        gamma_list (List[float]): A list of step size parameters for adaptive adjustment of alpha at each step.
+            Each element in the list corresponds to a different expert. Must contain values greater than 0.
+        aggregation_function (str or callable, optional): The function used to aggregate predictions from experts.
+            Can be either 'mean' (average), 'median', or a custom callable function. Defaults to 'mean'.
+        threshold (List[float], optional): A list containing the lower and upper thresholds for clipping expert predictions.
+            Defaults to [-99999, 99999] (effectively no clipping).
+        
+    Reference:  
+        Paper: Adaptive Conformal Predictions for Time Series (Zaffran et al., 2022)
+        Link: https://proceedings.mlr.press/v162/zaffran22a.html
+        Github: https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries
+        
+    """
+    
     def __init__(self, score_function, model, gamma_list, aggregation_function='mean', threshold=[-99999, 99999]):
         super().__init__(score_function, model, None)
         if aggregation_function not in ['mean', 'median'] and not callable(aggregation_function):

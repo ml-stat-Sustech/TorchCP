@@ -11,6 +11,18 @@ from torchcp.regression.score.abs import ABS
 from torchcp.regression.utils import build_regression_model
 
 class HopCPT(ABS):
+    """
+    Hopfield Conformal Prediction Score for Regression.
+    
+    This score function allows for calculating scores and generating prediction intervals
+    using a single-point regression model.
+    
+    Reference:
+        Paper: Conformal Prediction for Time Series with Modern Hopfield Networks (Auer, et al., 2023)
+        Link: https://openreview.net/forum?id=KTRwpWCMsC
+        Github: https://github.com/ml-jku/HopCPT
+    """
+    
     def __init__(self):
         super().__init__()
     

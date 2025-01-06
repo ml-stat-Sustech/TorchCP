@@ -175,6 +175,20 @@ class ACIPredictor(SplitPredictor):
         return self.generate_intervals(predicts_batch, self.q_hat)
     
     def generate_aci_intervals(self, x_batch, x_lookback, y_lookback, pred_interval_lookback, predicts_batch):
+        """
+        Generates Adaptive Conformal Inference (ACI) prediction intervals.
+
+        Args:
+            x_batch (Tensor): A batch of input features for which predictions and 
+                prediction intervals are to be generated.
+            x_lookback (Tensor): Historical input features used for updating model calibration.
+            y_lookback (Tensor): Historical target values corresponding to `x_lookback`.
+            pred_interval_lookback (Tensor): Previously generated prediction intervals.
+            predicts_batch (Tensor): Model predictions for the current input batch `x_batch`.
+
+        Returns:
+            prediction intervals (Tensor): The ACI prediction intervals for the input batch `x_batch`.
+        """
         err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback, weight=True)
         self.scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
         self.alpha_t = max(1/(self.scores.shape[0]+1), min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
