@@ -47,10 +47,10 @@ class ConfLearnTrainer:
 
 
     def calculate_loss(self, output, target, Z_batch, training=True):
+        # breakpoint()
         if training:
             idx_ce = torch.where(Z_batch == 0)[0]
-            loss_ce = self.criterion_pred_loss_fn(
-                output[idx_ce], target[idx_ce])
+            loss_ce = self.criterion_pred_loss_fn(output[idx_ce], target[idx_ce])
         else:
             loss_ce = self.criterion_pred_loss_fn(output, target)
 

@@ -8,7 +8,6 @@
 import os
 import torch
 import torch.nn as nn
-import numpy as np
 import pandas as pd
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
@@ -21,63 +20,48 @@ from torchcp.classification.score import APS
 
 # Data generating model for conformal learning
 class Model_Ex1:
-    def __init__(self, K, p, delta_1, delta_2, a=1):
+    def __init__(self, K, p, delta_1, delta_2, a=1, device='cpu'):
         self.K = K
         self.p = p
         self.delta_1 = delta_1
         self.delta_2 = delta_2
         self.a = a
+        self.device = device
 
     def sample_X(self, n, test=False):
-        X = np.random.uniform(0, 1, (n, self.p))
+        X = torch.rand((n, self.p))
         if test:
-            X[:, 6] = np.random.uniform(0, self.a, (n,))
-        return X.astype(np.float32)
+            X[:, 6] = torch.empty(n).uniform_(0, self.a)
+        return X.float().to(self.device)
 
     def compute_prob(self, X):
-        K = self.K
         X = X[:, 2:]
-        num_features = X.shape[1]
-        P = np.zeros((X.shape[0], K))
+        prob = torch.zeros((X.shape[0], self.K))
         for i in range(X.shape[0]):
-            #          if (np.maximum(X[i,0],X[i,1])<np.sqrt(0.1)):
             if (X[i, 0] < self.delta_1):
-                # 10% of the samples should have completely unpredictable labels
-                P[i, :] = 1.0 / K
+                prob[i, :] = 1.0 / self.K
             else:
-                # The remaining samples belong to one of two different groups (balanced)
-                K_half = np.ceil(K / 2).astype(int)
+                K_half = torch.ceil(torch.tensor(self.K / 2)).int()
                 if (X[i, 2] < 0.5):
-                    # Group 1: labels 0,1,..,ceiling(K/2)-1
                     if (X[i, 4] < self.delta_2):
-                        # 20% of these samples should have completely unpredictable labels (within group)
-                        P[i, 0:K_half] = 1.0 / K_half
+                        prob[i, 0:K_half] = 1.0 / K_half
                     else:
-                        # The remaining samples should have labels determined by one feature
-                        idx = np.round(K * X[i, 10] - 0.5).astype(int)
-                        P[i, idx] = 1
+                        idx = torch.round(self.K * X[i, 10] - 0.5).int()
+                        prob[i, idx] = 1
                 else:
-                    # Group 2: labels ceiling(K/2),...,K
                     if (X[i, 4] < self.delta_2):
-                        # 20% of these samples should have completely unpredictable labels (within group)+
-                        P[i, K_half:K] = 1.0 / (K - K_half)
+                        prob[i, K_half:self.K] = 1.0 / (self.K - K_half)
                     else:
-                        # The remaining samples should have labels determined by one feature
-                        idx = np.round(K * X[i, 10] - 0.5).astype(int)
-                        P[i, idx] = 1
+                        idx = torch.round(self.K * X[i, 10] - 0.5).int()
+                        prob[i, idx] = 1
 
-        prob = P
-        prob_y = prob / np.expand_dims(np.sum(prob, 1), 1)
+        prob_y = prob / prob.sum(dim=1, keepdim=True)
         return prob_y
 
     def sample_Y(self, X):
         prob_y = self.compute_prob(X)
-        g = np.array([np.random.multinomial(1, prob_y[i])
-                     for i in range(X.shape[0])], dtype=float)
-        classes_id = np.arange(self.K)
-        y = np.array([np.dot(g[i], classes_id)
-                     for i in range(X.shape[0])], dtype=int)
-        return y.astype(int)
+        y = torch.multinomial(prob_y, num_samples=1, replacement=True)
+        return y.flatten().long().to(self.device)
 
 
 class ClassNNet(nn.Module):
@@ -173,7 +157,7 @@ class Oracle:
         if (len(X.shape) == 1):
             X = X.reshape((1, X.shape[0]))
         prob = self.model.compute_prob(X)
-        prob = np.clip(prob, 1e-6, 1.0)
+        prob = torch.clamp(prob, min=1e-6, max=1.0)
         prob = prob / prob.sum(axis=1)[:, None]
         return prob
 
@@ -228,7 +212,7 @@ def setup_data_and_model(device):
     n_calib = 10000  # Number of calibration samples
     n_test = 2000   # Number of test samples
 
-    data_model = Model_Ex1(K, p, delta_1, delta_2, a)   # Data generating model
+    data_model = Model_Ex1(K, p, delta_1, delta_2, a, device)   # Data generating model
 
     # Generate the data features
     X_train = data_model.sample_X(n_train)
@@ -254,39 +238,30 @@ def setup_data_and_model(device):
     X_test = data_model.sample_X(n_test, test=True)
     Y_test = data_model.sample_Y(X_test)
 
-    X_augmented = np.concatenate((X_train, X_tr_score), 0)
-    Y_augmented = np.concatenate((Y_train, Y_tr_score), 0)
+    X_augmented = torch.cat((X_train, X_tr_score), 0)
+    Y_augmented = torch.cat((Y_train, Y_tr_score), 0)
 
-    Z_train = np.zeros(len(Y_train))
-    Z_tr_score = np.ones(len(Y_tr_score))
-    Z_augmented = np.concatenate((Z_train, Z_tr_score), 0)
+    Z_train = torch.zeros(len(Y_train))
+    Z_tr_score = torch.ones(len(Y_tr_score))
+    Z_augmented = torch.cat((Z_train, Z_tr_score), 0).long().to(device)
 
     # Initialize loader for training data
-    X_train = torch.from_numpy(X_augmented).float().to(device)
-    Y_train = torch.from_numpy(Y_augmented).long().to(device)
-    Z_train = torch.from_numpy(Z_augmented).long().to(device)
-    train_dataset = ClassifierDataset(X_train, Y_train, Z_train)
+    train_dataset = ClassifierDataset(X_augmented, Y_augmented, Z_augmented)
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
     # Initialize loader for hold-out data (if available)
-    X_hout = torch.from_numpy(X_hout).float().to(device)
-    Y_hout = torch.from_numpy(Y_hout).long().to(device)
     Z_hout = torch.ones(Y_hout.shape).long().to(device)
     val_dataset = ClassifierDataset(X_hout, Y_hout, Z_hout)
     val_loader = DataLoader(
         val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
     # Initialize loader for calibration data
-    X_calib = torch.from_numpy(X_calib).float().to(device)
-    Y_calib = torch.from_numpy(Y_calib).long().to(device)
     cal_dataset = CommonDataset(X_calib, Y_calib)
     cal_loader = DataLoader(cal_dataset, batch_size=100,
                             shuffle=True, drop_last=True)
 
     # Initialize loader for test data
-    X_test = torch.from_numpy(X_test).float().to(device)
-    Y_test = torch.from_numpy(Y_test).long().to(device)
     test_dataset = CommonDataset(X_test, Y_test)
     test_loader = DataLoader(test_dataset, batch_size=100,
                              shuffle=True, drop_last=True)
@@ -320,7 +295,7 @@ if __name__ == '__main__':
     # Conformal Learning
     #######################################
     conflearn_trainer.train(train_loader, val_loader,
-                            checkpoint_path=checkpoint_path, num_epochs=10)
+                            checkpoint_path=checkpoint_path, num_epochs=4000)
 
     # For early stopping loss
     conflearn_trainer_loss = ConfLearnTrainer(model, optimizer, device=device)
@@ -337,9 +312,9 @@ if __name__ == '__main__':
     # Oracle results and recognize hard samples
     sc_method_oracle = SplitPredictor(APS(score_type="identity"))
     sc_method_oracle._device = device
-    pred_prob_oracle = oracle.predict_proba(X_test.cpu().numpy())
+    pred_prob_oracle = oracle.predict_proba(X_test)
     sets_oracle = sc_method_oracle.predict_with_logits(
-        torch.tensor(pred_prob_oracle), 1 - alpha)
+        pred_prob_oracle, 1 - alpha)
     easy_idx, hard_idx = difficulty_oracle(sets_oracle)
 
     # Results of Split Conformal Prediction for Conformal Learning
