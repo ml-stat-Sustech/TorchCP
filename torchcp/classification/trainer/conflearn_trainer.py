@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import os
 import torch
 import numpy as np
 import torch.optim as optim
@@ -127,19 +128,20 @@ class ConfLearnTrainer:
                 save_checkpoint = True if best_loss is not None and best_loss > epoch_loss_val else False
                 best_loss = epoch_loss_val if best_loss is None or best_loss > epoch_loss_val else best_loss
                 if save_checkpoint:
-                    self.save_checkpoint(epoch, checkpoint_path + "_loss")
+                    self.save_checkpoint(epoch, checkpoint_path, "loss")
 
                 # Early stopping by accuracy
                 save_checkpoint = True if best_acc is not None and best_acc < epoch_acc_val else False
                 best_acc = epoch_acc_val if best_acc is None or best_acc < epoch_acc_val else best_acc
                 if save_checkpoint:
-                    self.save_checkpoint(epoch, checkpoint_path + "_acc")
+                    self.save_checkpoint(epoch, checkpoint_path, "acc")
 
         if save_model:
-            self.save_checkpoint(epoch, checkpoint_path + "_final")
+            self.save_checkpoint(epoch, checkpoint_path, "final")
 
 
-    def save_checkpoint(self, epoch: int, save_path: str):
+    def save_checkpoint(self, epoch: int, save_path: str, save_type: str='final'):
+        save_path += save_type
         checkpoint = {
             'epoch': epoch,
             'model_state_dict': self.model.state_dict(),
@@ -147,11 +149,14 @@ class ConfLearnTrainer:
         }
         torch.save(checkpoint, save_path)
 
-    def load_checkpoint(self, load_path: str):
+    def load_checkpoint(self, load_path: str, load_type: str='final'):
+        if not os.path.exists(load_path + load_type):
+            load_path += "final"
+        else:
+            load_path += load_type
         checkpoint = torch.load(load_path)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        return checkpoint
 
     def predict(self, test_loader):
         y_pred_list = []

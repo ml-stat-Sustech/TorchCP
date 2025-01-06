@@ -6,9 +6,7 @@
 #
 
 import torch
-import numpy as np
 from torchsort import soft_rank, soft_sort
-from torchcp.classification.loss.confts import ConfTS
 
 REG_STRENGTH = 0.1
 B = 50
@@ -22,10 +20,8 @@ class UniformMatchingLoss(torch.nn.Module):
         batch_size = len(x)
         if batch_size == 0:
             return 0
-        x_sorted = soft_sort(x.unsqueeze(
-            dim=0), regularization_strength=REG_STRENGTH)
-        i_seq = torch.arange(1.0, 1.0 + batch_size,
-                             device=x.device) / (batch_size)
+        x_sorted = soft_sort(x.unsqueeze(dim=0), regularization_strength=REG_STRENGTH)
+        i_seq = torch.arange(1.0, 1.0 + batch_size, device=x.device) / batch_size
         out = torch.max(torch.abs(i_seq - x_sorted))
         return out
 
@@ -53,14 +49,14 @@ class ConfLearnLoss(torch.nn.Module):
         loss_scores /= n_groups
         return loss_scores
 
-    def compute_loss(self, test_scores, test_labels, alpha):
-        train_proba = self.layer_prob(test_scores)
-        train_scores = self.compute_scores_diff(
-            train_proba, test_labels, alpha=alpha)
+    def compute_loss(self, y_train_pred, y_train_batch, alpha):
+        train_proba = self.layer_prob(y_train_pred)
+        train_scores = self.__compute_scores_diff(
+            train_proba, y_train_batch, alpha=alpha)
         train_loss_scores = self.criterion_scores(train_scores)
         return train_loss_scores
     
-    def compute_scores_diff(self, proba_values, Y_values, alpha=0.1):
+    def __compute_scores_diff(self, proba_values, Y_values, alpha=0.1):
         n, K = proba_values.shape
         proba_values = proba_values + 1e-6 * \
             torch.rand(proba_values.shape, dtype=float, device=self.device)
@@ -73,26 +69,23 @@ class ConfLearnLoss(torch.nn.Module):
 
         ranks_t = torch.gather(
             ranks_array_t, 1, Y_values.reshape(n, 1)).flatten()
-        prob_cum_t = self.soft_indexing(Z_t, ranks_t)
-        prob_final_t = self.soft_indexing(prob_sort_t, ranks_t)
+        prob_cum_t = self.__soft_indexing(Z_t, ranks_t)
+        prob_final_t = self.__soft_indexing(prob_sort_t, ranks_t)
         scores_t = 1.0 - prob_cum_t + prob_final_t * \
             torch.rand(n, dtype=float, device=self.device)
 
         return scores_t
     
-    def soft_indicator(self, x, a, b=B):
-        def sigmoid(x):
-            return 1.0 / (1.0 + np.exp(-x))
+    def __soft_indicator(self, x, a, b=B):
         out = torch.sigmoid(b * (x - a + 0.5)) - (torch.sigmoid(b * (x - a - 0.5)))
-        out = out / (sigmoid(b * (0.5)) - (sigmoid(b * (-0.5))))
+        out = out / (torch.sigmoid(torch.tensor(b * 0.5)) - torch.sigmoid(-torch.tensor(b * 0.5)))
         return out
 
-
-    def soft_indexing(self, z, rank):
+    def __soft_indexing(self, z, rank):
         n = len(rank)
         K = z.shape[1]
         I = torch.tile(torch.arange(K, device=z.device), (n, 1))
-        weight = self.soft_indicator(I.T, rank).T
+        weight = self.__soft_indicator(I.T, rank).T
         weight = weight * z
         return weight.sum(dim=1)
 

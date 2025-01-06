@@ -321,39 +321,40 @@ def setup_data_and_model(device):
 
 if __name__ == '__main__':
     alpha = 0.1
-    device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
-    set_seed(seed=42)
-
     batch_size = 750
     lr = 0.001
     mu = 0.2
-
     checkpoint_path = os.path.join(get_others_dir(), "conflearn")
+    device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
+    set_seed(seed=42)
 
+    #######################################
+    # Loading dataset, a model and Conformal Learning Trainer
+    #######################################
     train_loader, val_loader, cal_loader, X_test, Y_test, oracle, model, optimizer = setup_data_and_model(
         device)
-
     conflearn_trainer = ConfLearnTrainer(model, optimizer, device=device)
+    
+    #######################################
+    # Conformal Learning
+    #######################################
     conflearn_trainer.train(train_loader, val_loader,
                             checkpoint_path=checkpoint_path, num_epochs=10)
 
     # For early stopping loss
     conflearn_trainer_loss = ConfLearnTrainer(model, optimizer, device=device)
-    if os.path.exists(checkpoint_path + "_loss"):
-        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_loss")
-    else:
-        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_final")
+    conflearn_trainer_loss.load_checkpoint(checkpoint_path, "loss")
 
     # For early stopping acc
     conflearn_trainer_acc = ConfLearnTrainer(model, optimizer, device=device)
-    if os.path.exists(checkpoint_path + "_acc"):
-        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_acc")
-    else:
-        conflearn_trainer_loss.load_checkpoint(checkpoint_path + "_final")
+    conflearn_trainer_acc.load_checkpoint(checkpoint_path, "acc")
+
+    #######################################
+    # Evaluation for Conformal Learning
+    #######################################
 
     black_boxes = [conflearn_trainer,
                    conflearn_trainer_loss, conflearn_trainer_acc]
-
 
     sc_methods = []
     for i in range(len(black_boxes)):
