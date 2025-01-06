@@ -16,6 +16,10 @@ from torchcp.regression.predictor.aci import ACIPredictor
 class AgACIPredictor(ACIPredictor):
     def __init__(self, score_function, model, gamma_list, aggregation_function='mean', threshold=[-99999, 99999]):
         super().__init__(score_function, model, None)
+        if aggregation_function not in ['mean', 'median'] and not callable(aggregation_function):
+            raise ValueError(
+                "aggregation_function must be either 'mean', 'median', or a callable function."
+            )
 
         self.gamma_list = gamma_list
         self.alpha_t = None
