@@ -99,6 +99,7 @@ if __name__ == "__main__":
     for tmp_x, tmp_y in test_loader:
         tmp_x, tmp_y = tmp_x.to(device), tmp_y.to(device)
         tmp_prediction_intervals = predictor.predict(x_batch=tmp_x, x_lookback=x_lookback, y_lookback=y_lookback,
+                                                    pred_interval_lookback=pred_interval_lookback,
                                                     train=True, update_alpha=True)
         predict_list.append(tmp_prediction_intervals)
         pred_interval_lookback = torch.cat([pred_interval_lookback, tmp_prediction_intervals], dim=0)[-lookback:]

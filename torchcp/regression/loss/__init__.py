@@ -6,4 +6,5 @@
 #
 
 from .quantile import QuantileLoss
-from .r2ccpLoss import R2ccpLoss
+from .r2ccploss import R2ccpLoss
+from .hopcptloss import HopCPTLoss

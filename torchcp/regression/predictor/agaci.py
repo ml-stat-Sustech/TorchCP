@@ -57,7 +57,7 @@ class AgACIPredictor(ACIPredictor):
             alpha_t = max(1 / (scores.shape[0] + 1), min(0.9999, self.alpha + gamma * (self.alpha - err_t)))
             q_hat = self._calculate_conformal_value(scores, alpha_t)
             pred_intervals = self.generate_intervals(predicts_batch, q_hat)
-            # breakpoint()
+            
             # Ensure pred_intervals are within a valid range
             pred_intervals[:, :, 0] = torch.where(
                 torch.isfinite(pred_intervals[:, :, 0]), pred_intervals[:, :, 0], self.lower_threshold

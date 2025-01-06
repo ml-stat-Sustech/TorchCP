@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import torch
 import torch.nn as nn
 
 
@@ -39,6 +40,39 @@ class Softmax(nn.Module):
 
     def forward(self, x):
         return self.base_model(x)
+
+class EncodingNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, dropout=0):
+        super(EncodingNetwork, self).__init__()
+        self.mL = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, output_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+
+    def forward(self, Z_t, t, T):
+        mL_Z_t = self.mL(Z_t) 
+        z_time = (t / T).unsqueeze(1) 
+        encoded = torch.cat([mL_Z_t, z_time], dim=1) 
+        return encoded
+
+
+class HopfieldAssociation(nn.Module):
+    def __init__(self, input_dim, hidden_dim, temperature=1):
+        super(HopfieldAssociation, self).__init__()
+        self.W_q = nn.Linear(input_dim, hidden_dim, bias=False)
+        self.W_k = nn.Linear(input_dim, hidden_dim, bias=False)
+        self.beta = nn.Parameter(torch.tensor(temperature, dtype=torch.float32))
+
+
+    def forward(self, Z_t):
+        Q = self.W_q(Z_t)  # Query
+        K = self.W_k(Z_t)  # Key
+        A = torch.softmax(self.beta * torch.matmul(Q, K.T), dim=-1)
+        return A
 
 
 def build_regression_model(model_name="NonLinearNet"):
