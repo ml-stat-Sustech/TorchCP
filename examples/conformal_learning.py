@@ -335,7 +335,7 @@ if __name__ == '__main__':
 
     conflearn_trainer = ConfLearnTrainer(model, optimizer, device=device)
     conflearn_trainer.train(train_loader, val_loader,
-                            checkpoint_path=checkpoint_path, num_epochs=4000)
+                            checkpoint_path=checkpoint_path, num_epochs=10)
 
     # For early stopping loss
     conflearn_trainer_loss = ConfLearnTrainer(model, optimizer, device=device)
