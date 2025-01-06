@@ -7,7 +7,6 @@
 
 import os
 import torch
-import numpy as np
 import torch.optim as optim
 from tqdm import tqdm
 from torchcp.classification.loss import ConfLearnLoss
@@ -167,6 +166,6 @@ class ConfLearnTrainer:
                 y_test_pred = self.model(X_batch)
                 y_pred_softmax = torch.log_softmax(y_test_pred, dim=1)
                 _, y_pred_tags = torch.max(y_pred_softmax, dim=1)
-                y_pred_list.append(y_pred_tags.cpu().numpy())
-        y_pred = np.concatenate(y_pred_list)
+                y_pred_list.append(y_pred_tags)
+        y_pred = torch.cat(y_pred_list)
         return y_pred

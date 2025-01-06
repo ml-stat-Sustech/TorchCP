@@ -185,7 +185,11 @@ def difficulty_oracle(sets_oracle, size_cutoff=1):
     return easy_idx, hard_idx
 
 
-def evaluate_predictions(pred_sets, labels, easy_idx=None, hard_idx=None, conditional=True):
+def evaluate_predictions(trainer, pred_sets, test_loader, labels, easy_idx=None, hard_idx=None, conditional=True):
+    # Accuracy of Trainer
+    y_pred = trainer.predict(test_loader)
+    accuracy = torch.mean((y_pred != labels).float()).item() * 100
+
     # Marginal Coverage and Size
     marg_coverage = torch.mean(pred_sets[torch.arange(pred_sets.shape[0]), labels].float()).item()
     size = torch.mean(torch.sum(pred_sets, dim=1).float()).item()
@@ -207,18 +211,9 @@ def evaluate_predictions(pred_sets, labels, easy_idx=None, hard_idx=None, condit
         size_hard = None
 
     # Combine results
-    out = pd.DataFrame({'Coverage': [marg_coverage], 'Conditional coverage': [wsc_coverage],
+    out = pd.DataFrame({'Accuracy': [accuracy], 'Coverage': [marg_coverage], 'Conditional coverage': [wsc_coverage],
                         'Size': [size], 'Size-hard': [size_hard], 'Size-easy': [size_easy]})
     return out
-
-
-def eval_predictions(X, Y, box, data="unknown", printing=True):
-    Y_pred = box.predict(X)
-    class_error = np.mean(Y != Y_pred)
-    if printing:
-        print("Classification error on {:s} data: {:.1f}%".format(
-            data, class_error * 100))
-    return (class_error * 100)
 
 
 def setup_data_and_model(device):
@@ -302,7 +297,7 @@ def setup_data_and_model(device):
                       use_dropout=False).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    return train_loader, val_loader, cal_loader, X_test, Y_test, oracle, model, optimizer
+    return train_loader, val_loader, cal_loader, test_loader, X_test, Y_test, oracle, model, optimizer
 
 
 if __name__ == '__main__':
@@ -317,7 +312,7 @@ if __name__ == '__main__':
     #######################################
     # Loading dataset, a model and Conformal Learning Trainer
     #######################################
-    train_loader, val_loader, cal_loader, X_test, Y_test, oracle, model, optimizer = setup_data_and_model(
+    train_loader, val_loader, cal_loader, test_loader, X_test, Y_test, oracle, model, optimizer = setup_data_and_model(
         device)
     conflearn_trainer = ConfLearnTrainer(model, optimizer, device=device)
     
@@ -357,11 +352,7 @@ if __name__ == '__main__':
         sc_method.calibrate(cal_loader, alpha)
         pred_sets = sc_method.predict(X_test)
 
-        res = evaluate_predictions(pred_sets, Y_test, easy_idx, hard_idx, conditional=True)
-        # res['Error'] = eval_predictions(X_test, Y_test, black_boxes[k], data="test")
-
+        res = evaluate_predictions(black_boxes[i], pred_sets, test_loader, Y_test, easy_idx, hard_idx, conditional=True)
         results = pd.concat([results, res])
-
-    results = results.reset_index()
 
     print(results)
