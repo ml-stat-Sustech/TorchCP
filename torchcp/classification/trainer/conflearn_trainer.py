@@ -168,13 +168,13 @@ class ConfLearnTrainer:
                 epoch_loss_val, epoch_acc_val = self.validate(val_loader)
 
                 # Early stopping by loss
-                save_checkpoint = True if best_loss is not None and best_loss > epoch_loss_val else False
+                save_checkpoint = True if best_loss is None or best_loss > epoch_loss_val else False
                 best_loss = epoch_loss_val if best_loss is None or best_loss > epoch_loss_val else best_loss
                 if save_checkpoint:
                     self.save_checkpoint(epoch, save_path, "loss")
 
                 # Early stopping by accuracy
-                save_checkpoint = True if best_acc is not None and best_acc < epoch_acc_val else False
+                save_checkpoint = True if best_acc is None or best_acc < epoch_acc_val else False
                 best_acc = epoch_acc_val if best_acc is None or best_acc < epoch_acc_val else best_acc
                 if save_checkpoint:
                     self.save_checkpoint(epoch, save_path, "acc")
