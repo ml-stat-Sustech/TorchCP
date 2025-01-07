@@ -7,12 +7,32 @@
 
 import os
 import torch
-import torch.optim as optim
 from tqdm import tqdm
+import torch.optim as optim
+from torch.utils.data import DataLoader
 from torchcp.classification.loss import ConfLearnLoss
 
 
 class ConfLearnTrainer:
+    """
+    Conformalized uncertainty-aware training of deep multi-class classifiers
+
+    Args:
+        model (torch.nn.Module): Neural network model to train.
+        optimizer (torch.optim.Optimizer): Optimization algorithm.
+        criterion_pred_loss_fn (torch.nn.Module): Loss function for accuracy.
+        mu (float): A hyperparameter controlling the weight of the conformal loss term in the total loss (default: 0.2).
+        alpha (float): A significance level for the conformal loss function (default: 0.1).
+        device (torch.device): Device to run on (CPU/GPU) (default: CPU).
+
+    Examples:
+        >>> model = MyModel()
+        >>> optimizer = torch.optim.Adam(model.parameters())
+        >>> loss_fn = nn.CrossEntropyLoss()
+        >>> trainer = ConfLearnTrainer(model, optimizer, loss_fn)
+        >>> save_path = './path/to/save'
+        >>> trainer.train(train_loader, save_path, val_loader, num_epochs=10)
+    """
 
     def __init__(self,
                  model: torch.nn.Module,
@@ -26,12 +46,27 @@ class ConfLearnTrainer:
         self.optimizer = optimizer
 
         self.criterion_pred_loss_fn = criterion_pred_loss_fn
-        self.conformal_loss_fn = ConfLearnLoss(device, alpha)
+        self.conformal_loss_fn = ConfLearnLoss(alpha, device)
         self.mu = mu
         self.alpha = alpha
         self.device = device
 
     def calculate_loss(self, output, target, Z_batch, training=True):
+        """
+        Calculates the total loss during training or validation.
+
+        The loss is a combination of the prediction loss and the conformal prediction loss,
+        where the conformal loss is weighted by the hyperparameter `mu`.
+
+        Args:
+            output (torch.Tensor): The model's output predictions (logits).
+            target (torch.Tensor): The true labels (ground truth).
+            Z_batch (torch.Tensor): A tensor indicating which samples are used for conformal prediction loss.
+            training (bool): A flag indicating whether the calculation is for training or validation (default: True).
+
+        Returns:
+            torch.Tensor: The computed total loss.
+        """
         if training:
             idx_ce = torch.where(Z_batch == 0)[0]
             loss_ce = self.criterion_pred_loss_fn(output[idx_ce], target[idx_ce])
@@ -43,7 +78,16 @@ class ConfLearnTrainer:
         loss = loss_ce + loss_scores * self.mu
         return loss
 
-    def train_epoch(self, train_loader):
+    def train_epoch(self, train_loader: DataLoader):
+        """
+        Trains the model for one epoch.
+
+        The function iterates through the training data and updates the model parameters
+        using backpropagation and the optimizer.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): The DataLoader providing the training data.
+        """
         self.model.train()
 
         for X_batch, Y_batch, Z_batch in train_loader:
@@ -61,7 +105,18 @@ class ConfLearnTrainer:
             self.optimizer.step()
 
     @torch.no_grad()
-    def validate(self, val_loader):
+    def validate(self, val_loader: DataLoader):
+        """
+        Validates the model on the validation set.
+
+        The function computes both the loss and accuracy for the validation data.
+
+        Args:
+            val_loader (torch.utils.data.DataLoader): The DataLoader providing the validation data.
+
+        Returns:
+            tuple: The average loss and accuracy for the validation set.
+        """
         loss_val = 0
         acc_val = 0
 
@@ -84,6 +139,16 @@ class ConfLearnTrainer:
               save_path,
               val_loader=None,
               num_epochs=10):
+        """
+        Trains the model for multiple epochs and optionally performs early stopping
+        based on validation loss or accuracy. Saves the best models during training.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): The DataLoader for the training set.
+            save_path (str): The path where model checkpoints should be saved.
+            val_loader (torch.utils.data.DataLoader): The DataLoader for the validation set (default: None).
+            num_epochs (int): The number of epochs to train for (default: 10).
+        """
 
         best_loss = None
         best_acc = None
@@ -118,6 +183,14 @@ class ConfLearnTrainer:
 
 
     def save_checkpoint(self, epoch: int, save_path: str, save_type: str='final'):
+        """
+        Saves a checkpoint of the model and optimizer state at the given epoch.
+
+        Args:
+            epoch (int): The current epoch number.
+            save_path (str): The path where the checkpoint should be saved.
+            save_type (str): The type of checkpoint to save, including "final", "loss", "acc".
+        """
         save_path += save_type + '.pt'
         checkpoint = {
             'epoch': epoch,
@@ -127,6 +200,13 @@ class ConfLearnTrainer:
         torch.save(checkpoint, save_path)
 
     def load_checkpoint(self, load_path: str, load_type: str='final'):
+        """
+        Loads a model checkpoint from the specified path.
+
+        Args:
+            load_path (str): The path from which to load the checkpoint.
+            load_type (str): The type of checkpoint to load (default: "final"), chosen from ["final", "loss", "acc"].
+        """
         if not os.path.exists(load_path + load_type):
             load_path += "final" + '.pt'
         else:

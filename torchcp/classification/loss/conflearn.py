@@ -8,15 +8,29 @@
 import torch
 from torchsort import soft_rank, soft_sort
 
-REG_STRENGTH = 0.1
-B = 50
+REG_STRENGTH = 0.1 # Regularization strength used in soft sorting for smoothness
+B = 50 # A parameter controlling the smoothness of the soft indicator function
 
 
 class UniformMatchingLoss(torch.nn.Module):
+    """
+    A custom loss function that calculates the discrepancy in the sorting of input tensor x.
+    It measures how far off each element is from its ideal position in a sorted sequence.
+    """
     def __init__(self):
         super().__init__()
 
     def forward(self, x):
+        """
+        Forward pass function that computes the loss value for the given input tensor x.
+        
+        Args:
+            x: A tensor (usually the model's output) with shape (batch_size,).
+                This represents the predicted scores or values for each sample.
+        
+        Returns:
+            out: A scalar loss value representing the inconsistency in element sorting.
+        """
         batch_size = len(x)
         if batch_size == 0:
             return 0
@@ -27,16 +41,46 @@ class UniformMatchingLoss(torch.nn.Module):
 
 
 class ConfLearnLoss(torch.nn.Module):
-    def __init__(self, device, alpha):
+    """
+    A loss function used for conformalized uncertainty-aware training of deep multi-class classifiers
+
+    Args:
+        alpha (float): A significance level for the conformal loss function (default: 0.1).
+        device (torch.device): Device to run on (CPU/GPU) (default: CPU).
+
+    Examples:
+        >>> conflearn_loss_fn = ConfLearnLoss(alpha, device)
+        >>> output = torch.randn(100, 10)
+        >>> target = torch.randint(0, 2, (100,))
+        >>> Z_batch = torch.randint(0, 2, (100,))
+        >>> loss = conflearn_loss_fn(output, target, Z_batch)
+        >>> loss.backward()
+
+    Reference:
+        Einbinder et al. "Training Uncertainty-Aware Classifiers with Conformalized Deep Learning" (2022), https://arxiv.org/abs/2205.05878
+    """
+    def __init__(self, alpha, device):
         super(ConfLearnLoss, self).__init__()
 
-        self.device = device
         self.alpha = alpha
+        self.device = device
 
         self.layer_prob = torch.nn.Softmax(dim=1)
         self.criterion_scores = UniformMatchingLoss()
 
     def forward(self, output, target, Z_batch):
+        """
+        Forward pass of the conformal loss function. The loss is computed by iterating over different groupings in Z_batch,
+        applying the conformal loss for each group, and averaging the loss over all groups.
+
+        Args:
+            output (torch.Tensor): The model's output logits (predictions before softmax).
+            target (torch.Tensor): The ground truth labels.
+            Z_batch (torch.Tensor): A tensor indicating groupings for non-conformity.
+
+        Returns:
+            torch.Tensor: The computed loss for the given batch.
+        """
         loss_scores = torch.tensor(0.0, device=self.device)
         Z_groups = torch.unique(Z_batch)
         n_groups = torch.sum(Z_groups > 0)
@@ -50,13 +94,35 @@ class ConfLearnLoss(torch.nn.Module):
         return loss_scores
 
     def compute_loss(self, y_train_pred, y_train_batch, alpha):
+        """
+        Computes the conformal loss for a given batch of predictions and ground truth.
+
+        Args:
+            y_train_pred (torch.Tensor): The model's predicted logits for the batch.
+            y_train_batch (torch.Tensor): The ground truth labels for the batch.
+            alpha (float): The significance level for the conformal loss computation.
+
+        Returns:
+            torch.Tensor: The conformal loss for the batch.
+        """
         train_proba = self.layer_prob(y_train_pred)
         train_scores = self.__compute_scores_diff(
             train_proba, y_train_batch, alpha=alpha)
         train_loss_scores = self.criterion_scores(train_scores)
         return train_loss_scores
     
-    def __compute_scores_diff(self, proba_values, Y_values, alpha=0.1):
+    def __compute_scores_diff(self, proba_values, Y_values):
+        """
+        Computes the non-conformity scores based on the predicted probabilities and the true labels.
+        This score measures how different the predicted probabilities are from the actual labels.
+
+        Args:
+            proba_values (torch.Tensor): The predicted probabilities for the batch (after softmax).
+            Y_values (torch.Tensor): The ground truth labels for the batch.
+
+        Returns:
+            torch.Tensor: The computed non-conformity scores for each sample in the batch.
+        """
         n, K = proba_values.shape
         proba_values = proba_values + 1e-6 * \
             torch.rand(proba_values.shape, dtype=float, device=self.device)
@@ -77,11 +143,34 @@ class ConfLearnLoss(torch.nn.Module):
         return scores_t
     
     def __soft_indicator(self, x, a, b=B):
+        """
+        Soft indicator function, which is a smoothed version of a step function.
+        This is used for soft indexing in the loss computation to smooth out the discrete jumps.
+
+        Args:
+            x (torch.Tensor): The tensor of indices to compute the indicator function over.
+            a (torch.Tensor): The rank tensor, indicating the position.
+            b (float): Regularization strength, controlling the smoothness of the indicator function.
+
+        Returns:
+            torch.Tensor: The soft indicator values.
+        """
         out = torch.sigmoid(b * (x - a + 0.5)) - (torch.sigmoid(b * (x - a - 0.5)))
         out = out / (torch.sigmoid(torch.tensor(b * 0.5)) - torch.sigmoid(-torch.tensor(b * 0.5)))
         return out
 
     def __soft_indexing(self, z, rank):
+        """
+        Soft indexing operation used to calculate weighted sums based on predicted probabilities
+        and the ranks of true labels. This smooths the selection of indices during loss computation.
+
+        Args:
+            z (torch.Tensor): The cumulative sorted probabilities.
+            rank (torch.Tensor): The ranks corresponding to the true labels.
+
+        Returns:
+            torch.Tensor: The weighted sum of indexed values, representing the soft loss.
+        """
         n = len(rank)
         K = z.shape[1]
         I = torch.tile(torch.arange(K, device=z.device), (n, 1))
