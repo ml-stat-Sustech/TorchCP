@@ -207,7 +207,7 @@ class ConfLearnTrainer:
             load_path (str): The path from which to load the checkpoint.
             load_type (str): The type of checkpoint to load (default: "final"), chosen from ["final", "loss", "acc"].
         """
-        if not os.path.exists(load_path + load_type):
+        if not os.path.exists(load_path + load_type + '.pt'):
             load_path += "final" + '.pt'
         else:
             load_path += load_type + '.pt'
