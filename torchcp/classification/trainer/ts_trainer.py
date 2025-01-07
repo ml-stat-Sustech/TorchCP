@@ -14,7 +14,24 @@ from torchcp.classification.trainer.base_trainer import Trainer
 from torchcp.classification.trainer.model import TemperatureScalingModel
 
 class TSTrainer(Trainer):
-
+    """Temperature Scaling Trainer for model calibration.
+    
+    This trainer implements temperature scaling to calibrate neural network 
+    predictions. It optimizes a single temperature parameter that divides the 
+    logits to improve model calibration.
+    
+    Args:
+        model (torch.nn.Module): Base neural network model to calibrate
+        init_temperature (float): Initial temperature scaling parameter
+        device (torch.device, optional): Device to run on. Defaults to None
+        verbose (bool, optional): Whether to print progress. Defaults to True
+        
+    Attributes:
+        model (TemperatureScalingModel): Model wrapped with temperature scaling
+        device (torch.device): Device model is running on
+        verbose (bool): Whether to print training progress
+    """
+    
     def __init__(
             self,
             model: torch.nn.Module,
@@ -32,13 +49,15 @@ class TSTrainer(Trainer):
             train_loader: DataLoader,
             lr: float = 0.01,
             num_epochs: int = 100):
-        """
-        Train the model
+        """Train temperature scaling parameter using LBFGS optimizer.
+        
+        Collects logits and labels from training data, then optimizes the
+        temperature parameter to minimize NLL loss.
         
         Args:
-            train_loader: DataLoader for training data
-            val_loader: Optional DataLoader for validation data
-            save_path: Optional path to save the best model
+            train_loader (DataLoader): DataLoader with calibration data
+            lr (float, optional): Learning rate for LBFGS. Defaults to 0.01
+            num_epochs (int, optional): Max LBFGS iterations. Defaults to 100
         """
         self.model.eval()
         nll_criterion = nn.CrossEntropyLoss().to(self.device)
@@ -83,6 +102,10 @@ class TSTrainer(Trainer):
             print(f'Optimal temperature: {self.model.temperature.item():.3f}')
             print(f'After scaling - NLL: {after_nll:.3f}, ECE: {after_ece:.3f}')
             
+            
+# Adapted from: Geoff Pleiss
+# Source: https://github.com/gpleiss/temperature_scaling
+# Original License: MIT.
 class _ECELoss(nn.Module):
     """
     Calculates the Expected Calibration Error of a model.
