@@ -46,7 +46,7 @@ class ConfLearnTrainer:
         self.optimizer = optimizer
 
         self.criterion_pred_loss_fn = criterion_pred_loss_fn
-        self.conformal_loss_fn = ConfLearnLoss(alpha, device)
+        self.conformal_loss_fn = ConfLearnLoss()
         self.mu = mu
         self.alpha = alpha
         self.device = device

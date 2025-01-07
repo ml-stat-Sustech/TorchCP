@@ -44,12 +44,8 @@ class ConfLearnLoss(torch.nn.Module):
     """
     A loss function used for conformalized uncertainty-aware training of deep multi-class classifiers
 
-    Args:
-        alpha (float): A significance level for the conformal loss function (default: 0.1).
-        device (torch.device): Device to run on (CPU/GPU) (default: CPU).
-
     Examples:
-        >>> conflearn_loss_fn = ConfLearnLoss(alpha, device)
+        >>> conflearn_loss_fn = ConfLearnLoss()
         >>> output = torch.randn(100, 10)
         >>> target = torch.randint(0, 2, (100,))
         >>> Z_batch = torch.randint(0, 2, (100,))
@@ -59,11 +55,8 @@ class ConfLearnLoss(torch.nn.Module):
     Reference:
         Einbinder et al. "Training Uncertainty-Aware Classifiers with Conformalized Deep Learning" (2022), https://arxiv.org/abs/2205.05878
     """
-    def __init__(self, alpha, device):
+    def __init__(self):
         super(ConfLearnLoss, self).__init__()
-
-        self.alpha = alpha
-        self.device = device
 
         self.layer_prob = torch.nn.Softmax(dim=1)
         self.criterion_scores = UniformMatchingLoss()
@@ -81,6 +74,7 @@ class ConfLearnLoss(torch.nn.Module):
         Returns:
             torch.Tensor: The computed loss for the given batch.
         """
+        self.device = output.device
         loss_scores = torch.tensor(0.0, device=self.device)
         Z_groups = torch.unique(Z_batch)
         n_groups = torch.sum(Z_groups > 0)
@@ -88,26 +82,25 @@ class ConfLearnLoss(torch.nn.Module):
             if z > 0:
                 idx_z = torch.where(Z_batch == z)[0]
                 loss_scores_z = self.compute_loss(
-                    output[idx_z], target[idx_z], alpha=self.alpha)
+                    output[idx_z], target[idx_z])
                 loss_scores += loss_scores_z
         loss_scores /= n_groups
         return loss_scores
 
-    def compute_loss(self, y_train_pred, y_train_batch, alpha):
+    def compute_loss(self, y_train_pred, y_train_batch):
         """
         Computes the conformal loss for a given batch of predictions and ground truth.
 
         Args:
             y_train_pred (torch.Tensor): The model's predicted logits for the batch.
             y_train_batch (torch.Tensor): The ground truth labels for the batch.
-            alpha (float): The significance level for the conformal loss computation.
 
         Returns:
             torch.Tensor: The conformal loss for the batch.
         """
         train_proba = self.layer_prob(y_train_pred)
         train_scores = self.__compute_scores_diff(
-            train_proba, y_train_batch, alpha=alpha)
+            train_proba, y_train_batch)
         train_loss_scores = self.criterion_scores(train_scores)
         return train_loss_scores
     
