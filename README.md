@@ -190,13 +190,13 @@ If you find our repository useful for your research, please consider citing the
 following [technical report](https://arxiv.org/abs/2402.12683):
 
 ```
-@misc{wei2024torchcp,
-      title={TorchCP: A Library for Conformal Prediction based on PyTorch}, 
-      author={Hongxin Wei and Jianguo Huang},
+@misc{huang2024torchcppythonlibraryconformal,
+      title={TorchCP: A Python Library for Conformal Prediction}, 
+      author={Jianguo Huang and Jianqing Song and Xuanning Zhou and Bingyi Jing and Hongxin Wei},
       year={2024},
       eprint={2402.12683},
       archivePrefix={arXiv},
-      primaryClass={cs.LG}
+      primaryClass={cs.LG},
 }
 ```
 
