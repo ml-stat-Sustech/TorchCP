@@ -170,8 +170,17 @@ def difficulty_oracle(sets_oracle, size_cutoff=1):
 
 
 def evaluate_predictions(trainer, pred_sets, test_loader, labels, easy_idx=None, hard_idx=None, conditional=True):
-    # Accuracy of Trainer
-    y_pred = trainer.predict(test_loader)
+    # Accuracy of the Model in Trainer
+    y_pred_list = []
+    with torch.no_grad():
+        trainer.model.eval()
+        for X_batch, _ in test_loader:
+            X_batch = X_batch
+            y_test_pred = trainer.model(X_batch)
+            y_pred_softmax = torch.log_softmax(y_test_pred, dim=1)
+            _, y_pred_tags = torch.max(y_pred_softmax, dim=1)
+            y_pred_list.append(y_pred_tags)
+    y_pred = torch.cat(y_pred_list)
     accuracy = torch.mean((y_pred != labels).float()).item() * 100
 
     # Marginal Coverage and Size
@@ -294,8 +303,8 @@ if __name__ == '__main__':
     #######################################
     # Conformal Learning
     #######################################
-    conflearn_trainer.train(train_loader, val_loader,
-                            checkpoint_path=checkpoint_path, num_epochs=4000)
+    conflearn_trainer.train(train_loader, save_path=checkpoint_path, 
+                            val_loader=val_loader, num_epochs=10)
 
     # For early stopping loss
     conflearn_trainer_loss = ConfLearnTrainer(model, optimizer, device=device)

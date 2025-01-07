@@ -12,16 +12,6 @@ from tqdm import tqdm
 from torchcp.classification.loss import ConfLearnLoss
 
 
-def accuracy_point(y_pred, y_test):
-    y_pred_softmax = torch.log_softmax(y_pred, dim=1)
-    _, y_pred_tags = torch.max(y_pred_softmax, dim=1)
-
-    correct_pred = (y_pred_tags == y_test).float()
-    acc = correct_pred.sum() / len(correct_pred)
-
-    return acc * 100
-
-
 class ConfLearnTrainer:
 
     def __init__(self,
@@ -30,24 +20,18 @@ class ConfLearnTrainer:
                  criterion_pred_loss_fn=torch.nn.CrossEntropyLoss(),
                  mu: float = 0.2,
                  alpha: float = 0.1,
-                 device: torch.device = None):
-        if device is None:
-            self.device = torch.device(
-                'cuda' if torch.cuda.is_available() else 'cpu')
-        else:
-            self.device = device
+                 device: torch.device = 'cpu'):
 
-        self.model = model.to(self.device)
+        self.model = model.to(device)
         self.optimizer = optimizer
 
         self.criterion_pred_loss_fn = criterion_pred_loss_fn
         self.conformal_loss_fn = ConfLearnLoss(device, alpha)
         self.mu = mu
         self.alpha = alpha
-
+        self.device = device
 
     def calculate_loss(self, output, target, Z_batch, training=True):
-        # breakpoint()
         if training:
             idx_ce = torch.where(Z_batch == 0)[0]
             loss_ce = self.criterion_pred_loss_fn(output[idx_ce], target[idx_ce])
@@ -84,7 +68,8 @@ class ConfLearnTrainer:
         for X_batch, Y_batch, Z_batch in val_loader:
             output = self.model(X_batch)
             loss = self.calculate_loss(output, Y_batch, Z_batch)
-            acc = accuracy_point(output, Y_batch)
+            pred = output.argmax(dim=1)
+            acc = pred.eq(Y_batch).sum()
 
             loss_val += loss.item()
             acc_val += acc.item()
@@ -96,14 +81,9 @@ class ConfLearnTrainer:
 
     def train(self,
               train_loader,
+              save_path,
               val_loader=None,
-              early_stopping=True,
-              save_model=True,
-              checkpoint_path: str = None,
               num_epochs=10):
-        if save_model:
-            if checkpoint_path is None:
-                raise ("Output checkpoint name file is needed.")
 
         best_loss = None
         best_acc = None
@@ -122,25 +102,23 @@ class ConfLearnTrainer:
             if val_loader is not None:
                 epoch_loss_val, epoch_acc_val = self.validate(val_loader)
 
-            if early_stopping:
                 # Early stopping by loss
                 save_checkpoint = True if best_loss is not None and best_loss > epoch_loss_val else False
                 best_loss = epoch_loss_val if best_loss is None or best_loss > epoch_loss_val else best_loss
                 if save_checkpoint:
-                    self.save_checkpoint(epoch, checkpoint_path, "loss")
+                    self.save_checkpoint(epoch, save_path, "loss")
 
                 # Early stopping by accuracy
                 save_checkpoint = True if best_acc is not None and best_acc < epoch_acc_val else False
                 best_acc = epoch_acc_val if best_acc is None or best_acc < epoch_acc_val else best_acc
                 if save_checkpoint:
-                    self.save_checkpoint(epoch, checkpoint_path, "acc")
+                    self.save_checkpoint(epoch, save_path, "acc")
 
-        if save_model:
-            self.save_checkpoint(epoch, checkpoint_path, "final")
+        self.save_checkpoint(epoch, save_path, "final")
 
 
     def save_checkpoint(self, epoch: int, save_path: str, save_type: str='final'):
-        save_path += save_type
+        save_path += save_type + '.pt'
         checkpoint = {
             'epoch': epoch,
             'model_state_dict': self.model.state_dict(),
@@ -150,22 +128,9 @@ class ConfLearnTrainer:
 
     def load_checkpoint(self, load_path: str, load_type: str='final'):
         if not os.path.exists(load_path + load_type):
-            load_path += "final"
+            load_path += "final" + '.pt'
         else:
-            load_path += load_type
+            load_path += load_type + '.pt'
         checkpoint = torch.load(load_path)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-    def predict(self, test_loader):
-        y_pred_list = []
-        with torch.no_grad():
-            self.model.eval()
-            for X_batch, _ in test_loader:
-                X_batch = X_batch.to(self.device)
-                y_test_pred = self.model(X_batch)
-                y_pred_softmax = torch.log_softmax(y_test_pred, dim=1)
-                _, y_pred_tags = torch.max(y_pred_softmax, dim=1)
-                y_pred_list.append(y_pred_tags)
-        y_pred = torch.cat(y_pred_list)
-        return y_pred
