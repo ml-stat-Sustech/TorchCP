@@ -74,8 +74,8 @@ class ConfLearnLoss(torch.nn.Module):
         Returns:
             torch.Tensor: The computed loss for the given batch.
         """
-        self.device = output.device
-        loss_scores = torch.tensor(0.0, device=self.device)
+        device = output.device
+        loss_scores = torch.tensor(0.0, device=device)
         Z_groups = torch.unique(Z_batch)
         n_groups = torch.sum(Z_groups > 0)
         for z in Z_groups:
@@ -116,9 +116,10 @@ class ConfLearnLoss(torch.nn.Module):
         Returns:
             torch.Tensor: The computed non-conformity scores for each sample in the batch.
         """
+        device = proba_values.device
         n, K = proba_values.shape
         proba_values = proba_values + 1e-6 * \
-            torch.rand(proba_values.shape, dtype=float, device=self.device)
+            torch.rand(proba_values.shape, dtype=float, device=device)
         proba_values = proba_values / torch.sum(proba_values, 1)[:, None]
         ranks_array_t = soft_rank(-proba_values,
                                   regularization_strength=REG_STRENGTH) - 1
@@ -131,7 +132,7 @@ class ConfLearnLoss(torch.nn.Module):
         prob_cum_t = self.__soft_indexing(Z_t, ranks_t)
         prob_final_t = self.__soft_indexing(prob_sort_t, ranks_t)
         scores_t = 1.0 - prob_cum_t + prob_final_t * \
-            torch.rand(n, dtype=float, device=self.device)
+            torch.rand(n, dtype=float, device=device)
 
         return scores_t
     
