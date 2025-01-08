@@ -7,13 +7,13 @@
 
 import torch
 
-from torchcp.classification.trainer.ts_trainer import TSTrainer
+from torchcp.classification.trainer.base_trainer import Trainer
 from torchcp.classification.trainer.model import TemperatureScalingModel
 from torchcp.classification.loss.confts import ConfTS
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
 
-class ConfTSTrainer(TSTrainer):
+class ConfTSTrainer(Trainer):
     """Conformal Temperature Scaling Trainer.
     
     A trainer class that implements conformal prediction with temperature scaling

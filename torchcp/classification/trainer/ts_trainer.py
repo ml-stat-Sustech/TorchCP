@@ -10,10 +10,10 @@ import torch.nn as nn
 from torch import optim
 from torch.utils.data import DataLoader
 
-from torchcp.classification.trainer.base_trainer import Trainer
+from torchcp.classification.trainer.base_trainer import BaseTrainer
 from torchcp.classification.trainer.model import TemperatureScalingModel
 
-class TSTrainer(Trainer):
+class TSTrainer(BaseTrainer):
     """Temperature Scaling Trainer for model calibration.
     
     This trainer implements temperature scaling to calibrate neural network 
@@ -39,10 +39,10 @@ class TSTrainer(Trainer):
             device: torch.device = None,
             verbose: bool = True):  
         
-        model = TemperatureScalingModel(model, temperature=init_temperature)
-        loss_fn = torch.nn.CrossEntropyLoss()
-        
-        super().__init__(model, None, loss_fn, 1, device, verbose)
+        self.org_model = model
+        self.init_temperature = init_temperature
+        model = TemperatureScalingModel(self.org_model, temperature=init_temperature)        
+        super().__init__(model, device, verbose)
         
     def train(
             self,
@@ -59,6 +59,8 @@ class TSTrainer(Trainer):
             lr (float, optional): Learning rate for LBFGS. Defaults to 0.01
             num_epochs (int, optional): Max LBFGS iterations. Defaults to 100
         """
+        self.model = TemperatureScalingModel(self.org_model, temperature= self.init_temperature)
+        self.model.to(self.device)
         self.model.eval()
         nll_criterion = nn.CrossEntropyLoss().to(self.device)
         ece_criterion = _ECELoss().to(self.device)

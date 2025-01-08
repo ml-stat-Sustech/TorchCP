@@ -14,7 +14,50 @@ from tqdm import tqdm
 from typing import Optional, Dict, Any, Callable, Union, List
 
 
-class Trainer:
+
+
+
+class BaseTrainer:
+    """
+    Base trainer class that handles basic model setup and device configuration.
+    
+    Args:
+        model (torch.nn.Module): Neural network model
+        device (torch.device): Device to run on (CPU/GPU)
+        verbose (bool): Whether to show training progress
+        
+    Examples:
+        >>> model = MyModel()
+        >>> base_trainer = BaseTrainer(model)
+    """
+    
+    def __init__(
+            self,
+            model: torch.nn.Module,
+            device: torch.device = None,
+            verbose: bool = True,
+    ):
+        if device is None:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
+            
+        self.model = model.to(self.device)
+        self.verbose = verbose
+        
+        # Setup logging
+        if self.verbose:
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - %(levelname)s - %(message)s'
+            )
+            self.logger = logging.getLogger(__name__)
+
+
+
+
+
+class Trainer(BaseTrainer):
     """
     A general-purpose PyTorch model trainer.
     
