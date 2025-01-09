@@ -11,7 +11,6 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset
 
 from examples.utils import build_reg_data
-from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictor import SplitPredictor
 from torchcp.regression.score import CQR
 from torchcp.regression.utils import build_regression_model
@@ -69,22 +68,21 @@ if __name__ == "__main__":
     
     # CP
     alpha = 0.1  # confidence level
-    score_function = CQR()
-    predictor = SplitPredictor(score_function=score_function, model=model)
+    predictor = SplitPredictor(score_function=CQR(), model=model)
     
     # Step0 (optional): train regression model
     ## We've provided an auxiliary function here to help with model training, 
     ## or user can simply enter the trained model in predictor and ignore this code
-    criterion = QuantileLoss([alpha / 2, 1 - alpha / 2])
-    predictor.train(train_loader, criterion=criterion, alpha=alpha, epochs=100, lr=0.01, verbose=True)
+    predictor.train(train_loader, alpha=alpha, epochs=100, lr=0.01, verbose=True)
     
     # Step1: calibration
     predictor.calibrate(cal_dataloader=cal_loader, alpha=alpha)
     
     # Step2: generate conformal prediction interval for x_batch
-    x, _ = next(iter(test_loader))
+    x = next(iter(test_loader))[0].to(device)
     prediction_intervals = predictor.predict(x)
     
-    # Step3: evaluate on test dataloader
+    # Step3: evaluate conformal prediction on test dataloader
     result = predictor.evaluate(test_loader)
+    print(result)
     

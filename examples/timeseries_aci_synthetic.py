@@ -7,31 +7,16 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import TensorDataset
-from transformers import set_seed
 
 from examples.utils import build_reg_data
-from torchcp.regression.loss import QuantileLoss
 from torchcp.regression.predictor import ACIPredictor
 from torchcp.regression.score import CQR
 from torchcp.regression.utils import build_regression_model
 
 
 def prepare_aci_dataset(train_ratio=0.5, batch_size=100):
-    """
-    Prepare datasets for Adaptive Conformal Inference.
-    
-    Args:
-        X (np.ndarray): Input features
-        y (np.ndarray): Target values
-        train_ratio (float): Ratio of training data
-        batch_size (int): Batch size for data loaders
-    
-    Returns:
-        tuple: Training and test data loaders
-    """
     # construct datasets
     X, y = build_reg_data(data_name="synthetic")
     # Split indices
@@ -79,33 +64,26 @@ if __name__ == "__main__":
     
     # CP
     alpha = 0.1  # confidence level
-    score_function = CQR()
-    predictor = ACIPredictor(score_function=score_function, model=model, gamma=0.005)
+    predictor = ACIPredictor(score_function=CQR(), model=model, gamma=0.005)
     
     # Step1: train regression model
     ## The Train function is required here, and the user can customize the training parameters
-    criterion = QuantileLoss([alpha / 2, 1 - alpha / 2])
-    predictor.train(train_loader, alpha=alpha, criterion=criterion, epochs=100, lr=0.01, verbose=True)
+    predictor.train(train_loader, alpha=alpha, epochs=100, lr=0.01, verbose=True)
     
     # Step2: prediction
-    
     #### Option1: generate conformal prediction interval for x_batch
-    x, _ = next(iter(test_loader))
+    x = next(iter(test_loader))[0].to(device)
     prediction_intervals = predictor.predict(x)
     
     #### Option2: generate conformal prediction interval for x_batch using history data
     lookback = 200  # number of historical data points
-    train_dataset = train_loader.dataset
-    samples = [train_dataset[i] for i in range(len(train_dataset) - lookback, len(train_dataset))]
+    samples = [train_loader.dataset[i] for i in range(len(train_loader.dataset) - lookback, len(train_loader.dataset))]
     x_lookback = torch.stack([sample[0] for sample in samples]).to(device)
     y_lookback = torch.stack([sample[1] for sample in samples]).to(device)
-    prediction_interval_lookback = predictor.predict(x_lookback)
     
-    x, _ = next(iter(test_loader))
-    prediction_intervals = predictor.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback,
-                                            pred_interval_lookback=prediction_interval_lookback,
-                                            train=True, update_alpha=True)
+    x = next(iter(test_loader))[0].to(device)
+    prediction_intervals = predictor.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback)
     
-    
-    # Step3: evaluate on test dataloader
+    # Step3: evaluate conformal prediction on test dataloader
     result = predictor.evaluate(test_loader)
+    print(result)
