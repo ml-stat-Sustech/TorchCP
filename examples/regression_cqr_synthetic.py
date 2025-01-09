@@ -72,25 +72,19 @@ if __name__ == "__main__":
     score_function = CQR()
     predictor = SplitPredictor(score_function=score_function, model=model)
     
-    # train regression model
-    ## We've provided an example function here to help with model training, 
+    # Step0 (optional): train regression model
+    ## We've provided an auxiliary function here to help with model training, 
     ## or user can simply enter the trained model in predictor and ignore this code
     criterion = QuantileLoss([alpha / 2, 1 - alpha / 2])
     predictor.train(train_loader, criterion=criterion, alpha=alpha, epochs=100, lr=0.01, verbose=True)
     
-    # calibrate
+    # Step1: calibration
     predictor.calibrate(cal_dataloader=cal_loader, alpha=alpha)
     
-    # generate conformal prediction interval
-    predict_list = []
-    with torch.no_grad():
-        for tmp_x, _ in test_loader:
-            tmp_x = tmp_x.to(device)
-            tmp_prediction_intervals = predictor.predict(tmp_x)
-            predict_list.append(tmp_prediction_intervals)
-    predicts_interval = torch.cat(predict_list, dim=0).to(device)
+    # Step2: generate conformal prediction interval for x_batch
+    x, _ = next(iter(test_loader))
+    prediction_intervals = predictor.predict(x)
     
-    # evaluate on test dataloader
+    # Step3: evaluate on test dataloader
     result = predictor.evaluate(test_loader)
-    print(result)
     

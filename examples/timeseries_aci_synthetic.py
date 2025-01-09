@@ -79,35 +79,33 @@ if __name__ == "__main__":
     
     # CP
     alpha = 0.1  # confidence level
-    lookback = 200  # number of historical data points
     score_function = CQR()
     predictor = ACIPredictor(score_function=score_function, model=model, gamma=0.005)
     
-    # train regression model
+    # Step1: train regression model
     ## The Train function is required here, and the user can customize the training parameters
     criterion = QuantileLoss([alpha / 2, 1 - alpha / 2])
     predictor.train(train_loader, alpha=alpha, criterion=criterion, epochs=100, lr=0.01, verbose=True)
     
-    # generate conformal prediction interval
-    predict_list = []
+    # Step2: prediction
+    
+    #### Option1: generate conformal prediction interval for x_batch
+    x, _ = next(iter(test_loader))
+    prediction_intervals = predictor.predict(x)
+    
+    #### Option2: generate conformal prediction interval for x_batch using history data
+    lookback = 200  # number of historical data points
     train_dataset = train_loader.dataset
     samples = [train_dataset[i] for i in range(len(train_dataset) - lookback, len(train_dataset))]
     x_lookback = torch.stack([sample[0] for sample in samples]).to(device)
     y_lookback = torch.stack([sample[1] for sample in samples]).to(device)
-    pred_interval_lookback = predictor.predict(x_lookback)
+    prediction_interval_lookback = predictor.predict(x_lookback)
     
-    for tmp_x, tmp_y in test_loader:
-        tmp_x, tmp_y = tmp_x.to(device), tmp_y.to(device)
-        tmp_prediction_intervals = predictor.predict(x_batch=tmp_x, x_lookback=x_lookback, y_lookback=y_lookback,
-                                                    pred_interval_lookback=pred_interval_lookback,
-                                                    train=True, update_alpha=True)
-        predict_list.append(tmp_prediction_intervals)
-        pred_interval_lookback = torch.cat([pred_interval_lookback, tmp_prediction_intervals], dim=0)[-lookback:]
-        x_lookback = torch.cat([x_lookback, tmp_x], dim=0)[-lookback:]
-        y_lookback = torch.cat([y_lookback, tmp_y], dim=0)[-lookback:]
-            
-    predicts_interval = torch.cat(predict_list, dim=0).to(device)
+    x, _ = next(iter(test_loader))
+    prediction_intervals = predictor.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback,
+                                            pred_interval_lookback=prediction_interval_lookback,
+                                            train=True, update_alpha=True)
     
-    # evaluate on test dataloader
+    
+    # Step3: evaluate on test dataloader
     result = predictor.evaluate(test_loader)
-    print(result)
