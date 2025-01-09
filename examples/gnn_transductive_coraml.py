@@ -64,15 +64,6 @@ def train(model, optimizer, graph_data, train_idx):
     optimizer.step()
 
 
-def test(model, graph_data, test_idx):
-    model.eval()
-    with torch.no_grad():
-        logits = model(graph_data.x, graph_data.edge_index)
-        y_pred = torch.argmax(logits, dim=1)
-        accuracy = (y_pred[test_idx] == graph_data.y[test_idx]).float().mean().item()
-        print(f"Model Acc: {accuracy}")
-
-
 if __name__ == '__main__':
     set_seed(0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -91,13 +82,11 @@ if __name__ == '__main__':
         model.parameters(), lr=0.01, weight_decay=0.001)
 
     #######################################
-    # Training and testing the model
+    # Training the model
     #######################################
 
     for _ in range(200):
         train(model, optimizer, graph_data, train_idx)
-
-    test(model, graph_data, test_idx)
 
     #######################################
     # Split Conformal Prediction
@@ -118,7 +107,7 @@ if __name__ == '__main__':
     #          xi=1 / 3, mu=1 / 3,
     #          features=graph_data.x, k=20)
     predictor = SplitPredictor(graph_data=graph_data, 
-                               score_functio=APS(score_type="softmax"), 
+                               score_function=APS(score_type="softmax"), 
                                model=model)
     predictor.calibrate(cal_idx, alpha=0.1)
     print(predictor.evaluate(eval_idx))
