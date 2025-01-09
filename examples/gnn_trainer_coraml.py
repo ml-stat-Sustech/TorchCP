@@ -119,7 +119,7 @@ if __name__ == '__main__':
     eval_calib_idx = calib_eval_idx[eval_perms[:500]]
     eval_test_idx = calib_eval_idx[eval_perms[500:]]
 
-    # Calibrate and Evaluation
+    # Calibrate and Evaluate
     predictor = SplitPredictor(graph_data, APS(
         score_type="softmax"), model=confmodel_conftr.cfgnn)
     predictor.calculate_threshold(
