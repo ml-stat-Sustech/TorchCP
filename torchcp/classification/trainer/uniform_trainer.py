@@ -10,10 +10,10 @@ import torch
 from tqdm import tqdm
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchcp.classification.loss import ConfLearnLoss
+from torchcp.classification.loss import UniformLoss
 
 
-class ConfLearnTrainer:
+class UniformTrainer:
     """
     Conformalized uncertainty-aware training of deep multi-class classifiers
 

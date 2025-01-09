@@ -8,8 +8,8 @@
 import torch
 from torchsort import soft_sort, soft_rank
 
-from torchcp.classification.loss import ConfLearnLoss
-from torchcp.classification.loss.conflearn import UniformMatchingLoss
+from torchcp.classification.loss import UniformLoss
+from torchcp.classification.loss.uniform import UniformMatchingLoss
 
 def test_UniformMatchingLoss():
     loss_fn = UniformMatchingLoss()

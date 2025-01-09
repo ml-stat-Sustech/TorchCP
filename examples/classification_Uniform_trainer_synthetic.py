@@ -12,7 +12,7 @@ import pandas as pd
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from transformers import set_seed
-from torchcp.classification.trainer import ConfLearnTrainer
+from torchcp.classification.trainer import UniformTrainer
 from examples.utils import get_others_dir
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
