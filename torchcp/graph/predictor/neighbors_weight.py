@@ -5,9 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import networkx as nx
+import copy
 import torch
+import networkx as nx
 from scipy.optimize import brentq
+
+from torch_geometric.loader import NeighborLoader
 from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.score import APS
@@ -208,9 +211,9 @@ class NAPSPredictor(SplitPredictor):
 
     # The prediction process ########################################################
 
-    def precompute_naps_sets(self, logits, labels, alpha):
+    def predict_with_logits(self, logits, eval_idx, alpha):
         """
-        Precompute the prediction sets for nodes in the graph based on logits and labels.
+        Predict the prediction sets for nodes in the graph.
 
         This method calculates the prediction sets for each node that has at least 'cutoff' k-hop neighbors, 
         based on the provided logits and labels. The prediction sets are precomputed for a given empirical 
@@ -218,10 +221,10 @@ class NAPSPredictor(SplitPredictor):
 
         Parameters:
             logits (torch.Tensor):
-                A tensor containing the model's predicted logits for each test node. Shape: [num_test_nodes, num_classes].
+                A tensor containing the model's predicted logits
 
-            labels (torch.Tensor):
-                A tensor containing the true labels of test nodes. Shape: [num_test_nodes].
+            eval_idx (torch.Tensor):
+                The indices of test nodes.
 
             alpha (float):
                 The pre-defined empirical marginal coverage level, where `1 - alpha` represents the confidence 
@@ -236,6 +239,9 @@ class NAPSPredictor(SplitPredictor):
                 A list containing the precomputed prediction sets for each node in `lcc_nodes`. Each set is a 
                 list of predicted classes for that node.
         """
+        logits = logits[eval_idx]
+        labels = self._graph_data.y[eval_idx]
+
         quantiles_nb = {}
         for node in list(self._G.nodes):
             p = self.calculate_threshold_for_node(node, logits, labels, alpha)
@@ -246,10 +252,10 @@ class NAPSPredictor(SplitPredictor):
             list(quantiles_nb.keys()), device=self._device)
         quantiles = torch.tensor(
             list(quantiles_nb.values()), device=self._device)
-        prediction_sets = self.predict(logits[lcc_nodes], quantiles[:, None])
+        prediction_sets = self._generate_prediction_set(logits[lcc_nodes], quantiles[:, None])
         return lcc_nodes, prediction_sets
 
-    def predict(self, logits, alphas):
+    def _generate_prediction_set(self, logits, alphas):
         """
         Generate prediction sets for each node based on the logits and the corresponding adjusted alphas.
 
@@ -272,9 +278,54 @@ class NAPSPredictor(SplitPredictor):
                 predicted to belong to the true class for the given significance level.
         """
         scores = self.score_function(logits)
-        prediction_set_list = []
-        for index in range(scores.shape[0]):
-            prediction_set_list.append(self._generate_prediction_set(
-                scores[index, :].reshape(1, -1), 1 - alphas[index]))
 
-        return torch.cat(prediction_set_list, dim=0)
+        alphas_expanded = alphas.view(-1, 1)
+        prediction_sets = (scores <= 1 - alphas_expanded).int()
+
+        return prediction_sets
+    
+    def evaluate(self, eval_idx, alpha):
+        """
+        Evaluate the model's conformal prediction performance on a given evaluation set.
+
+        This method performs evaluation by first making predictions using the model's raw outputs 
+        (logits) and then calculating several performance metrics based on the prediction sets 
+        generated for the evaluation samples. It calculates the coverage rate, average prediction set 
+        size, and singleton hit ratio, and returns these metrics as a dictionary.
+
+        Parameters:
+            eval_idx (torch.Tensor or list): 
+                Indices of the samples in the evaluation or test set. 
+                Shape: [num_test_samples].
+
+            alpha (float):
+                The pre-defined empirical marginal coverage level, where `1 - alpha` represents the confidence 
+                level of the prediction sets.
+
+        Returns:
+            dict:
+                A dictionary containing the evaluation results. The dictionary includes:
+                - "Coverage_rate": The proportion of test samples for which the true label is included 
+                in the prediction set.
+                - "Average_size": The average size of the prediction sets.
+                - "Singleton_hit_ratio": The ratio of singleton (i.e., single-class) prediction sets 
+                where the predicted class matches the true label.
+        """
+        kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
+        subgraph_loader = NeighborLoader(copy.copy(self._graph_data), input_nodes=None,
+                                        num_neighbors=[-1], shuffle=False, **kwargs)
+        del subgraph_loader.data.x, subgraph_loader.data.y
+        subgraph_loader.data.num_nodes = self._graph_data.num_nodes
+        subgraph_loader.data.n_id = torch.arange(self._graph_data.num_nodes)
+
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model.inference(self._graph_data.x, subgraph_loader)
+        
+        lcc_nodes, prediction_sets = self.predict_with_logits(logits, eval_idx, alpha)
+        labels = self._graph_data.y[eval_idx][lcc_nodes]
+
+        res_dict = {"coverage_rate": self._metric('coverage_rate')(prediction_sets, labels),
+                    "average_size": self._metric('average_size')(prediction_sets, labels),
+                    "singleton_hit_ratio": self._metric('singleton_hit_ratio')(prediction_sets, labels)}
+        return res_dict

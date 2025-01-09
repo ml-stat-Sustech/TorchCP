@@ -5,21 +5,18 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import argparse
-import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import set_seed
 
+from torch_geometric.nn import SAGEConv
+from torch_geometric.datasets import Amazon
 from torch_geometric.loader import NeighborLoader
 from torch_geometric.transforms import RandomNodeSplit
-from torch_geometric.datasets import Amazon
-from torch_geometric.nn import SAGEConv
 
 from examples.utils import get_dataset_dir
 from torchcp.graph.predictor import NAPSPredictor
-from torchcp.classification import Metrics
 
 
 class SAGE(nn.Module):
@@ -43,9 +40,6 @@ class SAGE(nn.Module):
     def inference(self, x_all, subgraph_loader):
         device = x_all.device
 
-        # Compute representations of nodes layer by layer, using *all*
-        # available edges. This leads to faster computation in contrast to
-        # immediately computing the final representations of each batch:
         for i, conv in enumerate(self.convs):
             xs = []
             for batch in subgraph_loader:
@@ -67,14 +61,7 @@ def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
                 'persistent_workers': True}
     train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,
                                     num_neighbors=[25, 10], shuffle=True, **kwargs)
-    subgraph_loader = NeighborLoader(copy.copy(graph_data), input_nodes=None,
-                                        num_neighbors=[-1], shuffle=False, **kwargs)
-
-    del subgraph_loader.data.x, subgraph_loader.data.y
-    subgraph_loader.data.num_nodes = graph_data.num_nodes
-    subgraph_loader.data.n_id = torch.arange(graph_data.num_nodes)
-
-    return graph_data, train_loader, subgraph_loader
+    return graph_data, train_loader
 
 
 def train(model, optimizer, train_loader):
@@ -88,16 +75,6 @@ def train(model, optimizer, train_loader):
         optimizer.step()
 
 
-def test(model, graph_data, subgraph_loader):
-    model.eval()
-    with torch.no_grad():
-        logits = model.inference(graph_data.x, subgraph_loader)
-        y_pred = torch.argmax(logits, dim=1)
-        accuracy = (y_pred[graph_data.test_mask] == graph_data.y[graph_data.test_mask]).float().mean().item()
-        print(f"Model Acc: {accuracy}")
-    return logits
-
-
 if __name__ == '__main__':
     set_seed(0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -106,7 +83,7 @@ if __name__ == '__main__':
     # Loading dataset and a model for inductive
     #######################################
 
-    graph_data, train_loader, subgraph_loader = build_inductive_gnn_data('Computers')
+    graph_data, train_loader = build_inductive_gnn_data('Computers')
 
     model = SAGE(in_channels=graph_data.x.shape[1], 
                  hidden_channels=64, 
@@ -119,27 +96,12 @@ if __name__ == '__main__':
 
     for _ in range(30):
         train(model, optimizer, train_loader)
-
-    logits = test(model, graph_data, subgraph_loader)
     
     #######################################
     # Neighbourhood Adaptive Prediction Sets for Conformal Prediction
     #######################################
 
-    labels = graph_data.y[graph_data.test_mask]
-    logits = logits[graph_data.test_mask]
+    eval_idx = torch.where(graph_data.test_mask)[0]
 
-    predictor = NAPSPredictor(graph_data)
-    lcc_nodes, prediction_sets = predictor.precompute_naps_sets(logits, labels, alpha=0.1)
-    
-    print(predictor.evaluate(lcc_nodes))
-
-    # Only compliant nodes are evaluated here, i.e., nodes with at least cutoff neighbors.
-    metrics = Metrics()
-    print("Evaluating prediction sets...")
-    print(
-        f"Coverage_rate: {metrics('coverage_rate')(prediction_sets, labels[lcc_nodes])}.")
-    print(
-        f"Average_size: {metrics('average_size')(prediction_sets, labels[lcc_nodes])}.")
-    print(
-        f"Singleton_hit_ratio: {metrics('singleton_hit_ratio')(prediction_sets, labels[lcc_nodes])}.")
+    predictor = NAPSPredictor(graph_data, model=model)
+    print(predictor.evaluate(eval_idx, alpha=0.1))
