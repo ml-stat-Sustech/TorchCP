@@ -298,7 +298,7 @@ if __name__ == '__main__':
     #######################################
     train_loader, val_loader, cal_loader, test_loader, X_test, Y_test, oracle, model, optimizer = setup_data_and_model(
         device)
-    conflearn_trainer = ConfLearnTrainer(model, optimizer, device=device)
+    conflearn_trainer = UniformTrainer(model, optimizer, device=device)
     
     #######################################
     # Conformal Learning
@@ -307,11 +307,11 @@ if __name__ == '__main__':
                             val_loader=val_loader, num_epochs=10)
 
     # For early stopping loss
-    conflearn_trainer_loss = ConfLearnTrainer(model, optimizer, device=device)
+    conflearn_trainer_loss = UniformTrainer(model, optimizer, device=device)
     conflearn_trainer_loss.load_checkpoint(checkpoint_path, "loss")
 
     # For early stopping acc
-    conflearn_trainer_acc = ConfLearnTrainer(model, optimizer, device=device)
+    conflearn_trainer_acc = UniformTrainer(model, optimizer, device=device)
     conflearn_trainer_acc.load_checkpoint(checkpoint_path, "acc")
 
     #######################################
