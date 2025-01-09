@@ -39,9 +39,8 @@ class TSTrainer(BaseTrainer):
             device: torch.device = None,
             verbose: bool = True):  
         
-        self.org_model = model
         self.init_temperature = init_temperature
-        model = TemperatureScalingModel(self.org_model, temperature=init_temperature)        
+        model = TemperatureScalingModel(model, temperature=init_temperature)        
         super().__init__(model, device, verbose)
         
     def train(
@@ -59,8 +58,6 @@ class TSTrainer(BaseTrainer):
             lr (float, optional): Learning rate for LBFGS. Defaults to 0.01
             num_epochs (int, optional): Max LBFGS iterations. Defaults to 100
         """
-        self.model = TemperatureScalingModel(self.org_model, temperature= self.init_temperature)
-        self.model.to(self.device)
         self.model.eval()
         nll_criterion = nn.CrossEntropyLoss().to(self.device)
         ece_criterion = _ECELoss().to(self.device)
@@ -103,6 +100,7 @@ class TSTrainer(BaseTrainer):
         if self.verbose:
             print(f'Optimal temperature: {self.model.temperature.item():.3f}')
             print(f'After scaling - NLL: {after_nll:.3f}, ECE: {after_ece:.3f}')
+        return self.model
             
             
 # Adapted from: Geoff Pleiss

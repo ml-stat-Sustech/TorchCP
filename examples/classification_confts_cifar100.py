@@ -12,7 +12,7 @@ from transformers import set_seed
 
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import THR, APS, SAPS, RAPS, Margin
-from torchcp.classification.trainer import TSTrainer
+from torchcp.classification.trainer import ConfTSTrainer
 
 from examples.utils import get_dataset_dir
 
@@ -52,14 +52,20 @@ model.eval()
 #######################################
 init_temperature = 1.0
 
-trainer = TSTrainer(
+trainer = ConfTSTrainer(
     model=model,
     init_temperature=init_temperature,
+    optimizer_class=torch.optim.Adam,
+    optimizer_params={             
+        'lr': 0.001,
+        'eps': 1e-08,
+    },
     device=device,
     verbose=True
 )
 
-calibrated_model = trainer.train(cal_dataloader, lr=0.01, num_epochs=100)
+
+calibrated_model = trainer.train(cal_dataloader, num_epochs=10)
 
 ########################################
 # Conformal prediction

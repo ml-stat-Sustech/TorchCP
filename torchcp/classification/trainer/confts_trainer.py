@@ -48,20 +48,23 @@ class ConfTSTrainer(Trainer):
     def __init__(
             self,
             model: torch.nn.Module,
-            temperature: float,
-            optimizer: torch.optim.Optimizer,
+            init_temperature: float,
+            optimizer_class: torch.optim.Optimizer =torch.optim.Adam, 
+            optimizer_params: dict={},
             device: torch.device = None,
             verbose: bool = True,
             alpha: float = 0.1
             
     ):
         
-        self.model = TemperatureScalingModel(model, temperature=temperature)
-        optimizer = type(optimizer)([self.model.temperature], **optimizer.defaults)
-        
-        predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=self.model)
+        model = TemperatureScalingModel(model, temperature=init_temperature)
+        optimizer = optimizer_class(
+            [model.temperature],
+            **optimizer_params
+        )        
+        predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
         confts = ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)
                 
-        super().__init__(model, temperature, optimizer, confts, device = device, verbose = verbose)
+        super().__init__(model, optimizer, confts, 1, device = device, verbose = verbose)
         
         

@@ -162,7 +162,6 @@ class Trainer(BaseTrainer):
             train_iter = tqdm(train_loader, desc="Training")
         else:
             train_iter = train_loader
-
         for batch_idx, (data, target) in enumerate(train_iter):
             data, target = data.to(self.device), target.to(self.device)
 
@@ -177,7 +176,7 @@ class Trainer(BaseTrainer):
                 for i, (fn, weight) in enumerate(zip(self.loss_fn, self.loss_weights)):
                     individual_loss = fn(output, target).item()
                     individual_losses[f'loss_{i}'] = individual_losses.get(f'loss_{i}', 0) + individual_loss
-
+            
             loss.backward()
             self.optimizer.step()
 
@@ -298,6 +297,7 @@ class Trainer(BaseTrainer):
                         log_msg += f" - {key}: {value:.4f}"
                     log_msg += f" - Time: {time.time() - start_time:.2f}s"
                     self.logger.info(log_msg)
+        return self.model
 
     def save_checkpoint(
             self,
