@@ -16,13 +16,25 @@ from torchcp.classification.loss import UniformLoss
 from torchcp.classification.trainer import UniformTrainer
 
 class ClassifierDataset(Dataset):
-    def __init__(self, X_data, y_data, z_data):
+    def __init__(self, X_data, Y_data):
         self.X_data = X_data
-        self.y_data = y_data
-        self.z_data = z_data
+        self.Y_data = Y_data
 
     def __getitem__(self, index):
-        return self.X_data[index], self.y_data[index], self.z_data[index]
+        return self.X_data[index], self.Y_data[index]
+
+    def __len__(self):
+        return len(self.X_data)
+    
+
+class TrainDataset(Dataset):
+    def __init__(self, X_data, Y_data, Z_data):
+        self.X_data = X_data
+        self.Y_data = Y_data
+        self.Z_data = Z_data
+
+    def __getitem__(self, index):
+        return self.X_data[index], self.Y_data[index], self.Z_data[index]
 
     def __len__(self):
         return len(self.X_data)
@@ -52,8 +64,7 @@ def mock_conflearn_trainer(mock_model):
 def train_loader():
     X_train = torch.rand((100, 3)).float()
     Y_train = torch.randint(0, 3, (100, )).long()
-    Z_train = torch.randint(0, 2, (100, )).long()
-    train_dataset = ClassifierDataset(X_train, Y_train, Z_train)
+    train_dataset = ClassifierDataset(X_train, Y_train)
     train_loader = DataLoader(
         train_dataset, batch_size=20, shuffle=True, drop_last=True)
     return train_loader
@@ -63,8 +74,7 @@ def train_loader():
 def val_loader():
     X_val = torch.rand((100, 3)).float()
     Y_val = torch.randint(0, 3, (100, )).long()
-    Z_val = torch.randint(0, 2, (100, )).long()
-    val_dataset = ClassifierDataset(X_val, Y_val, Z_val)
+    val_dataset = ClassifierDataset(X_val, Y_val)
     val_loader = DataLoader(
         val_dataset, batch_size=20, shuffle=True, drop_last=True)
     return val_loader
@@ -107,8 +117,9 @@ def test_calculate_loss(mock_conflearn_trainer):
     assert loss.item() == except_loss.item()
 
     torch.manual_seed(42)
-    loss = mock_conflearn_trainer.calculate_loss(output, target, Z_batch, False)
+    loss = mock_conflearn_trainer.calculate_loss(output, target, None, False)
     torch.manual_seed(42)
+    Z_batch = torch.ones(len(output)).long()
     loss_ce = mock_conflearn_trainer.criterion_pred_loss_fn(output, target)
     loss_scores = mock_conflearn_trainer.conformal_loss_fn(output, target, Z_batch)
     except_loss = loss_ce + loss_scores * 0.2
@@ -116,17 +127,17 @@ def test_calculate_loss(mock_conflearn_trainer):
 
 
 def test_train_epoch(mock_conflearn_trainer, train_loader):
-
+    train_loader = mock_conflearn_trainer.split_dataloader(train_loader)
     mock_conflearn_trainer.train_epoch(train_loader)
 
 
 def test_validate(mock_conflearn_trainer, val_loader):
-
+    torch.manual_seed(42)
     _, acc_val = mock_conflearn_trainer.validate(val_loader)
 
+    torch.manual_seed(42)
     except_acc_val = 0
-
-    for X_batch, Y_batch, _ in val_loader:
+    for X_batch, Y_batch in val_loader:
         output = X_batch
         pred = output.argmax(dim=1)
         acc = pred.eq(Y_batch).sum()
@@ -148,6 +159,25 @@ def test_train(mock_conflearn_trainer, train_loader, val_loader):
     assert os.path.exists(save_path + "final.pt")
 
     shutil.rmtree(save_dir)
+
+
+def test_split_dataloader(mock_conflearn_trainer, train_loader):
+    torch.manual_seed(42)
+    train_loader = mock_conflearn_trainer.split_dataloader(train_loader)
+
+    torch.manual_seed(42)
+    dataset = train_loader.dataset
+    Z_data = torch.zeros(len(dataset)).long()
+    split = int(len(dataset) * 0.8)
+    Z_data[torch.randperm(len(dataset))[split:]] = 1
+    train_dataset = TrainDataset(dataset.X_data, dataset.Y_data, Z_data)
+    except_loader = DataLoader(train_dataset, batch_size=20, shuffle=True, drop_last=True)
+
+    assert torch.equal(train_loader.dataset.X_data, except_loader.dataset.X_data)
+    assert torch.equal(train_loader.dataset.Y_data, except_loader.dataset.Y_data)
+    assert torch.equal(train_loader.dataset.Z_data, except_loader.dataset.Z_data)
+    assert train_loader.batch_size == except_loader.batch_size
+    assert train_loader.drop_last == except_loader.drop_last
 
 
 def test_save_and_load_checkpoint(mock_conflearn_trainer):
