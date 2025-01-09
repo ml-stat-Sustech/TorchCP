@@ -153,6 +153,7 @@ if __name__ == '__main__':
     lcc_nodes, prediction_sets = predictor.precompute_naps_sets(
         logits, labels, args.alpha)
 
+    # Only compliant nodes are evaluated here, i.e., nodes with at least cutoff neighbors.
     metrics = Metrics()
     print("Evaluating prediction sets...")
     print(

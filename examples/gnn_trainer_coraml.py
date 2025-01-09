@@ -168,11 +168,14 @@ if __name__ == '__main__':
     # Results with Conformalized GNN
     #######################################
 
+    # Split data into train/val/calib for training
     graph_data['train_idx'] = train_idx
     graph_data['val_idx'] = test_idx
     graph_data['calib_train_idx'] = calib_train_idx
     confmodel_conftr = CFGNNTrainer(model,
                                     graph_data)
+    
+    # Train cfgnn and evaluate
     best_logits = confmodel_conftr.train()
     conftr_coverage, conftr_size = evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args)
 

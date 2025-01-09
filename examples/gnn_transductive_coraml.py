@@ -126,21 +126,24 @@ if __name__ == '__main__':
     #######################################
     # Split Conformal Prediction
     #######################################
-    scoring_methods = [APS(score_type="softmax"),
-                       DAPS(graph_data=graph_data,
-                            base_score_function=APS(score_type="softmax"),
-                            neigh_coef=0.5),
-                       SNAPS(graph_data=graph_data,
-                             base_score_function=APS(score_type="softmax"),
-                             xi=1 / 3, mu=1 / 3,
-                             features=graph_data.x, k=20)]
 
+    # Note: You can choose other score function, such as:
+    # 1. DAPS(graph_data=graph_data,
+    #         base_score_function=APS(score_type="softmax"),
+    #         neigh_coef=0.5)
+    # 2. SNAPS(graph_data=graph_data,
+    #          base_score_function=APS(score_type="softmax"),
+    #          xi=1 / 3, mu=1 / 3,
+    #          features=graph_data.x, k=20)
+    score_function = APS(score_type="softmax")
+
+    # split data into calib/evaluration data
     n_calib = 500
     perm = torch.randperm(test_idx.shape[0])
     cal_idx = test_idx[perm[: n_calib]]
     eval_idx = test_idx[perm[n_calib:]]
 
-    for score_function in scoring_methods:
-        predictor = SplitPredictor(graph_data, score_function, model)
-        predictor.calibrate(cal_idx, args.alpha)
-        print(score_function.__class__.__name__, predictor.evaluate(eval_idx))
+    # calibrate and evaluate with split conformal prediction
+    predictor = SplitPredictor(graph_data, score_function, model)
+    predictor.calibrate(cal_idx, args.alpha)
+    print(score_function.__class__.__name__, predictor.evaluate(eval_idx))
