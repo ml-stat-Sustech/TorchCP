@@ -9,8 +9,21 @@ import os
 import torch
 from tqdm import tqdm
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset, Dataset
 from torchcp.classification.loss import UniformLoss
+
+
+class TrainDataset(Dataset):
+    def __init__(self, X_data, Y_data, Z_data):
+        self.X_data = X_data
+        self.Y_data = Y_data
+        self.Z_data = Z_data
+
+    def __getitem__(self, index):
+        return self.X_data[index], self.Y_data[index], self.Z_data[index]
+
+    def __len__(self):
+        return len(self.X_data)
 
 
 class UniformTrainer:
@@ -71,6 +84,7 @@ class UniformTrainer:
             idx_ce = torch.where(Z_batch == 0)[0]
             loss_ce = self.criterion_pred_loss_fn(output[idx_ce], target[idx_ce])
         else:
+            Z_batch = torch.ones(len(output)).long().to(self.device)
             loss_ce = self.criterion_pred_loss_fn(output, target)
 
         loss_scores = self.conformal_loss_fn(output, target, Z_batch)
@@ -88,7 +102,6 @@ class UniformTrainer:
         Args:
             train_loader (torch.utils.data.DataLoader): The DataLoader providing the training data.
         """
-        self.model.train()
 
         for X_batch, Y_batch, Z_batch in train_loader:
             X_batch = X_batch.to(self.device)
@@ -120,9 +133,9 @@ class UniformTrainer:
         loss_val = 0
         acc_val = 0
 
-        for X_batch, Y_batch, Z_batch in val_loader:
+        for X_batch, Y_batch in val_loader:
             output = self.model(X_batch)
-            loss = self.calculate_loss(output, Y_batch, Z_batch)
+            loss = self.calculate_loss(output, Y_batch, None, training=False)
             pred = output.argmax(dim=1)
             acc = pred.eq(Y_batch).sum()
 
@@ -149,6 +162,8 @@ class UniformTrainer:
             val_loader (torch.utils.data.DataLoader): The DataLoader for the validation set (default: None).
             num_epochs (int): The number of epochs to train for (default: 10).
         """
+
+        train_loader = self.split_dataloader(train_loader)
 
         best_loss = None
         best_acc = None
@@ -180,6 +195,32 @@ class UniformTrainer:
                     self.save_checkpoint(epoch, save_path, "acc")
 
         self.save_checkpoint(epoch, save_path, "final")
+
+    def split_dataloader(self, data_loader: DataLoader, split_ratio=0.8):
+        """
+        This function splits a given DataLoader into two parts based on the specified split ratio
+        for calculate cross-entropy loss and conformal loss, respectively.
+        The split is done randomly, and the labels for the split data are generated as a binary indicator.
+
+        Args:
+            data_loader (DataLoader): The DataLoader object containing the original dataset.
+            split_ratio (float, optional): The ratio to split the dataset into two parts.
+        
+        Returns:
+            DataLoader: A new DataLoader that contains the modified dataset with the binary labels.
+        """
+
+        dataset = data_loader.dataset
+
+        Z_data = torch.zeros(len(dataset)).long().to(self.device)
+        split = int(len(dataset) * split_ratio)
+        Z_data[torch.randperm(len(dataset))[split:]] = 1
+
+        train_dataset = TrainDataset(dataset.X_data, dataset.Y_data, Z_data)
+        train_loader = DataLoader(
+            train_dataset, batch_size=data_loader.batch_size, shuffle=True, drop_last=data_loader.drop_last)
+        
+        return train_loader
 
 
     def save_checkpoint(self, epoch: int, save_path: str, save_type: str='final'):

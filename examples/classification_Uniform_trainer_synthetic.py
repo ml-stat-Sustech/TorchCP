@@ -119,19 +119,6 @@ class ClassNNet(nn.Module):
 
 
 class ClassifierDataset(Dataset):
-    def __init__(self, X_data, y_data, z_data):
-        self.X_data = X_data
-        self.y_data = y_data
-        self.z_data = z_data
-
-    def __getitem__(self, index):
-        return self.X_data[index], self.y_data[index], self.z_data[index]
-
-    def __len__(self):
-        return len(self.X_data)
-
-
-class CommonDataset(Dataset):
     def __init__(self, X_data, Y_data):
         self.X_data = X_data
         self.Y_data = Y_data
@@ -216,8 +203,8 @@ def setup_data_and_model(device):
     delta_2 = 0.2
     a = 1
 
-    n_train = 4800  # Number of data samples
-    n_hout = 2000   # Number of hold out samples
+    n_train = 6000  # Number of data samples
+    n_valid = 2000   # Number of hold out samples for validation
     n_calib = 10000  # Number of calibration samples
     n_test = 2000   # Number of test samples
 
@@ -228,16 +215,9 @@ def setup_data_and_model(device):
     # Generate the data labels conditional on the features
     Y_train = data_model.sample_Y(X_train)
 
-    # Number of data samples for training the new loss
-    n_tr_score = int(n_train * 0.2)
-    # Generate the data features
-    X_tr_score = data_model.sample_X(n_tr_score)
-    # Generate the data labels conditional on the features
-    Y_tr_score = data_model.sample_Y(X_tr_score)
-
     # Generate independent hold-out data
-    X_hout = data_model.sample_X(n_hout)
-    Y_hout = data_model.sample_Y(X_hout)
+    X_valid = data_model.sample_X(n_valid)
+    Y_valid = data_model.sample_Y(X_valid)
 
     # Generate independent calibration data
     X_calib = data_model.sample_X(n_calib)
@@ -247,31 +227,23 @@ def setup_data_and_model(device):
     X_test = data_model.sample_X(n_test, test=True)
     Y_test = data_model.sample_Y(X_test)
 
-    X_augmented = torch.cat((X_train, X_tr_score), 0)
-    Y_augmented = torch.cat((Y_train, Y_tr_score), 0)
-
-    Z_train = torch.zeros(len(Y_train))
-    Z_tr_score = torch.ones(len(Y_tr_score))
-    Z_augmented = torch.cat((Z_train, Z_tr_score), 0).long().to(device)
-
     # Initialize loader for training data
-    train_dataset = ClassifierDataset(X_augmented, Y_augmented, Z_augmented)
+    train_dataset = ClassifierDataset(X_train, Y_train)
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
-    # Initialize loader for hold-out data (if available)
-    Z_hout = torch.ones(Y_hout.shape).long().to(device)
-    val_dataset = ClassifierDataset(X_hout, Y_hout, Z_hout)
+    # Initialize loader for hold-out data for validation (if available)
+    val_dataset = ClassifierDataset(X_valid, Y_valid)
     val_loader = DataLoader(
         val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
     # Initialize loader for calibration data
-    cal_dataset = CommonDataset(X_calib, Y_calib)
+    cal_dataset = ClassifierDataset(X_calib, Y_calib)
     cal_loader = DataLoader(cal_dataset, batch_size=100,
                             shuffle=True, drop_last=True)
 
     # Initialize loader for test data
-    test_dataset = CommonDataset(X_test, Y_test)
+    test_dataset = ClassifierDataset(X_test, Y_test)
     test_loader = DataLoader(test_dataset, batch_size=100,
                              shuffle=True, drop_last=True)
 
@@ -290,7 +262,7 @@ if __name__ == '__main__':
     lr = 0.001
     mu = 0.2
     checkpoint_path = os.path.join(get_others_dir(), "conflearn")
-    device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     set_seed(seed=42)
 
     #######################################
@@ -304,7 +276,7 @@ if __name__ == '__main__':
     # Conformal Learning
     #######################################
     conflearn_trainer.train(train_loader, save_path=checkpoint_path, 
-                            val_loader=val_loader, num_epochs=10)
+                            val_loader=val_loader, num_epochs=4000)
 
     # For early stopping loss
     conflearn_trainer_loss = UniformTrainer(model, optimizer, device=device)
