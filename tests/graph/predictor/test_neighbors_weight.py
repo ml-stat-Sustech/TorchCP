@@ -29,12 +29,25 @@ def mock_graph_data():
         if new_edge[0] != new_edge[1]:
             edges.add(tuple(new_edge))
             edges.add((new_edge[1], new_edge[0]))
-    edge_index = torch.tensor(list(edges)).T
+    edge_index = torch.tensor(list(edges)).T.contiguous()
 
     y = torch.randint(0, 3, (num_nodes,))
     test_mask = torch.zeros(num_nodes).bool()
     test_mask[torch.randperm(num_nodes)[:num_test]] = True
     return Data(x=x, edge_index=edge_index, y=y, num_nodes=num_nodes, test_mask=test_mask)
+
+
+@pytest.fixture
+def mock_model():
+    class MockModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.param = torch.nn.Parameter(torch.tensor(1.0))
+
+        def inference(self, x, subgraph_loader=None):
+            return x
+
+    return MockModel()
 
 
 @pytest.fixture
@@ -145,13 +158,15 @@ def test_get_weighted_quantile(naps_predictor):
         naps_predictor._get_weighted_quantile(scores, weights, 1.5)
 
 
-def test_precompute_naps_sets(mock_graph_data):
+def test_predict_with_logits(mock_graph_data):
     naps_predictor = NAPSPredictor(graph_data=mock_graph_data,
                                    score_function=APS(score_type="softmax"),
                                    cutoff=130, k=2, scheme="unif")
-    logits = mock_graph_data.x[mock_graph_data.test_mask]
-    labels = mock_graph_data.y[mock_graph_data.test_mask]
+
+    eval_idx = torch.where(mock_graph_data.test_mask)[0]
     torch.manual_seed(42)
+    logits = mock_graph_data.x[eval_idx]
+    labels = mock_graph_data.y[eval_idx]
     quantiles_nb = {}
     for node_id in naps_predictor._G.nodes():
         neigh_depth = nx.single_source_shortest_path_length(naps_predictor._G, node_id, cutoff=2)
@@ -162,28 +177,34 @@ def test_precompute_naps_sets(mock_graph_data):
             naps_predictor.calculate_threshold_for_node(node_id, logits, labels, alpha=0.1)
     excepted_nodes = torch.tensor(list(quantiles_nb.keys()))
     quantiles = torch.tensor(list(quantiles_nb.values()))
-    excepted_sets = naps_predictor.predict(logits[excepted_nodes], quantiles[:, None])
+    excepted_sets = naps_predictor._generate_prediction_set(logits[excepted_nodes], quantiles[:, None])
 
     torch.manual_seed(42)
-    pred_nodes, pred_sets = naps_predictor.precompute_naps_sets(logits, labels, alpha=0.1)
+    pred_nodes, pred_sets = naps_predictor.predict_with_logits(mock_graph_data.x, eval_idx, alpha=0.1)
 
     assert torch.equal(excepted_nodes, pred_nodes)
     assert torch.equal(excepted_sets, pred_sets)
 
-# def test_predict(naps_predictor):
-#     logits = torch.randn(100, 3)
-#     alpha = 0.1
 
-#     torch.manual_seed(42)
-#     pred_sets = naps_predictor.predict(logits, alpha)
+def test_evaluate(mock_graph_data, mock_model):
 
-#     torch.manual_seed(42)
-#     scores = APS(score_type="softmax")(logits)
-#     excepted_sets = []
-#     for index in range(scores.shape[0]):
-#         excepted_sets.append(naps_predictor._generate_prediction_set(
-#             scores[index, :].reshape(1, -1), 1 - alpha))
-#     excepted_sets = torch.cat(excepted_sets, dim=0)
-#     print(excepted_sets)
-#     print(pred_sets)
-#     assert torch.equal(pred_sets, excepted_sets)
+    naps_predictor = NAPSPredictor(graph_data=mock_graph_data,
+                                   score_function=APS(score_type="softmax"),
+                                   model=mock_model,
+                                   cutoff=130, k=2, scheme="unif")
+    eval_idx = torch.where(mock_graph_data.test_mask)[0]
+
+    torch.manual_seed(0)
+    results = naps_predictor.evaluate(eval_idx, alpha=0.1)
+
+    torch.manual_seed(0)
+    lcc_nodes, prediction_sets = naps_predictor.predict_with_logits(mock_graph_data.x, eval_idx, 0.1)
+    labels = mock_graph_data.y[eval_idx][lcc_nodes]
+
+    except_resultsres_dict = {"coverage_rate": naps_predictor._metric('coverage_rate')(prediction_sets, labels),
+                    "average_size": naps_predictor._metric('average_size')(prediction_sets, labels),
+                    "singleton_hit_ratio": naps_predictor._metric('singleton_hit_ratio')(prediction_sets, labels)}
+    
+    assert results["coverage_rate"] == except_resultsres_dict["coverage_rate"]
+    assert results["average_size"] == except_resultsres_dict["average_size"]
+    assert results["singleton_hit_ratio"] == except_resultsres_dict["singleton_hit_ratio"]

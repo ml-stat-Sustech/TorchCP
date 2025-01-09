@@ -163,3 +163,25 @@ def test_evaluate(predictor, mock_graph_data, preprocess, alpha):
         excepted_sets, mock_graph_data.y[preprocess.eval_idx])
     assert results['singleton_hit_ratio'] == metrics('singleton_hit_ratio')(
         excepted_sets, mock_graph_data.y[preprocess.eval_idx])
+
+
+@pytest.mark.parametrize("alpha", [0.1, 0.05])
+def test_evaluate_with_logits(predictor, mock_graph_data, preprocess, alpha):
+    quantile = torch.sort(preprocess.cal_scores).values[
+        math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
+
+    eval_scores = preprocess.scores[preprocess.eval_idx]
+    excepted_sets = (eval_scores <= quantile).int()
+
+    predictor.calculate_threshold(preprocess.logits, preprocess.cal_idx, preprocess.label_mask, alpha)
+    results = predictor.evaluate_with_logits(
+        preprocess.logits, preprocess.eval_idx)
+    
+    metrics = Metrics()
+    assert len(results) == 3
+    assert results['coverage_rate'] == metrics('coverage_rate')(
+        excepted_sets, mock_graph_data.y[preprocess.eval_idx])
+    assert results['average_size'] == metrics('average_size')(
+        excepted_sets, mock_graph_data.y[preprocess.eval_idx])
+    assert results['singleton_hit_ratio'] == metrics('singleton_hit_ratio')(
+        excepted_sets, mock_graph_data.y[preprocess.eval_idx])

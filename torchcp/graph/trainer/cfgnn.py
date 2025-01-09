@@ -37,7 +37,6 @@ class CFGNNTrainer:
             val_idx: The indices of the validation nodes.
             calib_train_idx: The indices of the training nodes for CF-GNN.
         hidden_channels (int): Number of hidden channels for the CF-GNN layers.
-        num_layers (int): The number of layers in the network.
         alpha (float, optional): The significance level for conformal prediction. Default is 0.1.
     """
 
@@ -46,7 +45,6 @@ class CFGNNTrainer:
             backbone_model,
             graph_data,
             hidden_channels=64,
-            num_layers=2,
             alpha=0.1):
         if backbone_model is None:
             raise ValueError("backbone_model cannot be None.")

@@ -312,8 +312,7 @@ class NAPSPredictor(SplitPredictor):
                 where the predicted class matches the true label.
         """
         kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
-        subgraph_loader = NeighborLoader(copy.copy(self._graph_data), input_nodes=None,
-                                        num_neighbors=[-1], shuffle=False, **kwargs)
+        subgraph_loader = NeighborLoader(copy.copy(self._graph_data), input_nodes=None, num_neighbors=[-1], shuffle=False, **kwargs)
         del subgraph_loader.data.x, subgraph_loader.data.y
         subgraph_loader.data.num_nodes = self._graph_data.num_nodes
         subgraph_loader.data.n_id = torch.arange(self._graph_data.num_nodes)

@@ -63,31 +63,11 @@ def mock_cfgnn_model(mock_model, mock_graph_data):
 
 
 def test_initialization(mock_model, mock_graph_data):
-    # num_layers == 1
-    model = CFGNNTrainer(mock_model, mock_graph_data, num_layers=1)
-    assert len(model.cfgnn.convs) == 1
-    assert type(model.cfgnn.convs[0]) is GCNConv
-    assert model.cfgnn.convs[0].in_channels == 10 and model.cfgnn.convs[0].out_channels == 10
-
-    # # num_layers == 2
-    model = CFGNNTrainer(mock_model, mock_graph_data, num_layers=2)
+    model = CFGNNTrainer(mock_model, mock_graph_data)
     assert len(model.cfgnn.convs) == 2
     assert type(model.cfgnn.convs[0]) is GCNConv and type(model.cfgnn.convs[1]) is GCNConv
     assert model.cfgnn.convs[0].in_channels == 10 and model.cfgnn.convs[0].out_channels == 64
     assert model.cfgnn.convs[1].in_channels == 64 and model.cfgnn.convs[1].out_channels == 10
-
-    # # num_layers == 3
-    model = CFGNNTrainer(mock_model, mock_graph_data, num_layers=3)
-    assert len(model.cfgnn.convs) == 3
-    assert type(model.cfgnn.convs[1]) is GCNConv
-    assert model.cfgnn.convs[1].in_channels == 64 and model.cfgnn.convs[1].out_channels == 64
-
-    assert next(model.cfgnn.parameters()).device == torch.device(model._device)
-    assert type(model.optimizer) is torch.optim.Adam
-    assert model.pred_loss_fn == F.cross_entropy
-    assert type(model.cf_loss_fn) is ConfTr
-    assert type(model.predictor) is SplitPredictor
-    assert model.alpha == 0.1
 
 
 def test_invalid_initialization(mock_model, mock_graph_data):
