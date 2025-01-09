@@ -5,26 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import argparse
-import collections
-import json
-import math
+
 import numpy as np
-import numpy as np
-import os
 import re
 import string
-import sys
 import torch
 from datasets import load_dataset
 from tqdm.auto import tqdm
 from transformers import LlamaForCausalLM, LlamaTokenizer, set_seed, StoppingCriteriaList
-
-from examples.utils import get_dataset_dir, get_others_dir
-from torchcp.llm.predictor import ConformalLM
-
-
-os.environ['CUDA_VISIBLE_DEVICES'] = '2,3,4,5'
 
 few_shot_qa = """Q: Which American-born Sinclair won the Nobel Prize for Literature in 1930?
 A: Sinclair Lewis
@@ -183,9 +171,6 @@ def get_dataset(dataset_name="trivia_qa", mode="validation", max_predict_samples
     if max_predict_samples is not None:
         dataset = dataset.select(range(starting_x, starting_x + max_predict_samples))
     return dataset
-
-
-
 
 
 
@@ -362,95 +347,15 @@ def preprocess_data(dataset_name, model_path, output_path):
     np.savez(output_path, labels=all_labels, scores=all_scores, diversity=diversity)
 
 
-if __name__ == "__main__":
 
-    dataset_name = "trivia_qa"
-    model_path = "meta-llama/Llama-2-7b-hf"
-    set_seed(2025)
-
-    output_path = os.path.join(get_others_dir(), f"{dataset_name}_results.npz")
-    if not os.path.exists(output_path):
-        preprocess_data(dataset_name, model_path, output_path)
+def split_indices(total_samples, N_train, p_cal, p_tuning):
     
-    scaling=('platt', {})
-    scoring='geo'
-    rejection=True
+    # Create random permutation of indices
+    shuffle = np.random.permutation(total_samples)
     
-    scaling_type = scaling[0]
-    scale_kwargs = scaling[1]
-
-    p_cal = 0.3
-    p_tuning = 0.3
-
-    data = np.load(output_path)
-    all_labels = torch.from_numpy(data['labels'])
-    all_scores = torch.from_numpy(data['scores'])
-    diversity = torch.from_numpy(data['diversity'])
-
-    epsilons = [0.2]
-    num_trials = 10
-    alpha = 0.05
-
-
-    all_trial_results = []
-    final_results = collections.defaultdict(list)
-
-
-    shuffle = np.random.permutation(len(all_labels))
-
+    # Calculate sizes for each split
+    remaining_samples = total_samples - N_train
+    N_cal = int(p_cal * remaining_samples)
+    N_tuning = int(p_tuning * remaining_samples)
     
-    
-    if scaling_type is not None:
-        N_train = 2000
-    else:
-        N_train = 0
-
-    shuffle = np.random.permutation(len(all_labels))
-
-    remaining_N = len(all_labels) - N_train
-    training_idx = shuffle[:N_train]
-
-    N_cal = int(p_cal * remaining_N)
-    val_idx = shuffle[N_train + N_cal:]
-    N_val = remaining_N - N_cal
-
-    N_tuning = int(N_cal * p_tuning)
-    N_cal -= N_tuning
-
-    tuning_idx = shuffle[N_train: N_train + N_tuning]
-    cal_idx = shuffle[N_train + N_tuning: N_train + N_tuning + N_cal]
-
-    training_scores = all_scores[training_idx]
-    tuning_scores = all_scores[tuning_idx]
-    cal_scores = all_scores[cal_idx]
-    val_scores = all_scores[val_idx]
-
-    training_labels = all_labels[training_idx]
-    tuning_labels = all_labels[tuning_idx]
-    cal_labels = all_labels[cal_idx]
-    val_labels = all_labels[val_idx]
-
-    training_simlarties = diversity[training_idx]
-    tuning_simlarties = diversity[tuning_idx]
-    cal_simlarties = diversity[cal_idx]
-    val_simlarties = diversity[val_idx]
-
-    conformal_llm = ConformalLM(epsilons=epsilons,
-                                scaling_type=scaling_type,
-                                scale_kwargs=scale_kwargs,
-                                set_score_function_name=scoring,
-                                rejection=rejection)
-
-    if scaling_type is not None:
-        conformal_llm.scaling(training_scores, training_labels)
-    conformal_llm.tuning(tuning_scores, tuning_simlarties, tuning_labels)
-    conformal_llm.calibrate_configs(cal_scores, cal_simlarties, cal_labels, alpha)
-    trial_results = conformal_llm.evaluate(val_scores, val_simlarties, val_labels)
-    
-    # Calculate and print statistics
-    print("\nResults:")
-    print("-" * 50)
-    print(f"Average Loss: {trial_results['avg_losses'][0]:.4f}")
-    print(f"Average Set Size: {trial_results['avg_size'][0]:.4f}")
-
-            
+    return shuffle[:N_train], shuffle[N_train:N_train + N_tuning], shuffle[N_train + N_tuning:N_train + N_tuning + N_cal], shuffle[N_train + N_tuning + N_cal:]
