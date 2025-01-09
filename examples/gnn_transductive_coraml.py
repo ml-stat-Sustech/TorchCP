@@ -31,7 +31,7 @@ class GCN(nn.Module):
         x = F.dropout(x, p=self._p_dropout, training=self.training)
         x = self.conv2(x, edge_index, edge_weight)
         return x
-    
+
 
 def build_transductive_gnn_data(data_name, ntrain_per_class=20):
     data_dir = get_dataset_dir()
@@ -50,7 +50,8 @@ def build_transductive_gnn_data(data_name, ntrain_per_class=20):
     train_idx = torch.concat([s[: ntrain_per_class] for s in shuffled_classes])
     val_idx = torch.concat(
         [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-    test_idx = torch.concat([s[2 * ntrain_per_class:] for s in shuffled_classes])
+    test_idx = torch.concat([s[2 * ntrain_per_class:]
+                            for s in shuffled_classes])
 
     return graph_data, train_idx, val_idx, test_idx
 
@@ -72,11 +73,12 @@ if __name__ == '__main__':
     # Loading dataset and a model
     #######################################
 
-    graph_data, train_idx, val_idx, test_idx = build_transductive_gnn_data('cora_ml')
+    graph_data, train_idx, val_idx, test_idx = build_transductive_gnn_data(
+        'cora_ml')
     graph_data = graph_data.to(device)
 
-    model = GCN(in_channels=graph_data.x.shape[1], 
-                hidden_channels=64, 
+    model = GCN(in_channels=graph_data.x.shape[1],
+                hidden_channels=64,
                 out_channels=graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=0.01, weight_decay=0.001)
@@ -106,8 +108,8 @@ if __name__ == '__main__':
     #          base_score_function=APS(score_type="softmax"),
     #          xi=1 / 3, mu=1 / 3,
     #          features=graph_data.x, k=20)
-    predictor = SplitPredictor(graph_data=graph_data, 
-                               score_function=APS(score_type="softmax"), 
+    predictor = SplitPredictor(graph_data=graph_data,
+                               score_function=APS(score_type="softmax"),
                                model=model)
     predictor.calibrate(cal_idx, alpha=0.1)
     print(predictor.evaluate(eval_idx))

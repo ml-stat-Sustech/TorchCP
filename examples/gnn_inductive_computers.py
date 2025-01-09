@@ -58,9 +58,9 @@ def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
     graph_data = Amazon(data_dir, data_name,
                         pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0].to(device)
     kwargs = {'batch_size': 512, 'num_workers': 6,
-                'persistent_workers': True}
+              'persistent_workers': True}
     train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,
-                                    num_neighbors=[25, 10], shuffle=True, **kwargs)
+                                  num_neighbors=[25, 10], shuffle=True, **kwargs)
     return graph_data, train_loader
 
 
@@ -85,8 +85,8 @@ if __name__ == '__main__':
 
     graph_data, train_loader = build_inductive_gnn_data('Computers')
 
-    model = SAGE(in_channels=graph_data.x.shape[1], 
-                 hidden_channels=64, 
+    model = SAGE(in_channels=graph_data.x.shape[1],
+                 hidden_channels=64,
                  out_channels=graph_data.y.max().item() + 1).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     for _ in range(30):
         train(model, optimizer, train_loader)
-    
+
     #######################################
     # Neighbourhood Adaptive Prediction Sets for Conformal Prediction
     #######################################
