@@ -111,5 +111,5 @@ if __name__ == '__main__':
     predictor = SplitPredictor(graph_data=graph_data,
                                score_function=APS(score_type="softmax"),
                                model=model)
-    predictor.calibrate(cal_idx, alpha=0.1)
-    print(predictor.evaluate(eval_idx))
+    predictor.calibrate(graph_data.x, cal_idx, alpha=0.1)
+    print(predictor.evaluate(graph_data.x, eval_idx))

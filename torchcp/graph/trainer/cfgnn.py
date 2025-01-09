@@ -42,25 +42,25 @@ class CFGNNTrainer:
 
     def __init__(
             self,
-            backbone_model,
+            base_model,
             graph_data,
             hidden_channels=64,
             alpha=0.1):
-        if backbone_model is None:
+        if base_model is None:
             raise ValueError("backbone_model cannot be None.")
         if graph_data is None:
             raise ValueError("graph_data cannot be None.")
 
-        self.backbone_model = backbone_model
+        self.base_model = base_model
         self.graph_data = graph_data
         self._device = self.graph_data.x.device
 
         num_classes = graph_data.y.max().item() + 1
-        self.cfgnn = GNN_Multi_Layer(in_channels=num_classes,
+        self.model = GNN_Multi_Layer(in_channels=num_classes,
                                      hidden_channels=hidden_channels,
                                      out_channels=num_classes).to(self._device)
         self.optimizer = torch.optim.Adam(
-            self.cfgnn.parameters(), weight_decay=5e-4, lr=0.001)
+            self.model.parameters(), weight_decay=5e-4, lr=0.001)
         self.pred_loss_fn = F.cross_entropy
         self.cf_loss_fn = ConfTr(predictor=SplitPredictor(score_function=THR(score_type="softmax")),
                                  alpha=alpha,
@@ -79,10 +79,10 @@ class CFGNNTrainer:
             pre_logits: The preprocessed logits from backbone model.
         """
 
-        self.cfgnn.train()
+        self.model.train()
         self.optimizer.zero_grad()
 
-        adjust_logits = self.cfgnn(pre_logits, self.graph_data.edge_index)
+        adjust_logits = self.model(pre_logits, self.graph_data.edge_index)
         loss = self.pred_loss_fn(adjust_logits[self.graph_data.train_idx], self.graph_data.y[self.graph_data.train_idx])
 
         if epoch >= 1000:
@@ -104,9 +104,9 @@ class CFGNNTrainer:
             eff_valid (float): The average size of validation size.
             adjust_logits: The adjusted logits of CF-GNN.
         """
-        self.cfgnn.eval()
+        self.model.eval()
         with torch.no_grad():
-            adjust_logits = self.cfgnn(pre_logits, self.graph_data.edge_index)
+            adjust_logits = self.model(pre_logits, self.graph_data.edge_index)
 
         size_list = []
         for _ in range(10):
@@ -132,16 +132,16 @@ class CFGNNTrainer:
             n_epochs: The number of training epochs.
 
         Returns:
-            best_logits: The corrected logits from the training process of CF-GNN.
+            model: The model of CF-GNN.
         """
-        self.backbone_model.eval()
+        self.base_model.eval()
         with torch.no_grad():
-            logits = self.backbone_model(self.graph_data.x, self.graph_data.edge_index)
+            logits = self.base_model(self.graph_data.x, self.graph_data.edge_index)
         pre_logits = F.softmax(logits, dim=1)
 
         best_valid_size = pre_logits.shape[1]
-        best_logits = pre_logits
 
+        best_model_dict = None
         for epoch in tqdm(range(n_epochs)):
             self._train_each_epoch(epoch, pre_logits)
 
@@ -149,9 +149,12 @@ class CFGNNTrainer:
 
             if eff_valid < best_valid_size:
                 best_valid_size = eff_valid
-                best_logits = adjust_logits
+                best_model_dict = self.model.state_dict()
 
-        return best_logits
+        if best_model_dict is not None:
+            self.model.load_state_dict(best_model_dict)
+
+        return self.model
 
 
 class GNN_Multi_Layer(nn.Module):

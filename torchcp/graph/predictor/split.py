@@ -23,10 +23,10 @@ class SplitPredictor(BasePredictor):
 
     # The calibration process ########################################################
 
-    def calibrate(self, cal_idx, alpha):
+    def calibrate(self, x_batch, cal_idx, alpha):
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x,
+            logits = self._model(x_batch,
                                  self._graph_data.edge_index)
         self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
 
@@ -64,10 +64,10 @@ class SplitPredictor(BasePredictor):
 
     # The prediction process ########################################################
 
-    def predict(self, eval_idx):
+    def predict(self, x_batch, eval_idx):
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x,
+            logits = self._model(x_batch,
                                  self._graph_data.edge_index)
         sets = self.predict_with_logits(logits, eval_idx)
         return sets
@@ -114,7 +114,7 @@ class SplitPredictor(BasePredictor):
 
     # The evaluation process ########################################################
 
-    def evaluate(self, eval_idx):
+    def evaluate(self, x_batch, eval_idx):
         """
         Evaluate the model's conformal prediction performance on a given evaluation set.
 
@@ -139,41 +139,8 @@ class SplitPredictor(BasePredictor):
         """
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x,
+            logits = self._model(x_batch,
                                  self._graph_data.edge_index)
-        prediction_sets = self.predict_with_logits(logits, eval_idx)
-
-        res_dict = {"coverage_rate": self._metric('coverage_rate')(prediction_sets, self._graph_data.y[eval_idx]),
-                    "average_size": self._metric('average_size')(prediction_sets, self._graph_data.y[eval_idx]),
-                    "singleton_hit_ratio": self._metric('singleton_hit_ratio')(prediction_sets,
-                                                                               self._graph_data.y[eval_idx])}
-        return res_dict
-
-    def evaluate_with_logits(self, logits, eval_idx):
-        """
-        Evaluate the model's conformal prediction performance on a given evaluation set.
-
-        It calculates the coverage rate, average prediction set 
-        size, and singleton hit ratio, and returns these metrics as a dictionary.
-
-        Parameters:
-            logits (torch.Tensor): 
-                The raw output of the model (before applying softmax).
-                Shape: [num_samples, num_classes].
-
-            eval_idx (torch.Tensor or list): 
-                Indices of the samples in the evaluation or test set. 
-                Shape: [num_test_samples].
-
-        Returns:
-            dict:
-                A dictionary containing the evaluation results. The dictionary includes:
-                - "Coverage_rate": The proportion of test samples for which the true label is included 
-                in the prediction set.
-                - "Average_size": The average size of the prediction sets.
-                - "Singleton_hit_ratio": The ratio of singleton (i.e., single-class) prediction sets 
-                where the predicted class matches the true label.
-        """
         prediction_sets = self.predict_with_logits(logits, eval_idx)
 
         res_dict = {"coverage_rate": self._metric('coverage_rate')(prediction_sets, self._graph_data.y[eval_idx]),

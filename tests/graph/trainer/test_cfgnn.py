@@ -7,14 +7,10 @@
 
 import pytest
 import torch
-import torch.nn.functional as F
 from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv, GATConv, SAGEConv, SGConv
+from torch_geometric.nn import GCNConv
 
-from torchcp.classification.loss import ConfTr
-from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
-from torchcp.graph.trainer.cfgnn import GNN_Multi_Layer
 
 
 @pytest.fixture
@@ -63,11 +59,11 @@ def mock_cfgnn_model(mock_model, mock_graph_data):
 
 
 def test_initialization(mock_model, mock_graph_data):
-    model = CFGNNTrainer(mock_model, mock_graph_data)
-    assert len(model.cfgnn.convs) == 2
-    assert type(model.cfgnn.convs[0]) is GCNConv and type(model.cfgnn.convs[1]) is GCNConv
-    assert model.cfgnn.convs[0].in_channels == 10 and model.cfgnn.convs[0].out_channels == 64
-    assert model.cfgnn.convs[1].in_channels == 64 and model.cfgnn.convs[1].out_channels == 10
+    cf_trainer = CFGNNTrainer(mock_model, mock_graph_data)
+    assert len(cf_trainer.model.convs) == 2
+    assert type(cf_trainer.model.convs[0]) is GCNConv and type(cf_trainer.model.convs[1]) is GCNConv
+    assert cf_trainer.model.convs[0].in_channels == 10 and cf_trainer.model.convs[0].out_channels == 64
+    assert cf_trainer.model.convs[1].in_channels == 64 and cf_trainer.model.convs[1].out_channels == 10
 
 
 def test_invalid_initialization(mock_model, mock_graph_data):
@@ -89,6 +85,6 @@ def test_evaluate(mock_graph_data, mock_cfgnn_model, device):
     assert results[1].shape == mock_graph_data.x.shape
 
 
-def test_train(mock_graph_data, mock_cfgnn_model):
-    results = mock_cfgnn_model.train(10)
-    assert results.shape == mock_graph_data.x.shape
+def test_train(mock_cfgnn_model):
+    model = mock_cfgnn_model.train(10)
+    assert model is mock_cfgnn_model.model

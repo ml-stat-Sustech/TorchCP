@@ -92,6 +92,11 @@ if __name__ == '__main__':
     for _ in range(200):
         train(model, optimizer, graph_data, train_idx)
 
+    model.eval()
+    with torch.no_grad():
+        logits = model(graph_data.x, graph_data.edge_index)
+    pre_logits = F.softmax(logits, dim=1)
+
     #######################################
     # Split calib/test sets
     #######################################
@@ -108,20 +113,20 @@ if __name__ == '__main__':
     graph_data['train_idx'] = train_idx
     graph_data['val_idx'] = test_idx
     graph_data['calib_train_idx'] = calib_train_idx
-    confmodel_conftr = CFGNNTrainer(model,
+    cf_trainer = CFGNNTrainer(model,
                                     graph_data)
 
     # Train conformalized gnn
-    best_logits = confmodel_conftr.train()
+    model = cf_trainer.train()
 
     # Split data into calib/test for evaluating
     eval_perms = torch.randperm(calib_eval_idx.size(0))
     eval_calib_idx = calib_eval_idx[eval_perms[:500]]
     eval_test_idx = calib_eval_idx[eval_perms[500:]]
 
-    # Calibrate and Evaluate
-    predictor = SplitPredictor(graph_data, APS(
-        score_type="softmax"), model=confmodel_conftr.cfgnn)
-    predictor.calculate_threshold(
-        best_logits, eval_calib_idx, predictor._label_mask, alpha=0.1)
-    print(predictor.evaluate_with_logits(best_logits, eval_test_idx))
+    # Calibrate and Evaluation
+    predictor = SplitPredictor(graph_data, 
+                               APS(score_type="softmax"), 
+                               model=cf_trainer.model)
+    predictor.calibrate(pre_logits, eval_calib_idx, alpha=0.1)
+    print(predictor.evaluate(pre_logits, eval_test_idx))
