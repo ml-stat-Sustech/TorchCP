@@ -10,7 +10,7 @@ import torch
 from tqdm import tqdm
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset, Dataset
-from torchcp.classification.loss import UniformLoss
+from torchcp.classification.loss import UncertaintyAwareLoss
 
 
 class TrainDataset(Dataset):
@@ -26,7 +26,7 @@ class TrainDataset(Dataset):
         return len(self.X_data)
 
 
-class UniformTrainer:
+class UncertaintyAwareTrainer:
     """
     Conformalized uncertainty-aware training of deep multi-class classifiers
 
@@ -45,6 +45,9 @@ class UniformTrainer:
         >>> trainer = ConfLearnTrainer(model, optimizer, loss_fn)
         >>> save_path = './path/to/save'
         >>> trainer.train(train_loader, save_path, val_loader, num_epochs=10)
+
+    Reference:
+        Einbinder et al. "Training Uncertainty-Aware Classifiers with Conformalized Deep Learning" (2022), https://arxiv.org/abs/2205.05878
     """
 
     def __init__(self,
@@ -59,7 +62,7 @@ class UniformTrainer:
         self.optimizer = optimizer
 
         self.criterion_pred_loss_fn = criterion_pred_loss_fn
-        self.conformal_loss_fn = UniformLoss()
+        self.conformal_loss_fn = UncertaintyAwareLoss()
         self.mu = mu
         self.alpha = alpha
         self.device = device

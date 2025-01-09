@@ -12,8 +12,8 @@ import torch
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
-from torchcp.classification.loss import UniformLoss
-from torchcp.classification.trainer import UniformTrainer
+from torchcp.classification.loss import UncertaintyAwareLoss
+from torchcp.classification.trainer import UncertaintyAwareTrainer
 
 class ClassifierDataset(Dataset):
     def __init__(self, X_data, Y_data):
@@ -57,7 +57,7 @@ def mock_model():
 @pytest.fixture
 def mock_conflearn_trainer(mock_model):
     optimizer = optim.Adam(mock_model.parameters(), lr=0.1)
-    return UniformTrainer(mock_model, optimizer)
+    return UncertaintyAwareTrainer(mock_model, optimizer)
 
 
 @pytest.fixture
@@ -82,21 +82,21 @@ def val_loader():
 
 def test_initialization(mock_model):
     optimizer = optim.Adam(mock_model.parameters(), lr=0.1)
-    conflearn_trainer = UniformTrainer(mock_model, optimizer)
+    conflearn_trainer = UncertaintyAwareTrainer(mock_model, optimizer)
     assert conflearn_trainer.model is mock_model
     assert conflearn_trainer.optimizer is optimizer
     assert isinstance(conflearn_trainer.criterion_pred_loss_fn, torch.nn.CrossEntropyLoss)
-    assert isinstance(conflearn_trainer.conformal_loss_fn, UniformLoss)
+    assert isinstance(conflearn_trainer.conformal_loss_fn, UncertaintyAwareLoss)
     assert conflearn_trainer.mu == 0.2
     assert conflearn_trainer.alpha == 0.1
     assert conflearn_trainer.device == 'cpu'
 
     optimizer = optim.Adam(mock_model.parameters(), lr=0.1)
-    conflearn_trainer = UniformTrainer(mock_model, optimizer, criterion_pred_loss_fn=torch.nn.L1Loss(), mu=0.5, alpha=0.4, device='cuda')
+    conflearn_trainer = UncertaintyAwareTrainer(mock_model, optimizer, criterion_pred_loss_fn=torch.nn.L1Loss(), mu=0.5, alpha=0.4, device='cuda')
     assert conflearn_trainer.model is mock_model
     assert conflearn_trainer.optimizer is optimizer
     assert isinstance(conflearn_trainer.criterion_pred_loss_fn, torch.nn.L1Loss)
-    assert isinstance(conflearn_trainer.conformal_loss_fn, UniformLoss)
+    assert isinstance(conflearn_trainer.conformal_loss_fn, UncertaintyAwareLoss)
     assert conflearn_trainer.mu == 0.5
     assert conflearn_trainer.alpha == 0.4
     assert conflearn_trainer.device == 'cuda'
@@ -195,7 +195,7 @@ def test_save_and_load_checkpoint(mock_conflearn_trainer):
 
     model = MockModel()
     optimizer = optim.Adam(model.parameters(), lr=0.1)
-    conflearn_trainer = UniformTrainer(model, optimizer)
+    conflearn_trainer = UncertaintyAwareTrainer(model, optimizer)
     conflearn_trainer.load_checkpoint(save_path, 'final')
     assert conflearn_trainer.model.state_dict() == mock_conflearn_trainer.model.state_dict()
     assert conflearn_trainer.optimizer.state_dict() == mock_conflearn_trainer.optimizer.state_dict()

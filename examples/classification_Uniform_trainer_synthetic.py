@@ -12,7 +12,7 @@ import pandas as pd
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from transformers import set_seed
-from torchcp.classification.trainer import UniformTrainer
+from torchcp.classification.trainer import UncertaintyAwareTrainer
 from examples.utils import get_others_dir
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     #######################################
     train_loader, val_loader, cal_loader, test_loader, X_test, Y_test, oracle, model, optimizer = setup_data_and_model(
         device)
-    conflearn_trainer = UniformTrainer(model, optimizer, device=device)
+    conflearn_trainer = UncertaintyAwareTrainer(model, optimizer, device=device)
     
     #######################################
     # Conformal Learning
@@ -279,11 +279,11 @@ if __name__ == '__main__':
                             val_loader=val_loader, num_epochs=4000)
 
     # For early stopping loss
-    conflearn_trainer_loss = UniformTrainer(model, optimizer, device=device)
+    conflearn_trainer_loss = UncertaintyAwareTrainer(model, optimizer, device=device)
     conflearn_trainer_loss.load_checkpoint(checkpoint_path, "loss")
 
     # For early stopping acc
-    conflearn_trainer_acc = UniformTrainer(model, optimizer, device=device)
+    conflearn_trainer_acc = UncertaintyAwareTrainer(model, optimizer, device=device)
     conflearn_trainer_acc.load_checkpoint(checkpoint_path, "acc")
 
     #######################################

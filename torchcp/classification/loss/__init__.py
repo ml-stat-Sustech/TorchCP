@@ -8,4 +8,4 @@
 from .cd import CDLoss
 from .conftr import ConfTr
 from .confts import ConfTS
-from .uniform import UniformLoss
+from .uncertainty_aware import UncertaintyAwareLoss

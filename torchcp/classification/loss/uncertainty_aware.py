@@ -40,7 +40,7 @@ class UniformMatchingLoss(torch.nn.Module):
         return out
 
 
-class UniformLoss(torch.nn.Module):
+class UncertaintyAwareLoss(torch.nn.Module):
     """
     A loss function used for conformalized uncertainty-aware training of deep multi-class classifiers
 
@@ -56,7 +56,7 @@ class UniformLoss(torch.nn.Module):
         Einbinder et al. "Training Uncertainty-Aware Classifiers with Conformalized Deep Learning" (2022), https://arxiv.org/abs/2205.05878
     """
     def __init__(self):
-        super(UniformLoss, self).__init__()
+        super(UncertaintyAwareLoss, self).__init__()
 
         self.layer_prob = torch.nn.Softmax(dim=1)
         self.criterion_scores = UniformMatchingLoss()
