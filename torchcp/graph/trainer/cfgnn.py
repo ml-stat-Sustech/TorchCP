@@ -8,7 +8,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GATConv, SAGEConv, SGConv
+from torch_geometric.nn import GCNConv
 from tqdm import tqdm
 
 from torchcp.classification.loss import ConfTr
@@ -60,8 +60,7 @@ class CFGNNTrainer:
         num_classes = graph_data.y.max().item() + 1
         self.cfgnn = GNN_Multi_Layer(in_channels=num_classes,
                                      hidden_channels=hidden_channels,
-                                     out_channels=num_classes,
-                                     num_layers=num_layers).to(self._device)
+                                     out_channels=num_classes).to(self._device)
         self.optimizer = torch.optim.Adam(
             self.cfgnn.parameters(), weight_decay=5e-4, lr=0.001)
         self.pred_loss_fn = F.cross_entropy
@@ -163,26 +162,18 @@ class GNN_Multi_Layer(nn.Module):
         in_channels (int): The number of input feature dimensions.
         hidden_channels (int): The number of hidden feature dimensions.
         out_channels (int): The number of output feature dimensions.
-        num_layers (int): The number of layers in the network.
         p_droput (float): The dropout probability.
     """
 
-    def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, p_droput=0.5):
+    def __init__(self, in_channels, hidden_channels, out_channels, p_droput=0.5):
         super().__init__()
         self.p_dropout = p_droput
 
         self.convs = torch.nn.ModuleList()
-        if num_layers == 1:
-            self.convs.append(
-                GCNConv(in_channels, out_channels, cached=True, normalize=True))
-        else:
-            self.convs.append(
-                GCNConv(in_channels, hidden_channels, cached=True, normalize=True))
-            for _ in range(num_layers - 2):
-                self.convs.append(
-                    GCNConv(hidden_channels, hidden_channels, cached=True, normalize=True))
-            self.convs.append(
-                GCNConv(hidden_channels, out_channels, cached=True, normalize=True))
+        self.convs.append(
+            GCNConv(in_channels, hidden_channels, cached=True, normalize=True))
+        self.convs.append(
+            GCNConv(hidden_channels, out_channels, cached=True, normalize=True))
 
     def forward(self, x, edge_index, edge_weight=None):
         """

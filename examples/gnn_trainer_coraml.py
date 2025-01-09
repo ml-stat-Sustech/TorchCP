@@ -14,7 +14,7 @@ from torch_geometric.nn import GCNConv
 from torch_geometric.datasets import CitationFull
 
 from examples.utils import get_dataset_dir
-from torchcp.classification.predictor import SplitPredictor
+from torchcp.graph.predictor import SplitPredictor
 from torchcp.classification.score import APS
 from torchcp.graph.trainer import CFGNNTrainer
 
@@ -67,41 +67,6 @@ def train(model, optimizer, graph_data, train_idx):
     optimizer.step()
 
 
-def test(model, graph_data, test_idx):
-    model.eval()
-    with torch.no_grad():
-        logits = model(graph_data.x, graph_data.edge_index)
-        y_pred = torch.argmax(logits, dim=1)
-        accuracy = (y_pred[test_idx] == graph_data.y[test_idx]).float().mean().item()
-        print(f"Model Acc: {accuracy}")
-    return logits
-
-
-def evaluate_model(best_logits, calib_eval_idx, predictor, graph_data, args):
-    coverage_list = []
-    size_list = []
-    calib_num = min(1000, int(calib_eval_idx.shape[0] / 2))
-    calib_fraction = 0.5
-
-    for _ in range(100):
-        eval_perms = torch.randperm(calib_eval_idx.size(0))
-        eval_calib_idx = calib_eval_idx[eval_perms[:int(calib_num * calib_fraction)]]
-        eval_test_idx = calib_eval_idx[eval_perms[int(calib_num * calib_fraction):]]
-
-        predictor.calculate_threshold(
-            best_logits[eval_calib_idx], graph_data.y[eval_calib_idx], alpha=0.1)
-        pred_sets = predictor.predict_with_logits(best_logits[eval_test_idx])
-
-        coverage = predictor._metric('coverage_rate')(pred_sets, graph_data.y[eval_test_idx])
-        size = predictor._metric('average_size')(pred_sets, graph_data.y[eval_test_idx])
-
-        coverage_list.append(coverage)
-        size_list.append(size)
-
-    return (torch.mean(torch.tensor(coverage_list)),
-            torch.mean(torch.tensor(size_list)))
-
-
 if __name__ == '__main__':
     set_seed(0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -124,20 +89,14 @@ if __name__ == '__main__':
 
     for _ in range(200):
         train(model, optimizer, graph_data, train_idx)
-
-    logits = test(model, graph_data, test_idx)
     
     #######################################
     # Split calib/test sets
     #######################################
 
-    calib_test_idx = test_idx
-    calib_num = min(1000, int(test_idx.shape[0] / 2))
-    rand_perms = torch.randperm(calib_test_idx.size(0))
-    calib_train_idx = calib_test_idx[rand_perms[:int(calib_num * 0.5)]]
-    calib_eval_idx = calib_test_idx[rand_perms[int(calib_num * 0.5):]]
-
-    predictor = SplitPredictor(APS(score_type="softmax"))
+    rand_perms = torch.randperm(test_idx.size(0))
+    calib_train_idx = test_idx[rand_perms[:500]]
+    calib_eval_idx = test_idx[rand_perms[500:]]
 
     #######################################
     # Results with Conformalized GNN
@@ -150,9 +109,15 @@ if __name__ == '__main__':
     confmodel_conftr = CFGNNTrainer(model,
                                     graph_data)
     
-    # Train cfgnn and evaluate
+    # Train conformalized gnn
     best_logits = confmodel_conftr.train()
-    conftr_coverage, conftr_size = evaluate_model(best_logits, calib_eval_idx, predictor, graph_data)
 
-    print("\nResults Comparison:")
-    print(f"ConfTr       - Coverage: {conftr_coverage:.4f}, Size: {conftr_size:.4f}")
+    # Split data into calib/test for evaluating
+    eval_perms = torch.randperm(calib_eval_idx.size(0))
+    eval_calib_idx = calib_eval_idx[eval_perms[:500]]
+    eval_test_idx = calib_eval_idx[eval_perms[500:]]
+
+    # Calibrate and Evaluation
+    predictor = SplitPredictor(graph_data, APS(score_type="softmax"), model=confmodel_conftr.cfgnn)
+    predictor.calculate_threshold(best_logits, eval_calib_idx, predictor._label_mask, alpha=0.1)
+    print(predictor.evaluate_with_logits(best_logits, eval_test_idx))
