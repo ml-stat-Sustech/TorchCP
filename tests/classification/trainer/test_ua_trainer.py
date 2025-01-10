@@ -57,7 +57,7 @@ def mock_model():
 @pytest.fixture
 def mock_conflearn_trainer(mock_model):
     optimizer = optim.Adam(mock_model.parameters(), lr=0.1)
-    return UncertaintyAwareTrainer(mock_model, optimizer)
+    return UncertaintyAwareTrainer(mock_model, optimizer, device='cpu')
 
 
 @pytest.fixture
@@ -82,20 +82,20 @@ def val_loader():
 
 def test_initialization(mock_model):
     optimizer = optim.Adam(mock_model.parameters(), lr=0.1)
-    conflearn_trainer = UncertaintyAwareTrainer(mock_model, optimizer)
+    conflearn_trainer = UncertaintyAwareTrainer(mock_model, optimizer, device='cpu')
     assert conflearn_trainer.model is mock_model
     assert conflearn_trainer.optimizer is optimizer
-    assert isinstance(conflearn_trainer.criterion_pred_loss_fn, torch.nn.CrossEntropyLoss)
+    assert isinstance(conflearn_trainer.loss_fn, torch.nn.CrossEntropyLoss)
     assert isinstance(conflearn_trainer.conformal_loss_fn, UncertaintyAwareLoss)
     assert conflearn_trainer.mu == 0.2
     assert conflearn_trainer.alpha == 0.1
     assert conflearn_trainer.device == 'cpu'
 
     optimizer = optim.Adam(mock_model.parameters(), lr=0.1)
-    conflearn_trainer = UncertaintyAwareTrainer(mock_model, optimizer, criterion_pred_loss_fn=torch.nn.L1Loss(), mu=0.5, alpha=0.4, device='cuda')
+    conflearn_trainer = UncertaintyAwareTrainer(mock_model, optimizer, loss_fn=torch.nn.L1Loss(), mu=0.5, alpha=0.4, device='cuda')
     assert conflearn_trainer.model is mock_model
     assert conflearn_trainer.optimizer is optimizer
-    assert isinstance(conflearn_trainer.criterion_pred_loss_fn, torch.nn.L1Loss)
+    assert isinstance(conflearn_trainer.loss_fn, torch.nn.L1Loss)
     assert isinstance(conflearn_trainer.conformal_loss_fn, UncertaintyAwareLoss)
     assert conflearn_trainer.mu == 0.5
     assert conflearn_trainer.alpha == 0.4
@@ -111,7 +111,7 @@ def test_calculate_loss(mock_conflearn_trainer):
     loss = mock_conflearn_trainer.calculate_loss(output, target, Z_batch)
     torch.manual_seed(42)
     idx_ce = torch.where(Z_batch == 0)[0]
-    loss_ce = mock_conflearn_trainer.criterion_pred_loss_fn(output[idx_ce], target[idx_ce])
+    loss_ce = mock_conflearn_trainer.loss_fn(output[idx_ce], target[idx_ce])
     loss_scores = mock_conflearn_trainer.conformal_loss_fn(output, target, Z_batch)
     except_loss = loss_ce + loss_scores * 0.2
     assert loss.item() == except_loss.item()
@@ -120,7 +120,7 @@ def test_calculate_loss(mock_conflearn_trainer):
     loss = mock_conflearn_trainer.calculate_loss(output, target, None, False)
     torch.manual_seed(42)
     Z_batch = torch.ones(len(output)).long()
-    loss_ce = mock_conflearn_trainer.criterion_pred_loss_fn(output, target)
+    loss_ce = mock_conflearn_trainer.loss_fn(output, target)
     loss_scores = mock_conflearn_trainer.conformal_loss_fn(output, target, Z_batch)
     except_loss = loss_ce + loss_scores * 0.2
     assert loss.item() == except_loss.item()
@@ -133,32 +133,37 @@ def test_train_epoch(mock_conflearn_trainer, train_loader):
 
 def test_validate(mock_conflearn_trainer, val_loader):
     torch.manual_seed(42)
-    _, acc_val = mock_conflearn_trainer.validate(val_loader)
+    metrics = mock_conflearn_trainer.validate(val_loader)
 
     torch.manual_seed(42)
+    except_loss_val = 0
     except_acc_val = 0
     for X_batch, Y_batch in val_loader:
         output = X_batch
         pred = output.argmax(dim=1)
+
+        loss = mock_conflearn_trainer.calculate_loss(output, Y_batch, None, training=False)
+        except_loss_val += loss
+
         acc = pred.eq(Y_batch).sum()
         except_acc_val += acc.item()
 
+    except_loss_val /= len(val_loader)
     except_acc_val /= len(val_loader)
-    assert acc_val == except_acc_val
+
+    assert metrics['val_loss'] == except_loss_val
+    assert metrics['val_acc'] == except_acc_val
 
 
 def test_train(mock_conflearn_trainer, train_loader, val_loader):
-    save_dir = '.cache/test_conflearn_trainer/'
+    save_dir = '.cache/'
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
-    save_path = os.path.join(save_dir, "trainer")
-    mock_conflearn_trainer.train(train_loader, save_path, val_loader, num_epochs=5)
+    save_path = os.path.join(save_dir, "test_conflearn_trainer.pt")
+    mock_conflearn_trainer.train(train_loader, val_loader, 5, save_path)
 
-    assert os.path.exists(save_path + "loss.pt")
-    assert os.path.exists(save_path + "acc.pt")
-    assert os.path.exists(save_path + "final.pt")
-
-    shutil.rmtree(save_dir)
+    assert os.path.exists(save_path)
+    os.remove(save_path)
 
 
 def test_split_dataloader(mock_conflearn_trainer, train_loader):
@@ -167,10 +172,13 @@ def test_split_dataloader(mock_conflearn_trainer, train_loader):
 
     torch.manual_seed(42)
     dataset = train_loader.dataset
+    X_data = dataset.X_data
+    Y_data = dataset.Y_data
+
     Z_data = torch.zeros(len(dataset)).long()
     split = int(len(dataset) * 0.8)
     Z_data[torch.randperm(len(dataset))[split:]] = 1
-    train_dataset = TrainDataset(dataset.X_data, dataset.Y_data, Z_data)
+    train_dataset = TrainDataset(X_data, Y_data, Z_data)
     except_loader = DataLoader(train_dataset, batch_size=20, shuffle=True, drop_last=True)
 
     assert torch.equal(train_loader.dataset.X_data, except_loader.dataset.X_data)
@@ -178,30 +186,3 @@ def test_split_dataloader(mock_conflearn_trainer, train_loader):
     assert torch.equal(train_loader.dataset.Z_data, except_loader.dataset.Z_data)
     assert train_loader.batch_size == except_loader.batch_size
     assert train_loader.drop_last == except_loader.drop_last
-
-
-def test_save_and_load_checkpoint(mock_conflearn_trainer):
-    save_dir = '.cache/test_conflearn_trainer/'
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
-    save_path = os.path.join(save_dir, "trainer")
-    mock_conflearn_trainer.save_checkpoint(0, save_path, 'final')
-    assert os.path.exists(save_path + "final.pt")
-
-    checkpoint = torch.load(save_path + "final.pt")
-    assert checkpoint['epoch'] == 0
-    assert checkpoint['model_state_dict'] == mock_conflearn_trainer.model.state_dict()
-    assert checkpoint['optimizer_state_dict'] == mock_conflearn_trainer.optimizer.state_dict()
-
-    model = MockModel()
-    optimizer = optim.Adam(model.parameters(), lr=0.1)
-    conflearn_trainer = UncertaintyAwareTrainer(model, optimizer)
-    conflearn_trainer.load_checkpoint(save_path, 'final')
-    assert conflearn_trainer.model.state_dict() == mock_conflearn_trainer.model.state_dict()
-    assert conflearn_trainer.optimizer.state_dict() == mock_conflearn_trainer.optimizer.state_dict()
-
-    conflearn_trainer.load_checkpoint(save_path, 'loss')
-    assert conflearn_trainer.model.state_dict() == mock_conflearn_trainer.model.state_dict()
-    assert conflearn_trainer.optimizer.state_dict() == mock_conflearn_trainer.optimizer.state_dict()
-
-    shutil.rmtree(save_dir)
