@@ -70,7 +70,7 @@ class CFGNNTrainer:
         self.predictor = SplitPredictor(APS(score_type="softmax"))
         self.alpha = alpha
 
-    def _train_each_epoch(self, epoch, pre_logits):
+    def train_epoch(self, epoch, pre_logits):
         """
         Trains the model for one epoch using the given data.
 
@@ -93,7 +93,7 @@ class CFGNNTrainer:
         loss.backward()
         self.optimizer.step()
 
-    def _evaluate(self, pre_logits):
+    def validate(self, pre_logits):
         """
         Evaluates the model's performance on the validation set.
 
@@ -143,9 +143,9 @@ class CFGNNTrainer:
 
         best_model_dict = None
         for epoch in tqdm(range(n_epochs)):
-            self._train_each_epoch(epoch, pre_logits)
+            self.train_epoch(epoch, pre_logits)
 
-            eff_valid, adjust_logits = self._evaluate(pre_logits)
+            eff_valid, adjust_logits = self.validate(pre_logits)
 
             if eff_valid < best_valid_size:
                 best_valid_size = eff_valid

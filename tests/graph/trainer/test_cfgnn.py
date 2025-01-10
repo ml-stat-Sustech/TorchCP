@@ -74,13 +74,13 @@ def test_invalid_initialization(mock_model, mock_graph_data):
         CFGNNTrainer(mock_model, None)
 
 
-def test_train_each_epoch(mock_graph_data, mock_cfgnn_model, device):
-    mock_cfgnn_model._train_each_epoch(500, mock_graph_data.x)
-    mock_cfgnn_model._train_each_epoch(2000, mock_graph_data.x)
+def test_train_epoch(mock_graph_data, mock_cfgnn_model, device):
+    mock_cfgnn_model.train_epoch(500, mock_graph_data.x)
+    mock_cfgnn_model.train_epoch(2000, mock_graph_data.x)
 
 
-def test_evaluate(mock_graph_data, mock_cfgnn_model, device):
-    results = mock_cfgnn_model._evaluate(mock_graph_data.x)
+def test_validate(mock_graph_data, mock_cfgnn_model, device):
+    results = mock_cfgnn_model.validate(mock_graph_data.x)
     assert len(results) == 2
     assert results[1].shape == mock_graph_data.x.shape
 
