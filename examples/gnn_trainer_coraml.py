@@ -115,7 +115,7 @@ if __name__ == '__main__':
     cf_trainer = CFGNNTrainer(model, graph_data)
 
     # Train conformalized gnn
-    cf_trainer.train()
+    model = cf_trainer.train()
 
     # Split data into calib/test for evaluating
     eval_perms = torch.randperm(calib_eval_idx.size(0))
@@ -125,6 +125,6 @@ if __name__ == '__main__':
     # Calibrate and Evaluation
     predictor = SplitPredictor(graph_data, 
                                APS(score_type="softmax"), 
-                               model=cf_trainer.model)
+                               model=model)
     predictor.calibrate(pre_logits, eval_calib_idx, alpha=0.1)
     print(predictor.evaluate(pre_logits, eval_test_idx))
