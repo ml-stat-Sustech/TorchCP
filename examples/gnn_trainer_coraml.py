@@ -117,7 +117,7 @@ if __name__ == '__main__':
                                     graph_data)
 
     # Train conformalized gnn
-    model = cf_trainer.train()
+    cf_trainer.train()
 
     # Split data into calib/test for evaluating
     eval_perms = torch.randperm(calib_eval_idx.size(0))
