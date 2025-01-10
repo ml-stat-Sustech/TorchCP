@@ -158,6 +158,36 @@ def test_get_weighted_quantile(naps_predictor):
         naps_predictor._get_weighted_quantile(scores, weights, 1.5)
 
 
+def test_predict(mock_graph_data, mock_model):
+    naps_predictor = NAPSPredictor(graph_data=mock_graph_data,
+                                   score_function=APS(score_type="softmax"),
+                                   model=mock_model,
+                                   cutoff=130, k=2, scheme="unif")
+
+    eval_idx = torch.where(mock_graph_data.test_mask)[0]
+    torch.manual_seed(42)
+
+    logits = mock_graph_data.x[eval_idx]
+    labels = mock_graph_data.y[eval_idx]
+    quantiles_nb = {}
+    for node_id in naps_predictor._G.nodes():
+        neigh_depth = nx.single_source_shortest_path_length(naps_predictor._G, node_id, cutoff=2)
+        if len(neigh_depth) >= 131:
+            node_alpha = naps_predictor.calculate_threshold_for_node(node_id, logits, labels, alpha=0.1)
+            quantiles_nb.update(node_alpha)
+        else:
+            naps_predictor.calculate_threshold_for_node(node_id, logits, labels, alpha=0.1)
+    excepted_nodes = torch.tensor(list(quantiles_nb.keys()))
+    quantiles = torch.tensor(list(quantiles_nb.values()))
+    excepted_sets = naps_predictor._generate_prediction_set(logits[excepted_nodes], quantiles[:, None])
+
+    torch.manual_seed(42)
+    pred_nodes, pred_sets = naps_predictor.predict(eval_idx, alpha=0.1)
+
+    assert torch.equal(excepted_nodes, pred_nodes)
+    assert torch.equal(excepted_sets, pred_sets)
+
+
 def test_predict_with_logits(mock_graph_data):
     naps_predictor = NAPSPredictor(graph_data=mock_graph_data,
                                    score_function=APS(score_type="softmax"),

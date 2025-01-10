@@ -232,13 +232,13 @@ class NAPSPredictor(SplitPredictor):
                 level of the prediction sets.
 
         Returns:
-            dict:
-                A dictionary containing the evaluation results. The dictionary includes:
-                - "Coverage_rate": The proportion of test samples for which the true label is included 
-                in the prediction set.
-                - "Average_size": The average size of the prediction sets.
-                - "Singleton_hit_ratio": The ratio of singleton (i.e., single-class) prediction sets 
-                where the predicted class matches the true label.
+            lcc_nodes (torch.Tensor):
+                A tensor containing the indices of the nodes that meet the criteria of having at least 'cutoff' k-hop 
+                neighbors for testing. Shape: [num_lcc_nodes].
+
+            prediction_sets (list):
+                A list containing the precomputed prediction sets for each node in `lcc_nodes`. Each set is a 
+                list of predicted classes for that node.
         """
 
         self._model.eval()
