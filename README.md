@@ -50,8 +50,7 @@ strong GPU acceleration. In the toolbox, we implement representative methods (in
 for many tasks of conformal prediction, including: Classification, Regression, Graph Node Classification, and LLM. We
 build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
-at SUSTech.
-Comments, issues, contributions, and collaborations are all welcomed!
+at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
 # Updates of New Version (1.0.0)
 
