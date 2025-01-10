@@ -13,7 +13,7 @@ from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 
 from torchcp.classification.score import APS, THR
-from torchcp.graph.predictor.neighbors_weight import NAPSPredictor
+from torchcp.graph.predictor.naps import NAPSPredictor
 
 
 @pytest.fixture
