@@ -11,6 +11,7 @@ from tqdm import tqdm
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset, Dataset
 from torchcp.classification.loss import UncertaintyAwareLoss
+from torchcp.classification.trainer import Trainer
 
 
 class TrainDataset(Dataset):
@@ -26,7 +27,7 @@ class TrainDataset(Dataset):
         return len(self.X_data)
 
 
-class UncertaintyAwareTrainer:
+class UncertaintyAwareTrainer(Trainer):
     """
     Conformalized uncertainty-aware training of deep multi-class classifiers
 
@@ -53,19 +54,17 @@ class UncertaintyAwareTrainer:
     def __init__(self,
                  model: torch.nn.Module,
                  optimizer: torch.optim.Optimizer,
-                 criterion_pred_loss_fn=torch.nn.CrossEntropyLoss(),
+                 loss_fn=torch.nn.CrossEntropyLoss(),
+                 loss_weights=None,
+                 device: torch.device=None,
+                 verbose: bool = True,
                  mu: float = 0.2,
-                 alpha: float = 0.1,
-                 device: torch.device = 'cpu'):
+                 alpha: float = 0.1):
+        super(UncertaintyAwareTrainer, self).__init__(model, optimizer, loss_fn, loss_weights, device, verbose)
 
-        self.model = model.to(device)
-        self.optimizer = optimizer
-
-        self.criterion_pred_loss_fn = criterion_pred_loss_fn
         self.conformal_loss_fn = UncertaintyAwareLoss()
         self.mu = mu
         self.alpha = alpha
-        self.device = device
 
     def calculate_loss(self, output, target, Z_batch, training=True):
         """
@@ -85,10 +84,10 @@ class UncertaintyAwareTrainer:
         """
         if training:
             idx_ce = torch.where(Z_batch == 0)[0]
-            loss_ce = self.criterion_pred_loss_fn(output[idx_ce], target[idx_ce])
+            loss_ce = self.loss_fn(output[idx_ce], target[idx_ce])
         else:
             Z_batch = torch.ones(len(output)).long().to(self.device)
-            loss_ce = self.criterion_pred_loss_fn(output, target)
+            loss_ce = self.loss_fn(output, target)
 
         loss_scores = self.conformal_loss_fn(output, target, Z_batch)
 
@@ -105,6 +104,8 @@ class UncertaintyAwareTrainer:
         Args:
             train_loader (torch.utils.data.DataLoader): The DataLoader providing the training data.
         """
+
+        self.model.train()
 
         for X_batch, Y_batch, Z_batch in train_loader:
             X_batch = X_batch.to(self.device)
@@ -137,6 +138,9 @@ class UncertaintyAwareTrainer:
         acc_val = 0
 
         for X_batch, Y_batch in val_loader:
+            X_batch = X_batch.to(self.device)
+            Y_batch = Y_batch.to(self.device)
+
             output = self.model(X_batch)
             loss = self.calculate_loss(output, Y_batch, None, training=False)
             pred = output.argmax(dim=1)
@@ -145,16 +149,18 @@ class UncertaintyAwareTrainer:
             loss_val += loss.item()
             acc_val += acc.item()
 
-        loss_val /= len(val_loader)
-        acc_val /= len(val_loader)
+        metrics = {
+            'val_loss': loss_val / len(val_loader),
+            'val_acc': acc_val / len(val_loader)
+        }
 
-        return loss_val, acc_val
+        return metrics
 
     def train(self,
-              train_loader,
-              save_path,
-              val_loader=None,
-              num_epochs=10):
+              train_loader: DataLoader,
+              val_loader: DataLoader = None,
+              num_epochs: int = 10,
+              save_path: str = None):
         """
         Trains the model for multiple epochs and optionally performs early stopping
         based on validation loss or accuracy. Saves the best models during training.
@@ -167,15 +173,18 @@ class UncertaintyAwareTrainer:
         """
 
         train_loader = self.split_dataloader(train_loader)
-
-        best_loss = None
-        best_acc = None
-
         lr_milestones = [int(num_epochs * 0.5)]
         scheduler = optim.lr_scheduler.MultiStepLR(
             self.optimizer, milestones=lr_milestones, gamma=0.1)
 
-        for epoch in tqdm(range(num_epochs)):
+        if self.verbose:
+            epoch_iter = tqdm(range(num_epochs), desc="Training")
+        else:
+            epoch_iter = range(num_epochs)
+
+        best_val_acc = 0
+
+        for epoch in epoch_iter:
 
             self.train_epoch(train_loader)
 
@@ -183,21 +192,15 @@ class UncertaintyAwareTrainer:
             self.model.eval()
 
             if val_loader is not None:
-                epoch_loss_val, epoch_acc_val = self.validate(val_loader)
+                val_metrics = self.validate(val_loader)
 
-                # Early stopping by loss
-                save_checkpoint = True if best_loss is None or best_loss > epoch_loss_val else False
-                best_loss = epoch_loss_val if best_loss is None or best_loss > epoch_loss_val else best_loss
-                if save_checkpoint:
-                    self.save_checkpoint(epoch, save_path, "loss")
+                if val_metrics['val_acc'] > best_val_acc and save_path:
+                    best_val_acc = val_metrics['val_acc']
+                    self.save_checkpoint(epoch, save_path, val_metrics)
 
-                # Early stopping by accuracy
-                save_checkpoint = True if best_acc is None or best_acc < epoch_acc_val else False
-                best_acc = epoch_acc_val if best_acc is None or best_acc < epoch_acc_val else best_acc
-                if save_checkpoint:
-                    self.save_checkpoint(epoch, save_path, "acc")
+                    if self.verbose:
+                        self.logger.info(f"Saved best model with validation accuracy: {val_metrics['val_acc']:.4f}")
 
-        self.save_checkpoint(epoch, save_path, "final")
 
     def split_dataloader(self, data_loader: DataLoader, split_ratio=0.8):
         """
@@ -213,48 +216,20 @@ class UncertaintyAwareTrainer:
             DataLoader: A new DataLoader that contains the modified dataset with the binary labels.
         """
 
-        dataset = data_loader.dataset
+        x_list = []
+        y_list = []
+        for tmp_x, tmp_y in data_loader:
+            x_list.append(tmp_x)
+            y_list.append(tmp_y)
+        X_data = torch.cat(x_list)
+        Y_data = torch.cat(y_list)
 
-        Z_data = torch.zeros(len(dataset)).long().to(self.device)
-        split = int(len(dataset) * split_ratio)
-        Z_data[torch.randperm(len(dataset))[split:]] = 1
+        Z_data = torch.zeros(len(X_data)).long().to(self.device)
+        split = int(len(X_data) * split_ratio)
+        Z_data[torch.randperm(len(X_data))[split:]] = 1
 
-        train_dataset = TrainDataset(dataset.X_data, dataset.Y_data, Z_data)
+        train_dataset = TrainDataset(X_data, Y_data, Z_data)
         train_loader = DataLoader(
             train_dataset, batch_size=data_loader.batch_size, shuffle=True, drop_last=data_loader.drop_last)
         
         return train_loader
-
-
-    def save_checkpoint(self, epoch: int, save_path: str, save_type: str='final'):
-        """
-        Saves a checkpoint of the model and optimizer state at the given epoch.
-
-        Args:
-            epoch (int): The current epoch number.
-            save_path (str): The path where the checkpoint should be saved.
-            save_type (str): The type of checkpoint to save, including "final", "loss", "acc".
-        """
-        save_path += save_type + '.pt'
-        checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict()
-        }
-        torch.save(checkpoint, save_path)
-
-    def load_checkpoint(self, load_path: str, load_type: str='final'):
-        """
-        Loads a model checkpoint from the specified path.
-
-        Args:
-            load_path (str): The path from which to load the checkpoint.
-            load_type (str): The type of checkpoint to load (default: "final"), chosen from ["final", "loss", "acc"].
-        """
-        if not os.path.exists(load_path + load_type + '.pt'):
-            load_path += "final" + '.pt'
-        else:
-            load_path += load_type + '.pt'
-        checkpoint = torch.load(load_path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
