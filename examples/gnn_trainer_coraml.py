@@ -122,9 +122,22 @@ if __name__ == '__main__':
     eval_calib_idx = calib_eval_idx[eval_perms[:500]]
     eval_test_idx = calib_eval_idx[eval_perms[500:]]
 
-    # Calibrate and Evaluation
+
+    #######################################
+    # A standard process of conformal prediction
+    #######################################
     predictor = SplitPredictor(graph_data, 
                                APS(score_type="softmax"), 
                                model=model)
     predictor.calibrate(pre_logits, eval_calib_idx, alpha=0.1)
-    print(predictor.evaluate(pre_logits, eval_test_idx))
+
+    predict_sets = predictor.predict(pre_logits, eval_test_idx)
+    print(predict_sets)
+
+    #########################################
+    # Evaluating the coverage rate and average set size on a given dataset.
+    ########################################
+    result_dict = predictor.evaluate(pre_logits, eval_test_idx)
+    print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
+    print(f"Average Set Size: {result_dict['average_size']:.4f}")
+    print(f"Singleton Hit Ratio: {result_dict['singleton_hit_ratio']:.4f}")

@@ -113,4 +113,14 @@ if __name__ == '__main__':
                                score_function=APS(score_type="softmax"),
                                model=model)
     predictor.calibrate(graph_data.x, cal_idx, alpha=0.1)
-    print(predictor.evaluate(graph_data.x, eval_idx))
+
+    predict_sets = predictor.predict(graph_data.x, eval_idx)
+    print(predict_sets)
+
+    #########################################
+    # Evaluating the coverage rate and average set size on a given dataset.
+    ########################################
+    result_dict = predictor.evaluate(graph_data.x, eval_idx)
+    print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
+    print(f"Average Set Size: {result_dict['average_size']:.4f}")
+    print(f"Singleton Hit Ratio: {result_dict['singleton_hit_ratio']:.4f}")

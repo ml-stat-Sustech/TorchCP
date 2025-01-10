@@ -106,4 +106,11 @@ if __name__ == '__main__':
     eval_idx = torch.where(graph_data.test_mask)[0]
 
     predictor = NAPSPredictor(graph_data, model=model)
-    print(predictor.evaluate(eval_idx, alpha=0.1))
+
+    lcc_nodes, prediction_sets = predictor.predict(eval_idx, alpha=0.1)
+    print(lcc_nodes, prediction_sets)
+
+    result_dict = predictor.evaluate(eval_idx, alpha=0.1)
+    print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
+    print(f"Average Set Size: {result_dict['average_size']:.4f}")
+    print(f"Singleton Hit Ratio: {result_dict['singleton_hit_ratio']:.4f}")

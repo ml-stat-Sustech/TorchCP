@@ -66,6 +66,12 @@ class NAPSPredictor(SplitPredictor):
         self._k = k
         self._scheme = scheme
 
+        kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
+        self.subgraph_loader = NeighborLoader(copy.copy(self._graph_data), input_nodes=None, num_neighbors=[-1], shuffle=False, **kwargs)
+        del self.subgraph_loader.data.x, self.subgraph_loader.data.y
+        self.subgraph_loader.data.num_nodes = self._graph_data.num_nodes
+        self.subgraph_loader.data.n_id = torch.arange(self._graph_data.num_nodes)
+
     # The calibration process ########################################################
 
     def calculate_threshold_for_node(self, node, logits, labels, alpha):
@@ -210,6 +216,38 @@ class NAPSPredictor(SplitPredictor):
         return q
 
     # The prediction process ########################################################
+    def predict(self, eval_idx, alpha):
+        """
+        Give evaluation predicted set.
+
+        This method performs evaluation by first making predictions using the model's raw outputs.
+
+        Parameters:
+            eval_idx (torch.Tensor or list): 
+                Indices of the samples in the evaluation or test set. 
+                Shape: [num_test_samples].
+
+            alpha (float):
+                The pre-defined empirical marginal coverage level, where `1 - alpha` represents the confidence 
+                level of the prediction sets.
+
+        Returns:
+            dict:
+                A dictionary containing the evaluation results. The dictionary includes:
+                - "Coverage_rate": The proportion of test samples for which the true label is included 
+                in the prediction set.
+                - "Average_size": The average size of the prediction sets.
+                - "Singleton_hit_ratio": The ratio of singleton (i.e., single-class) prediction sets 
+                where the predicted class matches the true label.
+        """
+
+        self._model.eval()
+        with torch.no_grad():
+            logits = self._model.inference(self._graph_data.x, self.subgraph_loader)
+        
+        lcc_nodes, prediction_sets = self.predict_with_logits(logits, eval_idx, alpha)
+        
+        return lcc_nodes, prediction_sets
 
     def predict_with_logits(self, logits, eval_idx, alpha):
         """
@@ -311,15 +349,10 @@ class NAPSPredictor(SplitPredictor):
                 - "Singleton_hit_ratio": The ratio of singleton (i.e., single-class) prediction sets 
                 where the predicted class matches the true label.
         """
-        kwargs = {'batch_size': 512, 'num_workers': 6, 'persistent_workers': True}
-        subgraph_loader = NeighborLoader(copy.copy(self._graph_data), input_nodes=None, num_neighbors=[-1], shuffle=False, **kwargs)
-        del subgraph_loader.data.x, subgraph_loader.data.y
-        subgraph_loader.data.num_nodes = self._graph_data.num_nodes
-        subgraph_loader.data.n_id = torch.arange(self._graph_data.num_nodes)
 
         self._model.eval()
         with torch.no_grad():
-            logits = self._model.inference(self._graph_data.x, subgraph_loader)
+            logits = self._model.inference(self._graph_data.x, self.subgraph_loader)
         
         lcc_nodes, prediction_sets = self.predict_with_logits(logits, eval_idx, alpha)
         labels = self._graph_data.y[eval_idx][lcc_nodes]
