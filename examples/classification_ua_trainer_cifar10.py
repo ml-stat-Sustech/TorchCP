@@ -9,7 +9,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from transformers import set_seed
-from torch.utils.data import Dataset
 
 import torchvision
 import torchvision.models as models
@@ -19,34 +18,6 @@ from examples.utils import get_dataset_dir
 from torchcp.classification.score import APS
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.trainer import UncertaintyAwareTrainer
-
-
-class ConfDatasetFilter(Dataset):
-    def __init__(self, dataset_XY, F, scale=(0.7, 0.7), ratio=(0.3, 3.3)):
-        self.dataset_XY = dataset_XY
-        self.F = F
-        self.filter = transforms.RandomErasing(p=1, scale=scale, ratio=ratio, value=0, inplace=False)
-    
-    def __getitem__(self, index):
-        X, Y = self.dataset_XY[index]
-        if self.F[index] == 1:
-          X = self.filter(X)
-
-        return X, Y
-      
-    def __len__(self):
-        return self.F.shape[0]
-
-
-def blurring_images(test_dataset_to_blur, corrupt_percent=0.2):
-
-    F_test = torch.zeros(len(test_dataset_to_blur))
-    F_test[:int(len(test_dataset_to_blur) * corrupt_percent)] = 1
-    F_test = F_test[torch.randperm(len(F_test))]
-
-    test_dataset_blurred = ConfDatasetFilter(test_dataset_to_blur, F_test)
-
-    return test_dataset_blurred, F_test
 
 
 def setup_data_and_model(device):
@@ -90,15 +61,12 @@ def setup_data_and_model(device):
         download=True, 
         transform=transform)
     
-    # blur test data with indicator corrupt_idx (1 for corrupt 0 for noncorrupt)
-    test_dataset_blurred, corrupt_idx = blurring_images(test_dataset)
-    
-    random_indices = torch.randperm(len(test_dataset_blurred))
-    random_indices_ca = random_indices[:int(len(test_dataset_blurred) * 0.5)]
-    random_indices_te = random_indices[int(len(test_dataset_blurred) * 0.5):]
+    random_indices = torch.randperm(len(test_dataset))
+    random_indices_ca = random_indices[:int(len(test_dataset) * 0.5)]
+    random_indices_te = random_indices[int(len(test_dataset) * 0.5):]
 
-    calset_sample = torch.utils.data.Subset(test_dataset_blurred, random_indices_ca)
-    testset_sample = torch.utils.data.Subset(test_dataset_blurred, random_indices_te)
+    calset_sample = torch.utils.data.Subset(test_dataset, random_indices_ca)
+    testset_sample = torch.utils.data.Subset(test_dataset, random_indices_te)
 
     cal_loader = torch.utils.data.DataLoader(calset_sample, batch_size=750, shuffle=False, num_workers=2)
     test_loader = torch.utils.data.DataLoader(testset_sample, batch_size=750, shuffle=False, num_workers=2)
