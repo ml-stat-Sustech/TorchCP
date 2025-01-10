@@ -56,7 +56,9 @@ def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
     data_dir = get_dataset_dir()
 
     graph_data = Amazon(data_dir, data_name,
-                        pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0].to(device)
+                        pre_transform=RandomNodeSplit(split='train_rest', 
+                                                      num_val=n_v, 
+                                                      num_test=n_t))[0].to(device)
     kwargs = {'batch_size': 512, 'num_workers': 6,
               'persistent_workers': True}
     train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,

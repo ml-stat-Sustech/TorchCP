@@ -47,11 +47,12 @@ def build_transductive_gnn_data(data_name, ntrain_per_class=20):
         as_tuple=True)[0] for cls_val in graph_data.y.unique()]
     shuffled_classes = [s[torch.randperm(s.shape[0])] for s in classes_idx_set]
 
-    train_idx = torch.concat([s[: ntrain_per_class] for s in shuffled_classes])
+    train_idx = torch.concat(
+        [s[: ntrain_per_class] for s in shuffled_classes])
     val_idx = torch.concat(
         [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-    test_idx = torch.concat([s[2 * ntrain_per_class:]
-                            for s in shuffled_classes])
+    test_idx = torch.concat(
+        [s[2 * ntrain_per_class:] for s in shuffled_classes])
 
     return graph_data, train_idx, val_idx, test_idx
 

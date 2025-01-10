@@ -48,12 +48,12 @@ def build_transductive_gnn_data(data_name, ntrain_per_class=20):
     shuffled_classes = [
         s[torch.randperm(s.shape[0])] for s in classes_idx_set]
 
-    train_idx = torch.concat([s[: ntrain_per_class]
-                              for s in shuffled_classes])
+    train_idx = torch.concat(
+        [s[: ntrain_per_class] for s in shuffled_classes])
     val_idx = torch.concat(
         [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-    test_idx = torch.concat([s[2 * ntrain_per_class:]
-                             for s in shuffled_classes])
+    test_idx = torch.concat(
+        [s[2 * ntrain_per_class:] for s in shuffled_classes])
 
     return graph_data, train_idx, val_idx, test_idx
 
@@ -75,8 +75,7 @@ if __name__ == '__main__':
     # Loading dataset and a model
     #######################################
 
-    graph_data, train_idx, val_idx, test_idx = build_transductive_gnn_data(
-        'cora_ml')
+    graph_data, train_idx, val_idx, test_idx = build_transductive_gnn_data('cora_ml')
     graph_data = graph_data.to(device)
 
     model = GCN(in_channels=graph_data.x.shape[1],
@@ -113,8 +112,7 @@ if __name__ == '__main__':
     graph_data['train_idx'] = train_idx
     graph_data['val_idx'] = test_idx
     graph_data['calib_train_idx'] = calib_train_idx
-    cf_trainer = CFGNNTrainer(model,
-                                    graph_data)
+    cf_trainer = CFGNNTrainer(model, graph_data)
 
     # Train conformalized gnn
     cf_trainer.train()
