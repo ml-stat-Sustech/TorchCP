@@ -38,6 +38,7 @@ def get_model_dir():
     path.mkdir(parents=True, exist_ok=True)
     return dataset_dir
 
+
 def get_others_dir():
     dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/others')
     path = Path(dataset_dir)
@@ -207,7 +208,7 @@ def build_dataset(dataset_name, data_mode="train", transform_mode="train"):
         elif data_mode == "test":
             dataset = dset.MNIST(dataset_dir, train=False,
                                  download=True, transform=transform)
-            
+
     elif dataset_name == 'cifar10':
         dataset_dir = get_dataset_dir()
 

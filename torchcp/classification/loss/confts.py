@@ -132,7 +132,7 @@ class ConfTS(BaseLoss):
             squeeze = True
             q = [q]
         q = torch.tensor(q, dtype=torch.float, device=scores.device)
-        
+
         indices = (1 - q) * (n + 1) - 1
         indices_low = torch.floor(indices).long()
         indices_frac = indices - indices_low

@@ -12,10 +12,10 @@ import torch.nn.functional as F
 from transformers import set_seed
 
 from examples.utils import build_transductive_gnn_data, build_inductive_gnn_data, build_gnn_model
+from torchcp.classification import Metrics
 from torchcp.classification.score import APS
 from torchcp.graph.predictor import SplitPredictor, NAPSPredictor
 from torchcp.graph.score import DAPS, SNAPS
-from torchcp.classification import Metrics
 
 
 def train_transductive(model, optimizer, graph_data, train_idx):

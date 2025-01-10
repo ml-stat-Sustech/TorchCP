@@ -12,9 +12,8 @@ import torch
 from transformers import set_seed
 
 from examples.utils import get_others_dir
-from torchcp.llm.predictor import ConformalLM
 from llm_utils import *
-
+from torchcp.llm.predictor import ConformalLM
 
 if __name__ == "__main__":
 
@@ -25,18 +24,18 @@ if __name__ == "__main__":
     output_path = os.path.join(get_others_dir(), f"{dataset_name}_results.npz")
     if not os.path.exists(output_path):
         preprocess_data(dataset_name, model_path, output_path)
-        
+
     scaling_type = 'platt'
     scale_kwargs = {}
-    
+
     data = np.load(output_path)
     labels = torch.from_numpy(data['labels'])
-    scores = torch.from_numpy(data['scores']) 
+    scores = torch.from_numpy(data['scores'])
     diversity = torch.from_numpy(data['diversity'])
-    
+
     N_train = 2000 if scaling_type is not None else 0
     training_idx, tuning_idx, cal_idx, val_idx = split_indices(len(labels), N_train, 0.3, 0.3)
-    
+
     conformal_llm = ConformalLM(
         epsilons=[0.2],
         scaling_type=scaling_type,
@@ -55,14 +54,12 @@ if __name__ == "__main__":
     )
     results = conformal_llm.evaluate(
         scores[val_idx],
-        diversity[val_idx], 
+        diversity[val_idx],
         labels[val_idx]
     )
-    
+
     # Calculate and print statistics
     print("\nResults:")
     print("-" * 50)
     print(f"Average Loss: {results['avg_losses'][0]:.4f}")
     print(f"Average Set Size: {results['avg_size'][0]:.4f}")
-
-            

@@ -7,8 +7,8 @@
 
 import torch
 
-from torchcp.utils.common import calculate_conformal_value
 from torchcp.graph.predictor.base import BasePredictor
+from torchcp.utils.common import calculate_conformal_value
 
 
 class SplitPredictor(BasePredictor):

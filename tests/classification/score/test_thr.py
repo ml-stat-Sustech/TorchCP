@@ -118,16 +118,16 @@ def test_custom_transform_function(logits_2d):
     thr = THR(score_type=custom_func)
     scores = thr(logits_2d)
     # breakpoint()
-    assert torch.allclose(scores, 1 -logits_2d * 2)
+    assert torch.allclose(scores, 1 - logits_2d * 2)
 
     # Test more complex custom function
     def complex_transform(x):
         return torch.sigmoid(x) + torch.relu(x)
-    
+
     thr = THR(score_type=complex_transform)
     scores = thr(logits_2d)
     expected = 1 - (torch.sigmoid(logits_2d) + torch.relu(logits_2d))
-    
+
     assert torch.allclose(scores, expected)
 
     # Test custom function preserves shape

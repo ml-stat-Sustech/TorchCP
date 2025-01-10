@@ -173,7 +173,6 @@ def get_dataset(dataset_name="trivia_qa", mode="validation", max_predict_samples
     return dataset
 
 
-
 def preprocess_data(dataset_name, model_path, output_path):
     dataset = get_dataset(dataset_name, max_predict_samples=30)
 
@@ -347,15 +346,15 @@ def preprocess_data(dataset_name, model_path, output_path):
     np.savez(output_path, labels=all_labels, scores=all_scores, diversity=diversity)
 
 
-
 def split_indices(total_samples, N_train, p_cal, p_tuning):
-    
     # Create random permutation of indices
     shuffle = np.random.permutation(total_samples)
-    
+
     # Calculate sizes for each split
     remaining_samples = total_samples - N_train
     N_cal = int(p_cal * remaining_samples)
     N_tuning = int(p_tuning * remaining_samples)
-    
-    return shuffle[:N_train], shuffle[N_train:N_train + N_tuning], shuffle[N_train + N_tuning:N_train + N_tuning + N_cal], shuffle[N_train + N_tuning + N_cal:]
+
+    return shuffle[:N_train], shuffle[N_train:N_train + N_tuning], shuffle[
+                                                                   N_train + N_tuning:N_train + N_tuning + N_cal], shuffle[
+                                                                                                                   N_train + N_tuning + N_cal:]

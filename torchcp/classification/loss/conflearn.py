@@ -8,8 +8,8 @@
 import torch
 from torchsort import soft_rank, soft_sort
 
-REG_STRENGTH = 0.1 # Regularization strength used in soft sorting for smoothness
-B = 50 # A parameter controlling the smoothness of the soft indicator function
+REG_STRENGTH = 0.1  # Regularization strength used in soft sorting for smoothness
+B = 50  # A parameter controlling the smoothness of the soft indicator function
 
 
 class UniformMatchingLoss(torch.nn.Module):
@@ -17,6 +17,7 @@ class UniformMatchingLoss(torch.nn.Module):
     A custom loss function that calculates the discrepancy in the sorting of input tensor x.
     It measures how far off each element is from its ideal position in a sorted sequence.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -55,6 +56,7 @@ class ConfLearnLoss(torch.nn.Module):
     Reference:
         Einbinder et al. "Training Uncertainty-Aware Classifiers with Conformalized Deep Learning" (2022), https://arxiv.org/abs/2205.05878
     """
+
     def __init__(self):
         super(ConfLearnLoss, self).__init__()
 
@@ -103,7 +105,7 @@ class ConfLearnLoss(torch.nn.Module):
             train_proba, y_train_batch)
         train_loss_scores = self.criterion_scores(train_scores)
         return train_loss_scores
-    
+
     def __compute_scores_diff(self, proba_values, Y_values):
         """
         Computes the non-conformity scores based on the predicted probabilities and the true labels.
@@ -119,7 +121,7 @@ class ConfLearnLoss(torch.nn.Module):
         device = proba_values.device
         n, K = proba_values.shape
         proba_values = proba_values + 1e-6 * \
-            torch.rand(proba_values.shape, dtype=float, device=device)
+                       torch.rand(proba_values.shape, dtype=float, device=device)
         proba_values = proba_values / torch.sum(proba_values, 1)[:, None]
         ranks_array_t = soft_rank(-proba_values,
                                   regularization_strength=REG_STRENGTH) - 1
@@ -132,10 +134,10 @@ class ConfLearnLoss(torch.nn.Module):
         prob_cum_t = self.__soft_indexing(Z_t, ranks_t)
         prob_final_t = self.__soft_indexing(prob_sort_t, ranks_t)
         scores_t = 1.0 - prob_cum_t + prob_final_t * \
-            torch.rand(n, dtype=float, device=device)
+                   torch.rand(n, dtype=float, device=device)
 
         return scores_t
-    
+
     def __soft_indicator(self, x, a, b=B):
         """
         Soft indicator function, which is a smoothed version of a step function.
@@ -171,5 +173,3 @@ class ConfLearnLoss(torch.nn.Module):
         weight = self.__soft_indicator(I.T, rank).T
         weight = weight * z
         return weight.sum(dim=1)
-
-    

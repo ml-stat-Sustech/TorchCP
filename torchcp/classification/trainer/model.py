@@ -35,27 +35,27 @@ class TemperatureScalingModel(nn.Module):
     Reference:
         Guo et al. "On Calibration of Modern Neural Networks", ICML 2017, https://arxiv.org/abs/1706.04599
     """
-    
+
     def __init__(self, base_model: nn.Module, temperature: float = 1.0):
         super().__init__()
         if temperature <= 0:
             raise ValueError("Temperature must be positive")
         self.base_model = base_model
         self.temperature = nn.Parameter(torch.ones(1) * temperature)
-        
+
         # Freeze base model parameters
         self.freeze_base_model()
-        
+
     def freeze_base_model(self):
         """Freeze all parameters in base model"""
         for param in self.base_model.parameters():
             param.requires_grad = False
         self.base_model.eval()
-    
+
     def is_base_model_frozen(self) -> bool:
         """Check if base model parameters are frozen"""
         return not any(p.requires_grad for p in self.base_model.parameters())
-            
+
     def forward(self, x: Tensor) -> Tensor:
         """
         Forward pass with temperature scaling.
@@ -65,23 +65,23 @@ class TemperatureScalingModel(nn.Module):
             
         Returns:
             Temperature scaled logits
-        """ 
+        """
         with torch.no_grad():  # Ensure no gradients flow through base model
             logits = self.base_model(x)
-            
+
         return logits / self.temperature
-    
+
     def get_temperature(self) -> float:
         """Get current temperature value."""
         return self.temperature.item()
-    
+
     def set_temperature(self, temp: float) -> None:
         """Set temperature value."""
         if temp <= 0:
             raise ValueError("Temperature must be positive")
         with torch.no_grad():
             self.temperature.fill_(temp)
-            
+
     def train(self, mode: bool = True):
         """
         Override train method to ensure base_model stays in eval mode
@@ -92,5 +92,3 @@ class TemperatureScalingModel(nn.Module):
         super().train(mode)  # Set training mode for TemperatureScalingModel
         self.base_model.eval()  # Keep base_model in eval mode
         return self
-            
-            

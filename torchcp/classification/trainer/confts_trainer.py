@@ -7,11 +7,12 @@
 
 import torch
 
-from torchcp.classification.trainer.base_trainer import Trainer
-from torchcp.classification.trainer.model import TemperatureScalingModel
 from torchcp.classification.loss.confts import ConfTS
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
+from torchcp.classification.trainer.base_trainer import Trainer
+from torchcp.classification.trainer.model import TemperatureScalingModel
+
 
 class ConfTSTrainer(Trainer):
     """Conformal Temperature Scaling Trainer.
@@ -49,22 +50,19 @@ class ConfTSTrainer(Trainer):
             self,
             model: torch.nn.Module,
             init_temperature: float,
-            optimizer_class: torch.optim.Optimizer =torch.optim.Adam, 
-            optimizer_params: dict={},
+            optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
+            optimizer_params: dict = {},
             device: torch.device = None,
             verbose: bool = True,
             alpha: float = 0.1
-            
+
     ):
-        
         model = TemperatureScalingModel(model, temperature=init_temperature)
         optimizer = optimizer_class(
             [model.temperature],
             **optimizer_params
-        )        
+        )
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
         confts = ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)
-                
-        super().__init__(model, optimizer, confts, 1, device = device, verbose = verbose)
-        
-        
+
+        super().__init__(model, optimizer, confts, 1, device=device, verbose=verbose)

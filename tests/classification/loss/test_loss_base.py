@@ -48,4 +48,3 @@ def test_forward(mock_loss_instance):
     targets = torch.tensor([1.0, 2.0, 3.0])
     output = mock_loss.forward(predictions, targets)
     assert torch.equal(output, torch.tensor([0.0, 0.0, 0.0]))
-

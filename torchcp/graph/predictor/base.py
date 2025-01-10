@@ -32,7 +32,6 @@ class BasePredictor(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, graph_data, score_function, model=None):
-
         self.score_function = score_function
         self._model = model
         if self._model != None:

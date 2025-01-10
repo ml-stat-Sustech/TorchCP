@@ -47,11 +47,11 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     prediction_intervals_1 = aci_predictor.predict(x_batch_1)
     assert prediction_intervals_1 is not None, "Prediction intervals should not be None."
     assert prediction_intervals_1.shape[0] == x_batch_1.shape[0], "Prediction intervals should match batch size."
-     # Test exception for missing arguments
+    # Test exception for missing arguments
     with pytest.raises(ValueError):
         aci_predictor.predict(x_batch_1, y_lookback=torch.rand(10), pred_interval_lookback=None)
     with pytest.warns(UserWarning):
-            prediction_intervals_1 = aci_predictor.predict(x_batch_1, train=True, update_alpha=True)
+        prediction_intervals_1 = aci_predictor.predict(x_batch_1, train=True, update_alpha=True)
     assert prediction_intervals_1 is not None, "Prediction intervals should not be None."
     assert prediction_intervals_1.shape[0] == x_batch_1.shape[0], "Prediction intervals should match batch size."
     # Test predict method with x_batch, x_lookback, y_lookback
@@ -61,7 +61,8 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     assert prediction_intervals_2.shape[0] == x_batch_2.shape[0], "Prediction intervals should match batch size."
     # Test predict method with x_batch, x_lookback, y_lookback, pred_interval_lookack
     x_batch_3, y_batch_3 = next(iter(test_dataloader))
-    prediction_intervals_3 = aci_predictor.predict(x_batch=x_batch_3, x_lookback=x_batch_2, y_lookback=y_batch_2, pred_interval_lookback=prediction_intervals_2)
+    prediction_intervals_3 = aci_predictor.predict(x_batch=x_batch_3, x_lookback=x_batch_2, y_lookback=y_batch_2,
+                                                   pred_interval_lookback=prediction_intervals_2)
     assert prediction_intervals_3 is not None, "Prediction intervals should not be None."
     assert prediction_intervals_3.shape[0] == x_batch_3.shape[0], "Prediction intervals should match batch size."
 
@@ -75,8 +76,8 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     # Test evaluate method with other arguments
     aci_predictor.evaluate(test_dataloader, retrain_gap=0, update_alpha_gap=0)
     aci_predictor.evaluate(test_dataloader, retrain_gap=2, update_alpha_gap=3)
-    
-   
+
+
 def test_aci_predictor_wrong_workflow(mock_data, mock_model, mock_score_function):
     train_dataloader, _, test_dataloader = mock_data
 
@@ -93,7 +94,7 @@ def test_aci_predictor_wrong_workflow(mock_data, mock_model, mock_score_function
     # predict should used after train
     with pytest.raises(ValueError):
         prediction_intervals = aci_predictor.predict(x_batch)
-    
+
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_device_support(mock_data, mock_model, mock_score_function, device):

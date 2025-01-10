@@ -90,5 +90,5 @@ class BaseScore(object):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-        
+
         model.eval()

@@ -102,7 +102,6 @@ def test_compute_classification_loss(conftr_instance):
     assert isinstance(loss, torch.Tensor)
 
 
-
 def test_loss_transform_square():
     conftr = ConfTr(Predictor(THR()), 0.05, 0.2, loss_transform="square")
     assert conftr.transform == torch.square

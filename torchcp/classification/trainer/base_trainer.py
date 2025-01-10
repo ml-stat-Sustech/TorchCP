@@ -14,9 +14,6 @@ from tqdm import tqdm
 from typing import Optional, Dict, Any, Callable, Union, List
 
 
-
-
-
 class BaseTrainer:
     """
     Base trainer class that handles basic model setup and device configuration.
@@ -30,7 +27,7 @@ class BaseTrainer:
         >>> model = MyModel()
         >>> base_trainer = BaseTrainer(model)
     """
-    
+
     def __init__(
             self,
             model: torch.nn.Module,
@@ -41,10 +38,10 @@ class BaseTrainer:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = device
-            
+
         self.model = model.to(self.device)
         self.verbose = verbose
-        
+
         # Setup logging
         if self.verbose:
             logging.basicConfig(
@@ -52,9 +49,6 @@ class BaseTrainer:
                 format='%(asctime)s - %(levelname)s - %(message)s'
             )
             self.logger = logging.getLogger(__name__)
-
-
-
 
 
 class Trainer(BaseTrainer):
@@ -90,15 +84,15 @@ class Trainer(BaseTrainer):
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = device
-            
+
         self.model = model.to(self.device)
-        
+
         self.optimizer = optimizer
         self.verbose = verbose
-                
+
         if isinstance(loss_fn, list):
             num_losses = len(loss_fn)
-                    
+
             if loss_weights is None:
                 self.loss_weights = torch.ones(num_losses, device=self.device)
             else:
@@ -109,10 +103,10 @@ class Trainer(BaseTrainer):
             if loss_weights is None:
                 self.loss_weights = torch.ones(1, device=self.device)
             else:
-                if isinstance(loss_weights,list):
+                if isinstance(loss_weights, list):
                     raise ValueError("Expected a single loss function, got a list of loss weights")
                 self.loss_weights = torch.tensor(loss_weights, device=self.device)
-            
+
         self.loss_fn = loss_fn
 
         # Setup logging
@@ -141,7 +135,7 @@ class Trainer(BaseTrainer):
                 total_loss += weight * loss
             return total_loss
         else:
-            return self.loss_fn(output, target)*self.loss_weights
+            return self.loss_fn(output, target) * self.loss_weights
 
     def train_epoch(self, train_loader: DataLoader) -> Dict[str, float]:
         """
@@ -176,7 +170,7 @@ class Trainer(BaseTrainer):
                 for i, (fn, weight) in enumerate(zip(self.loss_fn, self.loss_weights)):
                     individual_loss = fn(output, target).item()
                     individual_losses[f'loss_{i}'] = individual_losses.get(f'loss_{i}', 0) + individual_loss
-            
+
             loss.backward()
             self.optimizer.step()
 

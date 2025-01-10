@@ -11,8 +11,8 @@ import warnings
 from torch.utils.data import DataLoader
 from typing import Dict, List
 
-from torchcp.utils.common import calculate_conformal_value
 from torchcp.classification.predictor.base import BasePredictor
+from torchcp.utils.common import calculate_conformal_value
 
 
 class SplitPredictor(BasePredictor):

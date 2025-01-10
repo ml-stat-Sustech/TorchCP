@@ -45,7 +45,12 @@
 </div>
 
 
-TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods) for many tasks of conformal prediction, including: Classification, Regression, Graph Node Classification, and LLM. We build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group at SUSTech.
+TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with
+strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods)
+for many tasks of conformal prediction, including: Classification, Regression, Graph Node Classification, and LLM. We
+build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This
+codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
+at SUSTech.
 Comments, issues, contributions, and collaborations are all welcomed!
 
 # Updates of New Version (1.0.0)
@@ -134,7 +139,9 @@ pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 ```
 
 ## Unit Test
+
 TorchCP achieves 100% unit test coverage. You can use the following command to test the code implementation:
+
 ```
 pytest --cov=torchcp tests
 ```
@@ -252,4 +259,5 @@ We welcome you to cite the following works:
 [license-url]: https://github.com/ml-stat-Sustech/TorchCP/blob/main/LICENSE.txt
 
 [tag-shield]: https://img.shields.io/github/v/tag/ml-stat-Sustech/TorchCP?style=for-the-badge&label=version
+
 [tag-url]: https://github.com/ml-stat-Sustech/TorchCP/tags

@@ -128,4 +128,3 @@ class ConfTr(ConfTS):
 
         # Return the mean loss
         return torch.mean(loss)
-

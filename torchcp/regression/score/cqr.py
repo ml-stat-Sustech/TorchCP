@@ -9,8 +9,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torchcp.regression.score.base import BaseScore
 from torchcp.regression.loss import QuantileLoss
+from torchcp.regression.score.base import BaseScore
 from torchcp.regression.utils import build_regression_model
 
 

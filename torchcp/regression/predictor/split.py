@@ -64,7 +64,6 @@ class SplitPredictor(BasePredictor):
                 train_dataloader, device=self._device, **kwargs
             )
 
-
     def calculate_score(self, predicts, y_truth):
         """
         Calculate the nonconformity scores based on the model's predictions and true values.
