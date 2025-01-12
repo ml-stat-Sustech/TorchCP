@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-# from .base_trainer import Trainer
+from .base_trainer import BaseTrainer
 from .confts_trainer import ConfTSTrainer
 from .model import TemperatureScalingModel
 from .ts_trainer import TSTrainer

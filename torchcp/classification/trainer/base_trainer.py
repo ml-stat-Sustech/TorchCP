@@ -14,150 +14,93 @@ from tqdm import tqdm
 from typing import Optional, Dict, Any, Callable, Union, List
 import copy
 
-class BaseTrainer:
+from abc import ABC, abstractmethod
+        
+class BaseTrainer(ABC):
     """
-    Base trainer class that handles basic model setup and device configuration.
+    Abstract base trainer class that handles basic model setup and device configuration.
     
     Args:
-        model (torch.nn.Module): Neural network model
-        device (torch.device): Device to run on (CPU/GPU)
-        verbose (bool): Whether to show training progress
-        
-    Examples:
-        >>> model = MyModel()
-        >>> base_trainer = BaseTrainer(model)
-    """
-    
-    training_algorithm = None
-
-    def __init__(
-            self,
-            model: torch.nn.Module,
-            device: torch.device = None,
-            verbose: bool = True,
-    ):
-        if device is None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        else:
-            self.device = device
-        self.model = model.to(self.device)
-        self.verbose = verbose
-        # Setup logging
-        if self.verbose:
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(levelname)s - %(message)s'
-            )
-            self.logger = logging.getLogger(__name__)
-            
-    def train(self,  train_loader: DataLoader,
-              val_loader: Optional[DataLoader] = None,
-              num_epochs: int = 10,):
-        if self.training_algorithm is None:
-            raise NotImplementedError("Training algorithm is not defined")
-        self.model = self.training_algorithm.train(train_loader, val_loader, num_epochs)
-        return self.model
-    
-    def save_model(self, path):
-        torch.save(self.model.state_dict(), path)
-            
-            
-            
-class TrainingAlgorithm:
-    """
-    Implementation of specific training algorithms and procedures.
-    
-    This class handles the core training logic including loss calculation,
-    optimization steps, and validation procedures. It supports single or multiple
-    loss functions with optional weights.
-    
-    Attributes:
-        model: PyTorch model to train
-        optimizer: Optimization algorithm
-        loss_fn: Single loss function or list of loss functions
-        loss_weights: Weights for multiple loss functions
-        device: Training device (CPU/GPU)
-        verbose: Whether to show training progress
-        logger: Logging instance
-        
-    Args:
-        model (torch.nn.Module): Neural network model
-        optimizer (torch.optim.Optimizer): Optimization algorithm
-        loss_fn (Union[torch.nn.Module, Callable, List[Callable]]): Loss function(s)
-        loss_weights (Optional[List[float]]): Weights for multiple loss functions
+        model (torch.nn.Module): Neural network model to be trained
         device (torch.device): Training device
+            Default: None (auto-select GPU if available)
         verbose (bool): Whether to show training progress
-        
-    Examples:
-        >>> # Define a model and loss functions
-        >>> model = nn.Sequential(nn.Linear(10, 1))
-        >>> mse_loss = nn.MSELoss()
-        >>> l1_loss = nn.L1Loss()
-        >>> 
-        >>> # Create optimizer
-        >>> optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-        >>> 
-        >>> # Initialize training algorithm with multiple losses
-        >>> algorithm = TrainingAlgorithm(
-        ...     model=model,
-        ...     optimizer=optimizer,
-        ...     loss_fn=[mse_loss, l1_loss],
-        ...     loss_weights=[0.7, 0.3],
-        ...     device=torch.device('cuda'),
-        ...     verbose=True
-        ... )
-        >>> 
-        >>> # Train the model
-        >>> trained_model = algorithm.train(
-        ...     train_loader=train_loader,
-        ...     val_loader=val_loader,
-        ...     num_epochs=10
-        ... )
-        >>> 
-        >>> # Validate on test set
-        >>> test_loss = algorithm.validate(test_loader)
+            Default: True
     """
+    
     def __init__(
             self,
             model: torch.nn.Module,
-            optimizer: torch.optim.Optimizer,
-            loss_fn: Union[torch.nn.Module, Callable, List[Callable]],
-            loss_weights: Optional[List[float]] = None,
             device: torch.device = None,
             verbose: bool = True,
     ):
+        # Device setup
         if device is None:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = device
             
         self.model = model.to(self.device)
-        
-        self.optimizer = optimizer
         self.verbose = verbose
         
-        if not isinstance(loss_fn, list):
-            self.loss_fn = [loss_fn]
-        else:
-            self.loss_fn = loss_fn
-        if loss_weights is None:
-                self.loss_weights = torch.ones(len(self.loss_fn), device=self.device)
-        else:
-            if len(loss_weights) != len(self.loss_fn):
-                raise ValueError(f"Number of loss functions must match number of weights")
-            self.loss_weights = torch.tensor(loss_weights, device=self.device)
-        
-        # Setup logging
+        # Logger setup
         if self.verbose:
             logging.basicConfig(
                 level=logging.INFO,
                 format='%(asctime)s - %(levelname)s - %(message)s'
             )
             self.logger = logging.getLogger(__name__)
-
+    
+    @abstractmethod
+    def train(
+            self,
+            train_loader: DataLoader,
+            val_loader: Optional[DataLoader] = None,
+            **kwargs
+    ) -> torch.nn.Module:
+        """
+        Train the model.
+        Must be implemented by subclasses.
+        
+        Args:
+            train_loader: DataLoader for training data
+            val_loader: Optional DataLoader for validation data
+            **kwargs: Additional training arguments
+            
+        Returns:
+            torch.nn.Module: Trained model
+        """
+        pass
+    
+    def save_model(self, path: str) -> None:
+        """
+        Save model state dict to disk.
+        
+        Args:
+            path: Path to save model weights
+        """
+        torch.save(self.model.state_dict(), path)
+        
+    def load_model(self, path: str) -> None:
+        """
+        Load model state dict from disk.
+        
+        Args:
+            path: Path to saved model weights
+        """
+        self.model.load_state_dict(torch.load(path))
+        
+        
+class Trainer(BaseTrainer):
+    def __init__(self, model, device = None, verbose = True):
+        super().__init__(model, device, verbose)
+        self.optimizer = torch.optim.Adam(self.model.parameters())
+        self.loss_fns = [torch.nn.CrossEntropyLoss()]    
+        self.loss_weights = [1]
+            
     def calculate_loss(self, output, target):
         """
-        Calculate loss using single or multiple loss functions
+        Calculate loss using multiple loss functions
         
         Args:
             output: Model output
@@ -167,11 +110,11 @@ class TrainingAlgorithm:
             Total loss value
         """
         total_loss = 0
-        for fn, weight in zip(self.loss_fn, self.loss_weights):
+        for fn, weight in zip(self.loss_fns, self.loss_weights):
             loss = fn(output, target)
             total_loss += weight * loss
         return total_loss
-
+    
     def train_epoch(self, train_loader: DataLoader) -> float:
         """
         Train for one epoch
@@ -272,5 +215,9 @@ class TrainingAlgorithm:
                 self.logger.info(f"Loaded best model with val_loss: {best_loss:.4f}")
 
         return self.model
+    
+    def save_model(self, path):
+        torch.save(self.model.state_dict(), path)
+
 
 
