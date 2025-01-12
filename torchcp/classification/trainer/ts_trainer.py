@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 from torchcp.classification.trainer.base_trainer import BaseTrainer
 from torchcp.classification.trainer.model import TemperatureScalingModel
 
+
 class TSTrainer(BaseTrainer):
     """Temperature Scaling Trainer for model calibration.
     
@@ -31,19 +32,18 @@ class TSTrainer(BaseTrainer):
         device (torch.device): Device model is running on
         verbose (bool): Whether to print training progress
     """
-    
+
     def __init__(
             self,
             model: torch.nn.Module,
             init_temperature: float,
             device: torch.device = None,
-            verbose: bool = True):  
-        
-        self.org_model = model
+            verbose: bool = True):
+
         self.init_temperature = init_temperature
-        model = TemperatureScalingModel(self.org_model, temperature=init_temperature)        
+        model = TemperatureScalingModel(model, temperature=init_temperature)
         super().__init__(model, device, verbose)
-        
+
     def train(
             self,
             train_loader: DataLoader,
@@ -59,8 +59,6 @@ class TSTrainer(BaseTrainer):
             lr (float, optional): Learning rate for LBFGS. Defaults to 0.01
             num_epochs (int, optional): Max LBFGS iterations. Defaults to 100
         """
-        self.model = TemperatureScalingModel(self.org_model, temperature= self.init_temperature)
-        self.model.to(self.device)
         self.model.eval()
         nll_criterion = nn.CrossEntropyLoss().to(self.device)
         ece_criterion = _ECELoss().to(self.device)
@@ -80,7 +78,7 @@ class TSTrainer(BaseTrainer):
         # Calculate metrics before scaling
         before_nll = nll_criterion(logits, labels).item()
         before_ece = ece_criterion(logits, labels).item()
-        
+
         if self.verbose:
             print(f'Before scaling - NLL: {before_nll:.3f}, ECE: {before_ece:.3f}')
 
@@ -99,12 +97,13 @@ class TSTrainer(BaseTrainer):
         # Calculate metrics after scaling
         after_nll = nll_criterion(logits / self.model.temperature, labels).item()
         after_ece = ece_criterion(logits / self.model.temperature, labels).item()
-        
+
         if self.verbose:
             print(f'Optimal temperature: {self.model.temperature.item():.3f}')
             print(f'After scaling - NLL: {after_nll:.3f}, ECE: {after_ece:.3f}')
-            
-            
+        return self.model
+
+
 # Adapted from: Geoff Pleiss
 # Source: https://github.com/gpleiss/temperature_scaling
 # Original License: MIT.
@@ -127,6 +126,7 @@ class _ECELoss(nn.Module):
     "Obtaining Well Calibrated Probabilities Using Bayesian Binning." AAAI.
     2015.
     """
+
     def __init__(self, n_bins=15):
         """
         n_bins (int): number of confidence interval bins

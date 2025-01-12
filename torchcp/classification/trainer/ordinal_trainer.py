@@ -52,7 +52,7 @@ class OrdinalTrainer(Trainer):
             ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"},
 
     ):
-        super().__init__(model, optimizer, loss_fn,loss_weights,  device, verbose)
+        super().__init__(model, optimizer, loss_fn, loss_weights, device, verbose)
         self.model = OrdinalClassifier(model, **ordinal_config)
         self.model.to(device)
 

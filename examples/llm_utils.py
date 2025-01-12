@@ -5,27 +5,172 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import argparse
-import collections
-import json
-import math
+
 import numpy as np
-import numpy as np
-import os
 import re
 import string
-import sys
 import torch
 from datasets import load_dataset
 from tqdm.auto import tqdm
 from transformers import LlamaForCausalLM, LlamaTokenizer, set_seed, StoppingCriteriaList
 
-# os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+few_shot_qa = """Q: Which American-born Sinclair won the Nobel Prize for Literature in 1930?
+A: Sinclair Lewis
+Q: Where in England was Dame Judi Dench born?
+A: York
+Q: In which decade did Billboard magazine first publish and American hit chart?
+A: 30s
+Q: From which country did Angola achieve independence in 1975?
+A: Portugal
+Q: Which city does David Soul come from?
+A: Chicago
+Q: Who won Super Bowl XX?
+A: Chicago Bears
+Q: Which was the first European country to abolish capital punishment?
+A: Norway
+Q: In which country did he widespread use of ISDN begin in 1988?
+A: Japan
+Q: What is Bruce Willis' real first name?
+A: Walter
+Q: Which William wrote the novel Lord Of The Flies?
+A: Golding
+Q: Which innovation for the car was developed by Prince Henry of Prussia in 1911?
+A: Windshield wipers
+Q: How is musician William Lee Conley better known?
+A: Big Bill Broonzy
+Q: How is Joan Molinsky better known?
+A: Joan Rivers
+Q: In which branch of the arts is Patricia Neary famous?
+A: Ballet
+Q: Which country is Europe's largest silk producer?
+A: Italy
+Q: The VS-300 was a type of what?
+A: Helicopter
+Q: At which university did Joseph Goebbels become a doctor of philosophy?
+A: Heidelberg
+Q: Which prince is Queen Elizabeth II's youngest son?
+A: Edward
+Q: When did the founder of Jehovah's Witnesses say the world would end?
+A: 1914
+Q: Who found the remains of the Titanic?
+A: Robert Ballard
+Q: Who was the only Spice Girl not to have a middle name?
+A: Posh Spice
+Q: What are the international registration letters of a vehicle from Algeria?
+A: DZ
+Q: How did Jock die in Dallas?
+A: Helicopter accident
+Q: What star sign is Michael Caine?
+A: Pisces
+Q: Who wrote the novel Evening Class?
+A: Maeve Binchy
+Q: Which country does the airline Air Pacific come from?
+A: Fiji
+Q: In which branch of the arts does Allegra Kent work?
+A: Ballet
+Q: Who had a 70s No 1 hit with Billy, Don't Be A Hero?
+A: Bo Donaldson & The Heywoods
+Q: Banting and Best pioneered the use of what?
+A: Insulin
+Q: Who directed the movie La Dolce Vita?
+A: Federico Fellini
+Q: Which country does the airline LACSA come from?
+A: Costa Rica
+Q: Who directed 2001: A Space Odyssey?
+A: Stanley Kubrick
+Q: Which is the largest of the Japanese Volcano Islands?
+A: Iwo Jima
+Q: Ezzard Charles was a world champion in which sport?
+A: Boxing
+Q: Who was the first woman to make a solo flight across the Atlantic?
+A: Amelia Earhart
+Q: Which port lies between Puget Sound and Lake Washington?
+A: Seattle
+Q: In which city were Rotary Clubs set up in 1905?
+A: Chicago
+Q: Who became US Vice President when Spiro Agnew resigned?
+A: Gerald Ford
+Q: In which decade of the 20th century was Billy Crystal born?
+A: 1940s
+Q: Which George invented the Kodak roll-film camera?
+A: Eastman
+Q: Which series had the characters Felix Unger and Oscar Madison?
+A: The Odd Couple
+Q: Who along with Philips developed the CD in the late 70s?
+A: Sony
+Q: Where is the multinational Nestle based?
+A: Switzerland
+Q: Do You Know Where You're Going To? was the theme from which film?
+A: Mahogany
+Q: 19969 was the Chinese year of which creature?
+A: Rat
+Q: In the 90s how many points have been awarded for finishing second in a Grand Prix?
+A: 6
+Q: Stapleton international airport is in which US state?
+A: Colorado
+Q: What was Kevin Kline's first movie?
+A: Sophie's Choice
+Q: Which actor had a Doberman Pinscher called Kirk?
+A: William Shatner
+Q: What day of the week was the Wall Street Crash?
+A: Thursday
+Q: The US signed a treaty with which country to allow the construction of the Panama Canal?
+A: Columbia
+Q: What was Prince's last No 1 of the 80s?
+A: Batdance
+Q: Man In The Mirror first featured on which Michel Jackson album?
+A: Bad
+Q: Where was the first battle with US involvement in the Korean War?
+A: Suwon
+Q: On which Caribbean island did Princess Diana spend he first Christmas after her divorce was announced?
+A: Barbuda
+Q: In which decade was Arnold Schwarzenegger born?
+A: 1950s
+Q: Which musical featured the song Thank Heaven for Little Girls?
+A: Gigi
+Q: The Queen Elizabeth liner was destroyed by fire in the 70s in which harbour?
+A: Hong Kong
+Q: What breed of dog did Columbo own?
+A: Basset hound
+Q: What was the first movie western called?
+A: Kit Carson
+Q: Which Oscar-winning actress was born on exactly the same day as actress Lindsay Wagner?
+A: Meryl Streep
+Q: Which Amendment to the Constitution brought in prohibition in 1920?
+A: 18th
+Q: Which oil scandal hit the US in 1924?
+A: Teapot Dome Scandal
+Q: Phil Collins appeared in which Spielberg film with Robin Williams?
+A: Hook""".split("\n")
 
-from examples.llm.prompts import few_shot_qa, StoppingCriteriaSub
-from examples.utils import get_dataset_dir
-from examples.llm.llm_utils import get_dataset
-from torchcp.llm.predictor import ConformalLM
+import torch
+from transformers import StoppingCriteria
+
+
+class StoppingCriteriaSub(StoppingCriteria):
+    def __init__(self, input_length=0, stop_ids=None):
+        super().__init__()
+        self.stop_ids = stop_ids
+        self.input_length = input_length
+
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.Tensor) -> bool:
+        if self.stop_ids is None:
+            return False
+        output = input_ids[:, self.input_length:]
+        has_stop_ids = []
+        for stop_id in self.stop_ids:
+            has_stop_id = torch.any(output == stop_id, dim=1)
+            has_stop_ids.append(has_stop_id)
+        has_stop_ids = torch.stack(has_stop_ids, dim=1)
+        return (has_stop_ids.any(dim=1).all())
+
+
+def get_dataset(dataset_name="trivia_qa", mode="validation", max_predict_samples=None, starting_x=0):
+    dataset = load_dataset(dataset_name, "rc")
+    dataset = dataset[mode]
+    if max_predict_samples is not None:
+        dataset = dataset.select(range(starting_x, starting_x + max_predict_samples))
+    return dataset
 
 
 def preprocess_data(dataset_name, model_path, output_path):
@@ -56,7 +201,7 @@ def preprocess_data(dataset_name, model_path, output_path):
         input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to(device)
 
         stopping_criteria = StoppingCriteriaList(
-            [StoppingCriteriaSub(stop_ids=stop_word_ids, input_length=input_ids.shape[1])])
+            [StoppingCriteriaSub(stop_ids=stop_word_ids, input_length=input_ids.shape[1])]).to(dtype=torch.long)
         set_seed(seed)
 
         kwargs = {
@@ -201,113 +346,15 @@ def preprocess_data(dataset_name, model_path, output_path):
     np.savez(output_path, labels=all_labels, scores=all_scores, diversity=diversity)
 
 
-def test_conformal_llm():
-    dataset_name = "trivia_qa"
-    model_path = "meta-llama/Llama-2-7b-hf"
+def split_indices(total_samples, N_train, p_cal, p_tuning):
+    # Create random permutation of indices
+    shuffle = np.random.permutation(total_samples)
 
-    output_path = os.path.join(get_dataset_dir(), f"{dataset_name}_results.npz")
-    if not os.path.exists(output_path):
-        preprocess_data(dataset_name, model_path, output_path)
+    # Calculate sizes for each split
+    remaining_samples = total_samples - N_train
+    N_cal = int(p_cal * remaining_samples)
+    N_tuning = int(p_tuning * remaining_samples)
 
-    methods = [
-        dict(scaling=('none', {}), scoring='first_k', rejection=False),
-        dict(scaling=('none', {}), scoring='first_k', rejection=True),
-        dict(scaling=('none', {}), scoring='max', rejection=False),
-        dict(scaling=('none', {}), scoring='max', rejection=True),
-        dict(scaling=('none', {}), scoring='sum', rejection=False),
-        dict(scaling=('none', {}), scoring='sum', rejection=True),
-        dict(scaling=('none', {}), scoring='first_k_no_mask', rejection=False),
-        dict(scaling=('none', {}), scoring='first_k_no_mask', rejection=True),
-        dict(scaling=('platt', {}), scoring='geo', rejection=False),
-        dict(scaling=('bin', {}), scoring='geo', rejection=False),
-        dict(scaling=('platt_bin', {}), scoring='geo', rejection=False),
-        dict(scaling=('rnn', {}), scoring='geo', rejection=False),
-        dict(scaling=('none', {}), scoring='geo', rejection=False),
-        dict(scaling=('platt', {}), scoring='geo', rejection=True),
-    ]
-
-    p_cal = 0.3
-    p_tuning = 0.3
-
-    data = np.load(output_path)
-    all_labels = torch.from_numpy(data['labels'])
-    all_scores = torch.from_numpy(data['scores'])
-    diversity = torch.from_numpy(data['diversity'])
-
-    epsilons = np.linspace(0, 1, 101)
-    num_trials = 1
-    alpha = 0.05
-
-    all_results = [collections.defaultdict(list) for _ in range(len(methods))]
-
-    all_trial_results = []
-
-    for i in range(len(methods)):
-        print(methods[i])
-        for seed in tqdm(range(num_trials)):
-            set_seed(seed)
-
-            shuffle = np.random.permutation(len(all_labels))
-            scaling_type = methods[i].get('scaling', (None, {}))[0]
-
-            if scaling_type is not None:
-                N_train = 2000
-            else:
-                N_train = 0
-
-            shuffle = np.random.permutation(len(all_labels))
-
-            remaining_N = len(all_labels) - N_train
-            training_idx = shuffle[:N_train]
-
-            N_cal = int(p_cal * remaining_N)
-            val_idx = shuffle[N_train + N_cal:]
-            N_val = remaining_N - N_cal
-
-            N_tuning = int(N_cal * p_tuning)
-            N_cal -= N_tuning
-
-            tuning_idx = shuffle[N_train: N_train + N_tuning]
-            cal_idx = shuffle[N_train + N_tuning: N_train + N_tuning + N_cal]
-
-            training_scores = all_scores[training_idx]
-            tuning_scores = all_scores[tuning_idx]
-            cal_scores = all_scores[cal_idx]
-            val_scores = all_scores[val_idx]
-
-            training_labels = all_labels[training_idx]
-            tuning_labels = all_labels[tuning_idx]
-            cal_labels = all_labels[cal_idx]
-            val_labels = all_labels[val_idx]
-
-            training_simlarties = diversity[training_idx]
-            tuning_simlarties = diversity[tuning_idx]
-            cal_simlarties = diversity[cal_idx]
-            val_simlarties = diversity[val_idx]
-
-            conformal_llm = ConformalLM(epsilons=epsilons,
-                                        scaling_type=scaling_type,
-                                        scale_kwargs=methods[i].get('scaling', (None, {}))[1],
-                                        set_score_function_name=methods[i].get('scoring', 'none'),
-                                        rejection=methods[i].get('rejection', False))
-
-            if scaling_type is not None:
-                conformal_llm.scaling(training_scores, training_labels)
-            conformal_llm.tuning(tuning_scores, tuning_simlarties, tuning_labels)
-            conformal_llm.calibrate_configs(cal_scores, cal_simlarties, cal_labels, alpha)
-            trial_results = conformal_llm.evaluate(val_scores, val_simlarties, val_labels)
-            all_trial_results.append(trial_results)
-
-        for j, method_results in enumerate(all_trial_results):
-            for k, v in method_results.items():
-                all_results[i][k].append(np.array(v))
-
-    combined_results = []
-    for results in all_results:
-        combined = {}
-        for k, v in results.items():
-            combined[k] = np.stack(v, axis=0)
-        combined_results.append(combined)
-
-
-test_conformal_llm()
+    return shuffle[:N_train], shuffle[N_train:N_train + N_tuning], shuffle[
+                                                                   N_train + N_tuning:N_train + N_tuning + N_cal], shuffle[
+                                                                                                                   N_train + N_tuning + N_cal:]

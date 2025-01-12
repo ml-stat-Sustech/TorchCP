@@ -54,7 +54,7 @@ def coverage_rate(prediction_sets, labels, coverage_type="default", num_classes=
             raise ValueError("When coverage_type is 'macro', you must define the number of classes.")
 
         class_counts = torch.bincount(labels, minlength=num_classes)
-        class_covered = torch.bincount(labels[covered==1], minlength=num_classes)
+        class_covered = torch.bincount(labels[covered == 1], minlength=num_classes)
 
         class_coverage = torch.zeros_like(class_counts, dtype=torch.float)
         valid_classes = class_counts > 0
@@ -101,7 +101,7 @@ def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx=None):
 
     covered = prediction_sets[torch.arange(len(labels)), labels]
     class_counts = torch.bincount(labels, minlength=num_classes)
-    class_covered = torch.bincount(labels[covered==1], minlength=num_classes)
+    class_covered = torch.bincount(labels[covered == 1], minlength=num_classes)
 
     cls_coverage_rate = torch.zeros_like(class_counts, dtype=torch.float32)
     valid_classes = class_counts > 0
@@ -140,7 +140,7 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
 
     covered = prediction_sets[torch.arange(len(labels)), labels]
 
-    class_covered = torch.bincount(labels[covered==1], minlength=num_classes)
+    class_covered = torch.bincount(labels[covered == 1], minlength=num_classes)
     class_counts = torch.bincount(labels, minlength=num_classes)
 
     valid_classes = class_counts > 0

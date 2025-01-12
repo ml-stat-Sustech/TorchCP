@@ -6,8 +6,7 @@
 #
 
 from .base_trainer import Trainer
-from .ordinal_trainer import OrdinalTrainer
-from .ts_trainer import TSTrainer
 from .confts_trainer import ConfTSTrainer
 from .model import TemperatureScalingModel
-from .conflearn_trainer import ConfLearnTrainer
+from .ordinal_trainer import OrdinalTrainer
+from .ts_trainer import TSTrainer

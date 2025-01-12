@@ -62,7 +62,6 @@ def test_ts_forward():
     assert torch.allclose(out, x / 2.0)
 
 
-
 def test_ts_early_stopping(device, test_data):
     ts = TS().to(device)
     ts.temperature = nn.Parameter(torch.tensor(1.0))

@@ -6,14 +6,15 @@
 #
 
 import os
-import shutil
 import pytest
+import shutil
 import torch
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
 from torchcp.classification.loss import ConfLearnLoss
 from torchcp.classification.trainer import ConfLearnTrainer
+
 
 class ClassifierDataset(Dataset):
     def __init__(self, X_data, y_data, z_data):
@@ -26,7 +27,7 @@ class ClassifierDataset(Dataset):
 
     def __len__(self):
         return len(self.X_data)
-    
+
 
 class MockModel(torch.nn.Module):
     def __init__(self):
@@ -35,7 +36,7 @@ class MockModel(torch.nn.Module):
 
     def forward(self, x):
         return self.param * x
-        
+
 
 @pytest.fixture
 def mock_model():
@@ -51,8 +52,8 @@ def mock_conflearn_trainer(mock_model):
 @pytest.fixture
 def train_loader():
     X_train = torch.rand((100, 3)).float()
-    Y_train = torch.randint(0, 3, (100, )).long()
-    Z_train = torch.randint(0, 2, (100, )).long()
+    Y_train = torch.randint(0, 3, (100,)).long()
+    Z_train = torch.randint(0, 2, (100,)).long()
     train_dataset = ClassifierDataset(X_train, Y_train, Z_train)
     train_loader = DataLoader(
         train_dataset, batch_size=20, shuffle=True, drop_last=True)
@@ -62,8 +63,8 @@ def train_loader():
 @pytest.fixture
 def val_loader():
     X_val = torch.rand((100, 3)).float()
-    Y_val = torch.randint(0, 3, (100, )).long()
-    Z_val = torch.randint(0, 2, (100, )).long()
+    Y_val = torch.randint(0, 3, (100,)).long()
+    Z_val = torch.randint(0, 2, (100,)).long()
     val_dataset = ClassifierDataset(X_val, Y_val, Z_val)
     val_loader = DataLoader(
         val_dataset, batch_size=20, shuffle=True, drop_last=True)
@@ -82,7 +83,8 @@ def test_initialization(mock_model):
     assert conflearn_trainer.device == 'cpu'
 
     optimizer = optim.Adam(mock_model.parameters(), lr=0.1)
-    conflearn_trainer = ConfLearnTrainer(mock_model, optimizer, criterion_pred_loss_fn=torch.nn.L1Loss(), mu=0.5, alpha=0.4, device='cuda')
+    conflearn_trainer = ConfLearnTrainer(mock_model, optimizer, criterion_pred_loss_fn=torch.nn.L1Loss(), mu=0.5,
+                                         alpha=0.4, device='cuda')
     assert conflearn_trainer.model is mock_model
     assert conflearn_trainer.optimizer is optimizer
     assert isinstance(conflearn_trainer.criterion_pred_loss_fn, torch.nn.L1Loss)
@@ -93,10 +95,9 @@ def test_initialization(mock_model):
 
 
 def test_calculate_loss(mock_conflearn_trainer):
-
     output = torch.rand((100, 2))
-    target = torch.randint(0, 2, (100, ))
-    Z_batch = torch.randint(0, 2, (100, ))
+    target = torch.randint(0, 2, (100,))
+    Z_batch = torch.randint(0, 2, (100,))
     torch.manual_seed(42)
     loss = mock_conflearn_trainer.calculate_loss(output, target, Z_batch)
     torch.manual_seed(42)
@@ -116,12 +117,10 @@ def test_calculate_loss(mock_conflearn_trainer):
 
 
 def test_train_epoch(mock_conflearn_trainer, train_loader):
-
     mock_conflearn_trainer.train_epoch(train_loader)
 
 
 def test_validate(mock_conflearn_trainer, val_loader):
-
     _, acc_val = mock_conflearn_trainer.validate(val_loader)
 
     except_acc_val = 0

@@ -9,8 +9,8 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 
-from torchcp.utils.common import DimensionError
 from torchcp.classification.predictor.classwise import ClassWisePredictor
+from torchcp.utils.common import DimensionError
 
 
 class ClusteredPredictor(ClassWisePredictor):
@@ -112,7 +112,7 @@ class ClusteredPredictor(ClassWisePredictor):
                 X=embeddings.detach().cpu().numpy(),
                 sample_weight=np.sqrt(
                     class_cts.detach().cpu().numpy()),
-                )
+            )
             nonrare_class_cluster_assignments = torch.tensor(kmeans.labels_, device=self._device)
 
             cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)

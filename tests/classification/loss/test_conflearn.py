@@ -11,9 +11,10 @@ from torchsort import soft_sort, soft_rank
 from torchcp.classification.loss import ConfLearnLoss
 from torchcp.classification.loss.conflearn import UniformMatchingLoss
 
+
 def test_UniformMatchingLoss():
     loss_fn = UniformMatchingLoss()
-    x = torch.rand((100, ))
+    x = torch.rand((100,))
     torch.manual_seed(0)
     loss = loss_fn(x)
 
@@ -23,7 +24,7 @@ def test_UniformMatchingLoss():
     except_loss = torch.max(torch.abs(i_seq - x_sorted))
     assert loss == except_loss
 
-    x = torch.rand((0, ))
+    x = torch.rand((0,))
     loss = loss_fn(x)
     assert loss == 0
 
@@ -38,8 +39,8 @@ def test_initialization():
 def test_forward():
     loss_fn = ConfLearnLoss()
     output = torch.rand((100, 2))
-    target = torch.randint(0, 2, (100, ))
-    Z_batch = torch.randint(0, 2, (100, ))
+    target = torch.randint(0, 2, (100,))
+    Z_batch = torch.randint(0, 2, (100,))
 
     torch.manual_seed(0)
     loss_scores = loss_fn(output, target, Z_batch)
@@ -54,7 +55,7 @@ def test_forward():
 def test_compute_loss():
     loss_fn = ConfLearnLoss()
     y_train_pred = torch.rand((100, 2))
-    y_train_batch = torch.randint(0, 2, (100, ))
+    y_train_batch = torch.randint(0, 2, (100,))
 
     torch.manual_seed(0)
     train_loss_scores = loss_fn.compute_loss(y_train_pred, y_train_batch)
@@ -70,7 +71,7 @@ def test_compute_loss():
 def test_compute_scores_diff():
     loss_fn = ConfLearnLoss()
     proba_values = torch.rand((100, 2))
-    Y_values = torch.randint(0, 2, (100, ))
+    Y_values = torch.randint(0, 2, (100,))
 
     torch.manual_seed(0)
     scores_t = loss_fn._ConfLearnLoss__compute_scores_diff(proba_values, Y_values)
@@ -108,7 +109,7 @@ def test_soft_indicator():
 def test_soft_indexing():
     loss_fn = ConfLearnLoss()
     z = torch.rand((100, 2))
-    rank = torch.randint(0, 2, (100, ))
+    rank = torch.randint(0, 2, (100,))
 
     torch.manual_seed(0)
     weight = loss_fn._ConfLearnLoss__soft_indexing(z, rank)

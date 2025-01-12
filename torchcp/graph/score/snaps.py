@@ -38,14 +38,14 @@ class SNAPS(BaseScore):
             The number of nearest neighbors to consider when constructing the k-NN graph. Defaults to 20.
     """
 
-    def __init__(self, 
-                 graph_data, 
-                 base_score_function, 
-                 xi=1 / 3, 
-                 mu=1 / 3, 
-                 knn_edge=None, 
+    def __init__(self,
+                 graph_data,
+                 base_score_function,
+                 xi=1 / 3,
+                 mu=1 / 3,
+                 knn_edge=None,
                  knn_weight=None,
-                 features=None, 
+                 features=None,
                  k=20):
         super(SNAPS, self).__init__(graph_data, base_score_function)
         if xi < 0 or xi > 1:
