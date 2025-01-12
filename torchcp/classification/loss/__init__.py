@@ -9,3 +9,4 @@ from .cd import CDLoss
 from .conflearn import ConfLearnLoss
 from .conftr import ConfTr
 from .confts import ConfTS
+from .uncertainty_aware import UncertaintyAwareLoss
