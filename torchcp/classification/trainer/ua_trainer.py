@@ -189,9 +189,8 @@ class UncertaintyAwareTrainer(BaseTrainer):
     Args:
         model (torch.nn.Module): Neural network model to train.
         optimizer (torch.optim.Optimizer): Optimization algorithm.
-        criterion_pred_loss_fn (torch.nn.Module): Loss function for accuracy.
-        mu (float): A hyperparameter controlling the weight of the conformal loss term in the total loss (default: 0.2).
-        alpha (float): A significance level for the conformal loss function (default: 0.1).
+        base_loss (torch.nn.Module): The base loss function .
+        loss_weight (float): The weight of the conformal loss term in the total loss.
         device (torch.device): Device to run on (CPU/GPU) (default: CPU).
 
     Examples:
@@ -207,17 +206,20 @@ class UncertaintyAwareTrainer(BaseTrainer):
     """
 
     def __init__(self,
-                 model: torch.nn.Module,
-                 optimizer: torch.optim.Optimizer,
-                 base_loss=torch.nn.CrossEntropyLoss(),
-                 loss_weight=None,
-                 device: torch.device=None,
-                 verbose: bool = True,
-                 mu: float = 0.2,
-                 alpha: float = 0.1):
+                model: torch.nn.Module,
+                optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
+                optimizer_params: dict = {},
+                base_loss=torch.nn.CrossEntropyLoss(),
+                loss_weight: float = None,
+                device: torch.device = None,
+                verbose: bool = True):
         if loss_weight is None:
             loss_weight = 1.0
         super(UncertaintyAwareTrainer, self).__init__(model, device, verbose)
+        optimizer = optimizer_class(
+            model.parameters(),
+            **optimizer_params
+        )
 
         self.conformal_loss_fn = UncertaintyAwareLoss()
         self.training_algorithm = UncertaintyAwareTrainingAlgorithm(model=model, optimizer=optimizer, loss_fn=[base_loss, self.conformal_loss_fn], loss_weights=[1,loss_weight], device=device, verbose=verbose)

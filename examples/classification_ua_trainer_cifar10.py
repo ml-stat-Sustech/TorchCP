@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # Loading dataset, a model and Conformal Learning Trainer
     #######################################
     train_loader, val_loader, cal_loader, test_loader, model, optimizer = setup_data_and_model(device)
-    ua_trainer = UncertaintyAwareTrainer(model, optimizer, device=device)
+    ua_trainer = UncertaintyAwareTrainer(model, optimizer_class=torch.optim.Adam, optimizer_params={'lr': 0.001,}, device=device)
     
     #######################################
     # Conformal Learning

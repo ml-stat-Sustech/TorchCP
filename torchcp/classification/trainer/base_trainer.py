@@ -64,6 +64,59 @@ class BaseTrainer:
             
             
 class TrainingAlgorithm:
+    """
+    Implementation of specific training algorithms and procedures.
+    
+    This class handles the core training logic including loss calculation,
+    optimization steps, and validation procedures. It supports single or multiple
+    loss functions with optional weights.
+    
+    Attributes:
+        model: PyTorch model to train
+        optimizer: Optimization algorithm
+        loss_fn: Single loss function or list of loss functions
+        loss_weights: Weights for multiple loss functions
+        device: Training device (CPU/GPU)
+        verbose: Whether to show training progress
+        logger: Logging instance
+        
+    Args:
+        model (torch.nn.Module): Neural network model
+        optimizer (torch.optim.Optimizer): Optimization algorithm
+        loss_fn (Union[torch.nn.Module, Callable, List[Callable]]): Loss function(s)
+        loss_weights (Optional[List[float]]): Weights for multiple loss functions
+        device (torch.device): Training device
+        verbose (bool): Whether to show training progress
+        
+    Examples:
+        >>> # Define a model and loss functions
+        >>> model = nn.Sequential(nn.Linear(10, 1))
+        >>> mse_loss = nn.MSELoss()
+        >>> l1_loss = nn.L1Loss()
+        >>> 
+        >>> # Create optimizer
+        >>> optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        >>> 
+        >>> # Initialize training algorithm with multiple losses
+        >>> algorithm = TrainingAlgorithm(
+        ...     model=model,
+        ...     optimizer=optimizer,
+        ...     loss_fn=[mse_loss, l1_loss],
+        ...     loss_weights=[0.7, 0.3],
+        ...     device=torch.device('cuda'),
+        ...     verbose=True
+        ... )
+        >>> 
+        >>> # Train the model
+        >>> trained_model = algorithm.train(
+        ...     train_loader=train_loader,
+        ...     val_loader=val_loader,
+        ...     num_epochs=10
+        ... )
+        >>> 
+        >>> # Validate on test set
+        >>> test_loss = algorithm.validate(test_loader)
+    """
     def __init__(
             self,
             model: torch.nn.Module,
@@ -83,7 +136,10 @@ class TrainingAlgorithm:
         self.optimizer = optimizer
         self.verbose = verbose
         
-        self.loss_fn = loss_fn
+        if not isinstance(loss_fn, list):
+            self.loss_fn = [loss_fn]
+        else:
+            self.loss_fn = loss_fn
         if loss_weights is None:
                 self.loss_weights = torch.ones(len(self.loss_fn), device=self.device)
         else:

@@ -17,33 +17,41 @@ from torchcp.classification.trainer.base_trainer import TrainingAlgorithm
 class ConfTSTrainer(BaseTrainer):
     """Conformal Temperature Scaling Trainer.
     
-    A trainer class that implements conformal prediction with temperature scaling
-    for calibrating deep neural networks. Inherits from TSTrainer.
-    
     Args:
-        model: Base neural network model to be calibrated.
-                Will be wrapped in TemperatureScalingModel.
-        temperature: Initial temperature scaling parameter.
-                    Higher values produce softer probability distributions.
-        optimizer: Optimizer for only training the temperature.
-        device: Device to run computations on.
-                If None, will use GPU if available, else CPU.
-        verbose: Whether to display training progress and metrics.
-                Set False to suppress output.
-        alpha: Significance level for ConfTS (0 to 1).
-                Controls the expected error rate, smaller values 
-                give more conservative predictions.
-
-    Example:
-        >>> model = ResNet18()
-        >>> optimizer = torch.optim.Adam(model.parameters())
+        model (torch.nn.Module): Base neural network model to be calibrated
+        init_temperature (float): Initial value for temperature scaling parameter
+        optimizer_class (torch.optim.Optimizer): Optimizer class for temperature parameter
+            Default: torch.optim.Adam
+        optimizer_params (dict): Parameters passed to optimizer constructor
+            Default: {}
+        device (torch.device): Device to run computations on 
+            Default: None (auto-select GPU if available)
+        verbose (bool): Whether to display training progress
+            Default: True
+        alpha (float): Target miscoverage rate (significance level) for conformal prediction
+            Default: 0.1
+            
+    Examples:
+        >>> # Initialize a CNN model
+        >>> cnn = torchvision.models.resnet18(pretrained=True)
+        >>> 
+        >>> # Create ConfTS trainer
         >>> trainer = ConfTSTrainer(
-        ...     model=model,
-        ...     temperature=1.0,
-        ...     optimizer=optimizer,
-        ...     device='cuda'
+        ...     model=cnn,
+        ...     init_temperature=1.5,
+        ...     optimizer_params={'lr': 0.01},
+        ...     alpha=0.1
         ... )
-        >>> trainer.train(train_loader, val_loader)
+        >>> 
+        >>> # Train calibration
+        >>> trainer.train(
+        ...     train_loader=train_loader,
+        ...     val_loader=val_loader,
+        ...     num_epochs=10
+        ... )
+        >>> 
+        >>> # Save calibrated model
+        >>> trainer.save_model('calibrated_model.pth')
     """
 
     def __init__(

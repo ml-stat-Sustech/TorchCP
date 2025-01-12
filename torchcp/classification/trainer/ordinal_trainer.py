@@ -25,19 +25,46 @@ class OrdinalTrainer(ConfTSTrainer):
     It supports various configurations and training strategies to handle ordinal data.
 
     Args:
-        model (torch.nn.Module): The backbone model to be trained.
-        optimizer (torch.optim.Optimizer): Optimization algorithm.
-        loss_fn (Union[torch.nn.Module, Callable, List[Callable]]): Loss function(s). Can be:
-            - A PyTorch loss module
-            - A custom loss function
-            - A list of loss functions for multi-loss training.
-        device (torch.device): Training device (CPU/GPU).
-        verbose (bool, optional): Whether to print training progress and logs. Default is True.
-        loss_weights (Optional[List[float]], optional): Weights for multiple loss functions if loss_fn is a list. Default is None.
-        ordinal_config (Dict[str, Any], optional): Configuration for the ordinal classifier. Default is {"phi": "abs", "varphi": "abs"}.
-
-    Attributes:
-        model (OrdinalClassifier): The ordinal classifier model.
+        model (torch.nn.Module): Base neural network model
+        ordinal_config (Dict[str, Any]): Configuration for ordinal classifier
+            phi (str): Type of phi function ("abs", "square")
+            varphi (str): Type of varphi function ("abs", "square")
+            Default: {"phi": "abs", "varphi": "abs"}
+        optimizer_class (torch.optim.Optimizer): Optimizer class
+            Default: torch.optim.Adam
+        optimizer_params (dict): Parameters for optimizer initialization
+            Default: {}
+        loss_fn (torch.nn.Module): Loss function for ordinal classification
+            Default: torch.nn.CrossEntropyLoss()
+        device (torch.device): Device to run computations on
+            Default: None (auto-select GPU if available)
+        verbose (bool): Whether to display training progress
+            Default: True
+            
+    Examples:
+        >>> # Define base model
+        >>> backbone = torchvision.models.resnet18(pretrained=True)
+        >>> 
+        >>> # Configure ordinal classifier
+        >>> ordinal_config = {
+        ...     "phi": "square",
+        ...     "varphi": "abs"
+        ... }
+        >>> 
+        >>> # Create trainer
+        >>> trainer = OrdinalTrainer(
+        ...     model=backbone,
+        ...     ordinal_config=ordinal_config,
+        ...     optimizer_params={'lr': 0.001},
+        ...     loss_fn=torch.nn.CrossEntropyLoss()
+        ... )
+        >>> 
+        >>> # Train model
+        >>> trainer.train(
+        ...     train_loader=train_loader,
+        ...     val_loader=val_loader,
+        ...     num_epochs=10
+        ... )
     """
 
     def __init__(
@@ -52,7 +79,7 @@ class OrdinalTrainer(ConfTSTrainer):
     ):  
         model = OrdinalClassifier(model, **ordinal_config)
         super().__init__(model, device, verbose)
-        optimizer = optimizer_class(model, **optimizer_params)
+        optimizer = optimizer_class(model.parameters(), **optimizer_params)
         self.training_algorithm = TrainingAlgorithm(model=model, optimizer=optimizer, loss_fn=[loss_fn], device=device, verbose=verbose)
         
 
