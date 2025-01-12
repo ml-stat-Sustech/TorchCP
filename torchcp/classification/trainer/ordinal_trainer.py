@@ -15,10 +15,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Optional, Dict, Any, Callable, Union, List
 
-from torchcp.classification.trainer.base_trainer import Trainer
+from torchcp.classification.trainer.confts_trainer import ConfTSTrainer,TrainingAlgorithm
 
-
-class OrdinalTrainer(Trainer):
+class OrdinalTrainer(ConfTSTrainer):
     """
     OrdinalTrainer is a class for training ordinal classifiers.
 
@@ -44,17 +43,18 @@ class OrdinalTrainer(Trainer):
     def __init__(
             self,
             model: torch.nn.Module,
-            optimizer: torch.optim.Optimizer,
-            loss_fn: Union[torch.nn.Module, Callable, List[Callable]],
-            loss_weights: Optional[List[float]] = None,
-            device: torch.device = None,
-            verbose: bool = True,
             ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"},
-
-    ):
-        super().__init__(model, optimizer, loss_fn, loss_weights, device, verbose)
-        self.model = OrdinalClassifier(model, **ordinal_config)
-        self.model.to(device)
+            optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
+            optimizer_params: dict = {},
+            loss_fn=torch.nn.CrossEntropyLoss(),
+            device: torch.device = None,
+            verbose: bool = True
+    ):  
+        model = OrdinalClassifier(model, **ordinal_config)
+        super().__init__(model, device, verbose)
+        optimizer = optimizer_class(model, **optimizer_params)
+        self.training_algorithm = TrainingAlgorithm(model=model, optimizer=optimizer, loss_fn=[loss_fn], device=device, verbose=verbose)
+        
 
 
 class OrdinalClassifier(nn.Module):

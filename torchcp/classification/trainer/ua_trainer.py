@@ -5,13 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import os
+import time
 import torch
 from tqdm import tqdm
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset, Dataset
 from torchcp.classification.loss import UncertaintyAwareLoss
-from torchcp.classification.trainer import Trainer
+from torchcp.classification.trainer.base_trainer import BaseTrainer, TrainingAlgorithm
+import copy
 
 
 class TrainDataset(Dataset):
@@ -27,7 +28,161 @@ class TrainDataset(Dataset):
         return len(self.X_data)
 
 
-class UncertaintyAwareTrainer(Trainer):
+class UncertaintyAwareTrainingAlgorithm(TrainingAlgorithm):
+    def __init__(self, model, optimizer, loss_fn, loss_weights, device, verbose):
+        super(UncertaintyAwareTrainingAlgorithm, self).__init__(model, optimizer, loss_fn, loss_weights, device, verbose)
+        
+    def train_epoch(self, train_loader: DataLoader):
+        """
+        Trains the model for one epoch.
+
+        The function iterates through the training data and updates the model parameters
+        using backpropagation and the optimizer.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): The DataLoader providing the training data.
+        """
+
+        self.model.train()
+        total_loss = 0
+        
+        train_iter = tqdm(train_loader, desc="Training") if self.verbose else train_loader
+
+        for X_batch, Y_batch, Z_batch in train_iter:
+            X_batch = X_batch.to(self.device)
+            Y_batch = Y_batch.to(self.device)
+            Z_batch = Z_batch.to(self.device)
+            self.optimizer.zero_grad()
+
+            output = self.model(X_batch)
+
+            # Calculate loss
+            loss = self.calculate_loss(output, Y_batch, Z_batch)
+
+            loss.backward()
+            self.optimizer.step()
+            
+            total_loss += loss.item()
+            
+            if self.verbose:
+                train_iter.set_postfix({'loss': loss.item()})
+
+        return total_loss / len(train_loader)
+
+            
+    def calculate_loss(self, output, target, Z_batch, training=True):
+        """
+        Calculates the total loss during training or validation.
+
+        The loss is a combination of the prediction loss and the conformal prediction loss,
+        where the conformal loss is weighted by the hyperparameter `mu`.
+
+        Args:
+            output (torch.Tensor): The model's output predictions (logits).
+            target (torch.Tensor): The true labels (ground truth).
+            Z_batch (torch.Tensor): A tensor indicating which samples are used for conformal prediction loss.
+            training (bool): A flag indicating whether the calculation is for training or validation (default: True).
+
+        Returns:
+            torch.Tensor: The computed total loss.
+        """
+        total_loss = 0
+        if training:
+            for fn, weight, loss_idx in zip(self.loss_fn, self.loss_weights, range(len(self.loss_fn))):
+                idx_ce = torch.where(Z_batch == loss_idx)[0]
+                if loss_idx == 0:
+                    loss = fn(output[idx_ce], target[idx_ce])
+                else:
+                    loss = fn(output[idx_ce], target[idx_ce], Z_batch[idx_ce])
+                total_loss += weight * loss
+            return total_loss
+        else:
+            Z_batch = torch.ones(len(output)).long().to(self.device)
+            total_loss = self.loss_fn[0](output, target)
+        return total_loss
+        
+        
+    def train(
+            self,
+            train_loader: DataLoader,
+            val_loader: DataLoader = None,
+            num_epochs: int = 10,
+    ):
+        """
+        Train the model with learning rate scheduling
+        
+        Args:
+            train_loader: DataLoader for training data
+            val_loader: Optional DataLoader for validation data
+            num_epochs: Number of training epochs
+        """
+        # Setup learning rate scheduler
+        lr_milestones = [int(num_epochs * 0.5)]
+        scheduler = optim.lr_scheduler.MultiStepLR(
+            self.optimizer, milestones=lr_milestones, gamma=0.1)
+
+        best_loss = float('inf')
+        best_model_state = None
+
+        # Create progress bar if verbose
+        epoch_iter = tqdm(range(num_epochs), desc="Training") if self.verbose else range(num_epochs)
+
+        for epoch in epoch_iter:
+            start_time = time.time()
+            
+            # Train and validate
+            train_loss = self.train_epoch(train_loader)
+            scheduler.step()
+            
+            log_msg = f"Epoch {epoch + 1}/{num_epochs} - train_loss: {train_loss:.4f}"
+
+            if val_loader is not None:
+                val_loss = self.validate(val_loader)
+                log_msg += f" - val_loss: {val_loss:.4f}"
+                
+                if val_loss < best_loss:
+                    best_loss = val_loss
+                    best_model_state = copy.deepcopy(self.model.state_dict())
+                    log_msg += f"\nNew best model with val_loss: {val_loss:.4f}"
+
+            log_msg += f" - Time: {time.time() - start_time:.2f}s"
+            if self.verbose:
+                self.logger.info(log_msg)
+
+        # Load best model
+        if val_loader is not None and best_model_state is not None:
+            self.model.load_state_dict(best_model_state)
+            if self.verbose:
+                self.logger.info(f"Loaded best model with val_loss: {best_loss:.4f}")
+
+        return self.model
+    
+    @torch.no_grad()
+    def validate(self, val_loader: DataLoader) -> float:
+        """
+        Evaluate model on validation set
+        
+        Args:
+            val_loader: DataLoader for validation data
+            
+        Returns:
+            Average validation loss
+        """
+        self.model.eval()
+        total_loss = 0
+
+        with torch.no_grad():
+            val_iter = tqdm(val_loader, desc="Validating") if self.verbose else val_loader
+            
+            for data, target in val_iter:
+                data, target = data.to(self.device), target.to(self.device)
+                output = self.model(data)
+                loss = self.calculate_loss(output, target, Z_batch=None, training=False)
+                total_loss += loss.item()
+
+        return total_loss / len(val_loader)
+
+class UncertaintyAwareTrainer(BaseTrainer):
     """
     Conformalized uncertainty-aware training of deep multi-class classifiers
 
@@ -54,153 +209,29 @@ class UncertaintyAwareTrainer(Trainer):
     def __init__(self,
                  model: torch.nn.Module,
                  optimizer: torch.optim.Optimizer,
-                 loss_fn=torch.nn.CrossEntropyLoss(),
-                 loss_weights=None,
+                 base_loss=torch.nn.CrossEntropyLoss(),
+                 loss_weight=None,
                  device: torch.device=None,
                  verbose: bool = True,
                  mu: float = 0.2,
                  alpha: float = 0.1):
-        super(UncertaintyAwareTrainer, self).__init__(model, optimizer, loss_fn, loss_weights, device, verbose)
+        if loss_weight is None:
+            loss_weight = 1.0
+        super(UncertaintyAwareTrainer, self).__init__(model, device, verbose)
 
         self.conformal_loss_fn = UncertaintyAwareLoss()
-        self.mu = mu
-        self.alpha = alpha
-
-    def calculate_loss(self, output, target, Z_batch, training=True):
-        """
-        Calculates the total loss during training or validation.
-
-        The loss is a combination of the prediction loss and the conformal prediction loss,
-        where the conformal loss is weighted by the hyperparameter `mu`.
-
-        Args:
-            output (torch.Tensor): The model's output predictions (logits).
-            target (torch.Tensor): The true labels (ground truth).
-            Z_batch (torch.Tensor): A tensor indicating which samples are used for conformal prediction loss.
-            training (bool): A flag indicating whether the calculation is for training or validation (default: True).
-
-        Returns:
-            torch.Tensor: The computed total loss.
-        """
-        if training:
-            idx_ce = torch.where(Z_batch == 0)[0]
-            loss_ce = self.loss_fn(output[idx_ce], target[idx_ce])
-        else:
-            Z_batch = torch.ones(len(output)).long().to(self.device)
-            loss_ce = self.loss_fn(output, target)
-
-        loss_scores = self.conformal_loss_fn(output, target, Z_batch)
-
-        loss = loss_ce + loss_scores * self.mu
-        return loss
-
-    def train_epoch(self, train_loader: DataLoader):
-        """
-        Trains the model for one epoch.
-
-        The function iterates through the training data and updates the model parameters
-        using backpropagation and the optimizer.
-
-        Args:
-            train_loader (torch.utils.data.DataLoader): The DataLoader providing the training data.
-        """
-
-        self.model.train()
-
-        for X_batch, Y_batch, Z_batch in train_loader:
-            X_batch = X_batch.to(self.device)
-            Y_batch = Y_batch.to(self.device)
-            Z_batch = Z_batch.to(self.device)
-            self.optimizer.zero_grad()
-
-            output = self.model(X_batch)
-
-            # Calculate loss
-            loss = self.calculate_loss(output, Y_batch, Z_batch)
-
-            loss.backward()
-            self.optimizer.step()
-
-    @torch.no_grad()
-    def validate(self, val_loader: DataLoader):
-        """
-        Validates the model on the validation set.
-
-        The function computes both the loss and accuracy for the validation data.
-
-        Args:
-            val_loader (torch.utils.data.DataLoader): The DataLoader providing the validation data.
-
-        Returns:
-            tuple: The average loss and accuracy for the validation set.
-        """
-        loss_val = 0
-        acc_val = 0
-
-        for X_batch, Y_batch in val_loader:
-            X_batch = X_batch.to(self.device)
-            Y_batch = Y_batch.to(self.device)
-
-            output = self.model(X_batch)
-            loss = self.calculate_loss(output, Y_batch, None, training=False)
-            pred = output.argmax(dim=1)
-            acc = pred.eq(Y_batch).sum()
-
-            loss_val += loss.item()
-            acc_val += acc.item()
-
-        metrics = {
-            'val_loss': loss_val / len(val_loader),
-            'val_acc': acc_val / len(val_loader)
-        }
-
-        return metrics
-
-    def train(self,
-              train_loader: DataLoader,
+        self.training_algorithm = UncertaintyAwareTrainingAlgorithm(model=model, optimizer=optimizer, loss_fn=[base_loss, self.conformal_loss_fn], loss_weights=[1,loss_weight], device=device, verbose=verbose)
+    
+    def train(self,  train_loader: DataLoader,
               val_loader: DataLoader = None,
-              num_epochs: int = 10,
-              save_path: str = None):
-        """
-        Trains the model for multiple epochs and optionally performs early stopping
-        based on validation loss or accuracy. Saves the best models during training.
-
-        Args:
-            train_loader (torch.utils.data.DataLoader): The DataLoader for the training set.
-            save_path (str): The path where model checkpoints should be saved.
-            val_loader (torch.utils.data.DataLoader): The DataLoader for the validation set (default: None).
-            num_epochs (int): The number of epochs to train for (default: 10).
-        """
-
+              num_epochs: int = 10,):
+        if self.training_algorithm is None:
+            raise NotImplementedError("Training algorithm is not defined")
+        
         train_loader = self.split_dataloader(train_loader)
-        lr_milestones = [int(num_epochs * 0.5)]
-        scheduler = optim.lr_scheduler.MultiStepLR(
-            self.optimizer, milestones=lr_milestones, gamma=0.1)
-
-        if self.verbose:
-            epoch_iter = tqdm(range(num_epochs), desc="Training")
-        else:
-            epoch_iter = range(num_epochs)
-
-        best_val_acc = 0
-
-        for epoch in epoch_iter:
-
-            self.train_epoch(train_loader)
-
-            scheduler.step()
-            self.model.eval()
-
-            if val_loader is not None:
-                val_metrics = self.validate(val_loader)
-
-                if val_metrics['val_acc'] > best_val_acc and save_path:
-                    best_val_acc = val_metrics['val_acc']
-                    self.save_checkpoint(epoch, save_path, val_metrics)
-
-                    if self.verbose:
-                        self.logger.info(f"Saved best model with validation accuracy: {val_metrics['val_acc']:.4f}")
-
+    
+        self.training_algorithm.train(train_loader, val_loader, num_epochs)
+        return self.model
 
     def split_dataloader(self, data_loader: DataLoader, split_ratio=0.8):
         """

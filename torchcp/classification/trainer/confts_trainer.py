@@ -5,16 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import torch
 
+import torch
 from torchcp.classification.loss.confts import ConfTS
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
-from torchcp.classification.trainer.base_trainer import Trainer
+from torchcp.classification.trainer.base_trainer import BaseTrainer
 from torchcp.classification.trainer.model import TemperatureScalingModel
+from torchcp.classification.trainer.base_trainer import TrainingAlgorithm
 
-
-class ConfTSTrainer(Trainer):
+class ConfTSTrainer(BaseTrainer):
     """Conformal Temperature Scaling Trainer.
     
     A trainer class that implements conformal prediction with temperature scaling
@@ -54,15 +54,18 @@ class ConfTSTrainer(Trainer):
             optimizer_params: dict = {},
             device: torch.device = None,
             verbose: bool = True,
-            alpha: float = 0.1
-
-    ):
+            alpha: float = 0.1):
         model = TemperatureScalingModel(model, temperature=init_temperature)
+        super().__init__(model, device=device, verbose=verbose)
         optimizer = optimizer_class(
             [model.temperature],
             **optimizer_params
         )
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
         confts = ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)
+        self.training_algorithm = TrainingAlgorithm(model=model, optimizer=optimizer, loss_fn=[confts], device=device, verbose=verbose)
+        
 
-        super().__init__(model, optimizer, confts, 1, device=device, verbose=verbose)
+
+        
+        

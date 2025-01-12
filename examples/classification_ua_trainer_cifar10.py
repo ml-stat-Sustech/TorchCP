@@ -80,7 +80,8 @@ def setup_data_and_model(device):
 
 if __name__ == '__main__':
     set_seed(seed=42)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
 
     #######################################
     # Loading dataset, a model and Conformal Learning Trainer
