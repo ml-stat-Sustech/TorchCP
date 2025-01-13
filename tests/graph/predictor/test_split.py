@@ -92,8 +92,8 @@ def test_initialization(predictor, mock_graph_data, mock_score_function, mock_mo
 
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
-def test_calculate(predictor, preprocess, alpha):
-    predictor.calibrate(preprocess.cal_idx, alpha)
+def test_calculate(predictor, mock_graph_data, preprocess, alpha):
+    predictor.calibrate(mock_graph_data.x, preprocess.cal_idx, alpha)
     quantile = torch.sort(preprocess.cal_scores).values[
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
 
@@ -111,9 +111,9 @@ def test_calculate_threshold(predictor, preprocess, alpha):
 
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
-def test_predict(predictor, preprocess, alpha):
+def test_predict(predictor, mock_graph_data, preprocess, alpha):
     with pytest.raises(ValueError, match="Ensure self.q_hat is not None. Please perform calibration first."):
-        predictor.predict(preprocess.eval_idx)
+        predictor.predict(mock_graph_data.x, preprocess.eval_idx)
 
     quantile = torch.sort(preprocess.cal_scores).values[
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
@@ -121,8 +121,8 @@ def test_predict(predictor, preprocess, alpha):
     eval_scores = preprocess.scores[preprocess.eval_idx]
     excepted_sets = (eval_scores <= quantile).int()
 
-    predictor.calibrate(preprocess.cal_idx, alpha)
-    pred_sets = predictor.predict(preprocess.eval_idx)
+    predictor.calibrate(mock_graph_data.x, preprocess.cal_idx, alpha)
+    pred_sets = predictor.predict(mock_graph_data.x, preprocess.eval_idx)
     assert torch.equal(excepted_sets, pred_sets)
 
 
@@ -145,7 +145,7 @@ def test_predict_with_logits(predictor, preprocess, alpha):
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
 def test_evaluate(predictor, mock_graph_data, preprocess, alpha):
     with pytest.raises(ValueError, match="Ensure self.q_hat is not None. Please perform calibration first."):
-        predictor.evaluate(preprocess.eval_idx)
+        predictor.evaluate(mock_graph_data.x, preprocess.eval_idx)
 
     quantile = torch.sort(preprocess.cal_scores).values[
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
@@ -153,8 +153,8 @@ def test_evaluate(predictor, mock_graph_data, preprocess, alpha):
     eval_scores = preprocess.scores[preprocess.eval_idx]
     excepted_sets = (eval_scores <= quantile).int()
 
-    predictor.calibrate(preprocess.cal_idx, alpha)
-    results = predictor.evaluate(preprocess.eval_idx)
+    predictor.calibrate(mock_graph_data.x, preprocess.cal_idx, alpha)
+    results = predictor.evaluate(mock_graph_data.x, preprocess.eval_idx)
     metrics = Metrics()
     assert len(results) == 3
     assert results['coverage_rate'] == metrics('coverage_rate')(

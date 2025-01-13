@@ -23,10 +23,10 @@ class SplitPredictor(BasePredictor):
 
     # The calibration process ########################################################
 
-    def calibrate(self, cal_idx, alpha):
+    def calibrate(self, x_batch, cal_idx, alpha):
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x,
+            logits = self._model(x_batch,
                                  self._graph_data.edge_index)
         self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
 
@@ -64,10 +64,10 @@ class SplitPredictor(BasePredictor):
 
     # The prediction process ########################################################
 
-    def predict(self, eval_idx):
+    def predict(self, x_batch, eval_idx):
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x,
+            logits = self._model(x_batch,
                                  self._graph_data.edge_index)
         sets = self.predict_with_logits(logits, eval_idx)
         return sets
@@ -114,7 +114,7 @@ class SplitPredictor(BasePredictor):
 
     # The evaluation process ########################################################
 
-    def evaluate(self, eval_idx):
+    def evaluate(self, x_batch, eval_idx):
         """
         Evaluate the model's conformal prediction performance on a given evaluation set.
 
@@ -139,7 +139,7 @@ class SplitPredictor(BasePredictor):
         """
         self._model.eval()
         with torch.no_grad():
-            logits = self._model(self._graph_data.x,
+            logits = self._model(x_batch,
                                  self._graph_data.edge_index)
         prediction_sets = self.predict_with_logits(logits, eval_idx)
 

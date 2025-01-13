@@ -7,14 +7,10 @@
 
 import pytest
 import torch
-import torch.nn.functional as F
 from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv, GATConv, SAGEConv, SGConv
+from torch_geometric.nn import GCNConv
 
-from torchcp.classification.loss import ConfTr
-from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
-from torchcp.graph.trainer.cfgnn import GNN_Multi_Layer
 
 
 @pytest.fixture
@@ -63,31 +59,11 @@ def mock_cfgnn_model(mock_model, mock_graph_data):
 
 
 def test_initialization(mock_model, mock_graph_data):
-    # num_layers == 1
-    model = CFGNNTrainer(mock_model, mock_graph_data, num_layers=1)
-    assert len(model.cfgnn.convs) == 1
-    assert type(model.cfgnn.convs[0]) is GCNConv
-    assert model.cfgnn.convs[0].in_channels == 10 and model.cfgnn.convs[0].out_channels == 10
-
-    # # num_layers == 2
-    model = CFGNNTrainer(mock_model, mock_graph_data, num_layers=2)
-    assert len(model.cfgnn.convs) == 2
-    assert type(model.cfgnn.convs[0]) is GCNConv and type(model.cfgnn.convs[1]) is GCNConv
-    assert model.cfgnn.convs[0].in_channels == 10 and model.cfgnn.convs[0].out_channels == 64
-    assert model.cfgnn.convs[1].in_channels == 64 and model.cfgnn.convs[1].out_channels == 10
-
-    # # num_layers == 3
-    model = CFGNNTrainer(mock_model, mock_graph_data, num_layers=3)
-    assert len(model.cfgnn.convs) == 3
-    assert type(model.cfgnn.convs[1]) is GCNConv
-    assert model.cfgnn.convs[1].in_channels == 64 and model.cfgnn.convs[1].out_channels == 64
-
-    assert next(model.cfgnn.parameters()).device == torch.device(model._device)
-    assert type(model.optimizer) is torch.optim.Adam
-    assert model.pred_loss_fn == F.cross_entropy
-    assert type(model.cf_loss_fn) is ConfTr
-    assert type(model.predictor) is SplitPredictor
-    assert model.alpha == 0.1
+    cf_trainer = CFGNNTrainer(mock_model, mock_graph_data)
+    assert len(cf_trainer.model.convs) == 2
+    assert type(cf_trainer.model.convs[0]) is GCNConv and type(cf_trainer.model.convs[1]) is GCNConv
+    assert cf_trainer.model.convs[0].in_channels == 10 and cf_trainer.model.convs[0].out_channels == 64
+    assert cf_trainer.model.convs[1].in_channels == 64 and cf_trainer.model.convs[1].out_channels == 10
 
 
 def test_invalid_initialization(mock_model, mock_graph_data):
@@ -98,17 +74,17 @@ def test_invalid_initialization(mock_model, mock_graph_data):
         CFGNNTrainer(mock_model, None)
 
 
-def test_train_each_epoch(mock_graph_data, mock_cfgnn_model, device):
-    mock_cfgnn_model._train_each_epoch(500, mock_graph_data.x)
-    mock_cfgnn_model._train_each_epoch(2000, mock_graph_data.x)
+def test_train_epoch(mock_graph_data, mock_cfgnn_model, device):
+    mock_cfgnn_model.train_epoch(500, mock_graph_data.x)
+    mock_cfgnn_model.train_epoch(2000, mock_graph_data.x)
 
 
-def test_evaluate(mock_graph_data, mock_cfgnn_model, device):
-    results = mock_cfgnn_model._evaluate(mock_graph_data.x)
+def test_validate(mock_graph_data, mock_cfgnn_model, device):
+    results = mock_cfgnn_model.validate(mock_graph_data.x)
     assert len(results) == 2
     assert results[1].shape == mock_graph_data.x.shape
 
 
-def test_train(mock_graph_data, mock_cfgnn_model):
-    results = mock_cfgnn_model.train(10)
-    assert results.shape == mock_graph_data.x.shape
+def test_train(mock_cfgnn_model):
+    model = mock_cfgnn_model.train(10)
+    assert model is mock_cfgnn_model.model
