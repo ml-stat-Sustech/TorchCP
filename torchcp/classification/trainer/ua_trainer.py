@@ -67,8 +67,8 @@ class UncertaintyAwareTrainer(Trainer):
         self.conformal_loss_fn = UncertaintyAwareLoss()
         self.loss_fns = [base_loss, self.conformal_loss_fn]
         if loss_weight is None:
-            loss_weight = 1.0
-        self.loss_weights = [1, loss_weight]
+            loss_weight = 0.2
+        self.loss_weights = [1.0, loss_weight]
     
     def train(self,  train_loader: DataLoader,
               val_loader: DataLoader = None,
@@ -137,16 +137,17 @@ class UncertaintyAwareTrainer(Trainer):
         total_loss = 0
         if training:
             for fn, weight, loss_idx in zip(self.loss_fns, self.loss_weights, range(len(self.loss_fns))):
-                idx_ce = torch.where(Z_batch == loss_idx)[0]
+                idx_type = torch.where(Z_batch == loss_idx)[0]
                 if loss_idx == 0:
-                    loss = fn(output[idx_ce], target[idx_ce])
+                    loss = fn(output[idx_type], target[idx_type])
                 else:
-                    loss = fn(output[idx_ce], target[idx_ce], Z_batch[idx_ce])
+                    loss = fn(output[idx_type], target[idx_type])
                 total_loss += weight * loss
             return total_loss
         else:
-            Z_batch = torch.ones(len(output)).long().to(self.device)
-            total_loss = self.loss_fns[0](output, target)
+            for fn, weight in zip(self.loss_fns, self.loss_weights):
+                loss = fn(output, target)
+                total_loss += weight * loss
         return total_loss
     
     @torch.no_grad()
