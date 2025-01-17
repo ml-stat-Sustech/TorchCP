@@ -5,17 +5,17 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import copy
 import logging
-import numpy as np
 import time
+from abc import ABC, abstractmethod
+from typing import Optional
+
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from typing import Optional, Dict, Any, Callable, Union, List
-import copy
 
-from abc import ABC, abstractmethod
-        
+
 class BaseTrainer(ABC):
     """
     Abstract base trainer class that handles basic model setup and device configuration.
@@ -27,7 +27,7 @@ class BaseTrainer(ABC):
         verbose (bool): Whether to show training progress
             Default: True
     """
-    
+
     def __init__(
             self,
             model: torch.nn.Module,
@@ -36,15 +36,15 @@ class BaseTrainer(ABC):
     ):
         if model is None:
             raise ValueError("Model cannot be None")
-        
+
         if device is None:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = device
-            
+
         self.model = model.to(self.device)
         self.verbose = verbose
-        
+
         # Logger setup
         if self.verbose:
             logging.basicConfig(
@@ -52,7 +52,7 @@ class BaseTrainer(ABC):
                 format='%(asctime)s - %(levelname)s - %(message)s'
             )
             self.logger = logging.getLogger(__name__)
-    
+
     @abstractmethod
     def train(
             self,
@@ -73,7 +73,7 @@ class BaseTrainer(ABC):
             torch.nn.Module: Trained model
         """
         pass
-    
+
     def save_model(self, path: str) -> None:
         """
         Save model state dict to disk.
@@ -82,7 +82,7 @@ class BaseTrainer(ABC):
             path: Path to save model weights
         """
         torch.save(self.model.state_dict(), path)
-        
+
     def load_model(self, path: str) -> None:
         """
         Load model state dict from disk.
@@ -91,14 +91,14 @@ class BaseTrainer(ABC):
             path: Path to saved model weights
         """
         self.model.load_state_dict(torch.load(path))
-        
-        
+
+
 class Trainer(BaseTrainer):
-    def __init__(self, model, device = None, verbose = True):
+    def __init__(self, model, device=None, verbose=True):
         super().__init__(model, device, verbose)
         self.optimizer = torch.optim.Adam(self.model.parameters())
         self.loss_fn = torch.nn.CrossEntropyLoss()
-            
+
     def calculate_loss(self, output, target):
         """
         Calculate loss using multiple loss functions
@@ -110,8 +110,8 @@ class Trainer(BaseTrainer):
         Returns:
             Total loss value
         """
-        return self.loss_fn(output, target)  
-    
+        return self.loss_fn(output, target)
+
     def train_epoch(self, train_loader: DataLoader) -> float:
         """
         Train for one epoch
@@ -130,16 +130,16 @@ class Trainer(BaseTrainer):
 
         for data, target in train_iter:
             data, target = data.to(self.device), target.to(self.device)
-            
+
             self.optimizer.zero_grad()
             output = self.model(data)
             loss = self.calculate_loss(output, target)
-            
+
             loss.backward()
             self.optimizer.step()
-            
+
             total_loss += loss.item()
-            
+
             if self.verbose:
                 train_iter.set_postfix({'loss': loss.item()})
 
@@ -161,7 +161,7 @@ class Trainer(BaseTrainer):
 
         with torch.no_grad():
             val_iter = tqdm(val_loader, desc="Validating") if self.verbose else val_loader
-            
+
             for data, target in val_iter:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
@@ -189,14 +189,14 @@ class Trainer(BaseTrainer):
 
         for epoch in range(num_epochs):
             start_time = time.time()
-            
+
             train_loss = self.train_epoch(train_loader)
             log_msg = f"Epoch {epoch + 1}/{num_epochs} - train_loss: {train_loss:.4f}"
 
             if val_loader is not None:
                 val_loss = self.validate(val_loader)
                 log_msg += f" - val_loss: {val_loss:.4f}"
-                
+
                 if val_loss < best_loss:
                     best_loss = val_loss
                     best_model_state = copy.deepcopy(self.model.state_dict())
@@ -212,9 +212,6 @@ class Trainer(BaseTrainer):
                 self.logger.info(f"Loaded best model with val_loss: {best_loss:.4f}")
 
         return self.model
-    
+
     def save_model(self, path):
         torch.save(self.model.state_dict(), path)
-
-
-

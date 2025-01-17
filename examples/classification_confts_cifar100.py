@@ -12,7 +12,7 @@ from transformers import set_seed
 
 from examples.utils import get_dataset_dir
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR, APS, SAPS, RAPS, Margin
+from torchcp.classification.score import APS
 from torchcp.classification.trainer import ConfTSTrainer
 
 set_seed(seed=2025)

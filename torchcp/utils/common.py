@@ -6,10 +6,9 @@
 #
 
 import math
-import numpy as np
-import random
-import torch
 import warnings
+
+import torch
 
 __all__ = ["calculate_conformal_value", "get_device", "DimensionError"]
 

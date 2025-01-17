@@ -5,19 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import logging
-import logging
 import os
-import os
-import pytest
-import pytest
 import tempfile
-import tempfile
-import torch
+
+import pytest
 import torch
 import torch.nn as nn
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
 from torch.utils.data import Dataset, DataLoader
 
 from torchcp.classification.trainer.base_trainer import Trainer

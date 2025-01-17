@@ -31,7 +31,7 @@ class CFGNNModel(nn.Module):
         Huang et al. "Uncertainty Quantification over Graph with Conformalized Graph Neural Networks", NeurIPS 2023, https://arxiv.org/abs/2305.14535
     """
 
-    def __init__(self, 
+    def __init__(self,
                  base_model: nn.Module,
                  num_classes: int,
                  hidden_channels: int = 64,
@@ -59,7 +59,7 @@ class CFGNNModel(nn.Module):
     def is_base_model_frozen(self) -> bool:
         """Check if base model parameters are frozen"""
         return not any(p.requires_grad for p in self.base_model.parameters())
-    
+
     def forward(self, x: Tensor, edge_index: Tensor) -> Tensor:
         """
         Forward pass with temperature scaling.
@@ -86,7 +86,7 @@ class CFGNNModel(nn.Module):
         super().train(mode)  # Set training mode for TemperatureScalingModel
         self.base_model.eval()  # Keep base_model in eval mode
         return self
-    
+
 
 class GNN_Multi_Layer(nn.Module):
     """

@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+from math import sqrt
+
 import pytest
 import torch
-from math import sqrt
 
 from torchcp.graph.utils import compute_adj_knn
 

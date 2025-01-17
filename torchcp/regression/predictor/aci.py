@@ -6,8 +6,9 @@
 #
 
 import math
-import torch
 import warnings
+
+import torch
 from tqdm import tqdm
 
 from torchcp.regression.predictor.split import SplitPredictor

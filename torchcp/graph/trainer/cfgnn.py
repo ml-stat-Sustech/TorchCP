@@ -6,13 +6,14 @@
 #
 
 import copy
+
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
 from torchcp.classification.loss import ConfTr
-from torchcp.classification.score import THR, APS
 from torchcp.classification.predictor import SplitPredictor
+from torchcp.classification.score import THR, APS
 from torchcp.graph.trainer.model import CFGNNModel
 
 
@@ -54,18 +55,18 @@ class CFGNNTrainer:
             alpha=0.1,
             optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
             optimizer_params: dict = {'weight_decay': 5e-4, 'lr': 0.001}):
-        
+
         if graph_data is None:
             raise ValueError("graph_data cannot be None.")
         if model is None:
             raise ValueError("model cannot be None.")
-        
+
         self.graph_data = graph_data
         self._device = self.graph_data.x.device
 
         self.num_classes = graph_data.y.max().item() + 1
         self.model = CFGNNModel(model, self.num_classes, hidden_channels, num_layers).to(self._device)
-        
+
         self.optimizer = optimizer_class(
             self.model.parameters(),
             **optimizer_params
@@ -73,10 +74,10 @@ class CFGNNTrainer:
 
         self.loss_fns = [F.cross_entropy,
                          ConfTr(predictor=SplitPredictor(score_function=THR(score_type="softmax")),
-                                 alpha=alpha,
-                                 fraction=0.5,
-                                 loss_type="classification",
-                                 target_size=0)]
+                                alpha=alpha,
+                                fraction=0.5,
+                                loss_type="classification",
+                                target_size=0)]
         self.loss_weights = [1.0, 1.0]
 
         self.predictor = SplitPredictor(APS(score_type="softmax"))
@@ -94,10 +95,10 @@ class CFGNNTrainer:
 
         logits = self.model(self.graph_data.x, self.graph_data.edge_index)
         loss = self.loss_fns[0](logits[self.graph_data.train_idx], self.graph_data.y[self.graph_data.train_idx])
-        
+
         if epoch >= 1000:
             eff_loss = self.loss_fns[1](logits[self.graph_data.calib_train_idx],
-                                       self.graph_data.y[self.graph_data.calib_train_idx])
+                                        self.graph_data.y[self.graph_data.calib_train_idx])
             loss = self.loss_weights[0] * loss + self.loss_weights[1] * eff_loss
 
         loss.backward()

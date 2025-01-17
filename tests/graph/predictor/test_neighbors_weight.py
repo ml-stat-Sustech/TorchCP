@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import random
+
 import networkx as nx
 import pytest
-import random
 import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx

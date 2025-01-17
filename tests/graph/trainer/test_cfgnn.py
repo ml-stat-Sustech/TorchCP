@@ -9,12 +9,11 @@ import pytest
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv, GATConv, SAGEConv, SGConv
+from torch_geometric.nn import GCNConv
 
 from torchcp.classification.loss import ConfTr
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
-from torchcp.graph.trainer.cfgnn import GNN_Multi_Layer
 
 
 @pytest.fixture

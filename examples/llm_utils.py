@@ -6,10 +6,10 @@
 #
 
 
-import numpy as np
 import re
 import string
-import torch
+
+import numpy as np
 from datasets import load_dataset
 from tqdm.auto import tqdm
 from transformers import LlamaForCausalLM, LlamaTokenizer, set_seed, StoppingCriteriaList

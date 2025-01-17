@@ -5,11 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import math
-import torch
-import warnings
-from torch.utils.data import DataLoader
 from typing import Dict, List
+
+import torch
+from torch.utils.data import DataLoader
 
 from torchcp.classification.predictor.base import BasePredictor
 from torchcp.utils.common import calculate_conformal_value

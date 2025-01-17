@@ -5,11 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+from typing import Any
+
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-from typing import Any
 
 from torchcp.utils.registry import Registry
 

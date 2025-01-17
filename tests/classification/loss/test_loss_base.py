@@ -6,11 +6,7 @@
 #
 
 import pytest
-import pytest
 import torch
-import torch
-import torch.nn as nn
-import torch.nn as nn
 
 from torchcp.classification.loss.base import BaseLoss
 

@@ -5,14 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import time
 import torch
-from tqdm import tqdm
 import torch.optim as optim
-from torch.utils.data import DataLoader, Subset, Dataset
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
+
 from torchcp.classification.loss import UncertaintyAwareLoss
-import copy
 from torchcp.classification.trainer.base_trainer import Trainer
+
 
 class TrainDataset(Dataset):
     def __init__(self, X_data, Y_data, Z_data):
@@ -25,6 +25,7 @@ class TrainDataset(Dataset):
 
     def __len__(self):
         return len(self.X_data)
+
 
 class UncertaintyAwareTrainer(Trainer):
     """
@@ -47,26 +48,26 @@ class UncertaintyAwareTrainer(Trainer):
     """
 
     def __init__(self,
-                model: torch.nn.Module,
-                device: torch.device = None,
-                verbose: bool = True):
-        
+                 model: torch.nn.Module,
+                 device: torch.device = None,
+                 verbose: bool = True):
+
         super(UncertaintyAwareTrainer, self).__init__(model, device, verbose)
         self.optimizer = torch.optim.Adam(model.parameters())
         self.conformal_loss_fn = UncertaintyAwareLoss()
         self.loss_fns = [torch.nn.CrossEntropyLoss(), self.conformal_loss_fn]
         self.loss_weights = [1.0, 0.2]
-    
-    def train(self,  train_loader: DataLoader,
+
+    def train(self, train_loader: DataLoader,
               val_loader: DataLoader = None,
-              num_epochs: int = 10,):
+              num_epochs: int = 10, ):
         lr_milestones = [int(num_epochs * 0.5)]
         self.scheduler = optim.lr_scheduler.MultiStepLR(
             self.optimizer, milestones=lr_milestones, gamma=0.1)
         train_loader = self.split_dataloader(train_loader)
-    
+
         return super().train(train_loader, val_loader, num_epochs)
-    
+
     def train_epoch(self, train_loader: DataLoader):
         """
         Trains the model for one epoch.
@@ -80,7 +81,7 @@ class UncertaintyAwareTrainer(Trainer):
 
         self.model.train()
         total_loss = 0
-        
+
         train_iter = tqdm(train_loader, desc="Training") if self.verbose else train_loader
 
         for X_batch, Y_batch, Z_batch in train_iter:
@@ -96,9 +97,9 @@ class UncertaintyAwareTrainer(Trainer):
 
             loss.backward()
             self.optimizer.step()
-            
+
             total_loss += loss.item()
-            
+
             if self.verbose:
                 train_iter.set_postfix({'loss': loss.item()})
         self.scheduler.step()
@@ -133,7 +134,7 @@ class UncertaintyAwareTrainer(Trainer):
                 loss = fn(output, target)
                 total_loss += weight * loss
         return total_loss
-    
+
     @torch.no_grad()
     def validate(self, val_loader: DataLoader) -> float:
         """
@@ -150,7 +151,7 @@ class UncertaintyAwareTrainer(Trainer):
 
         with torch.no_grad():
             val_iter = tqdm(val_loader, desc="Validating") if self.verbose else val_loader
-            
+
             for data, target in val_iter:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
@@ -188,5 +189,5 @@ class UncertaintyAwareTrainer(Trainer):
         train_dataset = TrainDataset(X_data, Y_data, Z_data)
         train_loader = DataLoader(
             train_dataset, batch_size=data_loader.batch_size, shuffle=True, drop_last=data_loader.drop_last)
-        
+
         return train_loader

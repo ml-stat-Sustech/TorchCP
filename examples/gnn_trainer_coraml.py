@@ -8,14 +8,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.datasets import CitationFull
+from torch_geometric.nn import GCNConv
 from transformers import set_seed
 
-from torch_geometric.nn import GCNConv
-from torch_geometric.datasets import CitationFull
-
 from examples.utils import get_dataset_dir
-from torchcp.graph.predictor import SplitPredictor
 from torchcp.classification.score import APS
+from torchcp.graph.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
 
 
@@ -123,12 +122,11 @@ if __name__ == '__main__':
     eval_calib_idx = calib_eval_idx[eval_perms[:500]]
     eval_test_idx = calib_eval_idx[eval_perms[500:]]
 
-
     #######################################
     # A standard process of conformal prediction
     #######################################
-    predictor = SplitPredictor(graph_data, 
-                               APS(score_type="softmax"), 
+    predictor = SplitPredictor(graph_data,
+                               APS(score_type="softmax"),
                                model=model)
     predictor.calibrate(eval_calib_idx, alpha=0.1)
 

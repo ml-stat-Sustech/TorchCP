@@ -5,15 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import logging
-import numpy as np
-import time
-import torch
+from typing import Dict
+
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-from typing import Optional, Dict, Any, Callable, Union, List
 
 from torchcp.classification.trainer.base_trainer import Trainer
 
@@ -91,6 +86,7 @@ class OrdinalClassifier(nn.Module):
         x = self.varphi_function(x)
         return x
 
+
 class OrdinalTrainer(Trainer):
     """
     A trainer for training ordinal classifiers.
@@ -138,10 +134,7 @@ class OrdinalTrainer(Trainer):
             model: torch.nn.Module,
             device: torch.device = None,
             verbose: bool = True
-    ):  
+    ):
         model = OrdinalClassifier(model, **ordinal_config)
         super().__init__(model, device, verbose)
         self.optimizer = torch.optim.Adam(model.parameters())
-
-
-

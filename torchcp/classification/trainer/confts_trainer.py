@@ -7,16 +7,13 @@
 
 
 import torch
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-import copy
-import time
 
 from torchcp.classification.loss.confts import ConfTS
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
 from torchcp.classification.trainer.base_trainer import Trainer
 from torchcp.classification.trainer.model import TemperatureScalingModel
+
 
 class ConfTSTrainer(Trainer):
     """Conformal Temperature Scaling Trainer.
@@ -50,20 +47,20 @@ class ConfTSTrainer(Trainer):
         >>> # Save calibrated model
         >>> trainer.save_model('calibrated_model.pth')
         """
+
     def __init__(
             self,
             init_temperature: float,
             alpha: float,
             model: torch.nn.Module,
             device: torch.device = None,
-            verbose: bool = True,):
+            verbose: bool = True, ):
         model = TemperatureScalingModel(model, temperature=init_temperature)
         super().__init__(model, device=device, verbose=verbose)
         self.optimizer = torch.optim.Adam([model.temperature])
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
         self.loss_fn = ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)
-        
-        
+
     def calculate_loss(self, output, target):
         """
         Calculate loss using multiple loss functions
@@ -75,11 +72,4 @@ class ConfTSTrainer(Trainer):
         Returns:
             Total loss value
         """
-        return self.loss_fn(output, target)  
-    
-
-        
-
-
-        
-        
+        return self.loss_fn(output, target)

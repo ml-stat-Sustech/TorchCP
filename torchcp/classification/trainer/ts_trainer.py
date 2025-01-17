@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 from torchcp.classification.trainer.base_trainer import BaseTrainer
 from torchcp.classification.trainer.model import TemperatureScalingModel
 
+
 # Adapted from: Geoff Pleiss
 # Source: https://github.com/gpleiss/temperature_scaling
 # Original License: MIT.
@@ -61,6 +62,7 @@ class _ECELoss(nn.Module):
                 ece += torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
 
         return ece
+
 
 class TSTrainer(BaseTrainer):
     """Temperature Scaling Trainer for model calibration.
@@ -146,5 +148,3 @@ class TSTrainer(BaseTrainer):
             print(f'Optimal temperature: {self.model.temperature.item():.3f}')
             print(f'After scaling - NLL: {after_nll:.3f}, ECE: {after_ece:.3f}')
         return self.model
-
-

@@ -19,7 +19,7 @@ from torchcp.regression.utils import build_regression_model
 def prepare_dataset(train_ratio=0.4, cal_ratio=0.2, batch_size=128):
     # construct datasets
     X, y = build_reg_data(data_name="synthetic")
-    
+
     # Split indices
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
@@ -65,24 +65,23 @@ if __name__ == "__main__":
     # build regression model
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = build_regression_model("NonLinearNet")(next(iter(train_loader))[0].shape[1], 2, 64, 0.5).to(device)
-    
+
     # CP
     alpha = 0.1  # confidence level
     predictor = SplitPredictor(score_function=CQR(), model=model)
-    
+
     # Step0 (optional): train regression model
     ## We've provided an auxiliary function here to help with model training, 
     ## or user can simply enter the trained model in predictor and ignore this code
     predictor.train(train_loader, alpha=alpha, epochs=100, lr=0.01, verbose=True)
-    
+
     # Step1: calibration
     predictor.calibrate(cal_dataloader=cal_loader, alpha=alpha)
-    
+
     # Step2: generate conformal prediction interval for x_batch
     x = next(iter(test_loader))[0].to(device)
     prediction_intervals = predictor.predict(x)
-    
+
     # Step3: evaluate conformal prediction on test dataloader
     result = predictor.evaluate(test_loader)
     print(result)
-    

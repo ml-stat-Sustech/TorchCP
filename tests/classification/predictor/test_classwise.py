@@ -6,14 +6,14 @@
 #
 
 import math
+import warnings
+
 import pytest
 import torch
-import warnings
 from torch.utils.data import Dataset
 
 from torchcp.classification.predictor import ClassWisePredictor
 from torchcp.classification.score import THR
-from torchcp.classification.utils.metrics import Metrics
 
 
 @pytest.fixture
