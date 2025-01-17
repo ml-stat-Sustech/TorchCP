@@ -32,16 +32,13 @@ class UncertaintyAwareTrainer(Trainer):
 
     Args:
         model (torch.nn.Module): Neural network model to train.
-        optimizer (torch.optim.Optimizer): Optimization algorithm.
-        base_loss (torch.nn.Module): The base loss function .
-        loss_weight (float): The weight of the conformal loss term in the total loss.
-        device (torch.device): Device to run on (CPU/GPU) (default: CPU).
+        device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+            Default: None
+        verbose (bool, optional): Whether to print progress. Defaults to True.
 
     Examples:
         >>> model = MyModel()
-        >>> optimizer = torch.optim.Adam(model.parameters())
-        >>> loss_fn = nn.CrossEntropyLoss()
-        >>> trainer = ConfLearnTrainer(model, optimizer, loss_fn)
+        >>> trainer = ConfLearnTrainer(model, device='cuda')
         >>> save_path = './path/to/save'
         >>> trainer.train(train_loader, save_path, val_loader, num_epochs=10)
 

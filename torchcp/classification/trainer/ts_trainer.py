@@ -70,21 +70,17 @@ class TSTrainer(BaseTrainer):
     logits to improve model calibration.
     
     Args:
-        model (torch.nn.Module): Base neural network model to calibrate
         init_temperature (float): Initial temperature scaling parameter
-        device (torch.device, optional): Device to run on. Defaults to None
+        model (torch.nn.Module): Base neural network model to calibrate
+        device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+            Default: None
         verbose (bool, optional): Whether to print progress. Defaults to True
-        
-    Attributes:
-        model (TemperatureScalingModel): Model wrapped with temperature scaling
-        device (torch.device): Device model is running on
-        verbose (bool): Whether to print training progress
     """
 
     def __init__(
             self,
-            model: torch.nn.Module,
             init_temperature: float,
+            model: torch.nn.Module,
             device: torch.device = None,
             verbose: bool = True):
 

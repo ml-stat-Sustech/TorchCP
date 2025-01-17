@@ -22,8 +22,8 @@ class BaseTrainer(ABC):
     
     Args:
         model (torch.nn.Module): Neural network model to be trained
-        device (torch.device): Training device
-            Default: None (auto-select GPU if available)
+        device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+            Default: None
         verbose (bool): Whether to show training progress
             Default: True
     """

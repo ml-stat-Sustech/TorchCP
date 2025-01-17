@@ -22,18 +22,12 @@ class ConfTSTrainer(Trainer):
     """Conformal Temperature Scaling Trainer.
     
     Args:
-        model (torch.nn.Module): Base neural network model to be calibrated
-        init_temperature (float): Initial value for temperature scaling parameter
-        alpha (float): Target miscoverage rate (significance level) for conformal prediction
-                Default: 0.1
-        optimizer_class (torch.optim.Optimizer): Optimizer class for temperature parameter
-                Default: torch.optim.Adam
-        optimizer_params (dict): Parameters passed to optimizer constructor
-                Default: {}
-        device (torch.device): Device to run computations on 
-                Default: None (auto-select GPU if available)
-        verbose (bool): Whether to display training progress
-                Default: True
+        init_temperature (float): Initial value for temperature scaling parameter.
+        alpha (float): Target miscoverage rate (significance level) for conformal prediction.
+        model (torch.nn.Module): Base neural network model to be calibrated.
+        device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+            Default: None
+        verbose (bool): Whether to display training progress. Default: True.
         
             
     Examples:
@@ -42,11 +36,9 @@ class ConfTSTrainer(Trainer):
         >>> 
         >>> # Create ConfTS trainer
         >>> trainer = ConfTSTrainer(
-        ...     model=cnn,
         ...     init_temperature=1.5,
-        ...     alpha=0.1
-        ...     optimizer_params={'lr': 0.01},
-        ... )
+        ...     alpha=0.1    
+        ...     model=cnn)
         >>> 
         >>> # Train calibration
         >>> trainer.train(
@@ -60,9 +52,9 @@ class ConfTSTrainer(Trainer):
         """
     def __init__(
             self,
-            model: torch.nn.Module,
             init_temperature: float,
-            alpha: float = 0.1,
+            alpha: float,
+            model: torch.nn.Module,
             device: torch.device = None,
             verbose: bool = True,):
         model = TemperatureScalingModel(model, temperature=init_temperature)
