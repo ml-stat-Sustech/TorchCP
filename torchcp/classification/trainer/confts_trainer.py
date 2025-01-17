@@ -63,19 +63,27 @@ class ConfTSTrainer(Trainer):
             model: torch.nn.Module,
             init_temperature: float,
             alpha: float = 0.1,
-            optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
-            optimizer_params: dict = {},
             device: torch.device = None,
             verbose: bool = True,):
         model = TemperatureScalingModel(model, temperature=init_temperature)
         super().__init__(model, device=device, verbose=verbose)
-        self.optimizer = optimizer_class(
-            [model.temperature],
-            **optimizer_params
-        )
+        self.optimizer = torch.optim.Adam([model.temperature])
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
-        self.loss_fns = [ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)]
-        self.loss_weights = [1.0]
+        self.loss_fn = ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)
+        
+        
+    def calculate_loss(self, output, target):
+        """
+        Calculate loss using multiple loss functions
+        
+        Args:
+            output: Model output
+            target: Ground truth
+            
+        Returns:
+            Total loss value
+        """
+        return self.loss_fn(output, target)  
     
 
         

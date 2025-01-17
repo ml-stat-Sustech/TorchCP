@@ -51,24 +51,14 @@ class UncertaintyAwareTrainer(Trainer):
 
     def __init__(self,
                 model: torch.nn.Module,
-                optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
-                optimizer_params: dict = {},
-                base_loss=torch.nn.CrossEntropyLoss(),
-                loss_weight: float = None,
                 device: torch.device = None,
                 verbose: bool = True):
         
         super(UncertaintyAwareTrainer, self).__init__(model, device, verbose)
-        self.optimizer = optimizer_class(
-            model.parameters(),
-            **optimizer_params
-        )
-
+        self.optimizer = torch.optim.Adam(model.parameters())
         self.conformal_loss_fn = UncertaintyAwareLoss()
-        self.loss_fns = [base_loss, self.conformal_loss_fn]
-        if loss_weight is None:
-            loss_weight = 0.2
-        self.loss_weights = [1.0, loss_weight]
+        self.loss_fns = [torch.nn.CrossEntropyLoss(), self.conformal_loss_fn]
+        self.loss_weights = [1.0, 0.2]
     
     def train(self,  train_loader: DataLoader,
               val_loader: DataLoader = None,
@@ -138,10 +128,7 @@ class UncertaintyAwareTrainer(Trainer):
         if training:
             for fn, weight, loss_idx in zip(self.loss_fns, self.loss_weights, range(len(self.loss_fns))):
                 idx_type = torch.where(Z_batch == loss_idx)[0]
-                if loss_idx == 0:
-                    loss = fn(output[idx_type], target[idx_type])
-                else:
-                    loss = fn(output[idx_type], target[idx_type])
+                loss = fn(output[idx_type], target[idx_type])
                 total_loss += weight * loss
             return total_loss
         else:

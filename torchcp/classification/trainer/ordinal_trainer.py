@@ -144,17 +144,12 @@ class OrdinalTrainer(Trainer):
             self,
             model: torch.nn.Module,
             ordinal_config: Dict[str, Any] = {"phi": "abs", "varphi": "abs"},
-            optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
-            optimizer_params: dict = {},
-            loss_fn=torch.nn.CrossEntropyLoss(),
             device: torch.device = None,
             verbose: bool = True
     ):  
         model = OrdinalClassifier(model, **ordinal_config)
         super().__init__(model, device, verbose)
-        self.optimizer = optimizer_class(model.parameters(), **optimizer_params)
-        self.loss_fns = [loss_fn]
-        self.loss_weights = [1.0]        
+        self.optimizer = torch.optim.Adam(model.parameters())
 
 
 

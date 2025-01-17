@@ -54,11 +54,6 @@ init_temperature = 1.0
 trainer = ConfTSTrainer(
     model=model,
     init_temperature=init_temperature,
-    optimizer_class=torch.optim.Adam,
-    optimizer_params={
-        'lr': 0.001,
-        'eps': 1e-08,
-    },
     device=device,
     verbose=True
 )

@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # Loading dataset, a model and Conformal Learning Trainer
     #######################################
     train_loader, val_loader, cal_loader, test_loader, model, optimizer = setup_data_and_model(device)
-    ua_trainer = UncertaintyAwareTrainer(model, optimizer_class=torch.optim.Adam, optimizer_params={'lr': 0.001,}, device=device)
+    ua_trainer = UncertaintyAwareTrainer(model, device=device)
     
     #######################################
     # Conformal Learning
@@ -108,8 +108,8 @@ if __name__ == '__main__':
     X_data = torch.cat(x_list)
     Y_data = torch.cat(y_list)
 
-    pred_sets = predictor.predict(X_data)
-    print(pred_sets)
+    pred_set = predictor.predict(X_data[0:1])
+    print(pred_set)
 
     result_dict = predictor.evaluate(test_loader)
     print(f"Marginal Coverage: {result_dict['coverage_rate']:.4f}")

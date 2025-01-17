@@ -34,7 +34,9 @@ class BaseTrainer(ABC):
             device: torch.device = None,
             verbose: bool = True,
     ):
-        # Device setup
+        if model is None:
+            raise ValueError("Model cannot be None")
+        
         if device is None:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
@@ -95,8 +97,7 @@ class Trainer(BaseTrainer):
     def __init__(self, model, device = None, verbose = True):
         super().__init__(model, device, verbose)
         self.optimizer = torch.optim.Adam(self.model.parameters())
-        self.loss_fns = [torch.nn.CrossEntropyLoss()]    
-        self.loss_weights = [1]
+        self.loss_fn = torch.nn.CrossEntropyLoss()
             
     def calculate_loss(self, output, target):
         """
@@ -109,11 +110,7 @@ class Trainer(BaseTrainer):
         Returns:
             Total loss value
         """
-        total_loss = 0
-        for fn, weight in zip(self.loss_fns, self.loss_weights):
-            loss = fn(output, target)
-            total_loss += weight * loss
-        return total_loss
+        return self.loss_fn(output, target)  
     
     def train_epoch(self, train_loader: DataLoader) -> float:
         """
