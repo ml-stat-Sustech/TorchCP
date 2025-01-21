@@ -6,6 +6,7 @@
 #
 
 import torch
+from typing import List
 
 from torchcp.regression.predictor.aci import ACIPredictor
 
@@ -33,12 +34,17 @@ class AgACIPredictor(ACIPredictor):
         
     """
     
-    def __init__(self, score_function, model, gamma_list, aggregation_function='mean', threshold=[-99999, 99999]):
+    def __init__(self, score_function, model, gamma_list: List, aggregation_function='mean', threshold: List=[-99999, 99999]):
         super().__init__(score_function, model, None)
         if aggregation_function not in ['mean', 'median'] and not callable(aggregation_function):
             raise ValueError(
                 "aggregation_function must be either 'mean', 'median', or a callable function."
             )
+        if not isinstance(gamma_list, list):
+            raise ValueError(f"gamma_list must be a list, but got {type(gamma_list).__name__}.")
+        if not isinstance(threshold, list) or len(threshold) != 2:
+            raise ValueError(f"threshold must be a list with exactly 2 elements, but got {threshold}.")
+        
 
         self.gamma_list = gamma_list
         self.alpha_t = None
@@ -74,7 +80,7 @@ class AgACIPredictor(ACIPredictor):
 
         intervals_list = []
         weight_list = []
-
+        y_lookback = y_lookback.unsqueeze(1)
         for gamma in self.gamma_list:
             # Compute the adaptive alpha_t
             alpha_t = max(1 / (scores.shape[0] + 1), min(0.9999, self.alpha + gamma * (self.alpha - err_t)))
@@ -96,22 +102,23 @@ class AgACIPredictor(ACIPredictor):
             lower_bound, upper_bound = pred_interval_lookback[:, :, 0], pred_interval_lookback[:, :, 1]
 
             loss_lower = torch.maximum(quantiles[0] * (y_lookback - lower_bound),
-                                    (quantiles[0] - 1) * (y_lookback - lower_bound))
+                                    (quantiles[0] - 1) * (y_lookback - lower_bound)).detach()
             loss_upper = torch.maximum(quantiles[1] * (y_lookback - upper_bound),
-                                    (quantiles[1] - 1) * (y_lookback - upper_bound))
+                                    (quantiles[1] - 1) * (y_lookback - upper_bound)).detach()
 
             # Compute weighted loss
-            weight = torch.tensor([[self.aggregation_function(loss_lower), self.aggregation_function(loss_upper)]],
-                                device=y_lookback.device)
+            # breakpoint()
+            weight = torch.tensor([[self.aggregation_function(loss_lower, dim=0).tolist(), self.aggregation_function(loss_upper, dim=0).tolist()]],
+                                device=y_lookback.device) 
             weight_list.append(weight)
-
+        # breakpoint()
         # Compute the weighted confidence interval
-        stacked_intervals = torch.stack(intervals_list)  
-        stacked_weights = torch.stack(weight_list)
-
+        stacked_intervals = torch.stack(intervals_list)   # (num_experts, x_batch_size, 1, 2)
+        stacked_weights = torch.stack(weight_list).permute(0, 3, 1, 2)  
+        
         # Normalize weights and ensure the denominator is nonzero
         weight_sum = torch.sum(stacked_weights, dim=0, keepdim=True)
         weight_sum = torch.where(weight_sum == 0, torch.tensor(1.0, device=weight_sum.device), weight_sum)  # Avoid division by zero
-
-        weighted_intervals = torch.sum(stacked_intervals * stacked_weights[:, None, :], dim=0) / weight_sum
-        return weighted_intervals
+        weighted_intervals = torch.sum(stacked_intervals * stacked_weights, dim=0) / weight_sum
+        # breakpoint()
+        return weighted_intervals[0]
