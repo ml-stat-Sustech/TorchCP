@@ -26,7 +26,7 @@ def mock_score_function():
 @pytest.mark.parametrize("aggregation_function", ['mean', 'median', lambda x, dim: torch.max(x, dim=dim)[0]])
 def test_workflow(mock_data, mock_model, mock_score_function, aggregation_function):
     train_dataloader, cal_dataloader, test_dataloader = mock_data
-
+    
     # initialize EnsemblePredictor
     ensemble_predictor = EnsemblePredictor(
         score_function=mock_score_function,
@@ -68,6 +68,9 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
     with pytest.raises(ValueError):
         ensemble_predictor.predict(alpha=0.1, x_batch=x_batch, y_batch_last=torch.rand(10), aggr_pred_last=None)
 
+def test_wrong_workflow(mock_data, mock_model, mock_score_function):
+    with pytest.raises(ValueError):
+        EnsemblePredictor(mock_score_function, mock_model, aggregation_function='error')
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_device_support(mock_data, mock_model, mock_score_function, device):

@@ -41,10 +41,14 @@ class EnsemblePredictor(SplitPredictor):
 
     def __init__(self, score_function, model, aggregation_function='mean'):
         super().__init__(score_function, model)
+        if aggregation_function not in ['mean', 'median'] and not callable(aggregation_function):
+            raise ValueError(
+                "aggregation_function must be either 'mean', 'median', or a callable function."
+            )
+
         if aggregation_function == 'mean':
             self.aggregation_function = torch.mean
         elif aggregation_function == 'median':
-            # self.aggregation_function = torch.median
             self.aggregation_function = lambda x, dim: torch.median(x, dim=dim)[0]
         else:
             self.aggregation_function = aggregation_function
