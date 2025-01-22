@@ -120,7 +120,7 @@ TorchCP is still under active development. We will add the following features/it
 
 | Year | Title                                                                                                           | Venue      | Code                                                                       |
 |------|-----------------------------------------------------------------------------------------------------------------|------------|----------------------------------------------------------------------------|
-| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                          | ICML'22    | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
+| 2023 | [**Conformal Prediction for Time Series with Modern Hopfield Networks**](https://openreview.net/pdf?id=KTRwpWCMsC)                          | NeuIPS'23    | [Link](https://github.com/ml-jku/HopCPT) |
 | 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML'22    | [Link](https://github.com/ajfisch/conformal-fp)                            |
 | 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255) | Arxiv      |                                                                            |
 
