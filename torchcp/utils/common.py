@@ -17,6 +17,7 @@ __all__ = ["calculate_conformal_value", "get_device", "DimensionError"]
 class DimensionError(Exception):
     pass
 
+COMPUTABLE_QUANTILE_MAX_SIZE: int = 2**24
 
 def get_device(model):
     """
@@ -76,5 +77,15 @@ def calculate_conformal_value(scores, alpha, default_q_hat=torch.inf):
         warnings.warn(
             f"The value of quantile exceeds 1. It should be a value in [0,1]. To avoid program crash, the threshold is set as {default_q_hat}.")
         return default_q_hat
-
+        
+    if len(scores) > COMPUTABLE_QUANTILE_MAX_SIZE:
+        # Pytorch can't compute quantiles on tensor of size higher than 2^24.
+        print("Using average of quantiles because the calibatng set is too long")
+        scores_list:list = torch.split(scores, COMPUTABLE_QUANTILE_MAX_SIZE)
+        sub_quantiles = torch.tensor([
+            torch.quantile(sub_score, quantile_value, dim=0, interpolation='lower')
+            for sub_score in scores_list
+        ]).to(scores.device)
+        return sub_quantiles.mean()
     return torch.quantile(scores, quantile_value, dim=0, interpolation='lower').to(scores.device)
+
