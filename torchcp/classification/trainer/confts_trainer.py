@@ -8,7 +8,7 @@
 from tqdm import tqdm
 import torch
 
-from torchcp.classification.loss.confts import ConfTS
+from torchcp.classification.loss.confts import ConfTSLoss
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
 from torchcp.classification.trainer.ts_trainer import TSTrainer
@@ -58,7 +58,7 @@ class ConfTSTrainer(TSTrainer):
         super().__init__(init_temperature, model, device=device, verbose=verbose)
         self.optimizer = torch.optim.Adam([self.model.temperature])
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
-        self.loss_fn = ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)
+        self.loss_fn = ConfTSLoss(predictor=predictor, alpha=alpha, fraction=0.5)
         
         
     def train(self, train_loader, lr = 0.01, num_epochs = 100):
