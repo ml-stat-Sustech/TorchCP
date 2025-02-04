@@ -5,17 +5,17 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-
+from tqdm import tqdm
 import torch
 
 from torchcp.classification.loss.confts import ConfTS
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
-from torchcp.classification.trainer.base_trainer import Trainer
+from torchcp.classification.trainer.ts_trainer import TSTrainer
 from torchcp.classification.trainer.model_zoo import TemperatureScalingModel
 
 
-class ConfTSTrainer(Trainer):
+class ConfTSTrainer(TSTrainer):
     """Conformal Temperature Scaling Trainer.
     
     Args:
@@ -50,26 +50,38 @@ class ConfTSTrainer(Trainer):
 
     def __init__(
             self,
-            init_temperature: float,
             alpha: float,
+            init_temperature: float,
             model: torch.nn.Module,
             device: torch.device = None,
             verbose: bool = True, ):
-        model = TemperatureScalingModel(model, temperature=init_temperature)
-        super().__init__(model, device=device, verbose=verbose)
-        self.optimizer = torch.optim.Adam([model.temperature])
+        super().__init__(init_temperature, model, device=device, verbose=verbose)
+        self.optimizer = torch.optim.Adam([self.model.temperature])
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
         self.loss_fn = ConfTS(predictor=predictor, alpha=alpha, fraction=0.5)
-
-    def calculate_loss(self, output, target):
-        """
-        Calculate loss using multiple loss functions
         
-        Args:
-            output: Model output
-            target: Ground truth
-            
-        Returns:
-            Total loss value
-        """
-        return self.loss_fn(output, target)
+        
+    def train(self, train_loader, lr = 0.01, num_epochs = 100):
+        for epoch in range(num_epochs):
+
+            self.model.train()
+            total_loss = 0
+
+            # Create progress bar if verbose
+            train_iter = tqdm(train_loader, desc="Training") if self.verbose else train_loader
+
+            for data, target in train_iter:
+                data, target = data.to(self.device), target.to(self.device)
+
+                self.optimizer.zero_grad()
+                output = self.model(data)
+                loss = self.loss_fn(output, target)
+
+                loss.backward()
+                self.optimizer.step()
+
+                total_loss += loss.item()
+
+                if self.verbose:
+                    train_iter.set_postfix({'loss': loss.item()})
+        return  self.model
