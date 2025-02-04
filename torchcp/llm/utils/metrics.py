@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-
+import math
 import torch
 from typing import Any
 
@@ -64,7 +64,8 @@ def SSCL(prediction_sets, prediction_set_loss, num_bins=20):
 
     prediction_sets = prediction_sets.to(torch.float32).clone().detach()
     prediction_sizes = torch.sum(prediction_sets, dim=0)
-    bins = torch.quantile(prediction_sizes, torch.linspace(0, 1, num_bins, dtype=prediction_sets.dtype))
+    bins = torch.tensor([torch.kthvalue(prediction_sizes, math.ceil(prediction_sizes.shape[0]*k))[0] for k in torch.linspace(0, 1, num_bins, dtype=prediction_sets.dtype)]).to(prediction_sets.device)
+
     binids = torch.bucketize(prediction_sizes, torch.cat([torch.tensor([0]), torch.unique(bins)]))
 
     L_worst_avg = -1

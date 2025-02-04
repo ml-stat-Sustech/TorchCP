@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
+import math
 
 import numpy as np
 import torch
@@ -271,7 +272,7 @@ class ClusteredPredictor(ClassWisePredictor):
 
             cts[i] = class_i_scores.shape[0]
             # Computes the q-quantiles of samples and returns the vector of quantiles
-            embeddings[i, :] = torch.quantile(class_i_scores, torch.tensor(q, device=self._device))
+            embeddings[i, :] = torch.kthvalue(class_i_scores, torch.tensor(math.ceil(cts[i]*q)), dim=0).values.to(self._device)
 
         return embeddings, cts
 
