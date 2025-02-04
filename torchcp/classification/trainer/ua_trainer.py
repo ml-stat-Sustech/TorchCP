@@ -56,7 +56,7 @@ class UncertaintyAwareTrainer(Trainer):
         super(UncertaintyAwareTrainer, self).__init__(model, device, verbose)
         self.optimizer = torch.optim.Adam(model.parameters())
         self.conformal_loss_fn = UncertaintyAwareLoss()
-        self.base_loss_fn = torch.nn.CrossEntropyLoss()
+        self.ce_loss_fn = torch.nn.CrossEntropyLoss()
         self.lambda_ = weight
 
     def train(self, train_loader: DataLoader,
@@ -126,7 +126,7 @@ class UncertaintyAwareTrainer(Trainer):
         total_loss = 0
         if training:
             idx_type = torch.where(Z_batch == 0)[0]
-            loss = self.base_loss_fn(output[idx_type], target[idx_type])
+            loss = self.ce_loss_fn(output[idx_type], target[idx_type])
             total_loss += loss
             
             idx_type = torch.where(Z_batch == 1)[0]
@@ -135,7 +135,7 @@ class UncertaintyAwareTrainer(Trainer):
             
             return total_loss
         else:
-            loss = self.base_loss_fn(output, target)
+            loss = self.ce_loss_fn(output, target)
             total_loss += loss
             
             loss = self.conformal_loss_fn(output, target)
