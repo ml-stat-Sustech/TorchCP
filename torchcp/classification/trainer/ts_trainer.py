@@ -11,7 +11,7 @@ from torch import optim
 from torch.utils.data import DataLoader
 
 from torchcp.classification.trainer.base_trainer import BaseTrainer
-from torchcp.classification.trainer.model import TemperatureScalingModel
+from torchcp.classification.trainer.model_zoo import TemperatureScalingModel
 
 
 # Adapted from: Geoff Pleiss

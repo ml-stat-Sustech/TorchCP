@@ -7,6 +7,6 @@
 
 from .base_trainer import BaseTrainer
 from .confts_trainer import ConfTSTrainer
-from .model import TemperatureScalingModel
+from .model_zoo import TemperatureScalingModel
 from .ts_trainer import TSTrainer
 from .ua_trainer import UncertaintyAwareTrainer

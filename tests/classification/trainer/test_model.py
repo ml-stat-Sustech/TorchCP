@@ -9,7 +9,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from torchcp.classification.trainer.model import TemperatureScalingModel
+from torchcp.classification.trainer.model_zoo import TemperatureScalingModel
 
 
 class SimpleModel(nn.Module):

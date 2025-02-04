@@ -12,7 +12,7 @@ from torchcp.classification.loss.confts import ConfTS
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
 from torchcp.classification.trainer.base_trainer import Trainer
-from torchcp.classification.trainer.model import TemperatureScalingModel
+from torchcp.classification.trainer.model_zoo import TemperatureScalingModel
 
 
 class ConfTSTrainer(Trainer):
