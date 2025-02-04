@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # Loading dataset, a model and Conformal Learning Trainer
     #######################################
     train_loader, val_loader, cal_loader, test_loader, model, optimizer = setup_data_and_model(device)
-    ua_trainer = UncertaintyAwareTrainer(model, device=device)
+    ua_trainer = UncertaintyAwareTrainer(weight=0.2, model=model, device=device)
 
     #######################################
     # Conformal Learning

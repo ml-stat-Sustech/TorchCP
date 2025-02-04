@@ -33,9 +33,9 @@ class UncertaintyAwareTrainer(Trainer):
 
     Args:
         model (torch.nn.Module): Neural network model to train.
-        device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+        device (torch.device): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
             Default: None
-        verbose (bool, optional): Whether to print progress. Defaults to True.
+        verbose (bool): Whether to print progress. Defaults to True.
 
     Examples:
         >>> model = MyModel()
@@ -48,6 +48,7 @@ class UncertaintyAwareTrainer(Trainer):
     """
 
     def __init__(self,
+                 weight: float,
                  model: torch.nn.Module,
                  device: torch.device = None,
                  verbose: bool = True):
@@ -55,8 +56,8 @@ class UncertaintyAwareTrainer(Trainer):
         super(UncertaintyAwareTrainer, self).__init__(model, device, verbose)
         self.optimizer = torch.optim.Adam(model.parameters())
         self.conformal_loss_fn = UncertaintyAwareLoss()
-        self.loss_fns = [torch.nn.CrossEntropyLoss(), self.conformal_loss_fn]
-        self.loss_weights = [1.0, 0.2]
+        self.base_loss_fn = torch.nn.CrossEntropyLoss()
+        self.lambda_ = weight
 
     def train(self, train_loader: DataLoader,
               val_loader: DataLoader = None,
@@ -124,15 +125,21 @@ class UncertaintyAwareTrainer(Trainer):
         """
         total_loss = 0
         if training:
-            for fn, weight, loss_idx in zip(self.loss_fns, self.loss_weights, range(len(self.loss_fns))):
-                idx_type = torch.where(Z_batch == loss_idx)[0]
-                loss = fn(output[idx_type], target[idx_type])
-                total_loss += weight * loss
+            idx_type = torch.where(Z_batch == 0)[0]
+            loss = self.base_loss_fn(output[idx_type], target[idx_type])
+            total_loss += loss
+            
+            idx_type = torch.where(Z_batch == 1)[0]
+            loss = self.conformal_loss_fn(output[idx_type], target[idx_type])
+            total_loss += self.lambda_ * loss
+            
             return total_loss
         else:
-            for fn, weight in zip(self.loss_fns, self.loss_weights):
-                loss = fn(output, target)
-                total_loss += weight * loss
+            loss = self.base_loss_fn(output, target)
+            total_loss += loss
+            
+            loss = self.conformal_loss_fn(output, target)
+            total_loss += self.lambda_ * loss
         return total_loss
 
     @torch.no_grad()
