@@ -66,7 +66,12 @@ class ClusteredPredictor(ClassWisePredictor):
 
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0, 1).")
+        
+        cluster_assignments, cal_scores, cal_labels = self.preprocess_scores(logits, labels, alpha)
 
+        self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments,cal_scores,cal_labels,alpha)
+        
+    def preprocess_scores(self, logits, labels, alpha):
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         num_classes = logits.shape[1]
@@ -122,12 +127,7 @@ class ClusteredPredictor(ClassWisePredictor):
         else:
             cluster_assignments = - torch.ones((num_classes,), dtype=torch.int32, device=self._device)
         self.cluster_assignments = cluster_assignments
-        # 5) Compute qhats for each cluster
-
-        self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments,
-                                                           cal_scores,
-                                                           cal_labels,
-                                                           alpha)
+        return cluster_assignments, cal_scores, cal_labels 
 
     def __split_data(self, scores, labels, classes_statistics):
         """
@@ -316,7 +316,8 @@ class ClusteredPredictor(ClassWisePredictor):
         """
 
         # Compute quantile q_hat that will result in marginal coverage of (1-alpha)
-        null_qhat = self._calculate_conformal_value(cal_class_scores, alpha)
+        # null_qhat = self._calculate_conformal_value(cal_class_scores, alpha)
+        null_qhat = torch.inf
 
         q_hats = torch.zeros((num_clusters,), device=self._device)  # q_hats[i] = quantile for class i
         for k in range(num_clusters):

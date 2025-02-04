@@ -41,7 +41,7 @@ def get_device(model):
     return device
 
 
-def calculate_conformal_value(scores, alpha, default_q_hat=torch.inf):
+def calculate_conformal_value(scores, alpha):
     """
     Calculate the 1-alpha quantile of scores for conformal prediction.
 
@@ -61,19 +61,18 @@ def calculate_conformal_value(scores, alpha, default_q_hat=torch.inf):
     Raises:
         ValueError: If alpha is not between 0 and 1.
     """
-    if default_q_hat == "max":
-        default_q_hat = torch.max(scores)
+
     if alpha >= 1 or alpha <= 0:
         raise ValueError("Significance level 'alpha' must be in [0,1].")
     if len(scores) == 0:
         warnings.warn(
-            f"The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as {default_q_hat}.")
-        return default_q_hat
+            f"The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as {torch.inf}.")
+        return torch.inf
     N = scores.shape[0]
     quantile_value = math.ceil((N + 1) * (1 - alpha)) / N
     if quantile_value > 1:
         warnings.warn(
-            f"The value of quantile exceeds 1. It should be a value in [0,1]. To avoid program crash, the threshold is set as {default_q_hat}.")
-        return default_q_hat
+            f"The value of quantile exceeds 1. It should be a value in [0,1]. To avoid program crash, the threshold is set as {torch.inf}.")
+        return torch.inf
 
     return torch.quantile(scores, quantile_value, dim=0, interpolation='lower').to(scores.device)
