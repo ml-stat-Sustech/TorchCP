@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from torchcp.classification.loss import ConfTr
+from torchcp.classification.loss import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import THR, APS
 from torchcp.graph.trainer.model import CFGNNModel
@@ -73,7 +73,7 @@ class CFGNNTrainer:
         )
 
         self.loss_fns = [F.cross_entropy,
-                         ConfTr(predictor=SplitPredictor(score_function=THR(score_type="softmax")),
+                         ConfTrLoss(predictor=SplitPredictor(score_function=THR(score_type="softmax")),
                                 alpha=alpha,
                                 fraction=0.5,
                                 loss_type="classification",
