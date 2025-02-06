@@ -8,14 +8,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.datasets import CitationFull
+from torch_geometric.nn import GCNConv
 from transformers import set_seed
 
-from torch_geometric.nn import GCNConv
-from torch_geometric.datasets import CitationFull
-
 from examples.utils import get_dataset_dir
-from torchcp.graph.predictor import SplitPredictor
 from torchcp.classification.score import APS
+from torchcp.graph.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
 
 
@@ -112,32 +111,32 @@ if __name__ == '__main__':
     graph_data['train_idx'] = train_idx
     graph_data['val_idx'] = test_idx
     graph_data['calib_train_idx'] = calib_train_idx
-    cf_trainer = CFGNNTrainer(model, graph_data)
+    cf_trainer = CFGNNTrainer(graph_data, model)
 
     # Train conformalized gnn
     model = cf_trainer.train()
+    # breakpoint()
 
     # Split data into calib/test for evaluating
     eval_perms = torch.randperm(calib_eval_idx.size(0))
     eval_calib_idx = calib_eval_idx[eval_perms[:500]]
     eval_test_idx = calib_eval_idx[eval_perms[500:]]
 
-
     #######################################
     # A standard process of conformal prediction
     #######################################
-    predictor = SplitPredictor(graph_data, 
-                               APS(score_type="softmax"), 
+    predictor = SplitPredictor(graph_data,
+                               APS(score_type="softmax"),
                                model=model)
-    predictor.calibrate(pre_logits, eval_calib_idx, alpha=0.1)
+    predictor.calibrate(eval_calib_idx, alpha=0.1)
 
-    predict_sets = predictor.predict(pre_logits, eval_test_idx)
+    predict_sets = predictor.predict(eval_test_idx)
     print(predict_sets)
 
     #########################################
     # Evaluating the coverage rate and average set size on a given dataset.
     ########################################
-    result_dict = predictor.evaluate(pre_logits, eval_test_idx)
+    result_dict = predictor.evaluate(eval_test_idx)
     print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
     print(f"Average Set Size: {result_dict['average_size']:.4f}")
     print(f"Singleton Hit Ratio: {result_dict['singleton_hit_ratio']:.4f}")

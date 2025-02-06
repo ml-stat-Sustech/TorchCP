@@ -51,7 +51,6 @@ from unittest.mock import Mock  # noqa: F401, E402
 # sys.modules['randomstate'] = Mock()
 # sys.modules['scipy._lib'] = Mock()
 # sys.modules['sklearn.cluster'] = Mock()
-import torchcp
 
 project = 'TorchCP'
 copyright = f'{date.today().year}, ml-stat-Sustech'

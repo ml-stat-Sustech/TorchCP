@@ -5,18 +5,22 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
 import os
-import os
-import pandas as pd
 import pathlib
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 import requests
 import torch.nn as nn
 import torchvision.datasets as dset
 import torchvision.transforms as trn
 from PIL import Image
-from pathlib import Path
 from torch.utils.data import Dataset
+<<<<<<< HEAD
+=======
+from torch_geometric.nn import GCNConv, SAGEConv
+>>>>>>> refactor/trainer
 
 
 def get_dataset_dir():

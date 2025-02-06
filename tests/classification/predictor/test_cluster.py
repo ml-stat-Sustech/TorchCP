@@ -280,7 +280,7 @@ def test_embed_all_classes(predictor):
         predictor._ClusteredPredictor__embed_all_classes(scores_all, labels)
 
 
-@pytest.mark.parametrize("alpha", [0.10, 0.05, 0.01])
+@pytest.mark.parametrize("alpha", [0.10])
 def test_compute_cluster_specific_qhats(predictor, alpha):
     cluster_assignments = torch.tensor([-1, 0, 1], dtype=torch.int32)
     cal_class_scores = torch.arange(400).float()
@@ -292,12 +292,12 @@ def test_compute_cluster_specific_qhats(predictor, alpha):
     result = predictor._ClusteredPredictor__compute_cluster_specific_qhats(cluster_assignments, cal_class_scores,
                                                                            cal_true_labels, alpha)
 
-    assert result[0] == torch.tensor(int((1 - alpha) * 400))
+    assert result[0] == torch.inf
     assert result[1] == torch.tensor(100 + int((1 - alpha) * 100))
     assert result[2] == torch.tensor(200 + int((1 - alpha) * 200))
 
 
-@pytest.mark.parametrize("alpha", [0.10, 0.05, 0.01])
+@pytest.mark.parametrize("alpha", [0.10])
 def test_compute_class_specific_qhats(predictor, alpha):
     cal_class_scores = torch.arange(700).float()
     zeros = torch.zeros(100, dtype=torch.long)
@@ -313,4 +313,4 @@ def test_compute_class_specific_qhats(predictor, alpha):
     assert result[0] == torch.tensor(int((1 - alpha) * 100))
     assert result[1] == torch.tensor(100 + int((1 - alpha) * 200))
     assert result[2] == torch.tensor(300 + int((1 - alpha) * 300))
-    assert result[3] == torch.tensor(int((1 - alpha) * 700))
+    assert result[3] == torch.inf

@@ -6,7 +6,10 @@
 #
 import math
 import torch
+
 from typing import Any
+
+import torch
 
 from torchcp.utils.registry import Registry
 

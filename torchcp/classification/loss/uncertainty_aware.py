@@ -63,7 +63,7 @@ class UncertaintyAwareLoss(torch.nn.Module):
         self.layer_prob = torch.nn.Softmax(dim=1)
         self.criterion_scores = UniformMatchingLoss()
 
-    def forward(self, output, target, Z_batch):
+    def forward(self, output, target):
         """
         Forward pass of the conformal loss function. The loss is computed by iterating over different groupings in Z_batch,
         applying the conformal loss for each group, and averaging the loss over all groups.
@@ -71,23 +71,11 @@ class UncertaintyAwareLoss(torch.nn.Module):
         Args:
             output (torch.Tensor): The model's output logits (predictions before softmax).
             target (torch.Tensor): The ground truth labels.
-            Z_batch (torch.Tensor): A tensor indicating groupings for non-conformity.
 
         Returns:
             torch.Tensor: The computed loss for the given batch.
         """
-        device = output.device
-        loss_scores = torch.tensor(0.0, device=device)
-        Z_groups = torch.unique(Z_batch)
-        n_groups = torch.sum(Z_groups > 0)
-        for z in Z_groups:
-            if z > 0:
-                idx_z = torch.where(Z_batch == z)[0]
-                loss_scores_z = self.compute_loss(
-                    output[idx_z], target[idx_z])
-                loss_scores += loss_scores_z
-        loss_scores /= n_groups
-        return loss_scores
+        return self.compute_loss(output, target)
 
     def compute_loss(self, y_train_pred, y_train_batch):
         """

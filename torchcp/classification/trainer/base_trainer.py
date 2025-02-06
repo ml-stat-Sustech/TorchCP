@@ -5,27 +5,27 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import copy
 import logging
-import numpy as np
 import time
+from abc import ABC, abstractmethod
+from typing import Optional
+
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from typing import Optional, Dict, Any, Callable, Union, List
 
 
-class BaseTrainer:
+class BaseTrainer(ABC):
     """
-    Base trainer class that handles basic model setup and device configuration.
+    Abstract base trainer class that handles basic model setup and device configuration.
     
     Args:
-        model (torch.nn.Module): Neural network model
-        device (torch.device): Device to run on (CPU/GPU)
+        model (torch.nn.Module): Neural network model to be trained
+        device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+            Default: None
         verbose (bool): Whether to show training progress
-        
-    Examples:
-        >>> model = MyModel()
-        >>> base_trainer = BaseTrainer(model)
+            Default: True
     """
 
     def __init__(
@@ -34,6 +34,9 @@ class BaseTrainer:
             device: torch.device = None,
             verbose: bool = True,
     ):
+        if model is None:
+            raise ValueError("Model cannot be None")
+
         if device is None:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
@@ -42,84 +45,63 @@ class BaseTrainer:
         self.model = model.to(self.device)
         self.verbose = verbose
 
-        # Setup logging
+        # Logger setup
         if self.verbose:
             logging.basicConfig(
                 level=logging.INFO,
                 format='%(asctime)s - %(levelname)s - %(message)s'
             )
             self.logger = logging.getLogger(__name__)
+
+    @abstractmethod
+    def train(
+            self,
+            train_loader: DataLoader,
+            val_loader: Optional[DataLoader] = None,
+            **kwargs
+    ) -> torch.nn.Module:
+        """
+        Train the model.
+        Must be implemented by subclasses.
+        
+        Args:
+            train_loader: DataLoader for training data
+            val_loader: Optional DataLoader for validation data
+            **kwargs: Additional training arguments
+            
+        Returns:
+            torch.nn.Module: Trained model
+        """
+        pass
+
+    def save_model(self, path: str) -> None:
+        """
+        Save model state dict to disk.
+        
+        Args:
+            path: Path to save model weights
+        """
+        torch.save(self.model.state_dict(), path)
+
+    def load_model(self, path: str) -> None:
+        """
+        Load model state dict from disk.
+        
+        Args:
+            path: Path to saved model weights
+        """
+        self.model.load_state_dict(torch.load(path))
 
 
 class Trainer(BaseTrainer):
-    """
-    A general-purpose PyTorch model trainer.
-    
-    Args:
-        model (torch.nn.Module): Neural network model to train
-        optimizer (torch.optim.Optimizer): Optimization algorithm
-        loss_fn (Union[torch.nn.Module, Callable, List[Callable]]): Loss function(s)
-        loss_weights (Optional[List[float]]): Weights for multiple losses
-        device (torch.device): Device to run on (CPU/GPU)
-        verbose (bool): Whether to show training progress
-
-    Examples:
-        >>> model = MyModel()
-        >>> optimizer = torch.optim.Adam(model.parameters())
-        >>> loss_fn = nn.CrossEntropyLoss()
-        >>> trainer = Trainer(model, optimizer, loss_fn)
-        >>> trainer.train(train_loader, val_loader, num_epochs=10)
-    """
-
-    def __init__(
-            self,
-            model: torch.nn.Module,
-            optimizer: torch.optim.Optimizer,
-            loss_fn: Union[torch.nn.Module, Callable, List[Callable]],
-            loss_weights: Optional[List[float]] = None,
-            device: torch.device = None,
-            verbose: bool = True,
-    ):
-        if device is None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        else:
-            self.device = device
-
-        self.model = model.to(self.device)
-
-        self.optimizer = optimizer
-        self.verbose = verbose
-
-        if isinstance(loss_fn, list):
-            num_losses = len(loss_fn)
-
-            if loss_weights is None:
-                self.loss_weights = torch.ones(num_losses, device=self.device)
-            else:
-                if len(loss_weights) != num_losses:
-                    raise ValueError(f"Number of loss functions must match number of weights")
-                self.loss_weights = torch.tensor(loss_weights, device=self.device)
-        else:
-            if loss_weights is None:
-                self.loss_weights = torch.ones(1, device=self.device)
-            else:
-                if isinstance(loss_weights, list):
-                    raise ValueError("Expected a single loss function, got a list of loss weights")
-                self.loss_weights = torch.tensor(loss_weights, device=self.device)
-
-        self.loss_fn = loss_fn
-
-        # Setup logging
-        if self.verbose:
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(levelname)s - %(message)s'
-            )
-            self.logger = logging.getLogger(__name__)
+    def __init__(self, model, device=None, verbose=True):
+        super().__init__(model, device, verbose)
+        self.optimizer = torch.optim.Adam(self.model.parameters())
+        self.loss_fn = torch.nn.CrossEntropyLoss()
 
     def calculate_loss(self, output, target):
         """
-        Calculate loss using single or multiple loss functions
+        Calculate loss using multiple loss functions
         
         Args:
             output: Model output
@@ -128,16 +110,9 @@ class Trainer(BaseTrainer):
         Returns:
             Total loss value
         """
-        if isinstance(self.loss_fn, list):
-            total_loss = 0
-            for fn, weight in zip(self.loss_fn, self.loss_weights):
-                loss = fn(output, target)
-                total_loss += weight * loss
-            return total_loss
-        else:
-            return self.loss_fn(output, target) * self.loss_weights
+        return self.loss_fn(output, target)
 
-    def train_epoch(self, train_loader: DataLoader) -> Dict[str, float]:
+    def train_epoch(self, train_loader: DataLoader) -> float:
         """
         Train for one epoch
         
@@ -145,31 +120,20 @@ class Trainer(BaseTrainer):
             train_loader: DataLoader for training data
             
         Returns:
-            Dictionary containing training metrics
+            Average training loss for this epoch
         """
         self.model.train()
         total_loss = 0
-        individual_losses = {} if isinstance(self.loss_fn, list) else None
 
         # Create progress bar if verbose
-        if self.verbose:
-            train_iter = tqdm(train_loader, desc="Training")
-        else:
-            train_iter = train_loader
-        for batch_idx, (data, target) in enumerate(train_iter):
+        train_iter = tqdm(train_loader, desc="Training") if self.verbose else train_loader
+
+        for data, target in train_iter:
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
             output = self.model(data)
-
-            # Calculate loss
             loss = self.calculate_loss(output, target)
-
-            # Track individual losses if using multiple loss functions
-            if isinstance(self.loss_fn, list):
-                for i, (fn, weight) in enumerate(zip(self.loss_fn, self.loss_weights)):
-                    individual_loss = fn(output, target).item()
-                    individual_losses[f'loss_{i}'] = individual_losses.get(f'loss_{i}', 0) + individual_loss
 
             loss.backward()
             self.optimizer.step()
@@ -179,17 +143,10 @@ class Trainer(BaseTrainer):
             if self.verbose:
                 train_iter.set_postfix({'loss': loss.item()})
 
-        # Calculate average losses
-        avg_loss = total_loss / len(train_loader)
-        metrics = {'loss': avg_loss}
+        return total_loss / len(train_loader)
 
-        if individual_losses:
-            for key in individual_losses:
-                metrics[key] = individual_losses[key] / len(train_loader)
-
-        return metrics
-
-    def validate(self, val_loader: DataLoader) -> Dict[str, float]:
+    @torch.no_grad()
+    def validate(self, val_loader: DataLoader) -> float:
         """
         Evaluate model on validation set
         
@@ -197,57 +154,27 @@ class Trainer(BaseTrainer):
             val_loader: DataLoader for validation data
             
         Returns:
-            Dictionary containing validation metrics
+            Average validation loss
         """
         self.model.eval()
         total_loss = 0
-        correct = 0
-        total = 0
-        individual_losses = {} if isinstance(self.loss_fn, list) else None
 
         with torch.no_grad():
-            # Create progress bar if verbose
-            if self.verbose:
-                val_iter = tqdm(val_loader, desc="Validating")
-            else:
-                val_iter = val_loader
+            val_iter = tqdm(val_loader, desc="Validating") if self.verbose else val_loader
 
             for data, target in val_iter:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
-
                 loss = self.calculate_loss(output, target)
                 total_loss += loss.item()
 
-                # Track individual losses
-                if isinstance(self.loss_fn, list):
-                    for i, (fn, weight) in enumerate(zip(self.loss_fn, self.loss_weights)):
-                        individual_loss = fn(output, target).item()
-                        individual_losses[f'val_loss_{i}'] = individual_losses.get(f'val_loss_{i}', 0) + individual_loss
-
-                # Calculate accuracy
-                pred = output.argmax(dim=1)
-                correct += pred.eq(target).sum().item()
-                total += target.size(0)
-
-        # Calculate average metrics
-        metrics = {
-            'val_loss': total_loss / len(val_loader),
-            'val_acc': correct / total
-        }
-
-        if individual_losses:
-            for key in individual_losses:
-                metrics[key] = individual_losses[key] / len(val_loader)
-
-        return metrics
+        return total_loss / len(val_loader)
 
     def train(
             self,
             train_loader: DataLoader,
-            val_loader: Optional[DataLoader] = None,
+            val_loader: DataLoader = None,
             num_epochs: int = 10,
-            save_path: Optional[str] = None
     ):
         """
         Train the model
@@ -256,78 +183,35 @@ class Trainer(BaseTrainer):
             train_loader: DataLoader for training data
             val_loader: Optional DataLoader for validation data
             num_epochs: Number of training epochs
-            save_path: Optional path to save the best model
         """
-        best_val_acc = 0
+        best_loss = float('inf')
+        best_model_state = None
 
         for epoch in range(num_epochs):
             start_time = time.time()
 
-            # Train for one epoch
-            train_metrics = self.train_epoch(train_loader)
+            train_loss = self.train_epoch(train_loader)
+            log_msg = f"Epoch {epoch + 1}/{num_epochs} - train_loss: {train_loss:.4f}"
 
-            # Validate
             if val_loader is not None:
-                val_metrics = self.validate(val_loader)
+                val_loss = self.validate(val_loader)
+                log_msg += f" - val_loss: {val_loss:.4f}"
 
-                # Save best model
-                if val_metrics['val_acc'] > best_val_acc and save_path:
-                    best_val_acc = val_metrics['val_acc']
-                    torch.save(self.model.state_dict(), save_path)
-                    if self.verbose:
-                        self.logger.info(f"Saved best model with validation accuracy: {val_metrics['val_acc']:.4f}")
+                if val_loss < best_loss:
+                    best_loss = val_loss
+                    best_model_state = copy.deepcopy(self.model.state_dict())
+                    log_msg += f"\nNew best model with val_loss: {val_loss:.4f}"
 
-                if self.verbose:
-                    # Construct log message
-                    log_msg = f"Epoch {epoch + 1}/{num_epochs}"
-                    for key, value in {**train_metrics, **val_metrics}.items():
-                        log_msg += f" - {key}: {value:.4f}"
-                    log_msg += f" - Time: {time.time() - start_time:.2f}s"
-                    self.logger.info(log_msg)
-            else:
-                if self.verbose:
-                    log_msg = f"Epoch {epoch + 1}/{num_epochs}"
-                    for key, value in train_metrics.items():
-                        log_msg += f" - {key}: {value:.4f}"
-                    log_msg += f" - Time: {time.time() - start_time:.2f}s"
-                    self.logger.info(log_msg)
+            log_msg += f" - Time: {time.time() - start_time:.2f}s"
+            if self.verbose:
+                self.logger.info(log_msg)
+
+        if val_loader is not None and best_model_state is not None:
+            self.model.load_state_dict(best_model_state)
+            if self.verbose:
+                self.logger.info(f"Loaded best model with val_loss: {best_loss:.4f}")
+
         return self.model
 
-    def save_checkpoint(
-            self,
-            epoch: int,
-            save_path: str,
-            metrics: Optional[Dict[str, float]] = None
-    ):
-        """
-        Save a checkpoint
-        
-        Args:
-            epoch: Current training epoch
-            save_path: Path to save the checkpoint
-            metrics: Optional dictionary of metrics to save
-        """
-        checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'metrics': metrics
-        }
-        torch.save(checkpoint, save_path)
-        if self.verbose:
-            self.logger.info(f"Saved checkpoint at epoch {epoch}")
-
-    def load_checkpoint(self, load_path: str) -> Dict[str, Any]:
-        """
-        Load a checkpoint
-        
-        Args:
-            load_path: Path to the checkpoint
-            
-        Returns:
-            Dictionary containing checkpoint information
-        """
-        checkpoint = torch.load(load_path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        return checkpoint
+    def save_model(self, path):
+        torch.save(self.model.state_dict(), path)

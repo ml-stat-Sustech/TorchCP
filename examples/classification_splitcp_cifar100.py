@@ -5,20 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import argparse
-import os
-import pickle
 import torch
 import torchvision
-import torchvision.datasets as dset
 import torchvision.transforms as trn
-from tqdm import tqdm
 from transformers import set_seed
 
 from examples.utils import get_dataset_dir
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR, APS, SAPS, RAPS, Margin
-from torchcp.classification.utils.metrics import Metrics
+from torchcp.classification.score import THR
 
 set_seed(seed=0)
 

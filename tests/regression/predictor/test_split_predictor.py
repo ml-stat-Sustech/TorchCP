@@ -6,7 +6,6 @@
 #
 
 import pytest
-import torch
 
 from torchcp.regression.predictor import SplitPredictor
 from torchcp.regression.score import ABS

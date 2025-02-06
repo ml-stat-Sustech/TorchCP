@@ -12,7 +12,7 @@ from transformers import set_seed
 
 from examples.utils import get_dataset_dir
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR, APS, SAPS, RAPS, Margin
+from torchcp.classification.score import APS
 from torchcp.classification.trainer import ConfTSTrainer
 
 set_seed(seed=2025)
@@ -52,13 +52,9 @@ model.eval()
 init_temperature = 1.0
 
 trainer = ConfTSTrainer(
-    model=model,
     init_temperature=init_temperature,
-    optimizer_class=torch.optim.Adam,
-    optimizer_params={
-        'lr': 0.001,
-        'eps': 1e-08,
-    },
+    alpha=0.1,
+    model=model,
     device=device,
     verbose=True
 )

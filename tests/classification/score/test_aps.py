@@ -9,7 +9,6 @@ import pytest
 import torch
 
 from torchcp.classification.score.aps import APS
-from torchcp.classification.score.thr import THR
 
 
 @pytest.fixture
