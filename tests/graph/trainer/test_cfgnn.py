@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
 
-from torchcp.classification.loss import ConfTr
+from torchcp.classification.loss import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
 
@@ -84,7 +84,7 @@ def test_initialization(mock_model, mock_graph_data):
     assert next(model.cfgnn.parameters()).device == torch.device(model._device)
     assert type(model.optimizer) is torch.optim.Adam
     assert model.pred_loss_fn == F.cross_entropy
-    assert type(model.cf_loss_fn) is ConfTr
+    assert type(model.cf_loss_fn) is ConfTrLoss
     assert type(model.predictor) is SplitPredictor
     assert model.alpha == 0.1
 

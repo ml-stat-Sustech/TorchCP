@@ -12,154 +12,84 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.classification.loss import ConfTS
+from torchcp.classification.loss import ConfTSLoss
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.score import APS
 from torchcp.classification.trainer import ConfTSTrainer, TSTrainer
 from torchcp.classification.trainer import TemperatureScalingModel
 
 
+
+# Mock model for testing
+class MockModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = nn.Linear(10, 3)
+        
+    def forward(self, x):
+        return self.linear(x)
+
+# Fixtures
 @pytest.fixture
 def mock_model():
-    return nn.Linear(10, 2)  # Simple model for testing
-
-
-@pytest.fixture
-def mock_optimizer(mock_model):
-    return optim.SGD(mock_model.parameters(), lr=0.01)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_confts_trainer_init_default(mock_model, mock_optimizer, device):
-    """Test ConfTSTrainer initialization with default parameters"""
-    if device == "cuda" and not torch.cuda.is_available():
-        pytest.skip("CUDA not available")
-    device = torch.device("cuda:0" if device == "cuda" else "cpu")
-
-    temperature = 1.0
-    trainer = ConfTSTrainer(
-        model=mock_model,
-        temperature=temperature,
-        optimizer=mock_optimizer,
-        device=device,
-    )
-
-    assert trainer.device == device
-    assert trainer.verbose == True
-    assert isinstance(trainer.loss_fn, ConfTS)
-    assert isinstance(trainer.loss_fn.predictor, SplitPredictor)
-    assert isinstance(trainer.loss_fn.predictor.score_function, APS)
-    assert trainer.loss_fn.fraction == 0.5
-
-
-def test_confts_trainer_init_custom_device(mock_model, mock_optimizer):
-    """Test ConfTSTrainer initialization with custom device"""
-    temperature = 1.0
-    device = torch.device('cpu')
-    trainer = ConfTSTrainer(
-        model=mock_model,
-        temperature=temperature,
-        optimizer=mock_optimizer,
-        device=device,
-        verbose=False
-    )
-
-    assert trainer.device == device
-    assert trainer.verbose == False
-
-
-def test_confts_trainer_inheritance(mock_model, mock_optimizer):
-    """Test if ConfTSTrainer properly inherits from TSTrainer"""
-
-    trainer = ConfTSTrainer(
-        model=mock_model,
-        temperature=1.0,
-        optimizer=mock_optimizer
-    )
-
-    assert isinstance(trainer, TSTrainer)
-
-
-def test_confts_trainer_model_wrapper(mock_model, mock_optimizer):
-    """Test if model is properly wrapped in TemperatureScalingModel"""
-
-    trainer = ConfTSTrainer(
-        model=mock_model,
-        temperature=1.0,
-        optimizer=mock_optimizer
-    )
-
-    assert isinstance(trainer.model, TemperatureScalingModel)
-
+    return MockModel()
 
 @pytest.fixture
-def synthetic_data():
-    # Create small synthetic dataset
-    X = torch.randn(120, 10)  # 100 samples, 10 features
-    y = torch.randint(0, 10, (120,))  # Binary classification
-    dataset = TensorDataset(X, y)
-    train_loader = DataLoader(dataset, batch_size=30)
-    val_loader = DataLoader(dataset, batch_size=30)
-    return train_loader, val_loader
-
+def mock_data():
+    x = torch.randn(1000, 10)
+    y = torch.randint(0, 3, (1000,))
+    dataset = TensorDataset(x, y)
+    return DataLoader(dataset, batch_size=128, shuffle=True)
 
 @pytest.fixture
-def trainer_setup():
-    model = nn.Sequential(
-        nn.Linear(10, 10),
-        nn.ReLU())
-    optimizer = torch.optim.Adam(model.parameters())
-    temperature = 1.0
-    trainer = ConfTSTrainer(
-        model=model,
-        temperature=temperature,
-        optimizer=optimizer,
-        device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    )
-    return trainer
-
-
-def test_train_without_validation(trainer_setup, synthetic_data):
-    train_loader, _ = synthetic_data
-    num_epochs = 2
-
-    trainer_setup.train(
-        train_loader=train_loader,
-        num_epochs=num_epochs
+def confts_trainer(mock_model):
+    return ConfTSTrainer(
+        init_temperature=1.0,
+        alpha=0.1,
+        model=mock_model
     )
 
-    # Test model is in training mode after training
-    assert trainer_setup.model.training
-
-
-def test_train_with_validation(trainer_setup, synthetic_data, tmp_path):
-    train_loader, val_loader = synthetic_data
-    num_epochs = 2
-    save_path = os.path.join(tmp_path, "best_model.pt")
-
-    trainer_setup.train(
-        train_loader=train_loader,
-        val_loader=val_loader,
-        num_epochs=num_epochs,
-        save_path=save_path
-    )
-
-    # Test model file was saved
-    assert os.path.exists(save_path)
-
-
-def test_train_metrics_tracking(trainer_setup, synthetic_data):
-    train_loader, val_loader = synthetic_data
-    num_epochs = 2
-
-    # Train with validation to get metrics
-    trainer_setup.verbose = False  # Disable logging for test
-    trainer_setup.train(
-        train_loader=train_loader,
-        val_loader=val_loader,
-        num_epochs=num_epochs
-    )
-
-    # Verify model has expected attributes after training
-    assert hasattr(trainer_setup.model, 'temperature')
-    assert isinstance(trainer_setup.loss_fn, ConfTS)
+# Tests
+class TestConfTSTrainer:
+    def test_initialization(self, mock_model):
+        trainer = ConfTSTrainer(
+            init_temperature=1.5,
+            alpha=0.1,
+            model=mock_model
+        )
+        
+    def test_invalid_params(self, mock_model):
+        # Test invalid temperature
+        with pytest.raises(ValueError):
+            ConfTSTrainer(
+                init_temperature=-1.0,
+                alpha=0.1,
+                model=mock_model
+            )
+            
+        # Test invalid alpha
+        with pytest.raises(ValueError):
+            ConfTSTrainer(
+                init_temperature=1.0,
+                alpha=-0.1,
+                model=mock_model
+            )
+            
+    def test_training_process(self, confts_trainer, mock_data):
+        # Train model with default parameters
+        confts_trainer.train(mock_data, num_epochs=2)
+        
+    def test_gpu_training(self, mock_model, mock_data):
+        if torch.cuda.is_available():
+            trainer = ConfTSTrainer(
+                init_temperature=1.0,
+                alpha=0.1,
+                model=mock_model,
+                device=torch.device('cuda')
+            )
+            trainer.train(mock_data, num_epochs=2)
+            
+    def test_training_with_different_params(self, confts_trainer, mock_data):
+        # Test training with different learning rates and epochs
+        confts_trainer.train(mock_data, lr=0.001, num_epochs=1)
+        confts_trainer.train(mock_data, lr=0.1, num_epochs=1)

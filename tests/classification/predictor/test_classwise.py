@@ -111,11 +111,11 @@ def test_calculate_threshold(predictor, mock_score_function, alpha):
     for label in range(num_classes):
         temp_scores = scores[labels == label]
         if len(temp_scores) == 0:
-            excepted_qhat[label] = marginal_q_hat
+            excepted_qhat[label] = torch.inf
             continue
         quantile_value = math.ceil(temp_scores.shape[0] + 1) * (1 - alpha) / temp_scores.shape[0]
         if quantile_value > 1:
-            excepted_qhat[label] = marginal_q_hat
+            excepted_qhat[label] = torch.inf
             continue
         excepted_qhat[label] = torch.sort(temp_scores).values[math.ceil((temp_scores.shape[0] + 1) * (1 - alpha)) - 1]
     assert torch.equal(predictor.q_hat, excepted_qhat)
