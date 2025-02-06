@@ -10,10 +10,10 @@ __all__ = ["ConfTr"]
 import torch
 import torch.nn.functional as F
 
-from torchcp.classification.loss.confts import ConfTS
+from torchcp.classification.loss.confts import ConfTSLoss
 
 
-class ConfTr(ConfTS):
+class ConfTrLoss(ConfTSLoss):
     """
     Conformal Training (ConfTr) Loss Implementation.
     
@@ -50,7 +50,7 @@ class ConfTr(ConfTS):
     def __init__(self, predictor, alpha, fraction, soft_qunatile=True, epsilon=1e-4, loss_type="valid",
                  target_size=1, loss_transform="square"):
 
-        super(ConfTr, self).__init__(predictor, alpha, fraction, soft_qunatile)
+        super(ConfTrLoss, self).__init__(predictor, alpha, fraction, soft_qunatile)
 
         if loss_type not in ["valid", "classification", "probs", "coverage", "cfgnn"]:
             raise ValueError(
