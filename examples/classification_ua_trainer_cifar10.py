@@ -8,15 +8,14 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from transformers import set_seed
-
 import torchvision
 import torchvision.models as models
 import torchvision.transforms as transforms
+from transformers import set_seed
 
 from examples.utils import get_dataset_dir
-from torchcp.classification.score import APS
 from torchcp.classification.predictor import SplitPredictor
+from torchcp.classification.score import APS
 from torchcp.classification.trainer import UncertaintyAwareTrainer
 
 
@@ -26,14 +25,14 @@ def setup_data_and_model(device):
     ########################################
     augmentation = [
         transforms.ToTensor(),
-        transforms.RandomErasing(p=0.2, scale = (0.7, 0.7), ratio = (0.3, 3.3), value=0),
+        transforms.RandomErasing(p=0.2, scale=(0.7, 0.7), ratio=(0.3, 3.3), value=0),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     ]
     transform = transforms.Compose(augmentation)
     train_dataset = torchvision.datasets.CIFAR10(
-        root=get_dataset_dir(), 
-        train=True, 
-        download=True, 
+        root=get_dataset_dir(),
+        train=True,
+        download=True,
         transform=transform)
 
     random_indices = torch.randperm(len(train_dataset))
@@ -43,7 +42,8 @@ def setup_data_and_model(device):
     trainset_sample = torch.utils.data.Subset(train_dataset, random_indices_tr)
     valset_sample = torch.utils.data.Subset(train_dataset, random_indices_va)
 
-    train_loader = torch.utils.data.DataLoader(trainset_sample, batch_size=750, shuffle=True, num_workers=2, drop_last=True)
+    train_loader = torch.utils.data.DataLoader(trainset_sample, batch_size=750, shuffle=True, num_workers=2,
+                                               drop_last=True)
     val_loader = torch.utils.data.DataLoader(valset_sample, batch_size=750, shuffle=False, num_workers=2)
 
     ########################################
@@ -56,11 +56,11 @@ def setup_data_and_model(device):
     ]
     transform = transforms.Compose(augmentation)
     test_dataset = torchvision.datasets.CIFAR10(
-        root=get_dataset_dir(), 
-        train=False, 
-        download=True, 
+        root=get_dataset_dir(),
+        train=False,
+        download=True,
         transform=transform)
-    
+
     random_indices = torch.randperm(len(test_dataset))
     random_indices_ca = random_indices[:int(len(test_dataset) * 0.5)]
     random_indices_te = random_indices[int(len(test_dataset) * 0.5):]
@@ -80,14 +80,15 @@ def setup_data_and_model(device):
 
 if __name__ == '__main__':
     set_seed(seed=42)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
 
     #######################################
     # Loading dataset, a model and Conformal Learning Trainer
     #######################################
     train_loader, val_loader, cal_loader, test_loader, model, optimizer = setup_data_and_model(device)
-    ua_trainer = UncertaintyAwareTrainer(model, optimizer, device=device)
-    
+    ua_trainer = UncertaintyAwareTrainer(weight=0.2, model=model, device=device)
+
     #######################################
     # Conformal Learning
     #######################################
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     ########################################
     predictor = SplitPredictor(score_function=APS(), model=ua_trainer.model)
     predictor.calibrate(cal_loader, alpha=0.1)
-    
+
     x_list = []
     y_list = []
     for tmp_x, tmp_y in test_loader:
@@ -107,8 +108,8 @@ if __name__ == '__main__':
     X_data = torch.cat(x_list)
     Y_data = torch.cat(y_list)
 
-    pred_sets = predictor.predict(X_data)
-    print(pred_sets)
+    pred_set = predictor.predict(X_data[0:1])
+    print(pred_set)
 
     result_dict = predictor.evaluate(test_loader)
     print(f"Marginal Coverage: {result_dict['coverage_rate']:.4f}")

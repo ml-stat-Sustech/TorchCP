@@ -55,35 +55,36 @@ def prepare_aci_dataset(train_ratio=0.5, batch_size=100):
 
     return train_loader, test_loader
 
+
 if __name__ == "__main__":
     # get dataloader
     train_loader, test_loader = prepare_aci_dataset(train_ratio=0.5, batch_size=128)
     # build regression model
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = build_regression_model("NonLinearNet")(next(iter(train_loader))[0].shape[1], 2, 64, 0.5).to(device)
-    
+
     # CP
     alpha = 0.1  # confidence level
     predictor = ACIPredictor(score_function=CQR(), model=model, gamma=0.005)
-    
+
     # Step1: train regression model
     ## The Train function is required here, and the user can customize the training parameters
     predictor.train(train_loader, alpha=alpha, epochs=100, lr=0.01, verbose=True)
-    
+
     # Step2: prediction
     #### Option1: generate conformal prediction interval for x_batch
     x = next(iter(test_loader))[0].to(device)
     prediction_intervals = predictor.predict(x)
-    
+
     #### Option2: generate conformal prediction interval for x_batch using history data
     lookback = 200  # number of historical data points
     samples = [train_loader.dataset[i] for i in range(len(train_loader.dataset) - lookback, len(train_loader.dataset))]
     x_lookback = torch.stack([sample[0] for sample in samples]).to(device)
     y_lookback = torch.stack([sample[1] for sample in samples]).to(device)
-    
+
     x = next(iter(test_loader))[0].to(device)
     prediction_intervals = predictor.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback)
-    
+
     # Step3: evaluate conformal prediction on test dataloader
     result = predictor.evaluate(test_loader)
     print(result)

@@ -6,9 +6,10 @@
 #
 
 
-import torch
 import warnings
 from abc import ABCMeta, abstractmethod
+
+import torch
 
 from torchcp.classification.utils import ConfCalibrator
 from torchcp.classification.utils.metrics import Metrics

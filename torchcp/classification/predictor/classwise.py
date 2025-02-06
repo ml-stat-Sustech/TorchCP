@@ -50,7 +50,6 @@ class ClassWisePredictor(SplitPredictor):
         num_classes = logits.shape[1]
         self.q_hat = torch.zeros(num_classes, device=self._device)
         scores = self.score_function(logits, labels)
-        marginal_q_hat = self._calculate_conformal_value(scores, alpha)
         for label in range(num_classes):
             temp_scores = scores[labels == label]
-            self.q_hat[label] = self._calculate_conformal_value(temp_scores, alpha, marginal_q_hat)
+            self.q_hat[label] = self._calculate_conformal_value(temp_scores, alpha)

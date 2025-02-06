@@ -5,398 +5,209 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import logging
-import logging
-import os
-import os
 import pytest
-import pytest
-import tempfile
-import tempfile
-import torch
 import torch
 import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
+import tempfile
+import os
+
+import pytest
+import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, TensorDataset
+import os
+import tempfile
 
-from torchcp.classification.trainer.base_trainer import Trainer
+from torchcp.classification.trainer.base_trainer import BaseTrainer, Trainer
 
-
-# Simple test model for neural network testing
-class SimpleModel(nn.Module):
+# Mock model for testing
+class MockModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc = nn.Linear(10, 2)
-
+        self.linear = nn.Linear(10, 2)
+        
     def forward(self, x):
-        return self.fc(x)
+        return self.linear(x)
 
+# Concrete implementation of BaseTrainer for testing abstract class
+class ConcreteTrainer(BaseTrainer):
+    def train(self, train_loader, val_loader=None, **kwargs):
+        return self.model
 
-# Dummy dataset for testing training and validation processes
-class DummyDataset(Dataset):
-    def __init__(self, size=100, input_dim=10, num_classes=2):
-        self.data = torch.randn(size, input_dim)
-        self.targets = torch.randint(0, num_classes, (size,))
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx], self.targets[idx]
-
+# Fixtures
+@pytest.fixture
+def mock_model():
+    return MockModel()
 
 @pytest.fixture
-def device():
-    """Fixture for device used in testing"""
-    return torch.device("cpu")
-
-
-@pytest.fixture
-def model():
-    """Fixture for creating a test model"""
-    return SimpleModel()
-
+def mock_data():
+    # Create mock dataset
+    x = torch.randn(100, 10)  # 100 samples, 10 features
+    y = torch.randint(0, 2, (100,))  # Binary classification
+    dataset = TensorDataset(x, y)
+    return DataLoader(dataset, batch_size=16)
 
 @pytest.fixture
-def optimizer(model):
-    """Fixture for creating an optimizer"""
-    return torch.optim.SGD(model.parameters(), lr=0.01)
-
+def base_trainer(mock_model):
+    return ConcreteTrainer(mock_model)
 
 @pytest.fixture
-def loss_fn():
-    """Fixture for creating a loss function"""
-    return nn.CrossEntropyLoss()
+def trainer(mock_model):
+    return Trainer(mock_model)
+
+# Tests for BaseTrainer
+class TestBaseTrainer:
+    def test_train_abstract_method(self):
+        class FailTrainer(BaseTrainer):
+            pass  
+        
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            FailTrainer(MockModel())
+            
+    def test_train_implementation(self, base_trainer, mock_data):
+        model = base_trainer.train(mock_data)
+        assert isinstance(model, torch.nn.Module)
+        
+        model = base_trainer.train(mock_data, mock_data)
+        assert isinstance(model, torch.nn.Module)
+        
+        model = base_trainer.train(mock_data, extra_param=True)
+        assert isinstance(model, torch.nn.Module)
+        
+        
+    def test_initialization(self, mock_model):
+        # Test with default device
+        trainer = ConcreteTrainer(mock_model)
+        assert trainer.device == torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Test with specified device
+        cpu_trainer = ConcreteTrainer(mock_model, device=torch.device('cpu'))
+        assert cpu_trainer.device == torch.device('cpu')
+        
+        # Test verbose setting
+        assert trainer.verbose == True
+        quiet_trainer = ConcreteTrainer(mock_model, verbose=False)
+        assert quiet_trainer.verbose == False
+
+    def test_invalid_initialization(self):
+        with pytest.raises(ValueError, match="Model cannot be None"):
+            ConcreteTrainer(None)
+
+    def test_model_save_load(self, base_trainer):
+        with tempfile.NamedTemporaryFile(suffix='.pt', delete=False) as tmp:
+            try:
+                # Save model
+                base_trainer.save_model(tmp.name)
+                assert os.path.exists(tmp.name)
+                
+                # Change model parameters
+                original_params = {name: param.clone() for name, param in base_trainer.model.named_parameters()}
+                for param in base_trainer.model.parameters():
+                    nn.init.constant_(param, 0.0)
+                
+                # Load model and verify parameters are restored
+                base_trainer.load_model(tmp.name)
+                for name, param in base_trainer.model.named_parameters():
+                    assert torch.allclose(param, original_params[name])
+            finally:
+                os.unlink(tmp.name)
 
 
-@pytest.fixture
-def train_loader(request):
-    """Fixture for creating a training data loader"""
-    return DataLoader(DummyDataset(100), batch_size=10)
-
-
-@pytest.fixture
-def val_loader(request):
-    """Fixture for creating a validation data loader"""
-    return DataLoader(DummyDataset(50), batch_size=10)
-
-
-@pytest.fixture
-def trainer(model, optimizer, loss_fn, device):
-    """Fixture for creating a Trainer instance"""
-    return Trainer(
-        model=model,
-        optimizer=optimizer,
-        loss_fn=loss_fn,
-        device=device,
-        verbose=True
-    )
-
-
-def test_trainer_initialization(model, optimizer, loss_fn, device):
-    """
-    Test initialization of Trainer with single loss function
+    def test_train_pass_statement(self):
+        """直接测试基类中train方法的pass语句"""
+        class TempTrainer(BaseTrainer):
+            def train(self, train_loader, val_loader=None, **kwargs):
+                return super().train(train_loader, val_loader, **kwargs)
+        
+        model = MockModel()
+        trainer = TempTrainer(model)
+        data_loader = DataLoader(TensorDataset(torch.randn(10, 10), torch.zeros(10)))
+        
+        result = BaseTrainer.train.__get__(trainer)(data_loader)
+        
+        assert result is None
     
-    Verifies that:
-    - Model is correctly set
-    - Optimizer is correctly set
-    - Loss function is correctly set
-    """
-    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fn, device=device)
-    assert trainer.model == model
-    assert trainer.optimizer == optimizer
-    assert trainer.loss_fn == loss_fn
-
-
-def test_multiple_loss_functions(model, optimizer, device):
-    """
-    Test initialization of Trainer with multiple loss functions
     
-    Verifies that:
-    - Multiple loss functions can be set
-    - Corresponding weights are correctly assigned
-    """
-    loss_fns = [nn.CrossEntropyLoss(), nn.MSELoss()]
-    loss_weights = [0.6, 0.4]
-    trainer = Trainer(
-        model,
-        optimizer,
-        loss_fns,
-        loss_weights,
-        device
-    )
-    assert trainer.loss_fn == loss_fns
+# Tests for Trainer
+class TestTrainer:
+    def test_initialization(self, trainer):
+        assert isinstance(trainer.optimizer, torch.optim.Adam)
+        assert isinstance(trainer.loss_fn, nn.CrossEntropyLoss)
+
+    def test_calculate_loss(self, trainer):
+        output = torch.randn(4, 2)  # 4 samples, 2 classes
+        target = torch.tensor([0, 1, 0, 1])
+        loss = trainer.calculate_loss(output, target)
+        assert isinstance(loss, torch.Tensor)
+        assert loss.ndim == 0  # Scalar tensor
+
+    def test_train_epoch(self, trainer, mock_data):
+        loss = trainer.train_epoch(mock_data)
+        assert isinstance(loss, float)
+        assert loss > 0  # Loss should be positive
+
+    def test_validate(self, trainer, mock_data):
+        loss = trainer.validate(mock_data)
+        assert isinstance(loss, float)
+        assert loss > 0
+
+    def test_full_training(self, trainer, mock_data):
+        # Test training with validation
+        trained_model = trainer.train(
+            train_loader=mock_data,
+            val_loader=mock_data,
+            num_epochs=2
+        )
+        assert isinstance(trained_model, nn.Module)
+        
+        # Test training without validation
+        trained_model = trainer.train(
+            train_loader=mock_data,
+            num_epochs=2
+        )
+        assert isinstance(trained_model, nn.Module)
+
+    def test_model_save_load(self, trainer):
+        with tempfile.NamedTemporaryFile(suffix='.pt', delete=False) as tmp:
+            try:
+                # Get initial parameters
+                initial_params = {name: param.clone() for name, param in trainer.model.named_parameters()}
+                
+                # Save model
+                trainer.save_model(tmp.name)
+                assert os.path.exists(tmp.name)
+                
+                # Change parameters
+                for param in trainer.model.parameters():
+                    nn.init.constant_(param, 0.0)
+                
+                # Load and verify
+                trainer.load_model(tmp.name)
+                for name, param in trainer.model.named_parameters():
+                    assert torch.allclose(param, initial_params[name])
+            finally:
+                os.unlink(tmp.name)
+
+    def test_training_with_early_stopping(self, trainer, mock_data):
+        """Test that the best model is saved during training with validation"""
+        initial_state = {name: param.clone() for name, param in trainer.model.named_parameters()}
+        
+        # Train with validation to trigger best model saving
+        trainer.train(
+            train_loader=mock_data,
+            val_loader=mock_data,
+            num_epochs=3
+        )
+        
+        # Verify model parameters have changed
+        current_state = {name: param.clone() for name, param in trainer.model.named_parameters()}
+        any_param_changed = False
+        for name in initial_state:
+            if not torch.allclose(initial_state[name], current_state[name]):
+                any_param_changed = True
+                break
+        assert any_param_changed, "Model parameters should have changed during training"
+        
 
 
-def test_init_validation_errors(model, optimizer, device):
-    """
-    Test error handling during Trainer initialization
-    
-    Verifies that:
-    - Appropriate errors are raised when loss function requirements are not met
-    - Missing weights trigger an assertion error
-    - Mismatched number of loss functions and weights trigger an assertion error
-    """
-    loss_fns = [nn.CrossEntropyLoss(), nn.MSELoss()]
-
-    loss_weights = [0.6]
-    with pytest.raises(ValueError, match="Number of loss functions must match number of weights"):
-        Trainer(model, optimizer, loss_fns, device=device, loss_weights=loss_weights)
-
-    loss_fns = nn.CrossEntropyLoss()
-    loss_weights = [0.6]
-    with pytest.raises(ValueError, match="Expected a single loss function, got a list of loss weights"):
-        Trainer(model, optimizer, loss_fns, device=device, loss_weights=loss_weights)
-
-
-def test_calculate_loss(trainer):
-    """
-    Test loss calculation with a single loss function
-    
-    Verifies that:
-    - Loss calculation returns a valid tensor
-    """
-    output = torch.randn(10, 2)
-    target = torch.randint(0, 2, (10,))
-    loss = trainer.calculate_loss(output, target)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_multiple_loss_calculation(model, optimizer, device):
-    """
-    Test loss calculation with multiple loss functions
-    
-    Verifies that:
-    - Loss calculation with multiple functions returns a valid tensor
-    - Weighted combination of losses works correctly
-    """
-    loss_fns = [nn.CrossEntropyLoss()]
-    loss_weights = [0.6]
-    trainer = Trainer(
-        model,
-        optimizer,
-        loss_fns,
-        loss_weights,
-        device
-    )
-
-    # Create output and target with compatible shapes
-    output = torch.randn(10, 2)
-    target = torch.randint(0, 2, (10,))
-
-    loss = trainer.calculate_loss(output, target)
-    assert isinstance(loss, torch.Tensor)
-
-
-def test_train_epoch(trainer, train_loader):
-    """
-    Test training for a single epoch with single loss function
-    
-    Verifies that:
-    - Training for one epoch produces valid metrics
-    - Loss metric is present
-    """
-    metrics = trainer.train_epoch(train_loader)
-    assert 'loss' in metrics
-
-
-def test_train_epoch_multiple_losses(model, optimizer, device, train_loader):
-    """
-    Test training for a single epoch with multiple loss functions
-    
-    Verifies that:
-    - Training with multiple loss functions works correctly
-    - Individual loss metrics are tracked
-    """
-    loss_fns = [nn.CrossEntropyLoss()]
-    loss_weights = [0.6]
-    trainer = Trainer(
-        model,
-        optimizer,
-        loss_fns,
-        loss_weights,
-        device
-    )
-    metrics = trainer.train_epoch(train_loader)
-    assert 'loss' in metrics
-    assert 'loss_0' in metrics
-
-
-def test_validation(trainer, val_loader):
-    """
-    Test model validation with single loss function
-    
-    Verifies that:
-    - Validation produces expected metrics
-    - Validation loss and accuracy metrics are present
-    """
-    metrics = trainer.validate(val_loader)
-    assert 'val_loss' in metrics
-    assert 'val_acc' in metrics
-
-
-def test_validation_multiple_losses(model, optimizer, device, val_loader):
-    """
-    Test model validation with multiple loss functions
-    
-    Verifies that:
-    - Validation with multiple loss functions works correctly
-    - Individual validation loss metrics are tracked
-    """
-    loss_fns = [nn.CrossEntropyLoss()]
-    loss_weights = [0.6]
-    trainer = Trainer(
-        model,
-        optimizer,
-        loss_fns,
-        loss_weights,
-        device
-    )
-    metrics = trainer.validate(val_loader)
-    assert 'val_loss' in metrics
-    assert 'val_acc' in metrics
-    assert 'val_loss_0' in metrics
-
-
-def test_training_without_validation(trainer, train_loader):
-    """
-    Test training process without a validation set
-    
-    Verifies that:
-    - Training can proceed without a validation loader
-    """
-    trainer.train(train_loader, num_epochs=2)
-
-
-def test_training_with_validation(trainer, train_loader, val_loader):
-    """
-    Test training process with validation set and model saving
-    
-    Verifies that:
-    - Training with validation works correctly
-    - Model can be saved during training
-    """
-    with tempfile.NamedTemporaryFile(suffix='.pt', delete=False) as tmp:
-        try:
-            trainer.train(
-                train_loader,
-                val_loader,
-                num_epochs=2,
-                save_path=tmp.name
-            )
-            assert os.path.exists(tmp.name)
-        finally:
-            os.unlink(tmp.name)
-
-
-def test_checkpointing(trainer):
-    """
-    Test checkpoint saving and loading functionality
-    
-    Verifies that:
-    - Checkpoints can be saved with metadata
-    - Saved checkpoints can be correctly loaded
-    - Checkpoint contains expected information
-    """
-    with tempfile.NamedTemporaryFile(suffix='.pt', delete=False) as tmp:
-        try:
-            metrics = {'loss': 0.5, 'val_loss': 0.4}
-            trainer.save_checkpoint(1, tmp.name, metrics)
-            assert os.path.exists(tmp.name)
-
-            # Load checkpoint
-            checkpoint = trainer.load_checkpoint(tmp.name)
-            assert checkpoint['epoch'] == 1
-            assert checkpoint['metrics'] == metrics
-        finally:
-            os.unlink(tmp.name)
-
-
-def test_verbose_mode(model, optimizer, loss_fn, device, train_loader, val_loader):
-    """
-    Test trainer initialization and training in non-verbose mode
-    
-    Verifies that:
-    - Trainer can be initialized with verbose=False
-    - No logger is created in non-verbose mode
-    - Training can proceed without errors
-    """
-    trainer = Trainer(
-        model,
-        optimizer,
-        loss_fn,
-        device=device,
-        verbose=False
-    )
-
-    # Verify no logger attribute exists
-    assert not hasattr(trainer, 'logger')
-
-    # Run training to ensure no errors occur
-    trainer.train(train_loader, val_loader, num_epochs=1)
-
-
-@pytest.mark.parametrize("verbose", [True, False])
-def test_logging_configuration(model, optimizer, loss_fn, device, train_loader, val_loader, verbose):
-    """
-    Parameterized test for different logging configurations
-    
-    Verifies that:
-    - Trainer can be initialized with different verbosity settings
-    - Training works correctly regardless of verbosity
-    
-    Args:
-        verbose (bool): Whether logging is enabled
-    """
-    trainer = Trainer(
-        model,
-        optimizer,
-        loss_fn,
-        device=device,
-        verbose=verbose
-    )
-
-    # Verify training runs without errors
-    trainer.train(train_loader, val_loader, num_epochs=1)
-
-
-def test_trainer_device_initialization(model, optimizer, loss_fn):
-    """
-    Test initialization of Trainer with default device
-    
-    Verifies that:
-    - Trainer initializes with the correct device
-    """
-    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fn)
-    assert trainer.device == torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-def test_trainer_loss_weights_initialization(model, optimizer, loss_fn, device):
-    """
-    Test initialization of Trainer with single loss function and weights
-    
-    Verifies that:
-    - Trainer initializes with correct loss weights
-    """
-    # Change from list [1.0] to scalar 1.0
-    loss_weight = 1.0
-    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fn, loss_weights=loss_weight, device=device)
-    assert torch.equal(trainer.loss_weights, torch.tensor(loss_weight, device=device))
-
-
-def test_trainer_multiple_loss_weights_initialization(model, optimizer, device):
-    """
-    Test initialization of Trainer with multiple loss functions and weights
-    
-    Verifies that:
-    - Trainer initializes with correct loss weights for multiple loss functions
-    """
-    loss_fns = [nn.CrossEntropyLoss(), nn.MSELoss()]
-    loss_weights = [0.6, 0.4]
-    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fns, loss_weights=loss_weights, device=device)
-    assert torch.equal(trainer.loss_weights, torch.tensor(loss_weights, device=device))
-
-    loss_fns = [nn.CrossEntropyLoss(), nn.MSELoss()]
-    trainer = Trainer(model=model, optimizer=optimizer, loss_fn=loss_fns, device=device)
-    assert torch.equal(trainer.loss_weights, torch.ones(len(loss_fns), device=device))

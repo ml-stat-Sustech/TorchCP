@@ -43,11 +43,10 @@ def test_forward():
     Z_batch = torch.randint(0, 2, (100,))
 
     torch.manual_seed(0)
-    loss_scores = loss_fn(output, target, Z_batch)
+    loss_scores = loss_fn(output, target).float()
 
     torch.manual_seed(0)
-    idx_z = torch.where(Z_batch == 1)[0]
-    except_loss_scores = loss_fn.compute_loss(output[idx_z], target[idx_z]).float()
+    except_loss_scores = loss_fn.compute_loss(output, target).float()
 
     assert loss_scores == except_loss_scores
 

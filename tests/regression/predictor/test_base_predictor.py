@@ -6,9 +6,7 @@
 #
 
 import pytest
-import pytest
 import torch
-from torch.utils.data import DataLoader
 
 from torchcp.regression.predictor.base import BasePredictor
 from torchcp.regression.score import ABS

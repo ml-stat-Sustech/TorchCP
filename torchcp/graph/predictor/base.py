@@ -5,8 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import torch.nn.functional as F
 from abc import ABCMeta, abstractmethod
+
+import torch.nn.functional as F
 
 from torchcp.classification.utils.metrics import Metrics
 

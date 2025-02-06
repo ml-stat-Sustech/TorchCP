@@ -6,8 +6,9 @@
 #
 
 
-import torch.nn as nn
 from abc import ABCMeta, abstractmethod
+
+import torch.nn as nn
 
 from torchcp.regression.utils.metrics import Metrics
 from torchcp.utils.common import calculate_conformal_value

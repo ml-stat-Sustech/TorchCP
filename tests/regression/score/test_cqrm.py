@@ -7,7 +7,6 @@
 
 import pytest
 import torch
-from torch.utils.data import DataLoader, TensorDataset
 
 from torchcp.regression.score import CQRM
 

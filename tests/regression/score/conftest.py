@@ -7,8 +7,7 @@
 
 import pytest
 import torch
-from sklearn.preprocessing import StandardScaler
-from torch.utils.data import TensorDataset, DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 
 
 @pytest.fixture

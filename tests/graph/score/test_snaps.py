@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+from math import sqrt
+
 import pytest
 import torch
-from math import sqrt
 from torch_geometric.data import Data
 
 from torchcp.classification.score import THR
