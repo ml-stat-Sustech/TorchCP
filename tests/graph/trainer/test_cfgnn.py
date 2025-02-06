@@ -62,13 +62,7 @@ def mock_cfgnn_model(mock_model, mock_graph_data):
 
 
 def test_initialization(mock_model, mock_graph_data):
-<<<<<<< HEAD
-    cf_trainer = CFGNNTrainer(mock_model, mock_graph_data)
-    assert len(cf_trainer.model.convs) == 2
-    assert type(cf_trainer.model.convs[0]) is GCNConv and type(cf_trainer.model.convs[1]) is GCNConv
-    assert cf_trainer.model.convs[0].in_channels == 10 and cf_trainer.model.convs[0].out_channels == 64
-    assert cf_trainer.model.convs[1].in_channels == 64 and cf_trainer.model.convs[1].out_channels == 10
-=======
+
     # num_layers == 1
     model = CFGNNTrainer(mock_model, mock_graph_data, num_layers=1)
     assert len(model.cfgnn.convs) == 1
@@ -94,7 +88,6 @@ def test_initialization(mock_model, mock_graph_data):
     assert type(model.cf_loss_fn) is ConfTrLoss
     assert type(model.predictor) is SplitPredictor
     assert model.alpha == 0.1
->>>>>>> refactor/trainer
 
 
 def test_invalid_initialization(mock_model, mock_graph_data):

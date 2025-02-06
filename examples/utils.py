@@ -17,10 +17,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as trn
 from PIL import Image
 from torch.utils.data import Dataset
-<<<<<<< HEAD
-=======
 from torch_geometric.nn import GCNConv, SAGEConv
->>>>>>> refactor/trainer
 
 
 def get_dataset_dir():
