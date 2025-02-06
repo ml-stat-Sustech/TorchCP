@@ -227,8 +227,7 @@ class ConformalLM:
         """Select unique quantiles of the empirical distribution."""
 
         quantiles = torch.linspace(0, 1, max_lambdas, dtype=values.dtype, device=values.device)
-        lambdas = torch.tensor([torch.kthvalue(values, math.ceil(values.shape[0]*k))[0] for k in quantiles])
-
+        lambdas = torch.quantile(values, quantiles)
         lambdas = torch.unique(lambdas, sorted=True)
         lambdas = torch.cat([torch.tensor([-float('inf')], dtype=values.dtype),
                              lambdas,

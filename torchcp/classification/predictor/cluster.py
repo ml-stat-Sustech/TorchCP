@@ -271,9 +271,10 @@ class ClusteredPredictor(ClassWisePredictor):
             class_i_scores = scores_all[labels == i]
 
             cts[i] = class_i_scores.shape[0]
-            # Computes the q-quantiles of samples and returns the vector of quantiles
-            embeddings[i, :] = torch.kthvalue(class_i_scores, torch.tensor(math.ceil(cts[i]*q)), dim=0).values.to(self._device)
-
+            for k in range(len(q)):
+                # Computes the q-quantiles of samples and returns the vector of quantiles
+                embeddings[i, k] = torch.kthvalue(class_i_scores, int(math.ceil(cts[i] * q[k])), dim=0).values.to(self._device)
+        
         return embeddings, cts
 
     def __compute_cluster_specific_qhats(self, cluster_assignments, cal_class_scores, cal_true_labels, alpha):

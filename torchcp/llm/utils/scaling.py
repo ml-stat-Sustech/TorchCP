@@ -82,7 +82,7 @@ class BinningScaler(BaseScaler):
 
         # Split scores into equal mass bins.
         quantiles = torch.linspace(0, 1, self.n_bins + 1).to(X.dtype)
-        bins = torch.tensor([torch.kthvalue(X, math.ceil(X.shape[0]*k))[0] for k in quantiles])
+        bins = torch.quantile(X, quantiles)
 
         bin_ids = torch.searchsorted(bins[1:-1], X)
 
