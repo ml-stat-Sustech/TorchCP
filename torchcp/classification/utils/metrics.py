@@ -105,14 +105,15 @@ def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx=None):
     class_covered = torch.bincount(labels[covered == 1], minlength=num_classes)
 
     cls_coverage_rate = torch.zeros_like(class_counts, dtype=torch.float32)
-    valid_classes = class_counts > 0
-    cls_coverage_rate[valid_classes] = class_covered[valid_classes].float() / class_counts[valid_classes].float()
+    unique_labels = torch.unique(labels)
+    cls_coverage_rate[unique_labels] = class_covered[unique_labels].float() / class_counts[unique_labels].float()
+    covgaps = torch.abs(cls_coverage_rate[unique_labels] - (1 - alpha)) * 100
 
     if shot_idx is not None:
-        cls_coverage_rate = cls_coverage_rate[shot_idx]
+        valid_shot_idx = [cls for cls in shot_idx if cls in unique_labels]
+        covgaps = covgaps[torch.tensor(valid_shot_idx, dtype=torch.long)]
 
-    overall_covgap = torch.mean(torch.abs(cls_coverage_rate - (1 - alpha))) * 100
-    return overall_covgap.float().item()
+    return covgaps.mean().float().item()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
