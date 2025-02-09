@@ -105,15 +105,16 @@ def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx=None):
     class_covered = torch.bincount(labels[covered == 1], minlength=num_classes)
 
     cls_coverage_rate = torch.zeros_like(class_counts, dtype=torch.float32)
-    unique_labels = torch.unique(labels)
-    cls_coverage_rate[unique_labels] = class_covered[unique_labels].float() / class_counts[unique_labels].float()
-    covgaps = torch.abs(cls_coverage_rate[unique_labels] - (1 - alpha)) * 100
+    valid_classes = class_counts > 0
+    cls_coverage_rate[valid_classes] = class_covered[valid_classes].float() / class_counts[valid_classes].float()
 
     if shot_idx is not None:
-        valid_shot_idx = [cls for cls in shot_idx if cls in unique_labels]
-        covgaps = covgaps[torch.tensor(valid_shot_idx, dtype=torch.long)]
-
-    return covgaps.mean().float().item()
+        mask = torch.zeros(num_classes, dtype=torch.bool)
+        mask[shot_idx] = True
+        valid_classes = valid_classes & mask
+        
+    overall_covgap = torch.mean(torch.abs(cls_coverage_rate[valid_classes] - (1 - alpha))) * 100
+    return overall_covgap.float().item()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
@@ -148,8 +149,8 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
     valid_classes = class_counts > 0
     class_coverage = torch.zeros(num_classes, dtype=torch.float32)
     class_coverage[valid_classes] = class_covered[valid_classes].float() / class_counts[valid_classes].float()
-
-    violation_nums = torch.sum(class_coverage < (1 - alpha))
+    
+    violation_nums = torch.sum(class_coverage[valid_classes] < (1 - alpha))
     return violation_nums.item()
 
 
