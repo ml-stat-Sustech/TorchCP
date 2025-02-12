@@ -8,14 +8,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.datasets import CitationFull
-from torch_geometric.nn import GCNConv
 from transformers import set_seed
+
+from torch_geometric.nn import GCNConv
+from torch_geometric.datasets import CitationFull
 
 from examples.utils import get_dataset_dir
 from torchcp.classification.score import APS
-from torchcp.graph.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
+from torchcp.graph.predictor import SplitPredictor
 
 
 class GCN(nn.Module):
@@ -84,16 +85,11 @@ if __name__ == '__main__':
         model.parameters(), lr=0.01, weight_decay=0.001)
 
     #######################################
-    # Training and testing the model
+    # Training the model
     #######################################
 
     for _ in range(200):
         train(model, optimizer, graph_data, train_idx)
-
-    model.eval()
-    with torch.no_grad():
-        logits = model(graph_data.x, graph_data.edge_index)
-    pre_logits = F.softmax(logits, dim=1)
 
     #######################################
     # Split calib/test sets
@@ -115,7 +111,6 @@ if __name__ == '__main__':
 
     # Train conformalized gnn
     model = cf_trainer.train()
-    # breakpoint()
 
     # Split data into calib/test for evaluating
     eval_perms = torch.randperm(calib_eval_idx.size(0))

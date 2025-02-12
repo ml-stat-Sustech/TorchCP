@@ -6,16 +6,14 @@
 #
 
 import copy
+from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
 
-from tqdm import tqdm
-
+from torchcp.classification.score import THR, APS
 from torchcp.classification.loss import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR, APS
 from torchcp.graph.trainer.model import CFGNNModel
 
 
@@ -49,7 +47,6 @@ class CFGNNTrainer:
 
     def __init__(
             self,
-            base_model,
             graph_data,
             model,
             hidden_channels=64,
@@ -62,7 +59,6 @@ class CFGNNTrainer:
             raise ValueError("graph_data cannot be None.")
         if model is None:
             raise ValueError("model cannot be None.")
-
 
         self.graph_data = graph_data
         self._device = self.graph_data.x.device
@@ -144,7 +140,6 @@ class CFGNNTrainer:
         best_valid_size = self.num_classes
         best_model_state = None
 
-        best_model_dict = None
         for epoch in tqdm(range(n_epochs)):
             self._train_each_epoch(epoch)
 
