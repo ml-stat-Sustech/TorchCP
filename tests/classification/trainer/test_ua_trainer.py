@@ -36,7 +36,7 @@ def mock_data():
     x = torch.randn(500, 10)  # 500 samples, 10 features
     y = torch.randint(0, 3, (500,))  # 3 classes
     dataset = TensorDataset(x, y)
-    return DataLoader(dataset, batch_size=32, shuffle=True)
+    return DataLoader(dataset, batch_size=64, shuffle=True)
 
 @pytest.fixture
 def uncertainty_trainer(mock_model):
@@ -112,7 +112,7 @@ class TestUncertaintyAwareTrainer:
         trainer = UncertaintyAwareTrainer(
             weight=0.5,
             model=mock_model,
-            device=torch.device('cuda')
+            device=torch.device('cuda:0')
         )
         trainer.train(mock_data, num_epochs=2)
         
