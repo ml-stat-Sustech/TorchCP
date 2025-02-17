@@ -54,11 +54,9 @@ at SUSTech. Comments, issues, contributions, and collaborations are all welcomed
 
 # Updates of New Version (1.0.2)
 
-- Refactored examples codebase for better organization and clarity
-- Enhanced classification and Graph trainers with improved architecture
-- Added new loss functions and trainer for Uncertainty-aware trainer
-- Changed default quantile value to infinity for better handling of edge cases
-- Fixed handling of large calibration sets (>2^24 elements) in quantile computation ([#45](https://github.com/ml-stat-Sustech/TorchCP/issues/45))
+This version includes major refactoring of trainers, new uncertainty-aware classifiers, and important bug fixes ([#45](https://github.com/ml-stat-Sustech/TorchCP/issues/45)).
+
+Detailed changelog can be found in the [Documentation](https://torchcp.readthedocs.io/en/latest/CHANGELOG.html).
 
 # Overview
 
@@ -68,7 +66,7 @@ TorchCP has implemented the following methods:
 
 | Year | Title                                                                                                                                                                        | Venue                | Code Link                                                                         | Implementation                                      |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------|
-| 2024 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://arxiv.org/abs/2410.09408)                                                         | ICLR'25                |                                                                                   | classification.loss.cd                         |
+| 2024 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://openreview.net/forum?id=8Gqz2opok1)                                                         | ICLR'25                |                                                                                   | classification.loss.cd                         |
 | 2024 | [**Delving into temperature scaling for adaptive conformal prediction**](https://arxiv.org/abs/2402.04344)                                                                   | Arxiv                |                                                                                   | classification.loss.confts                          |
 | 2024 | [**Conformal Prediction for Deep Classifier via Label Ranking**](https://arxiv.org/abs/2310.06430)                                                                           | ICML'24              | [Link](https://github.com/ml-stat-Sustech/conformal_prediction_via_label_ranking) | classification.score.saps                           |
 | 2023 | [**Class-Conditional Conformal Prediction with Many Classes**](https://arxiv.org/abs/2306.09335)                                                                             | NeurIPS'23           | [Link](https://github.com/tiffanyding/class-conditional-conformal)                | classification.predictor.cluster                    |
@@ -220,11 +218,13 @@ We welcome you to cite the following works:
   year={2024}
 }
 
-@article{liu2024c,
+@inproceedings{
+  liu2025cadapter,
   title={C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets},
-  author={Liu, Kangdao and Zeng, Hao and Huang, Jianguo and Zhuang, Huiping and Vong, Chi-Man and Wei, Hongxin},
-  journal={arXiv preprint arXiv:2410.09408},
-  year={2024}
+  author={Kangdao Liu and Hao Zeng and Jianguo Huang and Huiping Zhuang and Chi Man VONG and Hongxin Wei},
+  booktitle={The Thirteenth International Conference on Learning Representations},
+  year={2025},
+  url={https://openreview.net/forum?id=8Gqz2opok1}
 }
 ```
 
