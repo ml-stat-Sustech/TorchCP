@@ -56,9 +56,9 @@ at SUSTech. Comments, issues, contributions, and collaborations are all welcomed
 
 - Refactored examples codebase for better organization and clarity
 - Enhanced classification and Graph trainers with improved architecture
-- Added new loss functions and trainer for Uncertainty-aware classifiers
+- Added new loss functions and trainer for Uncertainty-aware trainer
 - Changed default quantile value to infinity for better handling of edge cases
-- Fixed handling of large calibration sets (>2^24 elements) in quantile computation (`#45 <https://github.com/ml-stat-Sustech/TorchCP/issues/45>`_)
+- Fixed handling of large calibration sets (>2^24 elements) in quantile computation ([#45](https://github.com/ml-stat-Sustech/TorchCP/issues/45))
 
 # Overview
 
