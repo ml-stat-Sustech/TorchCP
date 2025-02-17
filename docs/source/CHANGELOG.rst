@@ -3,10 +3,10 @@ Changelog
 
 1.0.2 (2025-02-17)
 ------------------
-* Refactor all the code of examples 
-* Refactor trainer for classification and Graph
-* Add the loss function and trainer for Uncertainty-aware classifiers
-* Setting the default value of quantile value as infinty
+* Refactored examples codebase for better organization and clarity
+* Enhanced classification and Graph trainers with improved architecture
+* Added new loss functions and trainer for Uncertainty-aware classifiers
+* Changed default quantile value to infinity for better handling of edge cases
 * Fixed handling of large calibration sets (>2^24 elements) in quantile computation (`#45 <https://github.com/ml-stat-Sustech/TorchCP/issues/45>`_)
 
 

@@ -52,15 +52,13 @@ build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
-# Updates of New Version (1.0.0)
+# Updates of New Version (1.0.2)
 
-- Added new score functions and training methods for classification, including KNN, TOPK, C-Adapter, and ConfTS.
-- Introduced CP algorithms for graph node classification, such as DAPS, SNAPS, and NAPS.
-- Added new conformal algorithms for regression, including CQRFM, CQRR, CQRM, and Ensemble CP.
-- Introduced CP algorithms for LLMs.
-- Added unit-test and examples.
-- Optimized the form of prediction sets to improve the computational efficiency.
-- Refactored the module design of Regression to improve the scalability.
+- Refactored examples codebase for better organization and clarity
+- Enhanced classification and Graph trainers with improved architecture
+- Added new loss functions and trainer for Uncertainty-aware classifiers
+- Changed default quantile value to infinity for better handling of edge cases
+- Fixed handling of large calibration sets (>2^24 elements) in quantile computation (`#45 <https://github.com/ml-stat-Sustech/TorchCP/issues/45>`_)
 
 # Overview
 
