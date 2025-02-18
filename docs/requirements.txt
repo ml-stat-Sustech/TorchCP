@@ -3,7 +3,6 @@ sphinx_rtd_theme~=2.0.0
 numpydoc
 nbsphinx
 sphinx-autobuild
-torch
 sphinxcontrib-applehelp==2.0.0
 sphinxcontrib-devhelp==2.0.0
 sphinxcontrib-htmlhelp==2.1.0
@@ -34,6 +33,7 @@ myst-parser
 sphinx-copybutton
 sphinx-notfound-page
 sphinx-hoverxref
+torch==2.2.1  # Added explicit version requirement
 torch-geometric~=2.6.1
 transformers
-torchsort==0.1.9
+torchsort==0.1.9  # Moved after torch
