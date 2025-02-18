@@ -36,4 +36,3 @@ sphinx-hoverxref
 torch==2.2.1  # Added explicit version requirement
 torch-geometric~=2.6.1
 transformers
-torchsort==0.1.9  # Moved after torch
