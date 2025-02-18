@@ -18,5 +18,5 @@ jobs:
         uses: dfm/rtds-action@v1
         with:
           webhook_url: ${{ secrets.RTDS_WEBHOOK_URL }}
-          webhook-token: ${{ secrets.RTD_WEBHOOK_TOKEN }}
+          webhook_token: ${{ secrets.RTD_WEBHOOK_TOKEN }}
           commit_ref: ${{ github.ref }}
