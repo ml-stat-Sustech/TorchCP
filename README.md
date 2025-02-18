@@ -52,10 +52,9 @@ build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
-# Updates of New Version (1.0.2)
+## Updates of New Version (1.0.2)
 
 This version includes major refactoring of trainers, new uncertainty-aware classifiers, and important bug fixes ([#45](https://github.com/ml-stat-Sustech/TorchCP/issues/45)).
-
 Detailed changelog can be found in the [Documentation](https://torchcp.readthedocs.io/en/latest/CHANGELOG.html).
 
 # Overview
