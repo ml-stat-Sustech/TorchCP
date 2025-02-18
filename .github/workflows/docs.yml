@@ -17,6 +17,6 @@ jobs:
       - name: Trigger ReadTheDocs build
         uses: dfm/rtds-action@v1
         with:
-          ebhook_url: ${{ secrets.RTDS_WEBHOOK_URL }}
+          webhook_url: ${{ secrets.RTDS_WEBHOOK_URL }}
           webhook-token: ${{ secrets.RTD_WEBHOOK_TOKEN }}
           commit_ref: ${{ github.ref }}
