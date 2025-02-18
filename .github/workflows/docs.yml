@@ -1,0 +1,25 @@
+name: ReadTheDocs Build
+
+on:
+  push:
+    branches:
+      - hotfix/readthedocs
+      - master
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Trigger ReadTheDocs build
+        uses: readthedocs/actions/preview@v1
+        with:
+          project-slug: "torchcp"  
+          webhook-token: ${{ secrets.RTD_WEBHOOK_TOKEN }}
