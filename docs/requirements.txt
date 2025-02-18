@@ -36,4 +36,4 @@ sphinx-notfound-page
 sphinx-hoverxref
 torch-geometric~=2.6.1
 transformers
-torchsort=0.1.9
+torchsort==0.1.9
