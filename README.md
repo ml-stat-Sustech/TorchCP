@@ -191,7 +191,7 @@ If you find our repository useful for your research, please consider citing the
 following [technical report](https://arxiv.org/abs/2402.12683):
 
 ```
-@misc{huang2024torchcppythonlibraryconformal,
+@misc{huang2024torchcp,
       title={TorchCP: A Python Library for Conformal Prediction}, 
       author={Jianguo Huang and Jianqing Song and Xuanning Zhou and Bingyi Jing and Hongxin Wei},
       year={2024},
