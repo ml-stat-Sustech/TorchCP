@@ -7,10 +7,6 @@ on:
       - master
     tags:
       - '*'
-  pull_request:
-    branches:
-      - main
-      - master
 
 jobs:
   docs:
@@ -21,5 +17,5 @@ jobs:
       - name: Trigger ReadTheDocs build
         uses: readthedocs/actions/preview@v1
         with:
-          project-slug: "torchcp"  
+          ebhook_url: ${{ secrets.RTDS_WEBHOOK_URL }}
           webhook-token: ${{ secrets.RTD_WEBHOOK_TOKEN }}
