@@ -5,5 +5,5 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .neighbors_weight import NAPSPredictor
+from .naps import NAPSPredictor
 from .split import SplitPredictor

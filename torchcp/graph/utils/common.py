@@ -7,6 +7,7 @@
 
 import torch
 
+
 def compute_adj_knn(features, k=20):
     """
     Compute the k-nearest neighbor (k-NN) graph adjacency matrix for a given feature matrix.
@@ -25,7 +26,7 @@ def compute_adj_knn(features, k=20):
     """
     if features.shape[0] < k:
         raise ValueError(
-                "The number of nodes cannot be less than k.")
+            "The number of nodes cannot be less than k.")
     features_normalized = features / features.norm(dim=1, keepdim=True)
     sims = torch.mm(features_normalized, features_normalized.t())
     sims[(torch.arange(len(sims)), torch.arange(len(sims)))] = 0

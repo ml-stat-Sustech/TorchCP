@@ -6,5 +6,6 @@
 #
 
 from .cd import CDLoss
-from .conftr import ConfTr
-from .confts import ConfTS
+from .conftr import ConfTrLoss
+from .confts import ConfTSLoss
+from .uncertainty_aware import UncertaintyAwareLoss

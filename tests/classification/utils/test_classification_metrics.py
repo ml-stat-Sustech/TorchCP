@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
 import pytest
 import torch
 
@@ -291,7 +290,7 @@ def test_edge_cases():
     cvg = coverage_rate(zero_preds, labels)
     assert cvg == 0.0
 
-# Test with all-one prediction sets
+    # Test with all-one prediction sets
     one_preds = torch.ones((5, 3), dtype=torch.bool)
     cvg = coverage_rate(one_preds, labels)
     assert cvg == 1.0
@@ -325,13 +324,13 @@ def test_random_data(create_random_data):
     cvg = coverage_rate(prediction_sets, labels)
     assert isinstance(cvg, float)
     assert 0 <= cvg <= 1
-    
-    
+
+
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_singleton_hit_ratio(device):
     if device == "cuda" and not torch.cuda.is_available():
         pytest.skip("CUDA not available")
-        
+
     # Test empty input
     with pytest.raises(AssertionError):
         singleton_hit_ratio(torch.empty(0, 3), torch.empty(0))
@@ -359,5 +358,5 @@ def test_singleton_hit_ratio(device):
         [1, 0, 0],  # singleton, hit
         [1, 1, 0],  # not singleton
         [0, 1, 0],  # singleton, miss
-        [0, 0, 1]   # singleton, hit
+        [0, 0, 1]  # singleton, hit
     ], device=device)

@@ -7,8 +7,8 @@
 
 import torch
 
-from torchcp.utils.common import calculate_conformal_value
 from torchcp.graph.predictor.base import BasePredictor
+from torchcp.utils.common import calculate_conformal_value
 
 
 class SplitPredictor(BasePredictor):
@@ -59,8 +59,8 @@ class SplitPredictor(BasePredictor):
         cal_scores = scores[cal_idx][label_mask[cal_idx]]
         self.q_hat = self._calculate_conformal_value(cal_scores, alpha)
 
-    def _calculate_conformal_value(self, scores, alpha, marginal_q_hat=torch.inf):
-        return calculate_conformal_value(scores, alpha, marginal_q_hat)
+    def _calculate_conformal_value(self, scores, alpha):
+        return calculate_conformal_value(scores, alpha)
 
     # The prediction process ########################################################
 

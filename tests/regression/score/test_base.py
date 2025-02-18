@@ -31,7 +31,7 @@ def test_not_implemented_methods(method_name, dummy_data):
     dummy_args = {
         "__call__": (torch.rand(10, 5), torch.rand(10, )),
         "generate_intervals": (torch.rand(10, 5), 0.5),
-        "train": (None, 10, train_dataloader, None, None), 
+        "train": (None, 10, train_dataloader, None, None),
     }
 
     with pytest.raises(NotImplementedError):

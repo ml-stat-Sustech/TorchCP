@@ -5,8 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .base_trainer import Trainer
-from .ordinal_trainer import OrdinalTrainer
-from .ts_trainer import TSTrainer
+from .base_trainer import BaseTrainer
 from .confts_trainer import ConfTSTrainer
-from .model import TemperatureScalingModel
+from .model_zoo import TemperatureScalingModel
+from .ts_trainer import TSTrainer
+from .ua_trainer import UncertaintyAwareTrainer
+from .ordinal_trainer import OrdinalTrainer

@@ -5,14 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import math
-import torch
-import warnings
-from torch.utils.data import DataLoader
 from typing import Dict, List
 
-from torchcp.utils.common import calculate_conformal_value
+import torch
+from torch.utils.data import DataLoader
+
 from torchcp.classification.predictor.base import BasePredictor
+from torchcp.utils.common import calculate_conformal_value
 
 
 class SplitPredictor(BasePredictor):
@@ -59,8 +58,8 @@ class SplitPredictor(BasePredictor):
         scores = self.score_function(logits, labels)
         self.q_hat = self._calculate_conformal_value(scores, alpha)
 
-    def _calculate_conformal_value(self, scores, alpha, marginal_q_hat=torch.inf):
-        return calculate_conformal_value(scores, alpha, marginal_q_hat)
+    def _calculate_conformal_value(self, scores, alpha):
+        return calculate_conformal_value(scores, alpha)
 
     #############################
     # The prediction process

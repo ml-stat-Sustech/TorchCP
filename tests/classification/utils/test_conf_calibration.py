@@ -6,14 +6,11 @@
 #
 
 import pytest
-import pytest
-import torch
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
-from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.classification.utils.conf_calibration import ConfCalibrator, Identity, TS, ConfCalibrator_REGISTRY
+from torchcp.classification.utils.conf_calibration import ConfCalibrator, Identity, TS
 
 
 @pytest.fixture
@@ -60,7 +57,6 @@ def test_ts_forward():
     out = ts(x)
     assert out.shape == x.shape
     assert torch.allclose(out, x / 2.0)
-
 
 
 def test_ts_early_stopping(device, test_data):

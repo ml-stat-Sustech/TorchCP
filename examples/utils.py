@@ -5,23 +5,19 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
 import os
-import os
-import pandas as pd
 import pathlib
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 import requests
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torchvision.datasets as dset
 import torchvision.transforms as trn
 from PIL import Image
-from pathlib import Path
 from torch.utils.data import Dataset
-from torch_geometric.datasets import CitationFull
 from torch_geometric.nn import GCNConv, SAGEConv
-from tqdm import tqdm
 
 
 def get_dataset_dir():
@@ -37,6 +33,7 @@ def get_model_dir():
     path = Path(dataset_dir)
     path.mkdir(parents=True, exist_ok=True)
     return dataset_dir
+
 
 def get_others_dir():
     dataset_dir = os.path.join(os.path.expanduser('~'), '.cache/torchcp/others')
@@ -207,7 +204,7 @@ def build_dataset(dataset_name, data_mode="train", transform_mode="train"):
         elif data_mode == "test":
             dataset = dset.MNIST(dataset_dir, train=False,
                                  download=True, transform=transform)
-            
+
     elif dataset_name == 'cifar10':
         dataset_dir = get_dataset_dir()
 
@@ -256,209 +253,3 @@ class ImageNetV2Dataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
         return img, label
-
-
-def build_graph_dataset(dataset_name, device, ntrain_per_class=20, split_ratio=False):
-    dataset_dir = get_dataset_dir()
-
-    if dataset_name in ['cora_ml']:
-        dataset = CitationFull(dataset_dir, dataset_name)
-        graph_data = dataset[0].to(device)
-        label_mask = F.one_hot(graph_data.y).bool()
-
-        #######################################
-        # training/validation/test data random split
-        # 20 per class for training/validation, left for test
-        #######################################
-
-        if not split_ratio:
-            classes_idx_set = [(graph_data.y == cls_val).nonzero(
-                as_tuple=True)[0] for cls_val in graph_data.y.unique()]
-            shuffled_classes = [
-                s[torch.randperm(s.shape[0])] for s in classes_idx_set]
-
-            train_idx = torch.concat([s[: ntrain_per_class]
-                                      for s in shuffled_classes])
-            val_idx = torch.concat(
-                [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-            test_idx = torch.concat([s[2 * ntrain_per_class:]
-                                     for s in shuffled_classes])
-        else:
-            num_nodes = graph_data.x.shape[0]
-            rand_perm = torch.randperm(num_nodes)
-
-            train_idx = rand_perm[:int(num_nodes * 0.2)].to(device)
-            val_idx = rand_perm[int(num_nodes * 0.2):int(num_nodes * 0.3)].to(device)
-            test_idx = rand_perm[int(num_nodes * 0.3):].to(device)
-
-    else:
-        raise NotImplementedError(
-            f"The dataset {dataset_name} has not been implemented!")
-
-    return graph_data, label_mask, train_idx, val_idx, test_idx
-
-
-class GCN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, p_dropout):
-        super().__init__()
-        self.conv1 = GCNConv(in_channels, hidden_channels, normalize=True)
-        self.conv2 = GCNConv(hidden_channels, out_channels, normalize=True)
-        self._p_dropout = p_dropout
-
-    def forward(self, x, edge_index, edge_weight=None):
-        x = self.conv1(x, edge_index, edge_weight).relu()
-        x = F.dropout(x, p=self._p_dropout, training=self.training)
-        x = self.conv2(x, edge_index, edge_weight)
-        return x
-
-
-class SAGE(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, p_dropout=0.5):
-        super().__init__()
-        self.convs = torch.nn.ModuleList()
-        self.convs.append(SAGEConv(in_channels, hidden_channels))
-        self.convs.append(SAGEConv(hidden_channels, out_channels))
-
-        self._p_dropout = p_dropout
-
-    def forward(self, x, edge_index):
-        for i, conv in enumerate(self.convs):
-            x = conv(x, edge_index)
-            if i < len(self.convs) - 1:
-                x = x.relu_()
-                x = F.dropout(x, p=self._p_dropout, training=self.training)
-        return x
-
-    @torch.no_grad()
-    def inference(self, x_all, subgraph_loader):
-        device = x_all.device
-
-        # Compute representations of nodes layer by layer, using *all*
-        # available edges. This leads to faster computation in contrast to
-        # immediately computing the final representations of each batch:
-        for i, conv in enumerate(self.convs):
-            xs = []
-            for batch in subgraph_loader:
-                x = x_all[batch.n_id]
-                x = conv(x, batch.edge_index)
-                if i < len(self.convs) - 1:
-                    x = x.relu_()
-                xs.append(x[:batch.batch_size].cpu())
-            x_all = torch.cat(xs, dim=0).to(device)
-        return x_all
-
-
-from torch_geometric.loader import NeighborLoader
-from torch_geometric.transforms import RandomNodeSplit
-from torch_geometric.datasets import CitationFull, Amazon
-import copy
-
-
-def build_transductive_gnn_data(data_name, ntrain_per_class=20):
-    data_dir = get_dataset_dir()
-
-    if data_name in ['cora_ml']:
-        graph_data = CitationFull(data_dir, data_name)[0]
-        label_mask = F.one_hot(graph_data.y).bool()
-
-        #######################################
-        # training/validation/test data random split
-        # ntrain_per_class per class for training/validation, left for test
-        #######################################
-
-        classes_idx_set = [(graph_data.y == cls_val).nonzero(
-            as_tuple=True)[0] for cls_val in graph_data.y.unique()]
-        shuffled_classes = [
-            s[torch.randperm(s.shape[0])] for s in classes_idx_set]
-
-        train_idx = torch.concat([s[: ntrain_per_class]
-                                  for s in shuffled_classes])
-        val_idx = torch.concat(
-            [s[ntrain_per_class: 2 * ntrain_per_class] for s in shuffled_classes])
-        test_idx = torch.concat([s[2 * ntrain_per_class:]
-                                 for s in shuffled_classes])
-    else:
-        raise NotImplementedError(
-            f"The dataset {data_name} has not been implemented!")
-
-    return graph_data, label_mask, train_idx, val_idx, test_idx
-
-
-def build_inductive_gnn_data(data_name, n_v=1000, n_t=10000, device='cuda:0'):
-    data_dir = get_dataset_dir()
-
-    if data_name in ['Computers']:
-        graph_data = Amazon(data_dir, data_name,
-                            pre_transform=RandomNodeSplit(split='train_rest', num_val=n_v, num_test=n_t))[0].to(device)
-        kwargs = {'batch_size': 512, 'num_workers': 6,
-                  'persistent_workers': True}
-        train_loader = NeighborLoader(graph_data, input_nodes=graph_data.train_mask,
-                                      num_neighbors=[25, 10], shuffle=True, **kwargs)
-        subgraph_loader = NeighborLoader(copy.copy(graph_data), input_nodes=None,
-                                         num_neighbors=[-1], shuffle=False, **kwargs)
-
-        del subgraph_loader.data.x, subgraph_loader.data.y
-        subgraph_loader.data.num_nodes = graph_data.num_nodes
-        subgraph_loader.data.n_id = torch.arange(graph_data.num_nodes)
-    else:
-        raise NotImplementedError(
-            f"The dataset {data_name} has not been implemented!")
-
-    return graph_data, train_loader, subgraph_loader
-
-
-def build_gnn_model(model_name):
-    if model_name == "GCN":
-        class GCN(nn.Module):
-            def __init__(self, in_channels, hidden_channels, out_channels, p_dropout=0.8):
-                super().__init__()
-                self.conv1 = GCNConv(in_channels, hidden_channels, normalize=True)
-                self.conv2 = GCNConv(hidden_channels, out_channels, normalize=True)
-                self._p_dropout = p_dropout
-
-            def forward(self, x, edge_index, edge_weight=None):
-                x = self.conv1(x, edge_index, edge_weight).relu()
-                x = F.dropout(x, p=self._p_dropout, training=self.training)
-                x = self.conv2(x, edge_index, edge_weight)
-                return x
-
-        return GCN
-    elif model_name == "SAGE":
-        class SAGE(nn.Module):
-            def __init__(self, in_channels, hidden_channels, out_channels, p_dropout=0.5):
-                super().__init__()
-                self.convs = torch.nn.ModuleList()
-                self.convs.append(SAGEConv(in_channels, hidden_channels))
-                self.convs.append(SAGEConv(hidden_channels, out_channels))
-
-                self._p_dropout = p_dropout
-
-            def forward(self, x, edge_index):
-                for i, conv in enumerate(self.convs):
-                    x = conv(x, edge_index)
-                    if i < len(self.convs) - 1:
-                        x = x.relu_()
-                        x = F.dropout(x, p=self._p_dropout, training=self.training)
-                return x
-
-            @torch.no_grad()
-            def inference(self, x_all, subgraph_loader):
-                device = x_all.device
-
-                # Compute representations of nodes layer by layer, using *all*
-                # available edges. This leads to faster computation in contrast to
-                # immediately computing the final representations of each batch:
-                for i, conv in enumerate(self.convs):
-                    xs = []
-                    for batch in subgraph_loader:
-                        x = x_all[batch.n_id]
-                        x = conv(x, batch.edge_index)
-                        if i < len(self.convs) - 1:
-                            x = x.relu_()
-                        xs.append(x[:batch.batch_size].cpu())
-                    x_all = torch.cat(xs, dim=0).to(device)
-                return x_all
-
-        return SAGE
-    else:
-        raise NotImplementedError

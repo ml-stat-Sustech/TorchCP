@@ -6,6 +6,7 @@
 #
 
 from abc import ABCMeta, abstractmethod
+
 from tqdm import tqdm
 
 from torchcp.utils.common import get_device
@@ -90,5 +91,5 @@ class BaseScore(object):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-        
+
         model.eval()

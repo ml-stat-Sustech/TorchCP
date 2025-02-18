@@ -6,15 +6,16 @@
 #
 
 import math
+
 import pytest
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 
 from torchcp.classification.score import THR
+from torchcp.classification.utils import Metrics
 from torchcp.graph.predictor import SplitPredictor
 from torchcp.graph.predictor.base import BasePredictor
-from torchcp.classification.utils import Metrics
 
 
 @pytest.fixture

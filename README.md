@@ -17,6 +17,7 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
+[![Latest Tag][tag-shield]][tag-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
@@ -44,18 +45,17 @@
 </div>
 
 
-TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods) for many tasks of conformal prediction, including: Classification, Regression, Graph Node Classification, and LLM. We build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group at SUSTech.
-Comments, issues, contributions, and collaborations are all welcomed!
+TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with
+strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods)
+for many tasks of conformal prediction, including: Classification, Regression, Graph Node Classification, and LLM. We
+build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This
+codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
+at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
-# Updates of New Version (1.0.0)
+## Updates of New Version (1.0.2)
 
-- Added new score functions and training methods for classification, including KNN, TOPK, C-Adapter, and ConfTS.
-- Introduced CP algorithms for graph node classification, such as DAPS, SNAPS, and NAPS.
-- Added new conformal algorithms for regression, including CQRFM, CQRR, CQRM, and Ensemble CP.
-- Introduced CP algorithms for LLMs.
-- Added unit-test and examples.
-- Optimized the form of prediction sets to improve the computational efficiency.
-- Refactored the module design of Regression to improve the scalability.
+This version includes major refactoring of trainers, new uncertainty-aware classifiers, and important bug fixes ([#45](https://github.com/ml-stat-Sustech/TorchCP/issues/45)).
+Detailed changelog can be found in the [Documentation](https://torchcp.readthedocs.io/en/latest/CHANGELOG.html).
 
 # Overview
 
@@ -65,11 +65,12 @@ TorchCP has implemented the following methods:
 
 | Year | Title                                                                                                                                                                        | Venue                | Code Link                                                                         | Implementation                                      |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------|
-| 2024 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://arxiv.org/abs/2410.09408)                                                         | Arxiv                |                                                                                   | classification.loss.cd_loss                         |
+| 2025 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://openreview.net/forum?id=8Gqz2opok1)                                                         | ICLR'25                |                                                                                   | classification.loss.cd                         |
 | 2024 | [**Delving into temperature scaling for adaptive conformal prediction**](https://arxiv.org/abs/2402.04344)                                                                   | Arxiv                |                                                                                   | classification.loss.confts                          |
 | 2024 | [**Conformal Prediction for Deep Classifier via Label Ranking**](https://arxiv.org/abs/2310.06430)                                                                           | ICML'24              | [Link](https://github.com/ml-stat-Sustech/conformal_prediction_via_label_ranking) | classification.score.saps                           |
 | 2023 | [**Class-Conditional Conformal Prediction with Many Classes**](https://arxiv.org/abs/2306.09335)                                                                             | NeurIPS'23           | [Link](https://github.com/tiffanyding/class-conditional-conformal)                | classification.predictor.cluster                    |
 | 2023 | [**Conformal Prediction Sets for Ordinal Classification**](https://proceedings.neurips.cc/paper_files/paper/2023/file/029f699912bf3db747fe110948cc6169-Paper-Conference.pdf) | NeurIPS'23           |                                                                                   | classification.trainer.ordinal                      |
+| 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878)                                                              | NeurIPS'22           | [Link](https://github.com/bat-sheva/conformal-learning)                           | classification.loss.uncertainty_aware               |
 | 2022 | [**Learning Optimal Conformal Classifiers**](https://arxiv.org/abs/2110.09192)                                                                                               | ICLR'22              | [Link](https://github.com/google-deepmind/conformal_training/tree/main)           | classification.loss.conftr                          |       
 | 2021 | [**Uncertainty Sets for Image Classifiers using Conformal Prediction**](https://arxiv.org/abs/2009.14193       )                                                             | ICLR'21              | [Link](https://github.com/aangelopoulos/conformal_classification)                 | classification.score.raps classification.score.topk |
 | 2020 | [**Classification with Valid and Adaptive Coverage**](https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf)                             | NeurIPS'20           | [Link](https://github.com/msesia/arc)                                             | classification.score.aps                            |
@@ -97,7 +98,7 @@ TorchCP has implemented the following methods:
 | Year | Title                                                                                                                                                                                                      | Venue      | Code Link                                                  | Implementation                   |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|------------------------------------------------------------|----------------------------------|
 | 2024 | [**Similarity-Navigated Conformal Prediction for Graph Neural Networks**](https://arxiv.org/abs/2405.14303)                                                                                                | NeuIPS'24  | [Link](https://github.com/janqsong/SNAPS)                  | graph.score.snaps                |
-| 2023 | [**Distribution Free Prediction Sets for Node Classification**](https://proceedings.mlr.press/v202/clarkson23a)                                                                                            | ICML'23    | [Link](https://github.com/jase-clarkson/graph_cp)          | graph.predictor.neighbors_weight |
+| 2023 | [**Distribution Free Prediction Sets for Node Classification**](https://proceedings.mlr.press/v202/clarkson23a)                                                                                            | ICML'23    | [Link](https://github.com/jase-clarkson/graph_cp)          | graph.predictor.naps |
 | 2023 | [**Conformal Prediction Sets for Graph Neural Networks**](https://proceedings.mlr.press/v202/h-zargarbashi23a.html)                                                                                        | ICML'23    | [Link](https://github.com/soroushzargar/DAPS)              | graph.score.daps                 |
 | 2023 | [**Uncertainty Quantification over Graph with Conformalized Graph Neural Networks**](https://proceedings.neurips.cc/paper_files/paper/2023/hash/54a1495b06c4ee2f07184afb9a37abda-Abstract-Conference.html) | NeurIPS'23 | [Link](https://github.com/snap-stanford/conformalized-gnn) | graph.trainer.cfgnn              |
 
@@ -111,12 +112,11 @@ TorchCP has implemented the following methods:
 
 TorchCP is still under active development. We will add the following features/items down the road:
 
-| Year | Title                                                                                                           | Venue      | Code                                                                       |
-|------|-----------------------------------------------------------------------------------------------------------------|------------|----------------------------------------------------------------------------|
-| 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878) | NeurIPS'22 | [Link](https://github.com/bat-sheva/conformal-learning)                    |
-| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                          | ICML'22    | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
-| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML'22    | [Link](https://github.com/ajfisch/conformal-fp)                            |
-| 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255) | Arxiv      |                                                                            |
+| Year | Title                                                                                                           | Venue   | Code                                                                       |
+|------|-----------------------------------------------------------------------------------------------------------------|---------|----------------------------------------------------------------------------|
+| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                          | ICML'22 | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
+| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML'22 | [Link](https://github.com/ajfisch/conformal-fp)                            |
+| 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255) | Arxiv   |                                                                            |
 
 ## Installation
 
@@ -133,7 +133,9 @@ pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
 ```
 
 ## Unit Test
+
 TorchCP achieves 100% unit test coverage. You can use the following command to test the code implementation:
+
 ```
 pytest --cov=torchcp tests
 ```
@@ -172,7 +174,8 @@ print(predict_sets)
 # Evaluating the coverage rate and average set size on a given dataset.
 ########################################
 result_dict = predictor.evaluate(test_dataloader)
-print(result_dict["coverage_rate"], result_dict["average_size"])
+print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
+print(f"Average Set Size: {result_dict['average_size']:.4f}")
 
 ```
 
@@ -188,13 +191,13 @@ If you find our repository useful for your research, please consider citing the
 following [technical report](https://arxiv.org/abs/2402.12683):
 
 ```
-@misc{wei2024torchcp,
-      title={TorchCP: A Library for Conformal Prediction based on PyTorch}, 
-      author={Hongxin Wei and Jianguo Huang},
+@misc{huang2024torchcppythonlibraryconformal,
+      title={TorchCP: A Python Library for Conformal Prediction}, 
+      author={Jianguo Huang and Jianqing Song and Xuanning Zhou and Bingyi Jing and Hongxin Wei},
       year={2024},
       eprint={2402.12683},
       archivePrefix={arXiv},
-      primaryClass={cs.LG}
+      primaryClass={cs.LG},
 }
 ```
 
@@ -214,11 +217,13 @@ We welcome you to cite the following works:
   year={2024}
 }
 
-@article{liu2024c,
+@inproceedings{
+  liu2025cadapter,
   title={C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets},
-  author={Liu, Kangdao and Zeng, Hao and Huang, Jianguo and Zhuang, Huiping and Vong, Chi-Man and Wei, Hongxin},
-  journal={arXiv preprint arXiv:2410.09408},
-  year={2024}
+  author={Kangdao Liu and Hao Zeng and Jianguo Huang and Huiping Zhuang and Chi Man VONG and Hongxin Wei},
+  booktitle={The Thirteenth International Conference on Learning Representations},
+  year={2025},
+  url={https://openreview.net/forum?id=8Gqz2opok1}
 }
 ```
 
@@ -248,3 +253,7 @@ We welcome you to cite the following works:
 [license-shield]: https://img.shields.io/github/license/ml-stat-Sustech/TorchCP.svg?style=for-the-badge
 
 [license-url]: https://github.com/ml-stat-Sustech/TorchCP/blob/main/LICENSE.txt
+
+[tag-shield]: https://img.shields.io/github/v/tag/ml-stat-Sustech/TorchCP?style=for-the-badge&label=version
+
+[tag-url]: https://github.com/ml-stat-Sustech/TorchCP/tags

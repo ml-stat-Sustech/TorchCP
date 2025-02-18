@@ -5,11 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+from typing import Dict, List
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from typing import Dict, List
 
 from torchcp.classification.predictor.split import SplitPredictor
 from torchcp.classification.predictor.utils import build_DomainDetecor, IW

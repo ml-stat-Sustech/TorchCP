@@ -5,8 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import pytest
 from math import sqrt
+
+import pytest
 import torch
 from torch_geometric.data import Data
 
@@ -61,8 +62,8 @@ def test_valid_initialization(graph_data, base_score_function):
     assert score_function._mu == 0.3
 
     score_function = SNAPS(graph_data, base_score_function, features=graph_data.x, k=2)
-    excepted_adjknn = torch.tensor([[0, 11/(5 * sqrt(5)), 17 / sqrt(305)],
-                                    [11/(5 * sqrt(5)), 0, 39 / (5 * sqrt(61))],
+    excepted_adjknn = torch.tensor([[0, 11 / (5 * sqrt(5)), 17 / sqrt(305)],
+                                    [11 / (5 * sqrt(5)), 0, 39 / (5 * sqrt(61))],
                                     [17 / sqrt(305), 39 / (5 * sqrt(61)), 0]])
     assert torch.allclose(score_function._adj_knn.to_dense(), excepted_adjknn)
 
@@ -96,8 +97,8 @@ def test_knn_processing(graph_data, base_score_function):
     assert torch.equal(score_function._knn_degs, knn_degs)
 
     score_function = SNAPS(graph_data, base_score_function, knn_edge=None, knn_weight=knn_weight)
-    excepted_adjknn = torch.tensor([[0, 11/(5 * sqrt(5)), 17 / sqrt(305)],
-                                    [11/(5 * sqrt(5)), 0, 39 / (5 * sqrt(61))],
+    excepted_adjknn = torch.tensor([[0, 11 / (5 * sqrt(5)), 17 / sqrt(305)],
+                                    [11 / (5 * sqrt(5)), 0, 39 / (5 * sqrt(61))],
                                     [17 / sqrt(305), 39 / (5 * sqrt(61)), 0]])
     assert torch.allclose(score_function._adj_knn.to_dense(), excepted_adjknn)
 

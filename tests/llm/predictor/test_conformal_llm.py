@@ -5,17 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
 import pytest
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from torchcp.llm.predictor.conformal_llm import (
     StoppingCriteriaSub,
-    NAME_TO_SCORE,
-    NAME_TO_SCALER,
-    ConformalLM,
-    DEFAULT_EPSILONS
+    ConformalLM
 )
 
 

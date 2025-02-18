@@ -7,8 +7,6 @@
 
 import pytest
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
 
 from torchcp.llm.utils.scaling import LogisticRegression, BinningScaler, PlattBinningScaler, RecurrentScaler, BaseScaler
 

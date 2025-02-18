@@ -17,6 +17,8 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.abspath('../../'))
+print(os.path.abspath('../../'))
+
 
 from unittest.mock import Mock  # noqa: F401, E402
 

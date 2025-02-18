@@ -7,15 +7,13 @@
 
 __all__ = ["ConfTS"]
 
-import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import Tensor
 
 from torchcp.classification.loss.base import BaseLoss
 
 
-class ConfTS(BaseLoss):
+class ConfTSLoss(BaseLoss):
     """
     Conformal Temperature Scaling (ConfTS).
         
@@ -44,7 +42,7 @@ class ConfTS(BaseLoss):
 
     def __init__(self, predictor, alpha, fraction=0.5, soft_qunatile=True):
 
-        super(ConfTS, self).__init__(predictor)
+        super(ConfTSLoss, self).__init__(predictor)
 
         if not (0 < alpha < 1):
             raise ValueError("alpha should be a value in (0,1).")
@@ -132,7 +130,7 @@ class ConfTS(BaseLoss):
             squeeze = True
             q = [q]
         q = torch.tensor(q, dtype=torch.float, device=scores.device)
-        
+
         indices = (1 - q) * (n + 1) - 1
         indices_low = torch.floor(indices).long()
         indices_frac = indices - indices_low

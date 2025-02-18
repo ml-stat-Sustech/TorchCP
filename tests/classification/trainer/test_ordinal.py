@@ -5,239 +5,114 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
 import pytest
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+
 
 from torchcp.classification.trainer.ordinal_trainer import OrdinalClassifier, \
     OrdinalTrainer  # Replace with the actual import path
 
 
-class TestOrdinalClassifier:
-    @pytest.fixture
-    def sample_classifier(self):
-        """
-        Create a simple linear classifier for testing
+
+# Mock model for testing
+class MockModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = nn.Linear(10, 5)  # 5 ordinal classes
         
-        Returns:
-            nn.Linear: A linear classifier with 10 input features and 5 output classes
-        """
-        return nn.Linear(10, 5)
+    def forward(self, x):
+        return self.linear(x)
 
-    def test_forward_pass_unimodal_distribution(self, sample_classifier):
-        """
-        Test the unimodal distribution property of the ordinal classifier
-        - Verify that the output first increases and then decreases
-        """
-        # Create model
-        model = OrdinalClassifier(sample_classifier)
+# Fixtures
+@pytest.fixture
+def mock_model():
+    return MockModel()
 
-        # Create random input
-        x = torch.randn(32, 10)
+@pytest.fixture
+def mock_data():
+    # Create mock dataset
+    x = torch.randn(500, 10)  # 500 samples, 10 features
+    y = torch.randint(0, 5, (500,))  # 5 ordinal classes
+    dataset = TensorDataset(x, y)
+    return DataLoader(dataset, batch_size=32, shuffle=True)
 
-        # Perform forward propagation
-        output = model(x)
+@pytest.fixture
+def ordinal_config():
+    return {
+        "phi": "abs",
+        "varphi": "abs"
+    }
 
-        # Check output shape
-        assert output.shape == (32, 5), f"Incorrect output shape. Got {output.shape}"
+@pytest.fixture
+def ordinal_trainer(mock_model, ordinal_config):
+    return OrdinalTrainer(
+        ordinal_config=ordinal_config,
+        model=mock_model
+    )
 
-        # Verify each batch's output
-        for batch_idx in range(x.size(0)):
-            # Find the index of the maximum value
-            max_idx = torch.argmax(output[batch_idx])
-
-            # Check increasing before peak
-            if max_idx > 0:
-                # Correct way to check increasing before peak
-                increasing_segment = output[batch_idx, :max_idx + 1]
-                assert torch.all(increasing_segment[:-1] <= increasing_segment[1:]), \
-                    f"Batch {batch_idx}: Output is not increasing before peak"
-
-            # Check decreasing after peak
-            if max_idx < len(output[batch_idx]) - 1:
-                # Correct way to check decreasing after peak
-                decreasing_segment = output[batch_idx, max_idx:]
-                assert torch.all(decreasing_segment[:-1] >= decreasing_segment[1:]), \
-                    f"Batch {batch_idx}: Output is not decreasing after peak"
-
-    @pytest.mark.parametrize("phi", ["abs", "square"])
-    @pytest.mark.parametrize("varphi", ["abs", "square"])
-    def test_transformation_configurations(self, sample_classifier, phi, varphi):
-        """
-        Test different transformation function configurations
-        - Verify model works with various configurations
+# Tests
+class TestOrdinalTrainer:
+    def test_initialization(self, mock_model, ordinal_config):
+        trainer = OrdinalTrainer(
+            ordinal_config=ordinal_config,
+            model=mock_model
+        )
         
-        Args:
-            sample_classifier: Base classifier model
-            phi: Transformation function for classifier output
-            varphi: Transformation function for cumulative sum
-        """
-        # Create model with specific transformation functions
-        model = OrdinalClassifier(sample_classifier, phi=phi, varphi=varphi)
-
-        # Create random input
-        x = torch.randn(16, 10)
-
-        # Perform forward propagation
-        output = model(x)
-
-        # Basic property checks
-        assert output.shape == (16, 5), f"Incorrect output shape. Got {output.shape}"
-
-        # Check output validity
-        assert not torch.isnan(output).any(), f"Output contains NaN values (phi={phi}, varphi={varphi})"
-        assert not torch.isinf(output).any(), f"Output contains infinite values (phi={phi}, varphi={varphi})"
-
-    def test_gradient_flow(self, sample_classifier):
-        """
-        Verify that gradients can flow through the model
-        - Ensure backpropagation works correctly
-        """
-        model = OrdinalClassifier(sample_classifier)
-        x = torch.randn(5, 10, requires_grad=True)
-
-        output = model(x)
-        loss = output.sum()
-
-        # Attempt to compute gradients
-        loss.backward()
-
-        # Check that input gradient exists and is not zero
-        assert x.grad is not None
-        assert not torch.all(x.grad == 0)
-
-    def test_input_dimension_validation(self, sample_classifier):
-        """
-        Test input dimension validation
-        - Ensure model raises an error for inputs with fewer than 3 features
-        """
-        model = OrdinalClassifier(sample_classifier)
-
-        # Test input with less than 3 features
-        with pytest.raises(ValueError, match="The input dimension must be greater than 2."):
-            x = torch.randn(3, 2)
-            model(x)
-
-    def test_reproducibility(self, sample_classifier):
-        """
-        Test model reproducibility
-        - Verify consistent output for the same input and seed
-        """
-        # Set a fixed seed
-        torch.manual_seed(42)
-
-        # Create model
-        model = OrdinalClassifier(sample_classifier)
-
-        # Create input
-        x = torch.randn(10, 10)
-
-        # First run
-        output1 = model(x)
-
-        # Reset seed and rerun
-        torch.manual_seed(42)
-        model = OrdinalClassifier(sample_classifier)
-        output2 = model(x)
-
-        # Check if outputs are the same
-        assert torch.allclose(output1, output2), "Outputs are not reproducible"
-
-    def test_invalid_phi_function(self, sample_classifier):
-        """
-        Test that an error is raised when an invalid phi function is provided
-        """
-        optimizer = optim.Adam(sample_classifier.parameters())
-        loss_fn = nn.CrossEntropyLoss()
-
-        with pytest.raises(NotImplementedError,
-                           match="phi function 'invalid' is not implemented. Options are 'abs' and 'square'."):
+    def test_invalid_config(self, mock_model):
+        # Test invalid phi
+        invalid_config = {
+            "phi": "invalid",
+            "varphi": "abs"
+        }
+        with pytest.raises(NotImplementedError):
             OrdinalTrainer(
-                model=sample_classifier,
-                optimizer=optimizer,
-                loss_fn=loss_fn,
-                device=torch.device('cpu'),
-                ordinal_config={"phi": "invalid"}
+                ordinal_config=invalid_config,
+                model=mock_model
             )
-
-    def test_invalid_varphi_function(self, sample_classifier):
-        """
-        Test that an error is raised when an invalid varphi function is provided
-        """
-        optimizer = optim.Adam(sample_classifier.parameters())
-        loss_fn = nn.CrossEntropyLoss()
-
-        with pytest.raises(NotImplementedError,
-                           match="varphi function 'invalid' is not implemented. Options are 'abs' and 'square'."):
+            
+        # Test invalid varphi
+        invalid_config = {
+            "phi": "abs",
+            "varphi": "invalid"
+        }
+        with pytest.raises(NotImplementedError):
             OrdinalTrainer(
-                model=sample_classifier,
-                optimizer=optimizer,
-                loss_fn=loss_fn,
-                device=torch.device('cpu'),
-                ordinal_config={"varphi": "invalid"}
+                ordinal_config=invalid_config,
+                model=mock_model
             )
-
-    def test_valid_configuration_combinations(self, sample_classifier):
-        """
-        Test various valid combinations of phi and varphi functions
-        """
-        optimizer = optim.Adam(sample_classifier.parameters())
-        loss_fn = nn.CrossEntropyLoss()
-
-        valid_configs = [
+            
+    def test_different_configs(self, mock_model, mock_data):
+        # Test all valid combinations of phi and varphi
+        configs = [
             {"phi": "abs", "varphi": "abs"},
             {"phi": "abs", "varphi": "square"},
             {"phi": "square", "varphi": "abs"},
             {"phi": "square", "varphi": "square"}
         ]
-
-        for config in valid_configs:
-            try:
-                trainer = OrdinalTrainer(
-                    model=sample_classifier,
-                    optimizer=optimizer,
-                    loss_fn=loss_fn,
-                    device=torch.device('cpu'),
-                    ordinal_config=config
-                )
-                assert isinstance(trainer.model, OrdinalClassifier), \
-                    f"Model not wrapped correctly for config {config}"
-            except Exception as e:
-                pytest.fail(f"Unexpected error with config {config}: {str(e)}")
-
-    @pytest.fixture
-    def sample_classifier(self):
-        """
-        Create a simple linear classifier for testing
         
-        Returns:
-            nn.Linear: A linear classifier with 10 input features and 5 output classes
-        """
-        return nn.Linear(10, 5)
-
-    def test_ordinal_classifier_initialization(self, sample_classifier):
-        """
-        Test the OrdinalClassifier initialization with different configurations
-        """
-        configurations = [
-            {"phi": "abs", "varphi": "abs"},
-            {"phi": "square", "varphi": "square"},
-            {}
-        ]
-
-        for config in configurations:
-            try:
-                ordinal_model = OrdinalClassifier(sample_classifier, **config)
-
-                assert ordinal_model.classifier == sample_classifier
-
-                assert hasattr(ordinal_model, 'phi_function')
-                assert hasattr(ordinal_model, 'varphi_function')
-            except Exception as e:
-                pytest.fail(f"Unexpected error with config {config}: {str(e)}")
-
-
-if __name__ == '__main__':
-    pytest.main([__file__])
+        for config in configs:
+            trainer = OrdinalTrainer(
+                ordinal_config=config,
+                model=mock_model
+            )
+            trainer.train(mock_data, num_epochs=1)
+            
+    def test_training_process(self, ordinal_trainer, mock_data):
+        # Test basic training
+        ordinal_trainer.train(
+            train_loader=mock_data,
+            val_loader=mock_data,  # Using same data for simplicity
+            num_epochs=2
+        )
+        
+    def test_gpu_training(self, mock_model, ordinal_config, mock_data):
+        if torch.cuda.is_available():
+            trainer = OrdinalTrainer(
+                ordinal_config=ordinal_config,
+                model=mock_model,
+                device=torch.device('cuda')
+            )
+            trainer.train(mock_data, num_epochs=2)

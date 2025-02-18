@@ -6,15 +6,14 @@
 #
 
 
+import warnings
 from abc import ABCMeta, abstractmethod
 
-import warnings
 import torch
 
 from torchcp.classification.utils import ConfCalibrator
 from torchcp.classification.utils.metrics import Metrics
 from torchcp.utils.common import get_device
-
 
 
 class BasePredictor(object):
@@ -45,7 +44,7 @@ class BasePredictor(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, score_function, model=None, temperature=1):
-        
+
         warnings.warn(
             "The 'temperature' parameter is deprecated and will be removed in a future version. "
             "Use torchcp.classification.traienr.TemperatureScalingModel instead.",
