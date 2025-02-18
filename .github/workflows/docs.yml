@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Trigger ReadTheDocs build
-        uses: readthedocs/actions/preview@v1
+        uses: dfm/rtds-action@v1
         with:
           ebhook_url: ${{ secrets.RTDS_WEBHOOK_URL }}
           webhook-token: ${{ secrets.RTD_WEBHOOK_TOKEN }}
