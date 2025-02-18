@@ -8,6 +8,7 @@ on:
     tags:
       - '*'
 
+
 jobs:
   docs:
     runs-on: ubuntu-latest
