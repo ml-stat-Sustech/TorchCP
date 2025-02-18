@@ -17,6 +17,8 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.abspath('../../'))
+print(os.path.abspath('../../'))
+
 
 from unittest.mock import Mock  # noqa: F401, E402
 
@@ -51,6 +53,7 @@ from unittest.mock import Mock  # noqa: F401, E402
 # sys.modules['randomstate'] = Mock()
 # sys.modules['scipy._lib'] = Mock()
 # sys.modules['sklearn.cluster'] = Mock()
+import torchcp
 
 project = 'TorchCP'
 copyright = f'{date.today().year}, ml-stat-Sustech'
