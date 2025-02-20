@@ -17,10 +17,22 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[![Latest Tag][tag-shield]][tag-url]
+[![PyPI version](https://badge.fury.io/py/torchcp.svg)](https://badge.fury.io/py/torchcp)
+[![Forks](https://img.shields.io/github/forks/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/network/members)
+[![Stars](https://img.shields.io/github/stars/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/stargazers)
+[![Issues](https://img.shields.io/github/issues/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/pulls)
+[![Downloads](https://static.pepy.tech/badge/torchcp)](https://pepy.tech/project/torchcp)
+[![Documentation Status](https://readthedocs.org/projects/torchcp/badge/?version=latest)](https://torchcp.readthedocs.org)
+
+
+<!-- [![Latest Tag][tag-shield]][tag-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
+[![Downloads](https://static.pepy.tech/badge/torchcp)](https://pepy.tech/project/torchcp) -->
+
+
 <!-- 
 ***[![MIT License][license-shield]][license-url]
 -->
@@ -257,3 +269,4 @@ We welcome you to cite the following works:
 [tag-shield]: https://img.shields.io/github/v/tag/ml-stat-Sustech/TorchCP?style=for-the-badge&label=version
 
 [tag-url]: https://github.com/ml-stat-Sustech/TorchCP/tags
+
