@@ -165,3 +165,36 @@ class OrdinalClassifier(nn.Module):
         # the unimodal distribution
         x = self.varphi_function(x)
         return x
+
+
+class SurrogateCPModel(nn.Module):
+
+    def __init__(self, base_model: nn.Module):
+        super().__init__()
+        self.base_model = base_model
+        self.linear = nn.Linear(in_features=base_model.fc.out_features, 
+                                out_features=base_model.fc.out_features)
+
+        # Freeze base model parameters
+        self.freeze_base_model()
+
+    def freeze_base_model(self):
+        """Freeze all parameters in base model"""
+        for param in self.base_model.parameters():
+            param.requires_grad = False
+        self.base_model.eval()
+
+    def is_base_model_frozen(self) -> bool:
+        """Check if base model parameters are frozen"""
+        return not any(p.requires_grad for p in self.base_model.parameters())
+
+    def forward(self, x: Tensor) -> Tensor:
+        with torch.no_grad():  # Ensure no gradients flow through base model
+            logits = self.base_model(x)
+
+        return self.linear(logits)
+
+    def train(self, mode: bool = True):
+        super().train(mode)  # Set training mode for TemperatureScalingModel
+        self.base_model.eval()  # Keep base_model in eval mode
+        return self

@@ -11,3 +11,4 @@ from .model_zoo import TemperatureScalingModel
 from .ts_trainer import TSTrainer
 from .ua_trainer import UncertaintyAwareTrainer
 from .ordinal_trainer import OrdinalTrainer
+from .scpo_trainer import SCPOTrainer
