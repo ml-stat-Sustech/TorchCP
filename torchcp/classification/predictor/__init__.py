@@ -9,3 +9,4 @@ from .classwise import ClassWisePredictor
 from .cluster import ClusteredPredictor
 from .split import SplitPredictor
 from .weight import WeightedPredictor
+from .rc3p import RC3PPredictor
