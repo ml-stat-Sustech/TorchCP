@@ -14,6 +14,34 @@ from torchcp.classification.loss.conftr import ConfTrLoss
 
 
 class SCPOLoss(ConfTSLoss):
+    """
+    Surrogate Conformal Predictor Optimization (SCPO).
+
+    The class implements the loss function of the surrogate conformal predictor optimization, 
+    which is an approach to train the conformal predictor directly with maximum predictive 
+    efficiency as the optimization objective. The conformal predictor is approximated by a 
+    differentiable objective function and gradient descent used to optimize it.
+
+    Args:
+        predictor (torchcp.classification.Predictor): An instance of the CP predictor class.
+        alpha (float): The significance level for each training batch.
+        lambda_val (float): Weight for the coverage loss term.
+        gamma_val (float): Inverse of the temperature value.
+        loss_transform (str, optional): A transform for loss. Default is "log".
+            Can be "log" or "neg_inv".
+
+    Examples::
+        >>> predictor = torchcp.classification.SplitPredictor(score_function=THR(score_type="identity"))
+        >>> scpo = SCPOLoss(predictor=predictor, alpha=0.01)
+        >>> logits = torch.randn(100, 10)
+        >>> labels = torch.randint(0, 2, (100,))
+        >>> loss = scpo(logits, labels)
+        >>> loss.backward()
+        
+    Reference:
+        Bellotti et al. "Optimized conformal classification using gradient descent approximation", http://arxiv.org/abs/2105.11255
+        
+    """
 
     def __init__(self, predictor, alpha, lambda_val=500, gamma_val=5, loss_transform="log"):
         super(SCPOLoss, self).__init__(predictor, alpha)

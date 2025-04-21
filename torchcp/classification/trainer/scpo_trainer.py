@@ -15,7 +15,35 @@ from torchcp.classification.trainer.model_zoo import SurrogateCPModel
 
 
 class SCPOTrainer(Trainer):
-    """Surrogate Conformal Predictor Optimization.
+    """
+    Trainer for Surrogate Conformal Predictor Optimization.
+
+    Args:
+        alpha (float): The significance level for each training batch.
+        model (torch.nn.Module): Base neural network model to be calibrated.
+        device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+            Default: None
+        verbose (bool): Whether to display training progress. Default: True.
+        lr (float): Learning rate for the optimizer. Default is 0.1.
+        lambda_val (float): Weight for the coverage loss term.
+        gamma_val (float): Inverse of the temperature value.
+    
+    Examples:
+        >>> # Define base model
+        >>> backbone = torchvision.models.resnet18(pretrained=True)
+        >>> 
+        >>> # Create SCPO trainer
+        >>> trainer = SCPOTrainer(
+        ...             alpha=0.01,
+        ...             model=model,
+        ...             device=device,
+        ...             verbose=True)
+        >>> 
+        >>> # Train model
+        >>> trainer.train(
+        ...     train_loader=train_loader,
+        ...     num_epochs=10
+        ... )
     """
 
     def __init__(
@@ -24,7 +52,7 @@ class SCPOTrainer(Trainer):
             model: torch.nn.Module,
             device: torch.device = None,
             verbose: bool = True,
-            lr: float = 1000,
+            lr: float = 0.1,
             lambda_val: float = 10000,
             gamma_val: float = 1):
 

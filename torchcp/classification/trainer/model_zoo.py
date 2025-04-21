@@ -168,6 +168,24 @@ class OrdinalClassifier(nn.Module):
 
 
 class SurrogateCPModel(nn.Module):
+    """
+    This model wraps a given base model and adds a linear layer on top of its final feature output.
+    The base model's parameters are frozen to prevent updates during training, so only the added
+    linear layer is trainable.
+
+    Args:
+        base_model (nn.Module): Pre-trained model
+    
+    Shape:
+        - Input: Same as base_model input
+        - Output: (batch_size, num_classes) 1 - logits
+    
+    Examples:
+        >>> base_model = resnet18(pretrained=True)
+        >>> model = SurrogateCPModel(base_model)
+        >>> inputs = torch.randn(10, 3, 224, 224)
+        >>> logits = model(inputs)
+    """
 
     def __init__(self, base_model: nn.Module):
         super().__init__()
