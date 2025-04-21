@@ -50,18 +50,20 @@ class SplitPredictor(BasePredictor):
             If the train function is not used, users should pass the trained model to the predictor at the beginning.
         """
         model = kwargs.pop('model', None)
+        device = kwargs.pop('device', self._device)
+        self._device = device
 
         if model is not None:
             self._model = self.score_function.train(
-                train_dataloader, model=model, device=self._device, **kwargs
+                train_dataloader, model=model, device=device, **kwargs
             )
         elif self._model is not None:
             self._model = self.score_function.train(
-                train_dataloader, model=self._model, device=self._device, **kwargs
+                train_dataloader, model=self._model, device=device, **kwargs
             )
         else:
             self._model = self.score_function.train(
-                train_dataloader, device=self._device, **kwargs
+                train_dataloader, device=device, **kwargs
             )
 
     def calculate_score(self, predicts, y_truth):

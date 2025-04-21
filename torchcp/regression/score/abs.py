@@ -15,7 +15,7 @@ from torchcp.regression.utils import build_regression_model
 
 class ABS(BaseScore):
     """
-    Split Conformal Prediction for Regression.
+    Absolute value of the difference between prediction and true value.
     
     This score function allows for calculating scores and generating prediction intervals
     using a single-point regression model.
