@@ -5,12 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from tqdm import tqdm
 import torch
 
 from torchcp.classification.loss.scpo import SCPOLoss
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR, APS
+from torchcp.classification.score import THR
 from torchcp.classification.trainer.base_trainer import Trainer
 from torchcp.classification.trainer.model_zoo import SurrogateCPModel
 
@@ -25,7 +24,7 @@ class SCPOTrainer(Trainer):
             model: torch.nn.Module,
             device: torch.device = None,
             verbose: bool = True,
-            lr: float = 0.01,
+            lr: float = 1000,
             lambda_val: float = 10000,
             gamma_val: float = 1):
 

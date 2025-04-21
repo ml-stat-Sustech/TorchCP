@@ -8,7 +8,6 @@
 __all__ = ["SCPO"]
 
 import torch
-import torch.nn.functional as F
 
 from torchcp.classification.loss.confts import ConfTSLoss
 from torchcp.classification.loss.conftr import ConfTrLoss
@@ -16,10 +15,16 @@ from torchcp.classification.loss.conftr import ConfTrLoss
 
 class SCPOLoss(ConfTSLoss):
 
-    def __init__(self, predictor, alpha, lambda_val=500, gamma_val=5):
+    def __init__(self, predictor, alpha, lambda_val=500, gamma_val=5, loss_transform="log"):
         super(SCPOLoss, self).__init__(predictor, alpha)
         self.lambda_val = lambda_val
-        self.gamma_val = gamma_val
+
+        if loss_transform == "log":
+            self.transform = torch.log
+        elif loss_transform == "neg_inv":
+            self.transform = lambda x: -1 / x
+        else:
+            raise ValueError("loss_transform should be log or neg_inv.")
 
         self.size_loss_fn = ConfTrLoss(predictor, 
                                        alpha, 
@@ -35,9 +40,15 @@ class SCPOLoss(ConfTSLoss):
                                            loss_type="coverage")
 
     def forward(self, logits, labels):
-        train_scores = self.predictor.score_function(logits.to(self.device))
-        train_labels = labels.to(self.device)
+        logits = logits.to(self.device)
+        labels = labels.to(self.device)
 
-        size_loss = self.size_loss_fn.compute_loss(train_scores, train_labels, 1)
-        coverage_loss = self.coverage_loss_fn.compute_loss(train_scores, train_labels, 1)
-        return torch.log(size_loss + self.lambda_val * coverage_loss)
+        test_scores = self.predictor.score_function(logits)
+        test_labels = labels
+
+        return self.compute_loss(test_scores, test_labels, 1)
+    
+    def compute_loss(self, test_scores, test_labels, tau):
+        size_loss = self.size_loss_fn.compute_loss(test_scores, test_labels, tau)
+        coverage_loss = self.coverage_loss_fn.compute_loss(test_scores, test_labels, tau)
+        return self.transform(size_loss + self.lambda_val * coverage_loss)
