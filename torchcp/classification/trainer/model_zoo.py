@@ -173,7 +173,8 @@ class SurrogateCPModel(nn.Module):
         super().__init__()
         self.base_model = base_model
         self.linear = nn.Linear(in_features=base_model.fc.out_features, 
-                                out_features=base_model.fc.out_features)
+                                out_features=base_model.fc.out_features,
+                                bias=False)
 
         # Freeze base model parameters
         self.freeze_base_model()
@@ -192,7 +193,7 @@ class SurrogateCPModel(nn.Module):
         with torch.no_grad():  # Ensure no gradients flow through base model
             logits = self.base_model(x)
 
-        return self.linear(logits)
+        return 1 - self.linear(logits)
 
     def train(self, mode: bool = True):
         super().train(mode)  # Set training mode for TemperatureScalingModel

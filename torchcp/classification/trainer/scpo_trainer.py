@@ -22,11 +22,17 @@ class SCPOTrainer(Trainer):
     def __init__(
             self,
             alpha: float,
-            weight: float,
             model: torch.nn.Module,
             device: torch.device = None,
-            verbose: bool = True, ):
+            verbose: bool = True,
+            lr: float = 0.01,
+            lambda_val: float = 10000,
+            gamma_val: float = 1):
+
         model = SurrogateCPModel(model)
         super().__init__(model, device=device, verbose=verbose)
         predictor = SplitPredictor(score_function=THR(score_type="identity"), model=model)
-        self.loss_fn = SCPOLoss(predictor=predictor, alpha=alpha, fraction=0.5, weight=weight)
+
+        self.optimizer = torch.optim.Adam(self.model.linear.parameters(), lr=lr)
+        self.loss_fn = SCPOLoss(predictor=predictor, alpha=alpha, 
+                                lambda_val=lambda_val, gamma_val=gamma_val)

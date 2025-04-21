@@ -8,7 +8,7 @@
 __all__ = ["SCPO"]
 
 import torch
-from torch import Tensor
+import torch.nn.functional as F
 
 from torchcp.classification.loss.confts import ConfTSLoss
 from torchcp.classification.loss.conftr import ConfTrLoss
@@ -16,13 +16,28 @@ from torchcp.classification.loss.conftr import ConfTrLoss
 
 class SCPOLoss(ConfTSLoss):
 
-    def __init__(self, predictor, alpha, fraction=0.5, soft_qunatile=True, weight=5):
+    def __init__(self, predictor, alpha, lambda_val=500, gamma_val=5):
+        super(SCPOLoss, self).__init__(predictor, alpha)
+        self.lambda_val = lambda_val
+        self.gamma_val = gamma_val
 
-        super(SCPOLoss, self).__init__(predictor, alpha, fraction, soft_qunatile)
-        self.weight = weight
-        self.size_loss_fn = ConfTrLoss(predictor=predictor, alpha=alpha, fraction=0.5, loss_type="valid", target_size=0, loss_transform="abs")
-        self.coverage_loss_fn = ConfTrLoss(predictor=predictor, alpha=alpha, fraction=0.5, loss_type="coverage")
+        self.size_loss_fn = ConfTrLoss(predictor, 
+                                       alpha, 
+                                       fraction=0.5, 
+                                       epsilon=1/gamma_val, 
+                                       loss_type="valid", 
+                                       target_size=0, 
+                                       loss_transform="abs")
+        self.coverage_loss_fn = ConfTrLoss(predictor, 
+                                           alpha, 
+                                           fraction=0.5, 
+                                           epsilon=1/gamma_val, 
+                                           loss_type="coverage")
 
-    def compute_loss(self, test_scores, test_labels, tau):
-        return torch.log(self.size_loss_fn.compute_loss(test_scores, test_labels, 1) \
-            + self.weight * self.coverage_loss_fn.compute_loss(test_scores, test_labels, 1))
+    def forward(self, logits, labels):
+        train_scores = self.predictor.score_function(logits.to(self.device))
+        train_labels = labels.to(self.device)
+
+        size_loss = self.size_loss_fn.compute_loss(train_scores, train_labels, 1)
+        coverage_loss = self.coverage_loss_fn.compute_loss(train_scores, train_labels, 1)
+        return torch.log(size_loss + self.lambda_val * coverage_loss)
