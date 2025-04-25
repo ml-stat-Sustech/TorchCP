@@ -21,9 +21,8 @@ class ABS(BaseScore):
     using a single-point regression model.
     
     Reference:
-        Paper: Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
-        Link: https://arxiv.org/abs/1604.04173
-        Github: https://github.com/ryantibs/conformal
+        Book: Algorithmic Learning in a Random World (Vovk et al., 2005)
+        Link: https://link.springer.com/book/10.1007/b106715
     """
 
     def __init__(self):
