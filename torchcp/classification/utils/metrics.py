@@ -395,6 +395,110 @@ def singleton_hit_ratio(prediction_sets, labels):
     return torch.sum(singletons & covered).item() / n
 
 
+def compute_p_values(cal_scores, test_scores):
+    n_cal = cal_scores.size(0)
+    n_test, k = test_scores.size()
+
+    cal_scores_expanded = cal_scores.view(1, n_cal, 1)
+    test_scores_expanded = test_scores.view(n_test, 1, k)
+
+    greater = (cal_scores_expanded > test_scores_expanded).sum(dim=1)
+    equal = (cal_scores_expanded == test_scores_expanded).sum(dim=1)
+
+    tau = torch.rand_like(equal, dtype=torch.float)
+
+    p_values = (greater + tau * equal + 1) / (n_cal + 1)
+    return p_values
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_S(cal_scores, test_scores):
+    p_values = compute_p_values(cal_scores, test_scores)
+    return p_values.sum(dim=1).mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_N(cal_scores, test_scores, alpha):
+    p_values = compute_p_values(cal_scores, test_scores)
+    return (p_values > alpha).sum(dim=1).float().mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_U(cal_scores, test_scores):
+    p_values = compute_p_values(cal_scores, test_scores)
+    n_test = p_values.size(0)
+
+    max_classes = torch.argmax(p_values, dim=1)
+
+    mask = torch.ones_like(p_values, dtype=bool)
+    mask[torch.arange(n_test), max_classes] = False
+
+    second_values = torch.where(mask, p_values, -torch.inf).amax(dim=1)
+    return second_values.mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_F(cal_scores, test_scores):
+    p_values = compute_p_values(cal_scores, test_scores)
+    return (p_values.sum(dim=1) - p_values.max(dim=1).values).mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_M(cal_scores, test_scores, alpha):
+    p_values = compute_p_values(cal_scores, test_scores)
+    sizes = (p_values > alpha).sum(dim=1)
+    return (sizes > 1).float().mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_E(cal_scores, test_scores, alpha):
+    p_values = compute_p_values(cal_scores, test_scores)
+    sizes = (p_values > alpha).sum(dim=1)
+    return torch.clamp(sizes - 1, min=0).float().mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_OU(cal_scores, test_scores, test_labels):
+    p_values = compute_p_values(cal_scores, test_scores)
+    n_test = p_values.size(0)
+
+    mask = torch.ones_like(p_values, dtype=bool)
+    mask[torch.arange(n_test), test_labels] = False
+
+    largest_false_values = torch.where(mask, p_values, -torch.inf).amax(dim=1)
+    return largest_false_values.mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_OF(cal_scores, test_scores, test_labels):
+    p_values = compute_p_values(cal_scores, test_scores)
+    n_test = p_values.size(0)
+
+    mask = torch.ones_like(p_values, dtype=bool)
+    mask[torch.arange(n_test), test_labels] = False
+
+    sum_wrong_values = (p_values * mask).sum(dim=1)
+    return sum_wrong_values.mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha):
+    p_values = compute_p_values(cal_scores, test_scores)
+    pred_sets = p_values > alpha
+
+    pred_sets[torch.arange(pred_sets.size(0)), test_labels] = False
+    return (pred_sets.sum(dim=1) > 0).float().mean()
+
+
+@METRICS_REGISTRY_CLASSIFICATION.register()
+def pvalue_criterion_OE(cal_scores, test_scores, test_labels, alpha):
+    p_values = compute_p_values(cal_scores, test_scores)
+    pred_sets = p_values > alpha
+
+    pred_sets[torch.arange(pred_sets.size(0)), test_labels] = False
+    return pred_sets.sum(dim=1).float().mean()
+
+
 class Metrics:
 
     def __call__(self, metric) -> Any:
