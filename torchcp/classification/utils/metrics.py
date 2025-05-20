@@ -407,7 +407,7 @@ def compute_p_values(cal_scores, test_scores):
 
     tau = torch.rand_like(equal, dtype=torch.float)
 
-    p_values = (greater + tau * equal + 1) / (n_cal + 1)
+    p_values = (greater + tau * (equal + 1)) / (n_cal + 1)
     return p_values
 
 
