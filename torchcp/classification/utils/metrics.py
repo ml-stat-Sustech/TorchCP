@@ -424,7 +424,7 @@ def compute_p_values(cal_scores, test_scores, smooth=False):
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_S(cal_scores, test_scores):
+def pvalue_criterion_S(cal_scores, test_scores, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -434,16 +434,17 @@ def pvalue_criterion_S(cal_scores, test_scores):
     Args:
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: The average sum of the p-values across all test samples.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     return p_values.sum(dim=1).mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_N(cal_scores, test_scores, alpha):
+def pvalue_criterion_N(cal_scores, test_scores, alpha, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -454,16 +455,17 @@ def pvalue_criterion_N(cal_scores, test_scores, alpha):
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
         alpha (float): The significance level.
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: The average size of the prediction sets.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     return (p_values > alpha).sum(dim=1).float().mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_U(cal_scores, test_scores):
+def pvalue_criterion_U(cal_scores, test_scores, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -474,11 +476,12 @@ def pvalue_criterion_U(cal_scores, test_scores):
     Args:
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Mean of second-largest p-values across test samples.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     n_test = p_values.size(0)
 
     max_classes = torch.argmax(p_values, dim=1)
@@ -491,7 +494,7 @@ def pvalue_criterion_U(cal_scores, test_scores):
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_F(cal_scores, test_scores):
+def pvalue_criterion_F(cal_scores, test_scores, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -502,16 +505,17 @@ def pvalue_criterion_F(cal_scores, test_scores):
     Args:
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Mean sum of p-values minus the max p-value per sample.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     return (p_values.sum(dim=1) - p_values.max(dim=1).values).mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_M(cal_scores, test_scores, alpha):
+def pvalue_criterion_M(cal_scores, test_scores, alpha, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -523,17 +527,18 @@ def pvalue_criterion_M(cal_scores, test_scores, alpha):
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
         alpha (float): The significance level.
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Proportion of test samples with prediction set size > 1.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     sizes = (p_values > alpha).sum(dim=1)
     return (sizes > 1).float().mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_E(cal_scores, test_scores, alpha):
+def pvalue_criterion_E(cal_scores, test_scores, alpha, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -544,17 +549,18 @@ def pvalue_criterion_E(cal_scores, test_scores, alpha):
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
         alpha (float): The significance level.
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Mean of (set size - 1), clamped at 0, across test samples.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     sizes = (p_values > alpha).sum(dim=1)
     return torch.clamp(sizes - 1, min=0).float().mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_OU(cal_scores, test_scores, test_labels):
+def pvalue_criterion_OU(cal_scores, test_scores, test_labels, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -566,11 +572,12 @@ def pvalue_criterion_OU(cal_scores, test_scores, test_labels):
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
         test_labels (Tensor): Ground-Truth labels for test samples.
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Mean of the highest p-value among incorrect classes per sample.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     n_test = p_values.size(0)
 
     mask = torch.ones_like(p_values, dtype=bool)
@@ -581,7 +588,7 @@ def pvalue_criterion_OU(cal_scores, test_scores, test_labels):
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_OF(cal_scores, test_scores, test_labels):
+def pvalue_criterion_OF(cal_scores, test_scores, test_labels, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -591,11 +598,12 @@ def pvalue_criterion_OF(cal_scores, test_scores, test_labels):
     Args:
         cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Mean sum of p-values excluding the true label per test sample.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     n_test = p_values.size(0)
 
     mask = torch.ones_like(p_values, dtype=bool)
@@ -606,7 +614,7 @@ def pvalue_criterion_OF(cal_scores, test_scores, test_labels):
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha):
+def pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -619,11 +627,12 @@ def pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha):
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
         test_labels (Tensor): Ground-Truth labels for test samples.
         alpha (float): The significance level.
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Proportion of test samples where prediction set contains at least one wrong class.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     pred_sets = p_values > alpha
 
     pred_sets[torch.arange(pred_sets.size(0)), test_labels] = False
@@ -631,7 +640,7 @@ def pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha):
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
-def pvalue_criterion_OE(cal_scores, test_scores, test_labels, alpha):
+def pvalue_criterion_OE(cal_scores, test_scores, test_labels, alpha, smooth=False):
     """
     Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
 
@@ -644,11 +653,12 @@ def pvalue_criterion_OE(cal_scores, test_scores, test_labels, alpha):
         test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
         test_labels (Tensor): Ground-Truth labels for test samples.
         alpha (float): The significance level.
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
 
     Returns:
         float: Mean number of wrong classes in prediction sets across test samples.
     """
-    p_values = compute_p_values(cal_scores, test_scores)
+    p_values = compute_p_values(cal_scores, test_scores, smooth)
     pred_sets = p_values > alpha
 
     pred_sets[torch.arange(pred_sets.size(0)), test_labels] = False
