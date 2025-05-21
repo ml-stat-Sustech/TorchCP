@@ -396,6 +396,18 @@ def singleton_hit_ratio(prediction_sets, labels):
 
 
 def compute_p_values(cal_scores, test_scores, smooth=False):
+    """
+    Compute p-values for conformal prediction.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
+
+    Returns:
+        Tensor: p-values for each test sample and class, shape (n_test, k)
+    """
+
     n_cal = cal_scores.size(0)
     n_test, k = test_scores.size()
 
@@ -413,18 +425,59 @@ def compute_p_values(cal_scores, test_scores, smooth=False):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_S(cal_scores, test_scores):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Sum criterion: measures efficiency by the average sum of the p-values.
+                Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+
+    Returns:
+        float: The average sum of the p-values across all test samples.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     return p_values.sum(dim=1).mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_N(cal_scores, test_scores, alpha):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Number criterion: uses the average size of the prediction sets.
+                    Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        alpha (float): The significance level.
+
+    Returns:
+        float: The average size of the prediction sets.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     return (p_values > alpha).sum(dim=1).float().mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_U(cal_scores, test_scores):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Unconfidence criterion: uses the average unconfidence over the test sequence, 
+                            where the unconfidence for a test object x_i is the second largest p-value.
+                            Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+
+    Returns:
+        float: Mean of second-largest p-values across test samples.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     n_test = p_values.size(0)
 
@@ -439,12 +492,41 @@ def pvalue_criterion_U(cal_scores, test_scores):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_F(cal_scores, test_scores):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Fuzziness criterion: uses the average fuzziness where the fuzziness for a test object x_i is defined 
+                        as the sum of all p_values apart from a largest one.
+                        Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+
+    Returns:
+        float: Mean sum of p-values minus the max p-value per sample.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     return (p_values.sum(dim=1) - p_values.max(dim=1).values).mean()
 
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_M(cal_scores, test_scores, alpha):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Multiple criterion: uses the percentage of objects x_i in the test sequence 
+                        for which the prediction set at significance level is multiple.
+                        Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        alpha (float): The significance level.
+
+    Returns:
+        float: Proportion of test samples with prediction set size > 1.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     sizes = (p_values > alpha).sum(dim=1)
     return (sizes > 1).float().mean()
@@ -452,6 +534,20 @@ def pvalue_criterion_M(cal_scores, test_scores, alpha):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_E(cal_scores, test_scores, alpha):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Excess criterion: uses the average amount the size of the prediction set exceeds 1.
+                    Larger values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        alpha (float): The significance level.
+
+    Returns:
+        float: Mean of (set size - 1), clamped at 0, across test samples.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     sizes = (p_values > alpha).sum(dim=1)
     return torch.clamp(sizes - 1, min=0).float().mean()
@@ -459,6 +555,21 @@ def pvalue_criterion_E(cal_scores, test_scores, alpha):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_OU(cal_scores, test_scores, test_labels):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Observed Unconfidence criterion: uses the average observed unconfidence over the test sequence, 
+            where the observed unconfidence for a test example (x_i, y_i) is the largest p-value for the false labels.
+            Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        test_labels (Tensor): Ground-Truth labels for test samples.
+
+    Returns:
+        float: Mean of the highest p-value among incorrect classes per sample.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     n_test = p_values.size(0)
 
@@ -471,6 +582,19 @@ def pvalue_criterion_OU(cal_scores, test_scores, test_labels):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_OF(cal_scores, test_scores, test_labels):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Observed Fuzziness criterion: uses the average sum of the pvalues for the false labels.
+                                Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+
+    Returns:
+        float: Mean sum of p-values excluding the true label per test sample.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     n_test = p_values.size(0)
 
@@ -483,6 +607,22 @@ def pvalue_criterion_OF(cal_scores, test_scores, test_labels):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Observed Multiple criterion: uses the percentage of observed multiple predictions in the test sequence, 
+            where an observed multiple prediction is defined to be a prediction set including a false label.
+            Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        test_labels (Tensor): Ground-Truth labels for test samples.
+        alpha (float): The significance level.
+
+    Returns:
+        float: Proportion of test samples where prediction set contains at least one wrong class.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     pred_sets = p_values > alpha
 
@@ -492,6 +632,22 @@ def pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha):
 
 @METRICS_REGISTRY_CLASSIFICATION.register()
 def pvalue_criterion_OE(cal_scores, test_scores, test_labels, alpha):
+    """
+    Paper: Criteria of efficiency for conformal prediction (Vovk et al., 2016)
+
+    Observed Excess criterion: uses the average number of false labels included 
+                            in the prediction sets at significance level.
+                            Smaller values are preferable.
+
+    Args:
+        cal_scores (Tensor): Nonconformity scores from the calibration set, shape (n_cal,).
+        test_scores (Tensor): Nonconformity scores for test samples across k classes, shape (n_test, k).
+        test_labels (Tensor): Ground-Truth labels for test samples.
+        alpha (float): The significance level.
+
+    Returns:
+        float: Mean number of wrong classes in prediction sets across test samples.
+    """
     p_values = compute_p_values(cal_scores, test_scores)
     pred_sets = p_values > alpha
 
