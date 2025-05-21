@@ -395,7 +395,7 @@ def singleton_hit_ratio(prediction_sets, labels):
     return torch.sum(singletons & covered).item() / n
 
 
-def compute_p_values(cal_scores, test_scores):
+def compute_p_values(cal_scores, test_scores, smooth=False):
     n_cal = cal_scores.size(0)
     n_test, k = test_scores.size()
 
@@ -407,7 +407,7 @@ def compute_p_values(cal_scores, test_scores):
 
     tau = torch.rand_like(equal, dtype=torch.float)
 
-    p_values = (greater + tau * (equal + 1)) / (n_cal + 1)
+    p_values = (greater + smooth * tau * (equal + 1)) / (n_cal + 1)
     return p_values
 
 
