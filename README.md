@@ -101,6 +101,7 @@ TorchCP has implemented the following methods:
 | Year | Title                                                                                                                                           | Venue                | Code Link                                              | Implementation                             | Remark              |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------------------------------------------------------|--------------------------------------------|---------------------|
 | 2023 | [**Conformal Prediction via Regression-as-Classification**](http://etash.me/papers/Bayesian_Conformal_Prediction_through_Memory_Adaptation.pdf) | RegML @ NeurIPS 2023 | [link](https://github.com/EtashGuha/R2CCP/tree/master) | regression.score.r2ccp                     |                     |
+| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://proceedings.mlr.press/v162/zaffran22a.html) | ICML'22 | [link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) | regression.predictor.agaci                     | support time series |
 | 2021 | [**Adaptive Conformal Inference Under Distribution Shift**](https://arxiv.org/abs/2106.00170)                                                   | NeurIPS'21           | [Link](https://github.com/isgibbs/AdaptiveConformal)   | regression.predictor.aci                   | support time series |
 | 2020 | [**A comparison of some conformal quantile regression methods**](https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261)                     | Stat                 | [Link](https://github.com/soroushzargar/DAPS)          | regression.score.cqm regression.score.cqrr |                     |
 | 2020 | [**Conformal Prediction Interval for Dynamic Time-Series**](https://proceedings.mlr.press/v139/xu21h.html)                                      | ICML'21              | [Link](https://github.com/hamrel-cxu/EnbPI)            | regression.predictor.ensemble              | support time series |
@@ -128,10 +129,12 @@ TorchCP has implemented the following methods:
 
 TorchCP is still under active development. We will add the following features/items down the road:
 
-| Year | Title                                                                                                           | Venue   | Code                                                                       |
-|------|-----------------------------------------------------------------------------------------------------------------|---------|----------------------------------------------------------------------------|
-| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                          | ICML'22 | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
-| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML'22 | [Link](https://github.com/ajfisch/conformal-fp)                            |
+| Year | Title                                                                                                           | Venue      | Code                                                                       |
+|------|-----------------------------------------------------------------------------------------------------------------|------------|----------------------------------------------------------------------------|
+| 2023 | [**Conformal Prediction for Time Series with Modern Hopfield Networks**](https://openreview.net/pdf?id=KTRwpWCMsC)                          | NeuIPS'23    | [Link](https://github.com/ml-jku/HopCPT) |
+| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML'22    | [Link](https://github.com/ajfisch/conformal-fp)                            |
+
+
 
 ## Installation
 
