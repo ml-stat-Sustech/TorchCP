@@ -5,11 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+from typing import Any
+
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-from typing import Any
 
 from torchcp.utils.registry import Registry
 
@@ -108,9 +109,11 @@ def CovGap(prediction_sets, labels, alpha, num_classes, shot_idx=None):
     cls_coverage_rate[valid_classes] = class_covered[valid_classes].float() / class_counts[valid_classes].float()
 
     if shot_idx is not None:
-        cls_coverage_rate = cls_coverage_rate[shot_idx]
-
-    overall_covgap = torch.mean(torch.abs(cls_coverage_rate - (1 - alpha))) * 100
+        mask = torch.zeros(num_classes, dtype=torch.bool)
+        mask[shot_idx] = True
+        valid_classes = valid_classes & mask
+        
+    overall_covgap = torch.mean(torch.abs(cls_coverage_rate[valid_classes] - (1 - alpha))) * 100
     return overall_covgap.float().item()
 
 
@@ -146,8 +149,8 @@ def VioClasses(prediction_sets, labels, alpha, num_classes):
     valid_classes = class_counts > 0
     class_coverage = torch.zeros(num_classes, dtype=torch.float32)
     class_coverage[valid_classes] = class_covered[valid_classes].float() / class_counts[valid_classes].float()
-
-    violation_nums = torch.sum(class_coverage < (1 - alpha))
+    
+    violation_nums = torch.sum(class_coverage[valid_classes] < (1 - alpha))
     return violation_nums.item()
 
 

@@ -1,0 +1,23 @@
+name: ReadTheDocs Build
+
+on:
+  push:
+    branches:
+      - hotfix/readthedocs
+      - master
+    tags:
+      - '*'
+
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Trigger ReadTheDocs build
+        uses: dfm/rtds-action@v1
+        with:
+          webhook_url: ${{ secrets.RTDS_WEBHOOK_URL }}
+          webhook_token: ${{ secrets.RTD_WEBHOOK_TOKEN }}
+          commit_ref: ${{ github.ref }}

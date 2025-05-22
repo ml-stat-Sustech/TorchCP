@@ -5,20 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import argparse
-import os
-import pickle
 import torch
 import torchvision
-import torchvision.datasets as dset
 import torchvision.transforms as trn
-from tqdm import tqdm
 from transformers import set_seed
 
 from examples.utils import get_dataset_dir
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR, APS, SAPS, RAPS, Margin
-from torchcp.classification.utils.metrics import Metrics
+from torchcp.classification.predictor import RC3PPredictor,ClassWisePredictor
+from torchcp.classification.score import THR
 
 set_seed(seed=0)
 
@@ -53,7 +48,8 @@ model.eval()
 # A standard process of conformal prediction
 #######################################
 alpha = 0.1  # Significance level
-predictor = SplitPredictor(score_function=THR(), model=model)
+predictor = RC3PPredictor(score_function=THR(), model=model)
+# predictor = ClassWisePredictor(score_function=THR(), model=model)
 predictor.calibrate(cal_dataloader, alpha=0.1)
 
 test_instances, test_labels = test_dataset[0]

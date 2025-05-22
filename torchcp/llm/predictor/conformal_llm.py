@@ -6,10 +6,10 @@
 #
 
 """Evaluate set uncertainty metrics."""
-
+import math
 import collections
 import itertools
-import numpy as np
+
 import torch
 from scipy.stats import binom
 from transformers import set_seed, StoppingCriteria, StoppingCriteriaList

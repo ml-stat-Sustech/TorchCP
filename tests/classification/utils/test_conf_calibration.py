@@ -6,14 +6,11 @@
 #
 
 import pytest
-import pytest
-import torch
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
-from torch.utils.data import DataLoader, TensorDataset
 
-from torchcp.classification.utils.conf_calibration import ConfCalibrator, Identity, TS, ConfCalibrator_REGISTRY
+from torchcp.classification.utils.conf_calibration import ConfCalibrator, Identity, TS
 
 
 @pytest.fixture

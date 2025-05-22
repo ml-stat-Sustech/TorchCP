@@ -6,7 +6,6 @@
 #
 
 import torch
-import warnings
 
 from torchcp.graph.score.base import BaseScore
 from torchcp.graph.utils import compute_adj_knn

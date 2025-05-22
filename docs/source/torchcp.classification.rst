@@ -76,17 +76,21 @@ loss function
 ..  autosummary::
     :nosignatures:
 
-    ConfTr
-    ConfTS 
+    ConfTrLoss
+    ConfTSLoss 
     CDLoss
+    UncertaintyAwareLoss
 
-.. autoclass:: ConfTr
+.. autoclass:: ConfTrLoss
    :members:
 
-.. autoclass:: ConfTS
+.. autoclass:: ConfTSLoss
    :members:
 
 .. autoclass:: CDLoss
+   :members:
+
+.. autoclass:: UncertaintyAwareLoss
    :members:
 
 .. automodule:: torchcp.classification.trainer
@@ -97,13 +101,25 @@ trainer
 ..  autosummary::
     :nosignatures:
 
-    Trainer
-    OrdinalTrainer 
+    BaseTrainer
+    ConfTSTrainer 
+    TSTrainer
+    OrdinalTrainer
+    UncertaintyAwareTrainer
 
-.. autoclass:: Trainer
+.. autoclass:: BaseTrainer
+   :members:
+
+.. autoclass:: ConfTSTrainer
+   :members:
+
+.. autoclass:: TSTrainer
    :members:
 
 .. autoclass:: OrdinalTrainer
+   :members:
+
+.. autoclass:: UncertaintyAwareTrainer
    :members:
 
 .. automodule:: torchcp.classification.utils.metrics

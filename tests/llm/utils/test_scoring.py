@@ -5,10 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
 import pytest
 import torch
-import torch.nn.functional as F
 
 from torchcp.llm.utils.scoring import geometric, marginal, first_k, first_k_no_mask, max, sum
 

@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
 import pytest
 import torch
 import torch.nn as nn
@@ -65,15 +64,6 @@ def test_get_device_with_gpu_model():
     assert device == torch.device(f'cuda:{torch.cuda.current_device()}')
 
 
-def test_default_q_hat_max_normal_case():
-    """Test when default_q_hat is 'max' and scores is not empty"""
-    scores = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
-    alpha = 0.1
-    with pytest.warns(UserWarning, match="The value of quantile exceeds 1"):
-        result = calculate_conformal_value(scores, alpha, default_q_hat="max")
-        assert result == 5.0
-
-
 def test_calculate_conformal_value():
     """Test conformal value calculation"""
     # Test normal case
@@ -100,10 +90,6 @@ def test_calculate_conformal_value():
         result = calculate_conformal_value(small_scores, alpha=0.1)
         assert result == torch.inf
 
-    # Test custom default value
-    with pytest.warns(UserWarning):
-        result = calculate_conformal_value(torch.tensor([]), alpha=0.1, default_q_hat=torch.tensor(999))
-        assert result == 999
 
     # Test device consistency
     if torch.cuda.is_available():

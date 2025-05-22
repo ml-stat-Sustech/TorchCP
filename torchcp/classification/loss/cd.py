@@ -5,17 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 __all__ = ["CDLoss"]
 
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 from torchcp.classification.loss.base import BaseLoss
 

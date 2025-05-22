@@ -5,13 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-import os
 import torch
-from tqdm import tqdm
 import torch.optim as optim
-from torch.utils.data import DataLoader, Subset, Dataset
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
+
 from torchcp.classification.loss import UncertaintyAwareLoss
-from torchcp.classification.trainer import Trainer
+from torchcp.classification.trainer.base_trainer import Trainer
 
 
 class TrainDataset(Dataset):
@@ -33,17 +33,13 @@ class UncertaintyAwareTrainer(Trainer):
 
     Args:
         model (torch.nn.Module): Neural network model to train.
-        optimizer (torch.optim.Optimizer): Optimization algorithm.
-        criterion_pred_loss_fn (torch.nn.Module): Loss function for accuracy.
-        mu (float): A hyperparameter controlling the weight of the conformal loss term in the total loss (default: 0.2).
-        alpha (float): A significance level for the conformal loss function (default: 0.1).
-        device (torch.device): Device to run on (CPU/GPU) (default: CPU).
+        device (torch.device): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
+            Default: None
+        verbose (bool): Whether to print progress. Defaults to True.
 
     Examples:
         >>> model = MyModel()
-        >>> optimizer = torch.optim.Adam(model.parameters())
-        >>> loss_fn = nn.CrossEntropyLoss()
-        >>> trainer = ConfLearnTrainer(model, optimizer, loss_fn)
+        >>> trainer = ConfLearnTrainer(model, device='cuda')
         >>> save_path = './path/to/save'
         >>> trainer.train(train_loader, save_path, val_loader, num_epochs=10)
 
@@ -52,19 +48,64 @@ class UncertaintyAwareTrainer(Trainer):
     """
 
     def __init__(self,
+                 weight: float,
                  model: torch.nn.Module,
-                 optimizer: torch.optim.Optimizer,
-                 loss_fn=torch.nn.CrossEntropyLoss(),
-                 loss_weights=None,
-                 device: torch.device=None,
-                 verbose: bool = True,
-                 mu: float = 0.2,
-                 alpha: float = 0.1):
-        super(UncertaintyAwareTrainer, self).__init__(model, optimizer, loss_fn, loss_weights, device, verbose)
+                 device: torch.device = None,
+                 verbose: bool = True):
 
+        super(UncertaintyAwareTrainer, self).__init__(model, device, verbose)
+        self.optimizer = torch.optim.Adam(model.parameters())
         self.conformal_loss_fn = UncertaintyAwareLoss()
-        self.mu = mu
-        self.alpha = alpha
+        self.ce_loss_fn = torch.nn.CrossEntropyLoss()
+        self.lambda_ = weight
+
+    def train(self, train_loader: DataLoader,
+              val_loader: DataLoader = None,
+              num_epochs: int = 10, ):
+        lr_milestones = [int(num_epochs * 0.5)]
+        self.scheduler = optim.lr_scheduler.MultiStepLR(
+            self.optimizer, milestones=lr_milestones, gamma=0.1)
+        train_loader = self.split_dataloader(train_loader)
+
+        return super().train(train_loader, val_loader, num_epochs)
+
+    def train_epoch(self, train_loader: DataLoader):
+        """
+        Trains the model for one epoch.
+
+        The function iterates through the training data and updates the model parameters
+        using backpropagation and the optimizer.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): The DataLoader providing the training data.
+        """
+
+        self.model.train()
+        total_loss = 0
+
+        train_iter = tqdm(train_loader, desc="Training") if self.verbose else train_loader
+
+        for X_batch, Y_batch, Z_batch in train_iter:
+            X_batch = X_batch.to(self.device)
+            Y_batch = Y_batch.to(self.device)
+            Z_batch = Z_batch.to(self.device)
+            self.optimizer.zero_grad()
+
+            output = self.model(X_batch)
+
+            # Calculate loss
+            loss = self.calculate_loss(output, Y_batch, Z_batch)
+
+            loss.backward()
+            self.optimizer.step()
+
+            total_loss += loss.item()
+
+            if self.verbose:
+                train_iter.set_postfix({'loss': loss.item()})
+        self.scheduler.step()
+
+        return total_loss / len(train_loader)
 
     def calculate_loss(self, output, target, Z_batch, training=True):
         """
@@ -82,125 +123,49 @@ class UncertaintyAwareTrainer(Trainer):
         Returns:
             torch.Tensor: The computed total loss.
         """
+        total_loss = 0
         if training:
-            idx_ce = torch.where(Z_batch == 0)[0]
-            loss_ce = self.loss_fn(output[idx_ce], target[idx_ce])
+            idx_type = torch.where(Z_batch == 0)[0]
+            loss = self.ce_loss_fn(output[idx_type], target[idx_type])
+            total_loss += loss
+            
+            idx_type = torch.where(Z_batch == 1)[0]
+            loss = self.conformal_loss_fn(output[idx_type], target[idx_type])
+            total_loss += self.lambda_ * loss
+            
+            return total_loss
         else:
-            Z_batch = torch.ones(len(output)).long().to(self.device)
-            loss_ce = self.loss_fn(output, target)
-
-        loss_scores = self.conformal_loss_fn(output, target, Z_batch)
-
-        loss = loss_ce + loss_scores * self.mu
-        return loss
-
-    def train_epoch(self, train_loader: DataLoader):
-        """
-        Trains the model for one epoch.
-
-        The function iterates through the training data and updates the model parameters
-        using backpropagation and the optimizer.
-
-        Args:
-            train_loader (torch.utils.data.DataLoader): The DataLoader providing the training data.
-        """
-
-        self.model.train()
-
-        for X_batch, Y_batch, Z_batch in train_loader:
-            X_batch = X_batch.to(self.device)
-            Y_batch = Y_batch.to(self.device)
-            Z_batch = Z_batch.to(self.device)
-            self.optimizer.zero_grad()
-
-            output = self.model(X_batch)
-
-            # Calculate loss
-            loss = self.calculate_loss(output, Y_batch, Z_batch)
-
-            loss.backward()
-            self.optimizer.step()
+            loss = self.ce_loss_fn(output, target)
+            total_loss += loss
+            
+            loss = self.conformal_loss_fn(output, target)
+            total_loss += self.lambda_ * loss
+        return total_loss
 
     @torch.no_grad()
-    def validate(self, val_loader: DataLoader):
+    def validate(self, val_loader: DataLoader) -> float:
         """
-        Validates the model on the validation set.
-
-        The function computes both the loss and accuracy for the validation data.
-
+        Evaluate model on validation set
+        
         Args:
-            val_loader (torch.utils.data.DataLoader): The DataLoader providing the validation data.
-
+            val_loader: DataLoader for validation data
+            
         Returns:
-            tuple: The average loss and accuracy for the validation set.
+            Average validation loss
         """
-        loss_val = 0
-        acc_val = 0
+        self.model.eval()
+        total_loss = 0
 
-        for X_batch, Y_batch in val_loader:
-            X_batch = X_batch.to(self.device)
-            Y_batch = Y_batch.to(self.device)
+        with torch.no_grad():
+            val_iter = tqdm(val_loader, desc="Validating") if self.verbose else val_loader
 
-            output = self.model(X_batch)
-            loss = self.calculate_loss(output, Y_batch, None, training=False)
-            pred = output.argmax(dim=1)
-            acc = pred.eq(Y_batch).sum()
+            for data, target in val_iter:
+                data, target = data.to(self.device), target.to(self.device)
+                output = self.model(data)
+                loss = self.calculate_loss(output, target, Z_batch=None, training=False)
+                total_loss += loss.item()
 
-            loss_val += loss.item()
-            acc_val += acc.item()
-
-        metrics = {
-            'val_loss': loss_val / len(val_loader),
-            'val_acc': acc_val / len(val_loader)
-        }
-
-        return metrics
-
-    def train(self,
-              train_loader: DataLoader,
-              val_loader: DataLoader = None,
-              num_epochs: int = 10,
-              save_path: str = None):
-        """
-        Trains the model for multiple epochs and optionally performs early stopping
-        based on validation loss or accuracy. Saves the best models during training.
-
-        Args:
-            train_loader (torch.utils.data.DataLoader): The DataLoader for the training set.
-            save_path (str): The path where model checkpoints should be saved.
-            val_loader (torch.utils.data.DataLoader): The DataLoader for the validation set (default: None).
-            num_epochs (int): The number of epochs to train for (default: 10).
-        """
-
-        train_loader = self.split_dataloader(train_loader)
-        lr_milestones = [int(num_epochs * 0.5)]
-        scheduler = optim.lr_scheduler.MultiStepLR(
-            self.optimizer, milestones=lr_milestones, gamma=0.1)
-
-        if self.verbose:
-            epoch_iter = tqdm(range(num_epochs), desc="Training")
-        else:
-            epoch_iter = range(num_epochs)
-
-        best_val_acc = 0
-
-        for epoch in epoch_iter:
-
-            self.train_epoch(train_loader)
-
-            scheduler.step()
-            self.model.eval()
-
-            if val_loader is not None:
-                val_metrics = self.validate(val_loader)
-
-                if val_metrics['val_acc'] > best_val_acc and save_path:
-                    best_val_acc = val_metrics['val_acc']
-                    self.save_checkpoint(epoch, save_path, val_metrics)
-
-                    if self.verbose:
-                        self.logger.info(f"Saved best model with validation accuracy: {val_metrics['val_acc']:.4f}")
-
+        return total_loss / len(val_loader)
 
     def split_dataloader(self, data_loader: DataLoader, split_ratio=0.8):
         """
@@ -231,5 +196,5 @@ class UncertaintyAwareTrainer(Trainer):
         train_dataset = TrainDataset(X_data, Y_data, Z_data)
         train_loader = DataLoader(
             train_dataset, batch_size=data_loader.batch_size, shuffle=True, drop_last=data_loader.drop_last)
-        
+
         return train_loader

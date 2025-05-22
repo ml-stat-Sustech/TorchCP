@@ -6,6 +6,7 @@
 #
 
 from abc import ABCMeta, abstractmethod
+
 from tqdm import tqdm
 
 from torchcp.utils.common import get_device
@@ -75,7 +76,11 @@ class BaseScore(object):
                     running_loss = 0.0
                     for index, (tmp_x, tmp_y) in enumerate(train_dataloader):
                         outputs = model(tmp_x.to(device))
-                        loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
+                        if criterion.__class__.__name__ == 'GaussianNLLLoss':
+                            mu, var = outputs[..., 0], outputs[..., 1]
+                            loss = criterion(mu, tmp_y.reshape(-1, 1).to(device), var)
+                        else:
+                            loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
                         optimizer.zero_grad()
                         loss.backward()
                         optimizer.step()
@@ -86,7 +91,11 @@ class BaseScore(object):
         else:
             for tmp_x, tmp_y in train_dataloader:
                 outputs = model(tmp_x.to(device))
-                loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
+                if criterion.__class__.__name__ == 'GaussianNLLLoss':
+                    mu, var = outputs[..., 0], outputs[..., 1]
+                    loss = criterion(mu, tmp_y.reshape(-1, 1).to(device), var)
+                else:
+                    loss = criterion(outputs, tmp_y.reshape(-1, 1).to(device))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()

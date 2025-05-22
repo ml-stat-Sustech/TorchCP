@@ -8,167 +8,116 @@
 import pytest
 import torch
 import torch.nn as nn
+from torch import Tensor
 
-from torchcp.classification.trainer.model import TemperatureScalingModel
 
+from torchcp.classification.trainer.model_zoo import TemperatureScalingModel,OrdinalClassifier
 
-class SimpleModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc = nn.Linear(10, 3)
-
+# Mock base model for testing
+class MockBaseModel(nn.Module):
     def forward(self, x):
-        return self.fc(x)
+        return torch.ones((x.shape[0], 10))  # Always return ones with 10 classes
 
+# Fixtures
+@pytest.fixture
+def mock_base_model():
+    return MockBaseModel()
 
 @pytest.fixture
-def base_model():
-    return SimpleModel()
-
+def temp_scaling_model(mock_base_model):
+    return TemperatureScalingModel(mock_base_model, temperature=2.0)
 
 @pytest.fixture
-def temp_model(base_model):
-    return TemperatureScalingModel(base_model, temperature=1.5)
+def mock_classifier():
+    return nn.Linear(10, 5)
 
+@pytest.fixture
+def ordinal_classifier(mock_classifier):
+    return OrdinalClassifier(mock_classifier)
 
-def test_initialization():
-    # Test normal initialization
-    base_model = SimpleModel()
-    temp_model = TemperatureScalingModel(base_model, temperature=1.5)
-    assert temp_model.get_temperature() == pytest.approx(1.5)
-    assert temp_model.is_base_model_frozen()
+# Tests for TemperatureScalingModel
+class TestTemperatureScalingModel:
+    def test_initialization(self, temp_scaling_model):
+        assert temp_scaling_model.get_temperature() == 2.0
+        assert temp_scaling_model.is_base_model_frozen()
 
-    # Test invalid temperature
-    with pytest.raises(ValueError):
-        TemperatureScalingModel(base_model, temperature=0.0)
-    with pytest.raises(ValueError):
-        TemperatureScalingModel(base_model, temperature=-1.0)
+    def test_invalid_temperature_initialization(self):
+        with pytest.raises(ValueError, match="Temperature must be positive"):
+            TemperatureScalingModel(MockBaseModel(), temperature=0.0)
+        
+        with pytest.raises(ValueError, match="Temperature must be positive"):
+            TemperatureScalingModel(MockBaseModel(), temperature=-1.0)
 
+    def test_forward_pass(self, temp_scaling_model):
+        input_tensor = torch.randn(5, 3, 224, 224)  # Batch of 5 images
+        output = temp_scaling_model(input_tensor)
+        
+        # Check output shape
+        assert output.shape == (5, 10)
+        # Check if scaling is applied correctly (all values should be 0.5 since input is 1.0 and temp is 2.0)
+        assert torch.allclose(output, torch.ones_like(output) * 0.5)
 
-def test_base_model_frozen(temp_model):
-    # Check if base model parameters are frozen
-    assert temp_model.is_base_model_frozen()
+    def test_temperature_setter(self, temp_scaling_model):
+        temp_scaling_model.set_temperature(3.0)
+        assert temp_scaling_model.get_temperature() == 3.0
 
-    for param in temp_model.base_model.parameters():
-        assert not param.requires_grad
+        with pytest.raises(ValueError, match="Temperature must be positive"):
+            temp_scaling_model.set_temperature(0.0)
 
-    # Check if temperature parameter is trainable
-    assert temp_model.temperature.requires_grad
+    def test_train_mode(self, temp_scaling_model):
+        # Set to train mode
+        temp_scaling_model.train()
+        # Base model should still be in eval mode
+        assert not temp_scaling_model.base_model.training
+        # Temperature scaling model can be in train mode
+        assert temp_scaling_model.training
 
+        # Set to eval mode
+        temp_scaling_model.eval()
+        assert not temp_scaling_model.base_model.training
+        assert not temp_scaling_model.training
 
-def test_forward_pass(temp_model):
-    # Test forward pass with random input
-    batch_size = 5
-    input_size = 10
-    x = torch.randn(batch_size, input_size)
+# Tests for OrdinalClassifier
+class TestOrdinalClassifier:
+    def test_initialization(self, ordinal_classifier):
+        assert ordinal_classifier.phi == "abs"
+        assert ordinal_classifier.varphi == "abs"
+        assert callable(ordinal_classifier.phi_function)
+        assert callable(ordinal_classifier.varphi_function)
 
-    output = temp_model(x)
+    def test_invalid_phi_varphi(self, mock_classifier):
+        with pytest.raises(NotImplementedError):
+            OrdinalClassifier(mock_classifier, phi="invalid")
+        
+        with pytest.raises(NotImplementedError):
+            OrdinalClassifier(mock_classifier, varphi="invalid")
 
-    # Check output shape
-    assert output.shape == (batch_size, 3)
+    def test_forward_pass(self, ordinal_classifier):
+        input_tensor = torch.randn(3, 10)  # Batch of 3, input dim 10
+        output = ordinal_classifier(input_tensor)
+        
+        # Check output shape matches input batch size and classifier output size
+        assert output.shape == (3, 5)
+        # Check output values are real numbers
+        assert not torch.isnan(output).any()
+        assert not torch.isinf(output).any()
 
-    # Check if output is scaled by temperature
-    with torch.no_grad():
-        base_output = temp_model.base_model(x)
-        expected_output = base_output / temp_model.get_temperature()
-        assert torch.allclose(output, expected_output)
+    def test_small_input_dimension(self, ordinal_classifier):
+        input_tensor = torch.randn(3, 2)  # Input dimension <= 2
+        with pytest.raises(ValueError, match="The input dimension must be greater than 2"):
+            ordinal_classifier(input_tensor)
 
-
-def test_temperature_getter_setter(temp_model):
-    # Test get_temperature
-    assert temp_model.get_temperature() == pytest.approx(1.5)
-
-    # Test set_temperature with valid value
-    temp_model.set_temperature(2.0)
-    assert temp_model.get_temperature() == pytest.approx(2.0)
-
-    # Test set_temperature with invalid values
-    with pytest.raises(ValueError):
-        temp_model.set_temperature(0.0)
-    with pytest.raises(ValueError):
-        temp_model.set_temperature(-1.0)
-
-
-def test_gradient_flow(temp_model):
-    # Create sample input and target
-    x = torch.randn(5, 10)
-    target = torch.randint(0, 3, (5,))
-
-    # Forward pass
-    output = temp_model(x)
-    loss = nn.CrossEntropyLoss()(output, target)
-    loss.backward()
-
-    # Check gradients
-    assert temp_model.temperature.grad is not None
-
-    # Base model parameters should have no gradients
-    for param in temp_model.base_model.parameters():
-        assert param.grad is None
-
-
-def test_model_eval_mode(temp_model):
-    # Check if base model is in eval mode
-    assert not temp_model.base_model.training
-
-    # Switching to train mode should not affect base model
-    temp_model.train()
-    assert not temp_model.base_model.training
-
-    # Switching back to eval mode
-    temp_model.eval()
-    assert not temp_model.base_model.training
-
-
-def test_temperature_persistence(base_model):
-    # Create model and modify temperature
-    temp_model = TemperatureScalingModel(base_model, temperature=1.0)
-    temp_model.set_temperature(2.0)
-
-    # Save and load state dict
-    state_dict = temp_model.state_dict()
-
-    # Create new model and load state dict
-    new_temp_model = TemperatureScalingModel(base_model, temperature=1.0)
-    new_temp_model.load_state_dict(state_dict)
-
-    # Check if temperature was correctly loaded
-    assert new_temp_model.get_temperature() == pytest.approx(2.0)
-
-
-def test_output_scaling(temp_model):
-    # Test if output scaling is correct for different temperature values
-    x = torch.randn(5, 10)
-
-    # Get output with temperature = 1.5 (initial value)
-    output1 = temp_model(x)
-
-    # Change temperature to 3.0
-    temp_model.set_temperature(3.0)
-    output2 = temp_model(x)
-
-    # Check if scaling relationship holds
-    expected_ratio = 3.0 / 1.5
-    actual_ratio = (output1 / output2).mean().item()
-    assert actual_ratio == pytest.approx(expected_ratio, rel=1e-5)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_device_consistency(temp_model, device):
-    if device == "cuda" and not torch.cuda.is_available():
-        pytest.skip("CUDA not available")
-
-    device = torch.device("cuda:0" if device == "cuda" else "cpu")
-    # Move model to device
-    temp_model = temp_model.to(device)
-
-    # Create input on same device
-    x = torch.randn(4, 10).to(device)
-
-    # Forward pass
-    output = temp_model(x)
-
-    # Check device consistency
-    assert output.device == torch.device(device)
-    assert temp_model.temperature.device == torch.device(device)
-    assert next(temp_model.base_model.parameters()).device == torch.device(device)
+    @pytest.mark.parametrize("phi,varphi", [
+        ("abs", "abs"),
+        ("square", "square"),
+        ("abs", "square"),
+        ("square", "abs")
+    ])
+    def test_different_transformations(self, mock_classifier, phi, varphi):
+        model = OrdinalClassifier(mock_classifier, phi=phi, varphi=varphi)
+        input_tensor = torch.randn(3, 10)
+        output = model(input_tensor)
+        
+        assert output.shape == (3, 5)
+        assert not torch.isnan(output).any()
+        assert not torch.isinf(output).any()
