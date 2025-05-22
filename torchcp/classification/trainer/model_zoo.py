@@ -165,3 +165,55 @@ class OrdinalClassifier(nn.Module):
         # the unimodal distribution
         x = self.varphi_function(x)
         return x
+
+
+class SurrogateCPModel(nn.Module):
+    """
+    This model wraps a given base model and adds a linear layer on top of its final feature output.
+    The base model's parameters are frozen to prevent updates during training, so only the added
+    linear layer is trainable.
+
+    Args:
+        base_model (nn.Module): Pre-trained model
+    
+    Shape:
+        - Input: Same as base_model input
+        - Output: (batch_size, num_classes) 1 - logits
+    
+    Examples:
+        >>> base_model = resnet18(pretrained=True)
+        >>> model = SurrogateCPModel(base_model)
+        >>> inputs = torch.randn(10, 3, 224, 224)
+        >>> logits = model(inputs)
+    """
+
+    def __init__(self, base_model: nn.Module):
+        super().__init__()
+        self.base_model = base_model
+        self.linear = nn.Linear(in_features=base_model.fc.out_features, 
+                                out_features=base_model.fc.out_features,
+                                bias=False)
+
+        # Freeze base model parameters
+        self.freeze_base_model()
+
+    def freeze_base_model(self):
+        """Freeze all parameters in base model"""
+        for param in self.base_model.parameters():
+            param.requires_grad = False
+        self.base_model.eval()
+
+    def is_base_model_frozen(self) -> bool:
+        """Check if base model parameters are frozen"""
+        return not any(p.requires_grad for p in self.base_model.parameters())
+
+    def forward(self, x: Tensor) -> Tensor:
+        with torch.no_grad():  # Ensure no gradients flow through base model
+            logits = self.base_model(x)
+
+        return 1 - self.linear(logits)
+
+    def train(self, mode: bool = True):
+        super().train(mode)  # Set training mode for TemperatureScalingModel
+        self.base_model.eval()  # Keep base_model in eval mode
+        return self
