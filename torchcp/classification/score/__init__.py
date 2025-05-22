@@ -12,3 +12,4 @@ from .raps import RAPS
 from .saps import SAPS
 from .thr import THR
 from .topk import TOPK
+from .entmax import EntmaxScore
