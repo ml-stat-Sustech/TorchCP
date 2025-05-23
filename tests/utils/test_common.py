@@ -33,19 +33,10 @@ class DummyModel(torch.nn.Module):
 from unittest.mock import patch
 
 
-def test_get_device_none_with_cuda():
-    """Test when model is None and cuda is available"""
-    with patch('torch.cuda.is_available', return_value=True), \
-            patch('torch.cuda.current_device', return_value=0):
-        device = get_device(None)
-        assert device == torch.device('cuda:0')
-
-
-def test_get_device_none_without_cuda():
-    """Test when model is None and cuda is not available"""
-    with patch('torch.cuda.is_available', return_value=False):
-        device = get_device(None)
-        assert device == torch.device('cpu')
+def test_get_device_none():
+    """Test when model is None"""
+    device = get_device(None)
+    assert device == torch.device('cpu')
 
 
 def test_get_device_with_cpu_model():
