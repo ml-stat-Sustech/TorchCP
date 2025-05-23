@@ -380,9 +380,9 @@ def test_compute_p_values_shape(sample_inputs):
     cal_scores, test_scores, _ = sample_inputs
 
     p_values = compute_p_values(cal_scores, test_scores, False)
-    assert torch.equal(p_values, torch.tensor([[0.8, 0.6, 0.3], 
-                                               [0.4, 0.7, 0.2],
-                                               [0, 0.7, 0.5]]))
+    assert torch.equal(p_values, torch.tensor([[1.0, 0.8, 0.5], 
+                                               [0.6, 0.9, 0.4],
+                                               [0.2, 0.9, 0.7]]))
     torch.manual_seed(0)
     p_values = compute_p_values(cal_scores, test_scores, True)
     torch.manual_seed(0)
@@ -398,54 +398,54 @@ def test_compute_p_values_shape(sample_inputs):
 def test_pvalue_criterion_S(sample_inputs):
     cal_scores, test_scores, _ = sample_inputs
     result = pvalue_criterion_S(cal_scores, test_scores)
-    assert torch.equal(result, torch.tensor(1.4))
+    assert torch.equal(result, torch.tensor(2))
 
 def test_pvalue_criterion_N(sample_inputs):
     cal_scores, test_scores, _ = sample_inputs
-    alpha = 0.1
+    alpha = 0.3
     result = pvalue_criterion_N(cal_scores, test_scores, alpha)
     assert torch.allclose(result, torch.tensor(8 / 3))
 
 def test_pvalue_criterion_U(sample_inputs):
     cal_scores, test_scores, _ = sample_inputs
     result = pvalue_criterion_U(cal_scores, test_scores)
-    assert torch.equal(result, torch.tensor(0.5))
+    assert torch.allclose(result, torch.tensor(0.7))
 
 def test_pvalue_criterion_F(sample_inputs):
     cal_scores, test_scores, _ = sample_inputs
     result = pvalue_criterion_F(cal_scores, test_scores)
-    assert torch.allclose(result, torch.tensor(2 / 3))
+    assert torch.allclose(result, torch.tensor(3.2 / 3))
 
 def test_pvalue_criterion_M(sample_inputs):
     cal_scores, test_scores, _ = sample_inputs
-    alpha = 0.4
+    alpha = 0.6
     result = pvalue_criterion_M(cal_scores, test_scores, alpha)
     assert torch.allclose(result, torch.tensor(2 / 3))
 
 def test_pvalue_criterion_E(sample_inputs):
     cal_scores, test_scores, _ = sample_inputs
-    alpha = 0.4
+    alpha = 0.6
     result = pvalue_criterion_E(cal_scores, test_scores, alpha)
     assert torch.allclose(result, torch.tensor(2 / 3))
 
 def test_pvalue_criterion_OU(sample_inputs):
     cal_scores, test_scores, test_labels = sample_inputs
     result = pvalue_criterion_OU(cal_scores, test_scores, test_labels)
-    assert torch.allclose(result, torch.tensor(1.7 / 3))
+    assert torch.allclose(result, torch.tensor(2.3 / 3))
 
 def test_pvalue_criterion_OF(sample_inputs):
     cal_scores, test_scores, test_labels = sample_inputs
     result = pvalue_criterion_OF(cal_scores, test_scores, test_labels)
-    assert torch.allclose(result, torch.tensor(2.2 / 3))
+    assert torch.allclose(result, torch.tensor(3.4 / 3))
 
 def test_pvalue_criterion_OM(sample_inputs):
     cal_scores, test_scores, test_labels = sample_inputs
-    alpha = 0.4
+    alpha = 0.6
     result = pvalue_criterion_OM(cal_scores, test_scores, test_labels, alpha)
     assert torch.allclose(result, torch.tensor(2 / 3))
 
 def test_pvalue_criterion_OE(sample_inputs):
     cal_scores, test_scores, test_labels = sample_inputs
-    alpha = 0.3
+    alpha = 0.5
     result = pvalue_criterion_OE(cal_scores, test_scores, test_labels, alpha)
     assert torch.allclose(result, torch.tensor(1.0))
