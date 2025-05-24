@@ -27,8 +27,8 @@ class SplitPredictor(BasePredictor):
         Github: https://github.com/ryantibs/conformal
     """
 
-    def __init__(self, score_function, model=None):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model=None, device=None):
+        super().__init__(score_function, model, device)
 
     def train(self, train_dataloader, **kwargs):
         """

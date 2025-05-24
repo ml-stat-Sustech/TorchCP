@@ -35,8 +35,8 @@ class ACIPredictor(SplitPredictor):
         
     """
 
-    def __init__(self, score_function, model, gamma):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model, gamma, device=None):
+        super().__init__(score_function, model, device)
         if (gamma is not None) and (gamma <= 0):
             raise ValueError("gamma must be greater than 0.")
 

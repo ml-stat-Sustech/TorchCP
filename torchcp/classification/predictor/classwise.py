@@ -26,9 +26,9 @@ class ClassWisePredictor(SplitPredictor):
         q_hat (torch.Tensor): The calibrated threshold for each class.
     """
 
-    def __init__(self, score_function, model=None, temperature=1):
+    def __init__(self, score_function, model=None, temperature=1, device=None):
 
-        super(ClassWisePredictor, self).__init__(score_function, model, temperature)
+        super(ClassWisePredictor, self).__init__(score_function, model, temperature, device)
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):

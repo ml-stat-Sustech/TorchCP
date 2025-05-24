@@ -8,6 +8,7 @@
 
 from abc import ABCMeta, abstractmethod
 
+import torch
 import torch.nn as nn
 
 from torchcp.regression.utils.metrics import Metrics
@@ -26,14 +27,19 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model=None):
+    def __init__(self, score_function, model=None, device=None):
         self._model = model
         if self._model is not None:
             if not isinstance(model, nn.Module):
                 raise TypeError("The model must be an instance of torch.nn.Module")
+        
+        if device is not None:
+            self._device = torch.device(device)
+        elif model is not None:
             self._device = get_device(model)
         else:
-            self._device = None
+            self.device = torch.device("cpu")
+            
         self.score_function = score_function
         self._metric = Metrics()
 

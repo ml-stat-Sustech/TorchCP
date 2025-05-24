@@ -29,10 +29,14 @@ class R2CCP(BaseScore):
         Github: https://github.com/EtashGuha/R2CCP
     """
 
-    def __init__(self, midpoints):
+    def __init__(self, midpoints, device=None):
         super().__init__()
         self.midpoints = midpoints
-        self._device = self.midpoints.device
+        if device is not None:
+            self._device = torch.device(device)
+        else:
+            self._device = self.midpoints.device
+        self.midpoints = self.midpoints.to(self._device)
 
     def train(self, train_dataloader, **kwargs):
         """

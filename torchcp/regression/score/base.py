@@ -7,6 +7,7 @@
 
 from abc import ABCMeta, abstractmethod
 
+import torch
 from tqdm import tqdm
 
 from torchcp.utils.common import get_device
@@ -55,7 +56,7 @@ class BaseScore(object):
         """
         raise NotImplementedError
 
-    def _basetrain(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
+    def _basetrain(self, model, epochs, train_dataloader, criterion, optimizer, device=None, verbose=True):
         """
         Trains the given model using the provided training data loader, criterion, and optimizer.
         
@@ -69,7 +70,12 @@ class BaseScore(object):
         """
 
         model.train()
-        device = get_device(model)
+        if device is not None:
+            device = torch.device(device)
+        else:
+            device = get_device(model)
+        model = model.to(device)
+
         if verbose:
             with tqdm(total=epochs, desc="Epoch") as _tqdm:
                 for epoch in range(epochs):

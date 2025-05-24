@@ -18,8 +18,8 @@ class SplitPredictor(BasePredictor):
     Link: https://link.springer.com/book/10.1007/978-3-031-06649-8.
     """
 
-    def __init__(self, graph_data, score_function, model=None):
-        super().__init__(graph_data, score_function, model)
+    def __init__(self, graph_data, score_function, model=None, device=None):
+        super().__init__(graph_data, score_function, model, device)
 
     # The calibration process ########################################################
 

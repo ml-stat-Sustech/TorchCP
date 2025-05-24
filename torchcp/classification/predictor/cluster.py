@@ -38,9 +38,9 @@ class ClusteredPredictor(ClassWisePredictor):
     """
 
     def __init__(self, score_function, model=None, temperature=1, ratio_clustering="auto", num_clusters="auto",
-                 split='random',
+                 split='random', device=None
                  ):
-        super(ClusteredPredictor, self).__init__(score_function, model, temperature)
+        super(ClusteredPredictor, self).__init__(score_function, model, temperature, device)
 
         if ratio_clustering != "auto" and not (0 < ratio_clustering < 1):
             raise ValueError("ratio_clustering should be 'auto' or a value in (0, 1).")

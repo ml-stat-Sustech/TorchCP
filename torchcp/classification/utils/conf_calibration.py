@@ -39,12 +39,17 @@ class TS(nn.Module):
     def forward(self, batch_logits):
         return batch_logits / self.temperature
 
-    def optimze(self, dataloader, device, max_iters=10, lr=0.01, epsilon=0.01):
+    def optimze(self, dataloader, device=None, max_iters=10, lr=0.01, epsilon=0.01):
         """
         Tune the tempearature of the model (using the validation set).
         We're going to set it to optimize NLL.
         valid_loader (DataLoader): validation set loader
         """
+        if device is not None:
+            device = torch.device(device)
+        else:
+            device = torch.device("cpu")
+
         self.to(device)
         nll_criterion = nn.CrossEntropyLoss().to(device)
 

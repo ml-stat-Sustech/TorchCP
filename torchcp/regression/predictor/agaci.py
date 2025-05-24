@@ -34,8 +34,8 @@ class AgACIPredictor(ACIPredictor):
         
     """
     
-    def __init__(self, score_function, model, gamma_list: List, aggregation_function='mean', threshold: List=[-99999, 99999]):
-        super().__init__(score_function, model, None)
+    def __init__(self, score_function, model, gamma_list: List, aggregation_function='mean', threshold: List=[-99999, 99999], device=None):
+        super().__init__(score_function, model, None, device)
         if aggregation_function not in ['mean', 'median'] and not callable(aggregation_function):
             raise ValueError(
                 "aggregation_function must be either 'mean', 'median', or a callable function."
