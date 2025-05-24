@@ -9,7 +9,7 @@ import torch
 
 from torchcp.classification.loss.scpo import SCPOLoss
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.classification.trainer.base_trainer import Trainer
 from torchcp.classification.trainer.model_zoo import SurrogateCPModel
 
@@ -58,7 +58,7 @@ class SCPOTrainer(Trainer):
 
         model = SurrogateCPModel(model)
         super().__init__(model, device=device, verbose=verbose)
-        predictor = SplitPredictor(score_function=THR(score_type="identity"), model=model)
+        predictor = SplitPredictor(score_function=LAC(score_type="identity"), model=model)
 
         self.optimizer = torch.optim.Adam(self.model.linear.parameters(), lr=lr)
         self.loss_fn = SCPOLoss(predictor=predictor, alpha=alpha, 

@@ -12,7 +12,7 @@ score function
 ..  autosummary::
     :nosignatures:
 
-    THR
+    LAC
     APS
     RAPS
     SAPS
@@ -21,7 +21,7 @@ score function
     KNN
 
 
-.. autoclass:: THR
+.. autoclass:: LAC
    :members:
 
 .. autoclass:: APS

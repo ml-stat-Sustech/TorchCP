@@ -13,7 +13,7 @@ import torch
 from torch.utils.data import Dataset
 
 from torchcp.classification.predictor import ClassWisePredictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 
 @pytest.fixture

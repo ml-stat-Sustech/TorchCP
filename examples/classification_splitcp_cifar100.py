@@ -13,7 +13,7 @@ from transformers import set_seed
 from examples.utils import get_dataset_dir
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.predictor import RC3PPredictor,ClassWisePredictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 
 set_seed(seed=0)
 
@@ -48,8 +48,8 @@ model.eval()
 # A standard process of conformal prediction
 #######################################
 alpha = 0.1  # Significance level
-predictor = RC3PPredictor(score_function=THR(), model=model)
-# predictor = ClassWisePredictor(score_function=THR(), model=model)
+predictor = RC3PPredictor(score_function=LAC(), model=model)
+# predictor = ClassWisePredictor(score_function=LAC(), model=model)
 predictor.calibrate(cal_dataloader, alpha=0.1)
 
 test_instances, test_labels = test_dataset[0]

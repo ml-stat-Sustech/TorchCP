@@ -11,7 +11,7 @@ import torch
 from sklearn.cluster import KMeans
 
 from torchcp.classification.predictor import ClusteredPredictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.utils.common import DimensionError
 
 
@@ -30,7 +30,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 
 @pytest.fixture

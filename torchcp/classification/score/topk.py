@@ -7,10 +7,10 @@
 
 import torch
 
-from torchcp.classification.score.thr import THR
+from torchcp.classification.score.lac import LAC
 
 
-class TOPK(THR):
+class TOPK(LAC):
     """
     Method: TOPK prediction sets
     Paper: Uncertainty Sets for Image Classifiers using Conformal Prediction (Angelopoulos et al., 2020)

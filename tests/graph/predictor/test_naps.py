@@ -13,7 +13,7 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 
-from torchcp.classification.score import APS, THR
+from torchcp.classification.score import APS, LAC
 from torchcp.graph.predictor.naps import NAPSPredictor
 
 
@@ -72,7 +72,7 @@ def test_init_valid_naps_predictor(mock_graph_data):
 
 def test_init_invalid_naps_predictor(mock_graph_data):
     with pytest.raises(ValueError, match="Invalid score_function"):
-        NAPSPredictor(graph_data=mock_graph_data, score_function=THR(score_type="softmax"))
+        NAPSPredictor(graph_data=mock_graph_data, score_function=LAC(score_type="softmax"))
 
     with pytest.raises(ValueError, match="Invalid score_type of APS"):
         NAPSPredictor(graph_data=mock_graph_data, score_function=APS(score_type="identity"))

@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
 
-from torchcp.classification.score import THR, APS
+from torchcp.classification.score import LAC, APS
 from torchcp.classification.loss import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
@@ -87,7 +87,7 @@ def test_initialization(mock_graph_data, mock_model):
     assert cf_trainer.loss_fns[0] == F.cross_entropy
     assert isinstance(cf_trainer.loss_fns[1], ConfTrLoss)
     assert isinstance(cf_trainer.loss_fns[1].predictor, SplitPredictor)
-    assert isinstance(cf_trainer.loss_fns[1].predictor.score_function, THR)
+    assert isinstance(cf_trainer.loss_fns[1].predictor.score_function, LAC)
     assert cf_trainer.loss_fns[1].alpha == 0.1
     assert cf_trainer.loss_fns[1].fraction == 0.5
     assert cf_trainer.loss_fns[1].loss_type == "classification"

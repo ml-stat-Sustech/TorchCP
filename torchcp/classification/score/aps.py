@@ -7,10 +7,10 @@
 
 import torch
 
-from torchcp.classification.score.thr import THR
+from torchcp.classification.score.lac import LAC
 
 
-class APS(THR):
+class APS(LAC):
     """
     Method: Adaptive Prediction Sets (APS)
     Paper: Classification with Valid and Adaptive Coverage (Romano et al., 2020)
