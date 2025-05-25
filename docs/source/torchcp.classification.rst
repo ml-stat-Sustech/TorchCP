@@ -51,14 +51,14 @@ predictor
     :nosignatures:
 
     SplitPredictor
-    ClassWisePredictor
+    ClassConditionalPredictor
     ClusteredPredictor
     WeightedPredictor
 
 .. autoclass:: SplitPredictor
    :members:
 
-.. autoclass:: ClassWisePredictor
+.. autoclass:: ClassConditionalPredictor
    :members:
 
 .. autoclass:: ClusteredPredictor
