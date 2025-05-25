@@ -13,7 +13,7 @@ from torch.utils.data import Dataset
 
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.classification.predictor.base import BasePredictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.classification.utils.metrics import Metrics
 
 
@@ -48,7 +48,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 
 @pytest.fixture

@@ -10,11 +10,11 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 
-from torchcp.classification.predictor.classwise import ClassWisePredictor
+from torchcp.classification.predictor.class_conditional import ClassConditionalPredictor
 from torchcp.utils.common import DimensionError
 
 
-class ClusteredPredictor(ClassWisePredictor):
+class ClusteredPredictor(ClassConditionalPredictor):
     """
     Method: Clutered Conforml Predictor 
     Paper: Class-Conditional Conformal Prediction with Many Classes (Ding et al., 2023)

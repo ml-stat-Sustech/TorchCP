@@ -10,6 +10,6 @@ from .knn import KNN
 from .margin import Margin
 from .raps import RAPS
 from .saps import SAPS
-from .thr import THR
+from .lac import LAC
 from .topk import TOPK
 from .entmax import EntmaxScore

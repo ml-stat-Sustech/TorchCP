@@ -48,5 +48,5 @@ Changelog
 
 0.1.0 (2023-12-23)
 ------------------
-* Introduced CP algorithms for classification, including ConfTr, THR, APS, RAPS, SAPS, Classwise CP, Clustered CP and Weighted CP.
+* Introduced CP algorithms for classification, including ConfTr, LAC, APS, RAPS, SAPS, ClassConditional CP, Clustered CP and Weighted CP.
 * Introduced CP algorithms for regression, including ACI, ABS and CQR.

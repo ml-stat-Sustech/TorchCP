@@ -8,7 +8,7 @@
 import pytest
 import torch
 
-from torchcp.classification.score.thr import THR
+from torchcp.classification.score.lac import LAC
 from torchcp.classification.score.topk import TOPK
 
 
@@ -35,7 +35,7 @@ def test_initialization():
 
 def test_inheritance():
     topk = TOPK()
-    assert isinstance(topk, THR)
+    assert isinstance(topk, LAC)
 
 
 def test_calculate_all_label_randomized(sample_data):

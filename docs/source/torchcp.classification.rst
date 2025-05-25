@@ -12,7 +12,7 @@ score function
 ..  autosummary::
     :nosignatures:
 
-    THR
+    LAC
     APS
     RAPS
     SAPS
@@ -21,7 +21,7 @@ score function
     KNN
 
 
-.. autoclass:: THR
+.. autoclass:: LAC
    :members:
 
 .. autoclass:: APS
@@ -51,14 +51,14 @@ predictor
     :nosignatures:
 
     SplitPredictor
-    ClassWisePredictor
+    ClassConditionalPredictor
     ClusteredPredictor
     WeightedPredictor
 
 .. autoclass:: SplitPredictor
    :members:
 
-.. autoclass:: ClassWisePredictor
+.. autoclass:: ClassConditionalPredictor
    :members:
 
 .. autoclass:: ClusteredPredictor

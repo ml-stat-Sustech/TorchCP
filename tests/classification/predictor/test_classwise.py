@@ -12,8 +12,8 @@ import pytest
 import torch
 from torch.utils.data import Dataset
 
-from torchcp.classification.predictor import ClassWisePredictor
-from torchcp.classification.score import THR
+from torchcp.classification.predictor import ClassConditionalPredictor
+from torchcp.classification.score import LAC
 
 
 @pytest.fixture
@@ -47,12 +47,12 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 
 @pytest.fixture
 def predictor(mock_score_function, mock_model):
-    return ClassWisePredictor(mock_score_function, mock_model)
+    return ClassConditionalPredictor(mock_score_function, mock_model)
 
 
 def test_valid_initialization(predictor, mock_score_function, mock_model):
@@ -67,7 +67,7 @@ def test_valid_initialization(predictor, mock_score_function, mock_model):
 @pytest.mark.parametrize("temperature", [-0.1, -1.0])
 def test_invalid_initialization(mock_score_function, mock_model, temperature):
     with pytest.raises(ValueError, match="temperature must be greater than 0."):
-        ClassWisePredictor(mock_score_function, mock_model, temperature)
+        ClassConditionalPredictor(mock_score_function, mock_model, temperature)
 
 
 @pytest.mark.parametrize("alpha", [0, 1, -0.1, 2])

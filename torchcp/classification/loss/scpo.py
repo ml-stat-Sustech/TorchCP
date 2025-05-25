@@ -31,7 +31,7 @@ class SCPOLoss(ConfTSLoss):
             Can be "log" or "neg_inv".
 
     Examples::
-        >>> predictor = torchcp.classification.SplitPredictor(score_function=THR(score_type="identity"))
+        >>> predictor = torchcp.classification.SplitPredictor(score_function=LAC(score_type="identity"))
         >>> scpo = SCPOLoss(predictor=predictor, alpha=0.01)
         >>> logits = torch.randn(100, 10)
         >>> labels = torch.randint(0, 2, (100,))

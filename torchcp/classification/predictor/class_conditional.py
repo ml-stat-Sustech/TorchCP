@@ -10,9 +10,9 @@ import torch
 from torchcp.classification.predictor.split import SplitPredictor
 
 
-class ClassWisePredictor(SplitPredictor):
+class ClassConditionalPredictor(SplitPredictor):
     """
-    Method: Class-wise conformal prediction
+    Method: Class-conditional conformal prediction
     Paper: Conditional validity of inductive conformal predictors (Vovk et al., 2012)
     Link: https://proceedings.mlr.press/v25/vovk12.html
     
@@ -28,7 +28,7 @@ class ClassWisePredictor(SplitPredictor):
 
     def __init__(self, score_function, model=None, temperature=1):
 
-        super(ClassWisePredictor, self).__init__(score_function, model, temperature)
+        super(ClassConditionalPredictor, self).__init__(score_function, model, temperature)
         self.q_hat = None
 
     def calculate_threshold(self, logits, labels, alpha):

@@ -3,7 +3,7 @@ import pytest
 import torch
 from torch.utils.data import Dataset
 from torchcp.classification.predictor import RC3PPredictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 
 @pytest.fixture
 def mock_dataset():
@@ -34,7 +34,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 @pytest.fixture
 def predictor(mock_score_function, mock_model):

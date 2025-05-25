@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .classwise import ClassWisePredictor
+from .class_conditional import ClassConditionalPredictor
 from .cluster import ClusteredPredictor
 from .split import SplitPredictor
 from .weight import WeightedPredictor

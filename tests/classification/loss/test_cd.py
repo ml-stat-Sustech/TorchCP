@@ -10,12 +10,12 @@ import torch
 
 from torchcp.classification.loss.cd import CDLoss
 from torchcp.classification.predictor import SplitPredictor as Predictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 
 
 @pytest.fixture
 def ds_instance():
-    predictor = Predictor(THR())
+    predictor = Predictor(LAC())
     epsilon = 1e-4
     return CDLoss(predictor, epsilon)
 
@@ -28,11 +28,11 @@ def test_init(ds_instance):
 
 def test_invalid_epsilon():
     with pytest.raises(ValueError):
-        CDLoss(Predictor(THR()), 0)
+        CDLoss(Predictor(LAC()), 0)
 
 
 def test_forward_with_different_epsilon():
-    predictor = Predictor(THR())
+    predictor = Predictor(LAC())
     logits = torch.randn(10, 5)
     labels = torch.randint(0, 5, (10,))
     epsilons = [1e-3, 1e-2, 1e-1]
@@ -44,7 +44,7 @@ def test_forward_with_different_epsilon():
 
 
 def test_forward_with_edge_cases():
-    predictor = Predictor(THR())
+    predictor = Predictor(LAC())
     logits = torch.randn(10, 5)
     labels = torch.randint(0, 5, (10,))
 

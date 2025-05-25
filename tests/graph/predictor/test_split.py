@@ -12,7 +12,7 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.classification.utils import Metrics
 from torchcp.graph.predictor import SplitPredictor
 from torchcp.graph.predictor.base import BasePredictor
@@ -46,7 +46,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 
 @pytest.fixture

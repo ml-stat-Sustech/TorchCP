@@ -90,10 +90,10 @@ TorchCP has implemented the following methods:
 | 2021 | [**Uncertainty Sets for Image Classifiers using Conformal Prediction**](https://arxiv.org/abs/2009.14193       )                                                             | ICLR'21              | [Link](https://github.com/aangelopoulos/conformal_classification)                 | classification.score.raps classification.score.topk |
 | 2020 | [**Classification with Valid and Adaptive Coverage**](https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf)                             | NeurIPS'20           | [Link](https://github.com/msesia/arc)                                             | classification.score.aps                            |
 | 2019 | [**Conformal Prediction Under Covariate Shift**](https://arxiv.org/abs/1904.06019)                                                                                           | NeurIPS'19           | [Link](https://github.com/ryantibs/conformal/)                                    | classification.predictor.weight                     |
-| 2016 | [**Least Ambiguous Set-Valued Classifiers with Bounded Error Levels**](https://arxiv.org/abs/1609.00451)                                                                     | JASA                 |                                                                                   | classification.score.thr                            |
+| 2016 | [**Least Ambiguous Set-Valued Classifiers with Bounded Error Levels**](https://arxiv.org/abs/1609.00451)                                                                     | JASA                 |                                                                                   | classification.score.lac                            |
 | 2016 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                                  | The Computer Journal |                                                                                   | classification.score.knn                            |
 | 2015 | [**Bias reduction through conditional conformal prediction**](https://dl.acm.org/doi/abs/10.3233/IDA-150786)                                                                 | Intell. Data Anal.   |                                                                                   | classification.score.margin                         |
-| 2012 | [**Conditional Validity of Inductive Conformal Predictors**](https://proceedings.mlr.press/v25/vovk12.html)                                                                  | ACML'12              |                                                                                   | classification.predictor.classwise                  |
+| 2012 | [**Conditional Validity of Inductive Conformal Predictors**](https://proceedings.mlr.press/v25/vovk12.html)                                                                  | ACML'12              |                                                                                   | classification.predictor.class_conditional                  |
 | 2007 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                                  | The Computer Journal |                                                                                   | classification.score.knn                            |
 
 ## Regression
@@ -108,7 +108,7 @@ TorchCP has implemented the following methods:
 | 2019 | [**Adaptive, Distribution-Free Prediction Intervals for Deep Networks**](https://proceedings.mlr.press/v108/kivaranovic20a.html)                | AISTATS'19           | [Link](https://github.com/yromano/cqr)                 | regression.score.cqrfm                     |                     |
 | 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS'19           | [Link](https://github.com/yromano/cqr)                 | regression.score.cqr                       |                     |
 | 2017 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                   | JASA                 | [Link](https://github.com/ryantibs/conformal)          | regression.predictor.split                 |                     |
-| 2005 | [**Algorithmic Learning in a Random World**](https://link.springer.com/book/10.1007/b106715)                                                   | Springer                 |   | regression.score.abs regression.score.norabs                  |                     |
+| 2005 | [**Inductive Confidence Machines for Regression**](https://link.springer.com/chapter/10.1007/3-540-36755-1_29)                                                   | Springer                 |   | regression.score.abs regression.score.norabs                  |                     |
 
 ## Graph
 
@@ -160,10 +160,10 @@ pytest --cov=torchcp tests
 
 ## Examples
 
-Here, we provide a simple example for a classification task, with THR score and SplitPredictor.
+Here, we provide a simple example for a classification task, with LAC score and SplitPredictor.
 
 ```python
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.classification.predictor import SplitPredictor
 
 # Preparing a calibration data and a test data.
@@ -174,9 +174,9 @@ model = ...
 
 model.eval()
 
-# Options of score function: THR, APS, SAPS, RAPS
-# Define a conformal prediction algorithm. Optional: SplitPredictor, ClusteredPredictor, ClassWisePredictor
-predictor = SplitPredictor(score_function=THR(), model=model)
+# Options of score function: LAC, APS, SAPS, RAPS
+# Define a conformal prediction algorithm. Optional: SplitPredictor, ClusteredPredictor, ClassConditionalPredictor
+predictor = SplitPredictor(score_function=LAC(), model=model)
 
 # Calibrating the predictor with significance level as 0.1
 predictor.calibrate(cal_dataloader, alpha=0.1)
