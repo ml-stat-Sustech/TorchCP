@@ -12,7 +12,7 @@ from torchcp.classification.predictor.split import SplitPredictor
 
 class ClassConditionalPredictor(SplitPredictor):
     """
-    Method: Class-wise conformal prediction
+    Method: Class-conditional conformal prediction
     Paper: Conditional validity of inductive conformal predictors (Vovk et al., 2012)
     Link: https://proceedings.mlr.press/v25/vovk12.html
     
