@@ -8,13 +8,13 @@
 import torch
 import pytest
 
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.classification.predictor import SplitPredictor as Predictor
 from torchcp.classification.loss.scpo import SCPOLoss
 from torchcp.classification.loss.conftr import ConfTrLoss
 
 def test_scpo_init_valid_params():
-    predictor = Predictor(THR())
+    predictor = Predictor(LAC())
     scpo = SCPOLoss(predictor=predictor, alpha=0.05)
     assert scpo.predictor == predictor
     assert scpo.alpha == 0.05
@@ -29,7 +29,7 @@ def test_scpo_init_valid_params():
 
 
 def test_scpo_init_invalid_fraction():
-    predictor = Predictor(THR())
+    predictor = Predictor(LAC())
     with pytest.raises(ValueError, match="loss_transform should be log or neg_inv"):
         SCPOLoss(predictor=predictor, alpha=0.05, loss_transform="square")
 
@@ -45,7 +45,7 @@ def sample_inputs():
 
 def test_forward(sample_inputs):
     logits, labels = sample_inputs
-    scpo = SCPOLoss(predictor=Predictor(THR()), alpha=0.1)
+    scpo = SCPOLoss(predictor=Predictor(LAC()), alpha=0.1)
 
     results = scpo(logits, labels)
 
@@ -56,7 +56,7 @@ def test_forward(sample_inputs):
 
 def test_compute_loss(sample_inputs):
     test_scores, test_labels = sample_inputs
-    scpo = SCPOLoss(predictor=Predictor(THR()), alpha=0.1)
+    scpo = SCPOLoss(predictor=Predictor(LAC()), alpha=0.1)
     results = scpo.compute_loss(test_scores, test_labels, 1)
 
     size_loss = scpo.size_loss_fn.compute_loss(test_scores, test_labels, 1)
