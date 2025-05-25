@@ -91,6 +91,10 @@ class TestConformalLM:
         conf_llm = ConformalLM(model=mock_model)
         assert conf_llm._device == device
 
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        conf_llm = ConformalLM(device=device)
+        assert conf_llm._device == device
+
     def test_scaling(self, setup_basic_model, sample_data):
         setup_basic_model.scaling(
             sample_data['training_scores'],
