@@ -79,12 +79,7 @@ def test_device_handling():
 
     # Test device with no model
     predictor = ConcretePredictor(score_fn)
-    if not torch.cuda.is_available():
-        device = torch.device("cpu")
-    else:
-        cuda_idx = torch.cuda.current_device()
-        device = torch.device(f"cuda:{cuda_idx}")
-    assert predictor.get_device() == device
+    assert predictor.get_device() == torch.device("cpu")
 
     # Test CUDA device if available
     if torch.cuda.is_available():

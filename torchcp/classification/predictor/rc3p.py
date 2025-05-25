@@ -26,8 +26,8 @@ class RC3PPredictor(SplitPredictor):
         temperature (float, optional): Temperature for scaling logits. Default is 1.
     """
 
-    def __init__(self, score_function, model=None):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model=None, device=None):
+        super().__init__(score_function, model, device=device)
         self.num_classes = None  # Will be set during calibration
         self.class_thresholds = None  # Store class-wise conformal thresholds Q_{1-α_y}^{class}(y)
         self.class_rank_limits = None  # Store class-wise label rank thresholds k(y)

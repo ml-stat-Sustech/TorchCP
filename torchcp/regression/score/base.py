@@ -7,6 +7,7 @@
 
 from abc import ABCMeta, abstractmethod
 
+import torch
 from tqdm import tqdm
 
 from torchcp.utils.common import get_device

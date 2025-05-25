@@ -74,8 +74,8 @@ def preprocess(mock_graph_data, mock_score_function, mock_model):
 
 def test_base_graph_predictor(mock_graph_data, mock_score_function):
     class TestPredictor(BasePredictor):
-        def __init__(self, graph_data, score_function, model=None):
-            super().__init__(graph_data, score_function, model)
+        def __init__(self, graph_data, score_function, model=None, device=None):
+            super().__init__(graph_data, score_function, model, device)
 
     predictor = TestPredictor(mock_graph_data, mock_score_function)
     with pytest.raises(NotImplementedError):
@@ -83,6 +83,10 @@ def test_base_graph_predictor(mock_graph_data, mock_score_function):
 
     with pytest.raises(NotImplementedError):
         predictor.predict(None)
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    predictor = TestPredictor(mock_graph_data, mock_score_function, device=device)
+    assert predictor._device == device
 
 
 def test_initialization(predictor, mock_graph_data, mock_score_function, mock_model):

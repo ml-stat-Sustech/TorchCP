@@ -7,8 +7,9 @@
 
 from abc import ABCMeta, abstractmethod
 
+import torch
 import torch.nn.functional as F
-
+from torchcp.utils.common import get_device
 from torchcp.classification.utils.metrics import Metrics
 
 
@@ -32,15 +33,23 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, graph_data, score_function, model=None):
+    def __init__(self, graph_data, score_function, model=None, device=None):
         self.score_function = score_function
         self._model = model
+
+        if device is not None:
+            self._device = torch.device(device)
+        elif model is not None:
+            self._device = get_device(model)
+        else:
+            self._device = graph_data.x.device
+
         if self._model != None:
             self._model.eval()
+            self._model.to(self._device)
 
-        self._graph_data = graph_data
+        self._graph_data = graph_data.to(self._device)
         self._label_mask = F.one_hot(graph_data.y).bool()
-        self._device = graph_data.x.device
         self._metric = Metrics()
 
     @abstractmethod

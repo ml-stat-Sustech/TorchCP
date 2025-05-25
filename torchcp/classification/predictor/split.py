@@ -25,8 +25,8 @@ class SplitPredictor(BasePredictor):
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
     """
 
-    def __init__(self, score_function, model=None, temperature=1):
-        super().__init__(score_function, model, temperature)
+    def __init__(self, score_function, model=None, temperature=1, device=None):
+        super().__init__(score_function, model, temperature, device)
 
     #############################
     # The calibration process

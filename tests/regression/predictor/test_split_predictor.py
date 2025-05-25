@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import torch
 import pytest
 
 from torchcp.regression.predictor import SplitPredictor
@@ -30,6 +31,12 @@ def split_predictor(mock_model, mock_score_function):
 @pytest.fixture
 def split_predictor_nomodel(mock_score_function):
     return SplitPredictor(score_function=mock_score_function)
+
+
+def test_initialization_device(mock_score_function):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    predictor = SplitPredictor(mock_score_function, device=device)
+    assert predictor._device == device
 
 
 def test_workflow(mock_data, split_predictor, split_predictor_nomodel, mock_model):

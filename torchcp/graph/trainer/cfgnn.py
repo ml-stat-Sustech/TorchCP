@@ -11,6 +11,7 @@ from tqdm import tqdm
 import torch
 import torch.nn.functional as F
 
+from torchcp.utils.common import get_device
 from torchcp.classification.score import LAC, APS
 from torchcp.classification.loss import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor
@@ -53,15 +54,20 @@ class CFGNNTrainer:
             num_layers=2,
             alpha=0.1,
             optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
-            optimizer_params: dict = {'weight_decay': 5e-4, 'lr': 0.001}):
+            optimizer_params: dict = {'weight_decay': 5e-4, 'lr': 0.001},
+            device=None):
 
         if graph_data is None:
             raise ValueError("graph_data cannot be None.")
         if model is None:
             raise ValueError("model cannot be None.")
+        
+        if device is not None:
+            self._device = torch.device(device)
+        else:
+            self._device = get_device(model)
 
-        self.graph_data = graph_data
-        self._device = self.graph_data.x.device
+        self.graph_data = graph_data.to(self._device)
 
         self.num_classes = graph_data.y.max().item() + 1
         self.model = CFGNNModel(model, self.num_classes, hidden_channels, num_layers).to(self._device)

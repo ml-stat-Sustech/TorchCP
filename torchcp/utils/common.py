@@ -31,11 +31,7 @@ def get_device(model):
         torch.device: The device on which the model's parameters are located, or the default device (CPU or GPU).
     """
     if model is None:
-        if not torch.cuda.is_available():
-            device = torch.device("cpu")
-        else:
-            cuda_idx = torch.cuda.current_device()
-            device = torch.device(f"cuda:{cuda_idx}")
+        device = torch.device("cpu")
     else:
         device = next(model.parameters()).device
     return device

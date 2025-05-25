@@ -79,7 +79,7 @@ class TestBaseTrainer:
     def test_initialization(self, mock_model):
         # Test with default device
         trainer = ConcreteTrainer(mock_model)
-        assert trainer.device == torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        assert trainer.device == torch.device('cpu')
         
         # Test with specified device
         cpu_trainer = ConcreteTrainer(mock_model, device=torch.device('cpu'))
