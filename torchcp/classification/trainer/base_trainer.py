@@ -40,10 +40,8 @@ class BaseTrainer(ABC):
         
         if device is not None:
             self.device = torch.device(device)
-        elif model is not None:
-            self.device = get_device(model)
         else:
-            self.device = torch.device("cpu")
+            self.device = get_device(model)
 
         self.model = model.to(self.device)
         self.verbose = verbose

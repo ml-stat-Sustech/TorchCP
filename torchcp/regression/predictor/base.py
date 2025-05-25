@@ -38,7 +38,7 @@ class BasePredictor(object):
         elif model is not None:
             self._device = get_device(model)
         else:
-            self.device = torch.device("cpu")
+            self._device = torch.device("cpu")
             
         self.score_function = score_function
         self._metric = Metrics()

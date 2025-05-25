@@ -64,8 +64,20 @@ class TestConformalLM:
             rejection=False
         )
         return conformal_llm
+    
+    @pytest.fixture
+    def mock_model(self):
+        class MockModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.param = torch.nn.Parameter(torch.tensor(1.0))
 
-    def test_initialization_invalid_params(self):
+            def forward(self, x):
+                return x
+
+        return MockModel()
+
+    def test_initialization_invalid_params(self, mock_model):
         # Test invalid scaling_type
         with pytest.raises(ValueError):
             ConformalLM(scaling_type="invalid")
@@ -73,6 +85,11 @@ class TestConformalLM:
         # Test invalid set_score_function_name
         with pytest.raises(ValueError):
             ConformalLM(set_score_function_name="invalid")
+
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        mock_model.to(device)
+        conf_llm = ConformalLM(model=mock_model)
+        assert conf_llm._device == device
 
     def test_scaling(self, setup_basic_model, sample_data):
         setup_basic_model.scaling(

@@ -64,3 +64,5 @@ def test_ts_early_stopping(device, test_data):
     ts.temperature = nn.Parameter(torch.tensor(1.0))
     ts.optimze(test_data, device, epsilon=float('inf'))  # Force early stopping
     assert (ts.temperature.item() - 1.0) < float('inf')
+
+    ts.optimze(test_data, epsilon=float('inf'))

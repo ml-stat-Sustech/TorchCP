@@ -56,7 +56,7 @@ class BaseScore(object):
         """
         raise NotImplementedError
 
-    def _basetrain(self, model, epochs, train_dataloader, criterion, optimizer, device=None, verbose=True):
+    def _basetrain(self, model, epochs, train_dataloader, criterion, optimizer, verbose=True):
         """
         Trains the given model using the provided training data loader, criterion, and optimizer.
         
@@ -70,12 +70,7 @@ class BaseScore(object):
         """
 
         model.train()
-        if device is not None:
-            device = torch.device(device)
-        else:
-            device = get_device(model)
-        model = model.to(device)
-
+        device = get_device(model)
         if verbose:
             with tqdm(total=epochs, desc="Epoch") as _tqdm:
                 for epoch in range(epochs):

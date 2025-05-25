@@ -23,6 +23,15 @@ def r2ccp_instance(dummy_data):
     return R2CCP(midpoints)
 
 
+def test_initialization_device(dummy_data):
+    K = 3
+    train_dataloader, _ = dummy_data
+    midpoints = calculate_midpoints(train_dataloader, K)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    r2ccp = R2CCP(midpoints, device)
+    r2ccp._device == device
+
+
 def test_call(r2ccp_instance):
     """
     Test the __call__ method for score calculation.

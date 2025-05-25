@@ -76,6 +76,12 @@ def test_valid_initialization(predictor, mock_score_function, mock_model):
     assert predictor._logits_transformation.temperature == 1.0
 
 
+def test_initialization_device(mock_score_function, mock_model):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    predictor = SplitPredictor(mock_score_function, mock_model, device=device)
+    assert predictor._device == device
+    
+
 @pytest.mark.parametrize("temperature", [-0.1, -1.0])
 def test_invalid_initialization(mock_score_function, mock_model, temperature):
     with pytest.raises(ValueError, match="temperature must be greater than 0."):

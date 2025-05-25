@@ -42,7 +42,7 @@ class BasePredictor(object):
         elif model is not None:
             self._device = get_device(model)
         else:
-            self.device = graph_data.x.device
+            self._device = graph_data.x.device
 
         if self._model != None:
             self._model.eval()
