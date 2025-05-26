@@ -37,23 +37,22 @@ if __name__ == "__main__":
     total = 0
     set_size_sum = 0
 
-    cal_dataset = cal_loader.dataset
+    calibration_data = list(cal_loader.dataset)
     test_dataset = test_loader.dataset
     for i in tqdm(range(len(test_dataset))):
         # calibration
         predictor.calibrate(cal_loader, alpha=alpha)
         # prediction
         x, y = test_dataset[i]
-        x = x.to(device)
-        y = y.to(device)
-        prediction_intervals = predictor.predict(x)[0][0]
+        x_device = x.to(device)
+        prediction_intervals = predictor.predict(x_device)[0][0]
         covered = 1 if prediction_intervals[0] <= y <= prediction_intervals[1] else 0
         cover_count += int(covered)
-        set_size_sum += prediction_intervals.sum()
+        set_size_sum += prediction_intervals[1] - prediction_intervals[0]
         total += 1
         
-        cal_dataset = torch.utils.data.ConcatDataset([cal_dataset, TensorDataset(x.unsqueeze(0), y.unsqueeze(0))])
-        cal_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=128, shuffle=True)
+        calibration_data.append((x, y))
+        cal_loader = torch.utils.data.DataLoader(calibration_data, batch_size=128, shuffle=True)
 
     coverage_rate = cover_count / total
     average_set_size = set_size_sum / total
