@@ -48,7 +48,7 @@ model.eval()
 # A standard process of conformal prediction
 #######################################
 alpha = 0.1  # Significance level
-predictor = RC3PPredictor(score_function=LAC(), model=model)
+predictor = SplitPredictor(score_function=LAC(), model=model)
 # predictor = ClassConditionalPredictor(score_function=LAC(), model=model)
 predictor.calibrate(cal_dataloader, alpha=0.1)
 
