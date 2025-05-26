@@ -53,6 +53,7 @@ if __name__ == "__main__":
         total += 1
         
         cal_dataset = torch.utils.data.ConcatDataset([cal_dataset, TensorDataset(x.unsqueeze(0), y.unsqueeze(0))])
+        cal_loader = torch.utils.data.DataLoader(cal_dataset, batch_size=128, shuffle=True)
 
     coverage_rate = cover_count / total
     average_set_size = set_size_sum / total
