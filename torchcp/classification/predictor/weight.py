@@ -35,7 +35,7 @@ class WeightedPredictor(SplitPredictor):
 
     def __init__(self, score_function, model=None, temperature=1, alpha=0.1, image_encoder=None, domain_classifier=None, device=None):
 
-        super().__init__(score_function, model, alpha, temperature, device)
+        super().__init__(score_function, model, temperature, alpha, device)
 
         if image_encoder is None:
             raise ValueError("image_encoder cannot be None.")

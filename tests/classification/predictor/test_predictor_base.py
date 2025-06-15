@@ -67,6 +67,17 @@ def test_base_predictor_initialization():
     with pytest.raises(ValueError, match="temperature must be greater than 0"):
         ConcretePredictor(score_fn, model, temperature=-1)
 
+    with pytest.raises(ValueError, match="alpha should be a value"):
+        ConcretePredictor(score_fn, model, alpha=-1)
+
+    with pytest.raises(ValueError, match="alpha should be a value"):
+        ConcretePredictor(score_fn, model, alpha=0)
+
+    with pytest.raises(ValueError, match="alpha should be a value"):
+        ConcretePredictor(score_fn, model, alpha=1)
+
+    with pytest.raises(ValueError, match="alpha should be a value"):
+        ConcretePredictor(score_fn, model, alpha=2)
 
 def test_device_handling():
     """Test device handling functionality"""

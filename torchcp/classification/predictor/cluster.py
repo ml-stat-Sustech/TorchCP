@@ -74,10 +74,7 @@ class ClusteredPredictor(ClassConditionalPredictor):
 
         self.q_hat = self.__compute_cluster_specific_qhats(cluster_assignments,cal_scores,cal_labels,alpha)
         
-    def preprocess_scores(self, logits, labels, alpha=None):
-        if alpha is None:
-            alpha = self.alpha
-
+    def preprocess_scores(self, logits, labels, alpha):
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         num_classes = logits.shape[1]
