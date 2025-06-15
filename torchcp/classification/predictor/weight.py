@@ -33,7 +33,7 @@ class WeightedPredictor(SplitPredictor):
         device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
-    def __init__(self, score_function, model=None, alpha=0.1, temperature=1, image_encoder=None, domain_classifier=None, device=None):
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, image_encoder=None, domain_classifier=None, device=None):
 
         super().__init__(score_function, model, alpha, temperature, device)
 

@@ -22,13 +22,13 @@ class SplitPredictor(BasePredictor):
     Args:
         score_function (callable): Non-conformity score function.
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
-        alpha (float, optional): The significance level. Default is 0.1.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        alpha (float, optional): The significance level. Default is 0.1.
         device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
-    def __init__(self, score_function, model=None, alpha=0.1, temperature=1, device=None):
-        super().__init__(score_function, model, alpha, temperature, device)
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, device=None):
+        super().__init__(score_function, model, temperature, alpha, device)
 
     #############################
     # The calibration process

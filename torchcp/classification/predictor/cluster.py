@@ -39,10 +39,10 @@ class ClusteredPredictor(ClassConditionalPredictor):
         __split (str): The method to split the dataset into clustering dataset and calibration set.
     """
 
-    def __init__(self, score_function, model=None, alpha=0.1, temperature=1, ratio_clustering="auto", num_clusters="auto",
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, ratio_clustering="auto", num_clusters="auto",
                  split='random', device=None
                  ):
-        super(ClusteredPredictor, self).__init__(score_function, model, alpha, temperature, device)
+        super(ClusteredPredictor, self).__init__(score_function, model, temperature, alpha, device)
 
         if ratio_clustering != "auto" and not (0 < ratio_clustering < 1):
             raise ValueError("ratio_clustering should be 'auto' or a value in (0, 1).")
