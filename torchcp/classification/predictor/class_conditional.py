@@ -20,28 +20,30 @@ class ClassConditionalPredictor(SplitPredictor):
     Args:
         score_function (callable): Non-conformity score function.
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
+        alpha (float, optional): The significance level. Default is 0.1.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
 
     Attributes:
         q_hat (torch.Tensor): The calibrated threshold for each class.
     """
 
-    def __init__(self, score_function, model=None, temperature=1, device=None):
+    def __init__(self, score_function, model=None, alpha=0.1, temperature=1, device=None):
 
-        super(ClassConditionalPredictor, self).__init__(score_function, model, temperature, device)
+        super(ClassConditionalPredictor, self).__init__(score_function, model, alpha, temperature, device)
         self.q_hat = None
 
-    def calculate_threshold(self, logits, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha=None):
         """
         Calculate the class-wise conformal prediction thresholds.
 
         Args:
             logits (torch.Tensor): The logits output from the model.
             labels (torch.Tensor): The ground truth labels.
-            alpha (float): The significance level.
+            alpha (float): The significance level. Default is None.
         """
-        if not (0 < alpha < 1):
-            raise ValueError("alpha should be a value in (0, 1).")
+        if alpha is None:
+            alpha = self.alpha
 
         alpha = torch.tensor(alpha, device=self._device)
         logits = logits.to(self._device)

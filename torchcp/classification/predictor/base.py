@@ -23,7 +23,9 @@ class BasePredictor(object):
     Args:
         score_function (callable): Non-conformity score function.
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
+        alpha (float, optional): The significance level. Default is 0.1.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     
     Attributes:
         score_function (callable): Non-conformity score function.
@@ -43,7 +45,7 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model=None, temperature=1, device=None):
+    def __init__(self, score_function, model=None, alpha=0.1, temperature=1, device=None):
 
         warnings.warn(
             "The 'temperature' parameter is deprecated and will be removed in a future version. "
@@ -58,6 +60,10 @@ class BasePredictor(object):
         self._model = model
         if self._model != None:
             self._model.eval()
+
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        self.alpha = alpha
             
         if device is not None:
             self._device = torch.device(device)
@@ -70,13 +76,13 @@ class BasePredictor(object):
         self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("TS")(temperature).to(self._device)
 
     @abstractmethod
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
         """
         Virtual method to calibrate the calibration set.
 
         Args:
             cal_dataloader (torch.utils.data.DataLoader): A dataloader of the calibration set.
-            alpha (float): The significance level.
+            alpha (float): The significance level. Default is None.
         """
         raise NotImplementedError
 

@@ -29,13 +29,19 @@ class BasePredictor(object):
             A user-defined function that computes the non-conformity score.
         model (torch.nn.Module): 
             A PyTorch model used for predictions on the graph. Defaults to `None`.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, graph_data, score_function, model=None, device=None):
+    def __init__(self, graph_data, score_function, model=None, alpha=0.1, device=None):
         self.score_function = score_function
         self._model = model
+
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        self.alpha = alpha
 
         if device is not None:
             self._device = torch.device(device)
@@ -53,7 +59,7 @@ class BasePredictor(object):
         self._metric = Metrics()
 
     @abstractmethod
-    def calibrate(self, cal_idx, alpha):
+    def calibrate(self, cal_idx, alpha=None):
         """
         Abstract method to perform calibration on a given calibration set.
 
@@ -63,7 +69,7 @@ class BasePredictor(object):
                 the calibration set.
             alpha (float): 
                 The significance level, a value in the range (0, 1), representing the 
-                acceptable error rate for conformal prediction.
+                acceptable error rate for conformal prediction. Default is None.
         """
         raise NotImplementedError
 

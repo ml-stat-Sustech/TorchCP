@@ -23,11 +23,12 @@ class RC3PPredictor(SplitPredictor):
     Args:
         score_function (callable): Non-conformity score function (e.g., APS or RAPS).
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
-        temperature (float, optional): Temperature for scaling logits. Default is 1.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
-    def __init__(self, score_function, model=None, device=None):
-        super().__init__(score_function, model, device=device)
+    def __init__(self, score_function, model=None, alpha=0.1, device=None):
+        super().__init__(score_function, model, alpha=alpha, device=device)
         self.num_classes = None  # Will be set during calibration
         self.class_thresholds = None  # Store class-wise conformal thresholds Q_{1-α_y}^{class}(y)
         self.class_rank_limits = None  # Store class-wise label rank thresholds k(y)
@@ -35,16 +36,16 @@ class RC3PPredictor(SplitPredictor):
     #############################
     # The calibration process
     ############################
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
         """
         Calibrate the RC3P predictor using class-wise conformal scores and label ranks.
 
         Args:
             cal_dataloader (DataLoader): Calibration data loader.
-            alpha (float): Target miscoverage rate (0 < alpha < 1).
+            alpha (float): Target miscoverage rate (0 < alpha < 1). Default is None.
         """
-        if not (0 < alpha < 1):
-            raise ValueError("alpha should be a value in (0, 1).")
+        if alpha is None:
+            alpha = self.alpha
 
         if self._model is None:
             raise ValueError("Model is not defined. Please provide a valid model.")
@@ -66,15 +67,18 @@ class RC3PPredictor(SplitPredictor):
                 
         self.calculate_threshold(logits, labels, alpha)
 
-    def calculate_threshold(self, logits, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha=None):
         """
         Perform class-wise calibration for conformal thresholds and label ranks.
 
         Args:
             logits (torch.Tensor): Model logits for calibration data.
             labels (torch.Tensor): True labels for calibration data.
-            alpha (float): Target miscoverage rate.
+            alpha (float): Target miscoverage rate. Default is None.
         """
+        if alpha is None:
+            alpha = self.alpha
+
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         
