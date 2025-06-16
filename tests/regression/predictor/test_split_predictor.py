@@ -63,6 +63,8 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel, mock_mode
     assert hasattr(split_predictor, "scores"), "SplitPredictor should have scores after calibration."
     assert hasattr(split_predictor, "q_hat"), "SplitPredictor should have q_hat after calibration."
 
+    split_predictor.calibrate(cal_dataloader, alpha=None)
+
     # Step 3: Evaluate the model
     eval_res = split_predictor.evaluate(test_dataloader)
     assert "coverage_rate" in eval_res, "Coverage rate should be part of evaluation results."

@@ -29,16 +29,17 @@ def test_aci_predictor_workflow(mock_data, mock_model, mock_score_function):
     with pytest.raises(ValueError, match="gamma must be greater than 0."):
         ACIPredictor(mock_score_function, mock_model, gamma=0)
 
+    alpha = 0.1
     # Initialize ACIPredictor
     aci_predictor = ACIPredictor(
         score_function=mock_score_function,
         model=mock_model,
-        gamma=0.1
+        gamma=0.1,
+        alpha=alpha
     )
 
     # Test train method
-    alpha = 0.1
-    aci_predictor.train(train_dataloader, alpha=alpha)
+    aci_predictor.train(train_dataloader)
     assert aci_predictor.alpha == alpha, "Alpha should be set correctly during training."
     assert aci_predictor.alpha_t == alpha, "Adaptive alpha_t should start with initial alpha."
 
@@ -104,7 +105,7 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
     train_dataloader, _, test_dataloader = mock_data
     aci_predictor = ACIPredictor(mock_score_function, mock_model.to(device), gamma=0.1)
 
-    aci_predictor.train(train_dataloader, alpha=0.1)
+    aci_predictor.train(train_dataloader)
     x_batch, _ = next(iter(test_dataloader))
     x_batch = x_batch.to(device)
 

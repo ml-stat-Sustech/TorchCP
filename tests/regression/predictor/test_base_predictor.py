@@ -19,8 +19,8 @@ def mock_score_function():
 
 # Partial implementation of BasePredictor for testing
 class PartialPredictor(BasePredictor):
-    def __init__(self, score_function, model=None):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model=None, alpha=0.1):
+        super().__init__(score_function, model, alpha)
         # Intentionally not implementing any abstract methods
 
 
@@ -52,6 +52,12 @@ def test_not_implemented_methods(method_name, mock_data, mock_score_function):
     with pytest.raises(NotImplementedError):
         # Dynamically call the method
         getattr(partial_predictor, method_name)(*dummy_args[method_name])
+
+
+@pytest.mark.parametrize("alpha", [-1, 0, 1, 2])
+def test_initializatioin_alpha(mock_score_function, alpha):
+    with pytest.raises(ValueError, match="alpha should be a value"):
+        PartialPredictor(score_function=mock_score_function, alpha=alpha)
 
 
 def test_model_type_error(mock_score_function):

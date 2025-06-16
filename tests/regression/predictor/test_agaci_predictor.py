@@ -27,17 +27,18 @@ def mock_score_function():
 def test_agaci_predictor_workflow(mock_data, mock_model, mock_score_function, aggregation_function):
     train_dataloader, _, test_dataloader = mock_data
 
+    alpha = 0.1
     # Initialize AgACIPredictor
     agaci_predictor = AgACIPredictor(
         score_function=mock_score_function,
         model=mock_model,
         gamma_list=[0.05,0.01,0.005],
-        aggregation_function=aggregation_function
+        aggregation_function=aggregation_function,
+        alpha=alpha
     )
 
     # Test train method
-    alpha = 0.1
-    agaci_predictor.train(train_dataloader, alpha=alpha)
+    agaci_predictor.train(train_dataloader)
     assert agaci_predictor.alpha == alpha, "Alpha should be set correctly during training."
     assert agaci_predictor.alpha_t == alpha, "Adaptive alpha_t should start with initial alpha."
 
@@ -108,7 +109,7 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
     train_dataloader, _, test_dataloader = mock_data
     agaci_predictor = AgACIPredictor(mock_score_function, mock_model.to(device), gamma_list=[0.05,0.01,0.005], aggregation_function='mean')
 
-    agaci_predictor.train(train_dataloader, alpha=0.1)
+    agaci_predictor.train(train_dataloader)
     x_batch, _ = next(iter(test_dataloader))
     x_batch = x_batch.to(device)
 
