@@ -33,9 +33,10 @@ class ConfTSTrainer(TSTrainer):
         >>> 
         >>> # Create ConfTS trainer
         >>> trainer = ConfTSTrainer(
+        ...     model=cnn,
         ...     init_temperature=1.5,
-        ...     alpha=0.1    
-        ...     model=cnn)
+        ...     alpha=0.1
+        ...     )
         >>> 
         >>> # Train calibration
         >>> trainer.train(
@@ -54,8 +55,8 @@ class ConfTSTrainer(TSTrainer):
             alpha: float,
             init_temperature: float,
             device: torch.device = None,
-            verbose: bool = True, ):
-        super().__init__(init_temperature, model, device=device, verbose=verbose)
+            verbose: bool = True):
+        super().__init__(model, init_temperature, device=device, verbose=verbose)
         self.optimizer = torch.optim.Adam([self.model.temperature])
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
         self.loss_fn = ConfTSLoss(predictor=predictor, alpha=alpha, fraction=0.5)

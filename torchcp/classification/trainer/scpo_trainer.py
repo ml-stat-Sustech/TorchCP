@@ -34,8 +34,8 @@ class SCPOTrainer(Trainer):
         >>> 
         >>> # Create SCPO trainer
         >>> trainer = SCPOTrainer(
-        ...             alpha=0.01,
         ...             model=model,
+        ...             alpha=0.01,
         ...             device=device,
         ...             verbose=True)
         >>> 

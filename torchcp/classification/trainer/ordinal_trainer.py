@@ -43,8 +43,9 @@ class OrdinalTrainer(Trainer):
         >>> 
         >>> # Create trainer
         >>> trainer = OrdinalTrainer(
-        ...     ordinal_config=ordinal_config,
-        ...     model=backbone)
+        ...     model=backbone,
+        ...     ordinal_config=ordinal_config
+        ...     )
         >>> 
         >>> # Train model
         >>> trainer.train(
