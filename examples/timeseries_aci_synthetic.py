@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     # Step1: train regression model
     ## The Train function is required here, and the user can customize the training parameters
-    predictor.train(train_loader, alpha=alpha, epochs=100, lr=0.01, verbose=True)
+    predictor.train(train_loader, epochs=100, lr=0.01, verbose=True)
 
     # Step2: prediction
     #### Option1: generate conformal prediction interval for x_batch

@@ -9,7 +9,7 @@
 import os
 
 from examples.utils import get_others_dir
-from llm_utils import *
+from examples.llm_utils import *
 from torchcp.llm.predictor import ConformalLM
 
 if __name__ == "__main__":
