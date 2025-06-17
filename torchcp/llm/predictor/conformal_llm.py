@@ -74,10 +74,12 @@ class ConformalLM:
         set_score_function_name (str, optional): The name of the score function to use. Default is "none". Score function name, one of {geo, marginal, first_k, first_k_no_mask, max, sum, none}.
         rejection (bool, optional): Indicates whether to use rejection sampling. Default is False.
         seed (int, optional): The random seed. Default is 2024.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
     def __init__(self, tokenizer=None, model=None, epsilons=None, scaling_type="none", scale_kwargs=None,
-                 set_score_function_name="none", rejection=False, seed=2024, device=None) -> None:
+                 set_score_function_name="none", rejection=False, seed=2024, alpha=0.1, device=None) -> None:
         if scaling_type not in NAME_TO_SCALER:
             raise ValueError(f"Invalid scaling_type: {scaling_type}. Must be one of: {list(NAME_TO_SCALER.keys())}")
         if set_score_function_name not in NAME_TO_SCORE:
@@ -86,6 +88,10 @@ class ConformalLM:
 
         self.tokenizer = tokenizer
         self.model = model
+
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        self.alpha = alpha
 
         if device is not None:
             self._device = torch.device(device)
@@ -168,7 +174,10 @@ class ConformalLM:
                         'decoded': self.tokenizer.decode(tokens)
                     })
 
-    def calibrate_configs(self, cal_scores, cal_similarities, cal_labels, alpha):
+    def calibrate_configs(self, cal_scores, cal_similarities, cal_labels, alpha=None):
+        if alpha is None:
+            alpha = self.alpha
+
         cal_scores = self.scaler.predict(cal_scores)
 
         self.best_valid_configs = torch.full((len(self.epsilons), 3), float('nan'))

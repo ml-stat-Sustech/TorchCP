@@ -91,6 +91,7 @@ def test_invalid_initialization(mock_score_function, mock_model, temperature):
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
 def test_calibrate(predictor, mock_dataset, mock_score_function, mock_model, alpha):
     cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
+    predictor.calibrate(cal_dataloader, None)
 
     predictor.calibrate(cal_dataloader, alpha)
 
@@ -99,14 +100,6 @@ def test_calibrate(predictor, mock_dataset, mock_score_function, mock_model, alp
     scores = mock_score_function(logits, mock_dataset.labels)
     excepted_qhat = torch.sort(scores).values[math.ceil((scores.shape[0] + 1) * (1 - alpha)) - 1]
     assert predictor.q_hat == excepted_qhat
-
-
-@pytest.mark.parametrize("alpha", [0, 1, -0.1, 2])
-def test_invalid_calibrate_alpha(predictor, mock_dataset, alpha):
-    cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
-    with pytest.raises(ValueError, match="alpha should be a value"):
-        predictor.calibrate(cal_dataloader, alpha)
-
 
 def test_invalid_calibrate_model(mock_score_function, mock_dataset):
     predictor = SplitPredictor(mock_score_function, None)
@@ -125,6 +118,8 @@ def test_calculate_threshold(predictor, mock_score_function, alpha):
     scores = mock_score_function(logits, labels)
     excepted_qhat = torch.sort(scores).values[math.ceil((scores.shape[0] + 1) * (1 - alpha)) - 1]
     assert predictor.q_hat == excepted_qhat
+
+    predictor.calculate_threshold(logits, labels, None)
 
 
 @pytest.mark.parametrize("q_hat", [0.5, 0.7])

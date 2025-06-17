@@ -26,6 +26,8 @@ class AgACIPredictor(ACIPredictor):
             Can be either 'mean' (average), 'median', or a custom callable function. Defaults to 'mean'.
         threshold (List[float], optional): A list containing the lower and upper thresholds for clipping expert predictions.
             Defaults to [-99999, 99999] (effectively no clipping).
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
         
     Reference:  
         Paper: Adaptive Conformal Predictions for Time Series (Zaffran et al., 2022)
@@ -34,8 +36,8 @@ class AgACIPredictor(ACIPredictor):
         
     """
     
-    def __init__(self, score_function, model, gamma_list: List, aggregation_function='mean', threshold: List=[-99999, 99999], device=None):
-        super().__init__(score_function, model, None, device)
+    def __init__(self, score_function, model, gamma_list: List, aggregation_function='mean', threshold: List=[-99999, 99999], alpha=0.1, device=None):
+        super().__init__(score_function, model, None, alpha, device)
         if aggregation_function not in ['mean', 'median'] and not callable(aggregation_function):
             raise ValueError(
                 "aggregation_function must be either 'mean', 'median', or a callable function."

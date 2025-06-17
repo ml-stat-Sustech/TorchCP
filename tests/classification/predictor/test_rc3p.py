@@ -60,12 +60,6 @@ def test_calibrate(predictor, mock_dataset, mock_score_function, mock_model, alp
     assert predictor.class_thresholds.shape == torch.Size([3])
     assert predictor.class_rank_limits.shape == torch.Size([3])
 
-@pytest.mark.parametrize("alpha", [0, 1, -0.1, 2])
-def test_invalid_calibrate_alpha(predictor, mock_dataset, alpha):
-    cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
-    with pytest.raises(ValueError, match="alpha should be a value in"):
-        predictor.calibrate(cal_dataloader, alpha)
-
 def test_invalid_calibrate_model(mock_score_function, mock_dataset):
     predictor = RC3PPredictor(mock_score_function, None)
     cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
@@ -89,6 +83,8 @@ def test_calculate_threshold(predictor, mock_score_function):
 def test_predict(predictor, mock_dataset):
     # First perform calibration
     cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
+    predictor.calibrate(cal_dataloader, None)
+
     predictor.calibrate(cal_dataloader, alpha=0.1)
     
     # Test prediction
@@ -147,3 +143,5 @@ def test_calculate_threshold_empty_class(predictor, mock_score_function):
     # Check thresholds for class 2 (empty class)
     assert torch.isinf(predictor.class_thresholds[2])  # Should be infinity
     assert predictor.class_rank_limits[2] == 3  # Should be number of classes
+
+    predictor.calculate_threshold(logits, labels, None)

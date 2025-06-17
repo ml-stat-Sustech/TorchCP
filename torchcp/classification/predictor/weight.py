@@ -26,14 +26,16 @@ class WeightedPredictor(SplitPredictor):
     Args:
         score_function (callable): Non-conformity score function.
         model (torch.nn.Module): A PyTorch model.
+        alpha (float, optional): The significance level. Default is 0.1.
         image_encoder (torch.nn.Module): A PyTorch model to generate the embedding feature of an input image.
         domain_classifier (torch.nn.Module, optional): A PyTorch model (a binary classifier) to predict the probability that an embedding feature comes from the source domain. Default is None.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
-    def __init__(self, score_function, model=None, temperature=1, image_encoder=None, domain_classifier=None, device=None):
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, image_encoder=None, domain_classifier=None, device=None):
 
-        super().__init__(score_function, model, temperature, device)
+        super().__init__(score_function, model, temperature, alpha, device)
 
         if image_encoder is None:
             raise ValueError("image_encoder cannot be None.")
@@ -47,14 +49,17 @@ class WeightedPredictor(SplitPredictor):
         self.alpha = None
         # Domain Classifier
 
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
         """
         Calibrate the model using the calibration set.
 
         Args:
             cal_dataloader (torch.utils.data.DataLoader): A dataloader of the calibration set.
-            alpha (float): The significance level.
+            alpha (float): The significance level. Default is None.
         """
+        if alpha is None:
+            alpha = self.alpha
+
         logits_list = []
         labels_list = []
         cal_features_list = []
@@ -71,17 +76,17 @@ class WeightedPredictor(SplitPredictor):
 
         self.calculate_threshold(logits, labels, alpha)
 
-    def calculate_threshold(self, logits, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha=None):
         """
         Calculate the conformal prediction threshold.
 
         Args:
             logits (torch.Tensor): The logits output from the model.
             labels (torch.Tensor): The ground truth labels.
-            alpha (float): The significance level.
+            alpha (float): The significance level. Default is None.
         """
-        if not (0 < alpha < 1):
-            raise ValueError("alpha should be a value in (0, 1).")
+        if alpha is None:
+            alpha = self.alpha
 
         self.alpha = alpha
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)

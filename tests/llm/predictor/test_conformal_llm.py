@@ -86,6 +86,18 @@ class TestConformalLM:
         with pytest.raises(ValueError):
             ConformalLM(set_score_function_name="invalid")
 
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=-1)
+
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=0)
+
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=1)
+
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=2)
+
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         mock_model.to(device)
         conf_llm = ConformalLM(model=mock_model)
@@ -135,6 +147,13 @@ class TestConformalLM:
             sample_data['cal_similarities'],
             sample_data['cal_labels'],
             alpha=0.1
+        )
+
+        setup_basic_model.calibrate_configs(
+            sample_data['cal_scores'],
+            sample_data['cal_similarities'],
+            sample_data['cal_labels'],
+            alpha=None
         )
         assert hasattr(setup_basic_model, 'best_valid_configs')
 

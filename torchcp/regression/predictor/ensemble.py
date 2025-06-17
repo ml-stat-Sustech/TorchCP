@@ -38,10 +38,12 @@ class EnsemblePredictor(SplitPredictor):
                         - torch.mean: Computes the mean of the predictions.
                         - torch.median: Computes the median of the predictions.
                         - Custom function: Should accept a tensor and dimension as input, returning the result.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
-    def __init__(self, score_function, model, aggregation_function='mean', device=None):
-        super().__init__(score_function, model, device)
+    def __init__(self, score_function, model, aggregation_function='mean', alpha=0.1, device=None):
+        super().__init__(score_function, model, alpha, device)
         if aggregation_function not in ['mean', 'median'] and not callable(aggregation_function):
             raise ValueError(
                 "aggregation_function must be either 'mean', 'median', or a callable function."
@@ -130,13 +132,13 @@ class EnsemblePredictor(SplitPredictor):
 
         self.scores = torch.tensor(score_list, dtype=torch.float32).to(self._device)
 
-    def predict(self, alpha, x_batch, y_batch_last=None, aggr_pred_last=None):
+    def predict(self, x_batch, alpha=None, y_batch_last=None, aggr_pred_last=None):
         """
         Generates conformal prediction intervals for new data.
 
         Args:
-            alpha (float): Significance level for conformal intervals.
             x_batch (Tensor): Batch of input features.
+            alpha (float): Significance level for conformal intervals. Default is None.
             y_batch_last (Tensor, optional): Labels from the previous batch for score updates.
             aggr_pred_last (Tensor, optional): Aggregated predictions from the previous batch.
 
@@ -145,6 +147,9 @@ class EnsemblePredictor(SplitPredictor):
                 - Prediction intervals for the input batch.
                 - Aggregated predictions for the input batch.
         """
+        if alpha is None:
+            alpha = self.alpha
+
         if (y_batch_last is None) != (aggr_pred_last is None):
             raise ValueError("y_batch_last and pred_interval_last must either be provided or be None.")
         if y_batch_last is not None:
@@ -164,7 +169,7 @@ class EnsemblePredictor(SplitPredictor):
 
         return self.generate_intervals(aggregated_predict, self.q_hat), aggregated_predict
 
-    def evaluate(self, data_loader, alpha, verbose=True):
+    def evaluate(self, data_loader, alpha=None, verbose=True):
         """
         Evaluates the performance of the ensemble model on a test dataset by calculating 
         coverage rates and average sizes of the prediction intervals.
@@ -172,7 +177,7 @@ class EnsemblePredictor(SplitPredictor):
         Args:
             data_loader (DataLoader): The DataLoader providing the test data batches.
             alpha (float): The significance level for conformal prediction, which controls 
-                        the width of the prediction intervals (e.g., 0.1 for 90% prediction intervals).
+                        the width of the prediction intervals (e.g., 0.1 for 90% prediction intervals). Default is None.
             verbose (bool): If True, prints the coverage rate and average size for each batch. 
                             Default is True.
                             
@@ -197,6 +202,9 @@ class EnsemblePredictor(SplitPredictor):
                 - (Optional) If `verbose` is True, prints batch-wise coverage rate and average size.
             3. Aggregates and returns the overall average coverage rate and interval size across batches.
         """
+        if alpha is None:
+            alpha = self.alpha
+
         coverage_rates = []
         average_sizes = []
 
@@ -205,7 +213,7 @@ class EnsemblePredictor(SplitPredictor):
             aggr_pred_last = None
             for index, batch in enumerate(data_loader):
                 x_batch, y_batch = batch[0].to(self._device), batch[1].to(self._device)
-                prediction_intervals, aggr_pred_last = self.predict(alpha, x_batch, y_batch_last, aggr_pred_last)
+                prediction_intervals, aggr_pred_last = self.predict(x_batch, alpha, y_batch_last, aggr_pred_last)
                 y_batch_last = y_batch
 
                 batch_coverage_rate = self._metric('coverage_rate')(prediction_intervals, y_batch)

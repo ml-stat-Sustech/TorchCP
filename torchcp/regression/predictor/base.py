@@ -23,16 +23,22 @@ class BasePredictor(object):
     Args:
         score_function: non-conformity score function.
         model: a pytorch model.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model=None, device=None):
+    def __init__(self, score_function, model=None, alpha=0.1, device=None):
         self._model = model
         if self._model is not None:
             if not isinstance(model, nn.Module):
                 raise TypeError("The model must be an instance of torch.nn.Module")
         
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        self.alpha = alpha
+
         if device is not None:
             self._device = torch.device(device)
         elif model is not None:
@@ -86,12 +92,12 @@ class BasePredictor(object):
     def _calculate_conformal_value(self, scores, alpha):
         return calculate_conformal_value(scores, alpha)
 
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
         """
         Calibrate the predictor using a calibration dataset and a given significance level :attr:`alpha`.
         
         Args:
             cal_dataloader (torch.utils.data.DataLoader): The dataloader containing the calibration dataset.
-            alpha (float): The significance level for calibration. Should be in the range (0, 1).
+            alpha (float): The significance level for calibration. Should be in the range (0, 1). Default is None.
         """
         raise NotImplementedError

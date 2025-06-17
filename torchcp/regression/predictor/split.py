@@ -20,6 +20,8 @@ class SplitPredictor(BasePredictor):
     Args:
         score_function (torchcp.regression.scores): A class that implements the score function.
         model (torch.nn.Module): A pytorch regression model that can output predicted point.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
         
     Reference:
         Paper: Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
@@ -27,8 +29,8 @@ class SplitPredictor(BasePredictor):
         Github: https://github.com/ryantibs/conformal
     """
 
-    def __init__(self, score_function, model=None, device=None):
-        super().__init__(score_function, model, device)
+    def __init__(self, score_function, model=None, alpha=0.1, device=None):
+        super().__init__(score_function, model, alpha, device)
 
     def train(self, train_dataloader, **kwargs):
         """
@@ -92,7 +94,10 @@ class SplitPredictor(BasePredictor):
         """
         return self.score_function.generate_intervals(predicts_batch, q_hat)
 
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
+        if alpha is None:
+            alpha = self.alpha
+
         self._model.eval()
         predicts_list, y_truth_list = [], []
         with torch.no_grad():

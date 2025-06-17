@@ -98,7 +98,7 @@ def test_calculate_threshold_for_node(mock_graph_data):
             assert node_id in node_alpha.keys()
             assert node_alpha[node_id] == quantile
         else:
-            node_alpha = naps_predictor.calculate_threshold_for_node(node_id, logits, labels, alpha=0.1)
+            node_alpha = naps_predictor.calculate_threshold_for_node(node_id, logits, labels, None)
             assert node_alpha is None
 
 
@@ -177,7 +177,7 @@ def test_predict(mock_graph_data, mock_model):
             node_alpha = naps_predictor.calculate_threshold_for_node(node_id, logits, labels, alpha=0.1)
             quantiles_nb.update(node_alpha)
         else:
-            naps_predictor.calculate_threshold_for_node(node_id, logits, labels, alpha=0.1)
+            naps_predictor.calculate_threshold_for_node(node_id, logits, labels, None)
     excepted_nodes = torch.tensor(list(quantiles_nb.keys()))
     quantiles = torch.tensor(list(quantiles_nb.values()))
     excepted_sets = naps_predictor._generate_prediction_set(logits[excepted_nodes], quantiles[:, None])
@@ -187,6 +187,8 @@ def test_predict(mock_graph_data, mock_model):
 
     assert torch.equal(excepted_nodes, pred_nodes)
     assert torch.equal(excepted_sets, pred_sets)
+
+    pred_nodes, pred_sets = naps_predictor.predict(eval_idx, alpha=None)
 
 
 def test_predict_with_logits(mock_graph_data):
@@ -216,6 +218,8 @@ def test_predict_with_logits(mock_graph_data):
     assert torch.equal(excepted_nodes, pred_nodes)
     assert torch.equal(excepted_sets, pred_sets)
 
+    pred_nodes, pred_sets = naps_predictor.predict_with_logits(mock_graph_data.x, eval_idx, alpha=None)
+
 
 def test_evaluate(mock_graph_data, mock_model):
 
@@ -239,3 +243,5 @@ def test_evaluate(mock_graph_data, mock_model):
     assert results["coverage_rate"] == except_resultsres_dict["coverage_rate"]
     assert results["average_size"] == except_resultsres_dict["average_size"]
     assert results["singleton_hit_ratio"] == except_resultsres_dict["singleton_hit_ratio"]
+
+    results = naps_predictor.evaluate(eval_idx, alpha=None)

@@ -27,6 +27,8 @@ class ACIPredictor(SplitPredictor):
         model (torch.nn.Module): A PyTorch model capable of outputting quantile values. 
             The model should be an initialization model that has not been trained.
         gamma (float): Step size parameter for adaptive adjustment of alpha. Must be greater than 0.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
         
     Reference:  
         Paper: Adaptive conformal inference Under Distribution Shift (Gibbs et al., 2021)
@@ -35,8 +37,8 @@ class ACIPredictor(SplitPredictor):
         
     """
 
-    def __init__(self, score_function, model, gamma, device=None):
-        super().__init__(score_function, model, device)
+    def __init__(self, score_function, model, gamma, alpha=0.1, device=None):
+        super().__init__(score_function, model, alpha, device)
         if (gamma is not None) and (gamma <= 0):
             raise ValueError("gamma must be greater than 0.")
 
@@ -45,7 +47,7 @@ class ACIPredictor(SplitPredictor):
         self.model_backbone = model
         self.train_indicate = False
 
-    def train(self, train_dataloader, alpha, **kwargs):
+    def train(self, train_dataloader, **kwargs):
         """
         Train and calibrate the predictor using the training data.
 
@@ -65,10 +67,9 @@ class ACIPredictor(SplitPredictor):
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
             If the user wants to fully control the training process, it can be achieved by rewriting the :func:`train` of the score function.
         """
-        super().train(train_dataloader, alpha=alpha, **kwargs)
-        super().calibrate(train_dataloader, alpha)
-        self.alpha = alpha
-        self.alpha_t = alpha
+        super().train(train_dataloader, alpha=self.alpha, **kwargs)
+        super().calibrate(train_dataloader, self.alpha)
+        self.alpha_t = self.alpha
         self.train_dataloader = train_dataloader
         self.train_indicate = True
 

@@ -74,8 +74,8 @@ def preprocess(mock_graph_data, mock_score_function, mock_model):
 
 def test_base_graph_predictor(mock_graph_data, mock_score_function):
     class TestPredictor(BasePredictor):
-        def __init__(self, graph_data, score_function, model=None, device=None):
-            super().__init__(graph_data, score_function, model, device)
+        def __init__(self, graph_data, score_function, model=None, alpha=0.1, device=None):
+            super().__init__(graph_data, score_function, model, alpha, device)
 
     predictor = TestPredictor(mock_graph_data, mock_score_function)
     with pytest.raises(NotImplementedError):
@@ -96,8 +96,16 @@ def test_initialization(predictor, mock_graph_data, mock_score_function, mock_mo
     assert predictor._model is mock_model
 
 
+@pytest.mark.parametrize("alpha", [-1, 0, 1, 2])
+def test_invalid_intialization_alpha(mock_graph_data, mock_score_function, mock_model, alpha):
+    with pytest.raises(ValueError, match="alpha should be a value"):
+        SplitPredictor(mock_graph_data, mock_score_function, mock_model, alpha=alpha)
+
+
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
 def test_calculate(predictor, preprocess, alpha):
+    predictor.calibrate(preprocess.cal_idx, None)
+
     predictor.calibrate(preprocess.cal_idx, alpha)
     quantile = torch.sort(preprocess.cal_scores).values[
         math.ceil((preprocess.cal_idx.shape[0] + 1) * (1 - alpha)) - 1]
@@ -114,6 +122,9 @@ def test_calculate_threshold(predictor, preprocess, alpha):
 
     assert predictor.q_hat == quantile
 
+    predictor.calculate_threshold(
+        preprocess.logits, preprocess.cal_idx, preprocess.label_mask, None)
+
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
 def test_predict(predictor, preprocess, alpha):
@@ -129,6 +140,9 @@ def test_predict(predictor, preprocess, alpha):
     predictor.calibrate(preprocess.cal_idx, alpha)
     pred_sets = predictor.predict(preprocess.eval_idx)
     assert torch.equal(excepted_sets, pred_sets)
+
+    predictor.calibrate(preprocess.cal_idx, None)
+    pred_sets = predictor.predict(preprocess.eval_idx)
 
 
 @pytest.mark.parametrize("alpha", [0.1, 0.05])
