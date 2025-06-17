@@ -48,8 +48,8 @@ class UncertaintyAwareTrainer(Trainer):
     """
 
     def __init__(self,
-                 weight: float,
                  model: torch.nn.Module,
+                 weight: float,
                  device: torch.device = None,
                  verbose: bool = True):
 

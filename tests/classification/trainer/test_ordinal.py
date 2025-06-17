@@ -57,8 +57,8 @@ def ordinal_trainer(mock_model, ordinal_config):
 class TestOrdinalTrainer:
     def test_initialization(self, mock_model, ordinal_config):
         trainer = OrdinalTrainer(
-            ordinal_config=ordinal_config,
-            model=mock_model
+            model=mock_model,
+            ordinal_config=ordinal_config
         )
         
     def test_invalid_config(self, mock_model):
@@ -69,8 +69,8 @@ class TestOrdinalTrainer:
         }
         with pytest.raises(NotImplementedError):
             OrdinalTrainer(
-                ordinal_config=invalid_config,
-                model=mock_model
+                model=mock_model,
+                ordinal_config=invalid_config
             )
             
         # Test invalid varphi
@@ -80,8 +80,8 @@ class TestOrdinalTrainer:
         }
         with pytest.raises(NotImplementedError):
             OrdinalTrainer(
-                ordinal_config=invalid_config,
-                model=mock_model
+                model=mock_model,
+                ordinal_config=invalid_config
             )
             
     def test_different_configs(self, mock_model, mock_data):
@@ -95,8 +95,8 @@ class TestOrdinalTrainer:
         
         for config in configs:
             trainer = OrdinalTrainer(
-                ordinal_config=config,
-                model=mock_model
+                model=mock_model,
+                ordinal_config=config
             )
             trainer.train(mock_data, num_epochs=1)
             
@@ -111,8 +111,8 @@ class TestOrdinalTrainer:
     def test_gpu_training(self, mock_model, ordinal_config, mock_data):
         if torch.cuda.is_available():
             trainer = OrdinalTrainer(
-                ordinal_config=ordinal_config,
                 model=mock_model,
+                ordinal_config=ordinal_config,
                 device=torch.device('cuda')
             )
             trainer.train(mock_data, num_epochs=2)

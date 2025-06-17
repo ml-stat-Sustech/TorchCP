@@ -19,9 +19,9 @@ class ConfTSTrainer(TSTrainer):
     """Conformal Temperature Scaling Trainer.
     
     Args:
+        model (torch.nn.Module): Base neural network model to be calibrated.
         init_temperature (float): Initial value for temperature scaling parameter.
         alpha (float): Target miscoverage rate (significance level) for conformal prediction.
-        model (torch.nn.Module): Base neural network model to be calibrated.
         device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
             Default: None
         verbose (bool): Whether to display training progress. Default: True.
@@ -50,9 +50,9 @@ class ConfTSTrainer(TSTrainer):
 
     def __init__(
             self,
+            model: torch.nn.Module,
             alpha: float,
             init_temperature: float,
-            model: torch.nn.Module,
             device: torch.device = None,
             verbose: bool = True, ):
         super().__init__(init_temperature, model, device=device, verbose=verbose)

@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch import Tensor
 
 
-from torchcp.classification.trainer.model_zoo import TemperatureScalingModel,OrdinalClassifier, SurrogateCPModel
+from torchcp.classification.trainer.model_zoo import TemperatureScalingModel, OrdinalClassifier, SurrogateCPModel
 
 # Mock base model for testing
 class MockBaseModel(nn.Module):
