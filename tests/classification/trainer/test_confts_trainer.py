@@ -44,35 +44,35 @@ def mock_data():
 @pytest.fixture
 def confts_trainer(mock_model):
     return ConfTSTrainer(
+        model=mock_model,
         init_temperature=1.0,
-        alpha=0.1,
-        model=mock_model
+        alpha=0.1
     )
 
 # Tests
 class TestConfTSTrainer:
     def test_initialization(self, mock_model):
         trainer = ConfTSTrainer(
+            model=mock_model,
             init_temperature=1.5,
-            alpha=0.1,
-            model=mock_model
+            alpha=0.1
         )
         
     def test_invalid_params(self, mock_model):
         # Test invalid temperature
         with pytest.raises(ValueError):
             ConfTSTrainer(
+                model=mock_model,
                 init_temperature=-1.0,
-                alpha=0.1,
-                model=mock_model
+                alpha=0.1
             )
             
         # Test invalid alpha
         with pytest.raises(ValueError):
             ConfTSTrainer(
+                model=mock_model,
                 init_temperature=1.0,
-                alpha=-0.1,
-                model=mock_model
+                alpha=-0.1
             )
             
     def test_training_process(self, confts_trainer, mock_data):
@@ -82,9 +82,9 @@ class TestConfTSTrainer:
     def test_gpu_training(self, mock_model, mock_data):
         if torch.cuda.is_available():
             trainer = ConfTSTrainer(
+                model=mock_model,
                 init_temperature=1.0,
                 alpha=0.1,
-                model=mock_model,
                 device=torch.device('cuda')
             )
             trainer.train(mock_data, num_epochs=2)

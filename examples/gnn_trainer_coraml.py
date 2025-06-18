@@ -107,7 +107,7 @@ if __name__ == '__main__':
     graph_data['train_idx'] = train_idx
     graph_data['val_idx'] = test_idx
     graph_data['calib_train_idx'] = calib_train_idx
-    cf_trainer = CFGNNTrainer(graph_data, model)
+    cf_trainer = CFGNNTrainer(model, graph_data)
 
     # Train conformalized gnn
     model = cf_trainer.train()

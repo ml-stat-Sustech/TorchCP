@@ -64,8 +64,8 @@ class TestTrainDataset:
 class TestUncertaintyAwareTrainer:
     def test_initialization(self, mock_model):
         trainer = UncertaintyAwareTrainer(
-            weight=0.5,
-            model=mock_model
+            model=mock_model,
+            weight=0.5
         )
         assert isinstance(trainer.optimizer, torch.optim.Adam)
         assert isinstance(trainer.ce_loss_fn, nn.CrossEntropyLoss)
@@ -110,8 +110,8 @@ class TestUncertaintyAwareTrainer:
     @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
     def test_gpu_training(self, mock_model, mock_data):
         trainer = UncertaintyAwareTrainer(
-            weight=0.5,
             model=mock_model,
+            weight=0.5,
             device=torch.device('cuda:0')
         )
         trainer.train(mock_data, num_epochs=2)
@@ -121,7 +121,7 @@ class TestUncertaintyAwareTrainer:
         weights = [0.1, 1.0, 2.0]
         for weight in weights:
             trainer = UncertaintyAwareTrainer(
-                weight=weight,
-                model=mock_model
+                model=mock_model,
+                weight=weight
             )
             trainer.train(mock_data, num_epochs=1)

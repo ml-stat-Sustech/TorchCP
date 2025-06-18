@@ -27,7 +27,10 @@ def mock_model():
 
 
 def test_scpo_init_valid_params(mock_model):
-    scpo_trainer = SCPOTrainer(alpha=0.1, model=mock_model)
+    scpo_trainer = SCPOTrainer(
+        model=mock_model,
+        alpha=0.1
+    )
 
     assert type(scpo_trainer.model) is SurrogateCPModel
     assert scpo_trainer.model.base_model is mock_model

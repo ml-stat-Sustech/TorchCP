@@ -21,11 +21,11 @@ class OrdinalTrainer(Trainer):
     It supports various configurations and training strategies to handle ordinal data.
 
     Args:
+        model (torch.nn.Module): Base neural network model
         ordinal_config (Dict[str, str]): Configuration for ordinal classifier
             phi (str): Type of phi function ("abs", "square")
             varphi (str): Type of varphi function ("abs", "square")
             example: {"phi": "abs", "varphi": "abs"}
-        model (torch.nn.Module): Base neural network model
         device (torch.device, optional): Device to run the model on. If None, will automatically use GPU ('cuda') if available, otherwise CPU ('cpu')
             Default: None
         verbose (bool): Whether to display training progress
@@ -43,8 +43,9 @@ class OrdinalTrainer(Trainer):
         >>> 
         >>> # Create trainer
         >>> trainer = OrdinalTrainer(
-        ...     ordinal_config=ordinal_config,
-        ...     model=backbone)
+        ...     model=backbone,
+        ...     ordinal_config=ordinal_config
+        ...     )
         >>> 
         >>> # Train model
         >>> trainer.train(
@@ -56,8 +57,8 @@ class OrdinalTrainer(Trainer):
 
     def __init__(
             self,
-            ordinal_config: Dict[str, str],
             model: torch.nn.Module,
+            ordinal_config: Dict[str, str],
             device: torch.device = None,
             verbose: bool = True
     ):

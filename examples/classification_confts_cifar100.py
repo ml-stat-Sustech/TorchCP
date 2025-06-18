@@ -52,9 +52,9 @@ model.eval()
 init_temperature = 1.0
 
 trainer = ConfTSTrainer(
+    model=model,
     init_temperature=init_temperature,
     alpha=0.1,
-    model=model,
     device=device,
     verbose=True
 )

@@ -30,6 +30,7 @@ class CFGNNTrainer:
     for uncertainty quantification and model calibration.
 
     Args:
+        model (torch.nn.Module): backbone model.
         graph_data (from torch_geometric.data import Data): 
             x (tensor): features of nodes.
             edge_index (Tensor): The edge index, shape (2, num_edges).
@@ -37,7 +38,6 @@ class CFGNNTrainer:
             train_idx: The indices of the training nodes.
             val_idx: The indices of the validation nodes.
             calib_train_idx: The indices of the training nodes for CF-GNN.
-        model (torch.nn.Module): backbone model.
         hidden_channels (int): Number of hidden channels for the CF-GNN layers.
         alpha (float, optional): The significance level for conformal prediction. Default is 0.1.
         optimizer_class (torch.optim.Optimizer): Optimizer class for temperature parameter
@@ -48,8 +48,8 @@ class CFGNNTrainer:
 
     def __init__(
             self,
-            graph_data,
             model,
+            graph_data,
             hidden_channels=64,
             num_layers=2,
             alpha=0.1,
