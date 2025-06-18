@@ -55,7 +55,7 @@ class ConfTrTrainer(Trainer):
             device: torch.device = None,
             verbose: bool = True):
         super().__init__(model, device=device, verbose=verbose)
-        self.optimizer = torch.optim.Adam(self.model.parameters())
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0001)
         predictor = SplitPredictor(score_function=APS(score_type="softmax", randomized=False), model=model)
         self.loss_fn = ConfTrLoss(predictor=predictor, alpha=alpha, fraction=0.5)
         

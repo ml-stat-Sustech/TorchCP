@@ -47,7 +47,7 @@ model.to(device)
 model.eval()
 
 #######################################
-# Temperature Scaling
+# Conformal Training
 #######################################
 
 trainer = ConfTrTrainer(
@@ -57,7 +57,7 @@ trainer = ConfTrTrainer(
     verbose=True
 )
 
-calibrated_model = trainer.train(cal_dataloader, num_epochs=10)
+calibrated_model = trainer.train(cal_dataloader, num_epochs=5)
 
 ########################################
 # Conformal prediction
