@@ -12,7 +12,7 @@ from transformers import set_seed
 
 from examples.utils import get_dataset_dir
 from torchcp.classification.predictor import SplitPredictor
-from torchcp.classification.score import APS
+from torchcp.classification.score import LAC
 from torchcp.classification.trainer import ConfTrTrainer
 
 set_seed(seed=2025)
@@ -31,40 +31,39 @@ dataset = torchvision.datasets.CIFAR100(
     download=True,
     transform=transform
 )
-cal_dataset, conformal_cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [3000, 2000, 5000])
+train_dataset, cal_dataset, test_dataset = torch.utils.data.random_split(dataset, [3000, 2000, 5000])
+train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=4, pin_memory=True)
 cal_dataloader = torch.utils.data.DataLoader(cal_dataset, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
-conformal_cal_dataloader = torch.utils.data.DataLoader(conformal_cal_dataset, batch_size=64, shuffle=False,
-                                                       num_workers=4, pin_memory=True)
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=4,
                                               pin_memory=True)
+test_instance, test_label = test_dataset[0]
+test_instance = test_instance.unsqueeze(0)
 
 #######################################
 # Preparing a pytorch model
 #######################################
-model = torch.hub.load("chenyaofo/pytorch-cifar-models", "cifar100_resnet20", pretrained=True)
+init_model = torch.hub.load("chenyaofo/pytorch-cifar-models", "cifar100_resnet20", pretrained=True)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-model.to(device)
-model.eval()
+init_model.to(device)
+init_model.eval()
 
 #######################################
 # Conformal Training
 #######################################
 
 trainer = ConfTrTrainer(
+    model=init_model,
     alpha=0.1,
-    model=model,
-    device=device,
-    verbose=True
+    device=device
 )
 
-calibrated_model = trainer.train(cal_dataloader, num_epochs=5)
+trained_model = trainer.train(train_dataloader, num_epochs=10)
 
 ########################################
 # Conformal prediction
 ########################################
 
-predictor = SplitPredictor(score_function=APS(), model=calibrated_model)
-predictor.calibrate(conformal_cal_dataloader, alpha=0.1)
-result_dict = predictor.evaluate(test_dataloader)
-print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
-print(f"Average Set Size: {result_dict['average_size']:.4f}")
+predictor = SplitPredictor(score_function=LAC(), model=trained_model, alpha=0.1)
+predictor.calibrate(cal_dataloader)
+predict_set = predictor.predict(test_instance)
+

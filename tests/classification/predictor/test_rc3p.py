@@ -124,7 +124,53 @@ def test_evaluate(predictor, mock_dataset):
     assert 'average_size' in results
     assert 0 <= results['coverage_rate'] <= 1
     assert 0 <= results['average_size'] <= 3  # num_classes
+
+def test_evaluate_with_specific_instance(predictor, mock_dataset):
+    """Test evaluate method with a specific test instance"""
+    # First perform calibration
+    cal_dataloader = torch.utils.data.DataLoader(mock_dataset, batch_size=40)
+    predictor.calibrate(cal_dataloader, alpha=0.1)
     
+    # Take one sample from the existing dataset
+    test_instance, test_label = mock_dataset[0]  # Get the first sample
+    test_instance = test_instance.unsqueeze(0)  # Add batch dimension
+    
+    # Create a test dataset with this specific instance
+    class TestDataset(Dataset):
+        def __init__(self, x, labels):
+            self.x = x
+            self.labels = labels
+            
+        def __len__(self):
+            return len(self.x)
+            
+        def __getitem__(self, idx):
+            return self.x[idx], self.labels[idx]
+    
+    test_dataset = TestDataset(test_instance, torch.tensor([test_label]))
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1)
+    
+    # Evaluate with the specific test instance
+    result_dict = predictor.evaluate(test_dataloader)
+    
+    # Verify the results
+    assert isinstance(result_dict, dict)
+    assert 'coverage_rate' in result_dict
+    assert 'average_size' in result_dict
+    assert 0 <= result_dict['coverage_rate'] <= 1
+    assert 0 <= result_dict['average_size'] <= 3
+    
+    # Test with multiple instances
+    multiple_instances = torch.randn(5, 3)  # 5 instances
+    test_dataset_multiple = TestDataset(multiple_instances, torch.randint(0, 3, (5,)))
+    test_dataloader_multiple = torch.utils.data.DataLoader(test_dataset_multiple, batch_size=2)
+    
+    result_dict_multiple = predictor.evaluate(test_dataloader_multiple)
+    
+    assert isinstance(result_dict_multiple, dict)
+    assert 'coverage_rate' in result_dict_multiple
+    assert 'average_size' in result_dict_multiple
+
 def test_calculate_threshold_empty_class(predictor, mock_score_function):
     """Test the case when a class has no samples"""
     # Create a special dataset where class 2 has no samples
