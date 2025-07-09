@@ -57,13 +57,13 @@ trainer = ConfTrTrainer(
     verbose=True
 )
 
-calibrated_model = trainer.train(cal_dataloader, num_epochs=5)
+trained_model = trainer.train(cal_dataloader, num_epochs=5)
 
 ########################################
 # Conformal prediction
 ########################################
 
-predictor = SplitPredictor(score_function=APS(), model=calibrated_model)
+predictor = SplitPredictor(score_function=APS(), model=trained_model)
 predictor.calibrate(conformal_cal_dataloader, alpha=0.1)
 result_dict = predictor.evaluate(test_dataloader)
 print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
