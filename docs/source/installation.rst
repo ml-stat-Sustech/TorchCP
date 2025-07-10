@@ -1,7 +1,8 @@
 Installation
 =====================
+
 Latest version (|version|)
----------------------
+--------------------------
 
 Installing TorchCP itself
 
