@@ -11,7 +11,7 @@ import torch
 from sklearn.cluster import KMeans
 
 from torchcp.classification.predictor import ClusteredPredictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.utils.common import DimensionError
 
 
@@ -30,7 +30,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 
 @pytest.fixture
@@ -78,7 +78,10 @@ def test_ratio_and_num_cluster_calculate_threshold(mock_score_function, mock_mod
     twos = torch.full((n_t,), 2, dtype=torch.long)
     labels = torch.cat([zeros, ones, twos])
 
-    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, ratio_clustering, num_clusters)
+    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, 0.1, ratio_clustering, num_clusters)
+    predictor.calculate_threshold(logits, labels, None)
+
+    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, 0.1, ratio_clustering, num_clusters)
     predictor.calculate_threshold(logits, labels, alpha)
 
     n_thresh = predictor._ClusteredPredictor__get_quantile_minimum(torch.tensor(alpha))
@@ -106,7 +109,7 @@ def test_clustering_calculate_threshold(mock_score_function, mock_model):
     ones = torch.ones(n_o, dtype=torch.long)
     labels = torch.cat([zeros, ones])
 
-    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, ratio_clustering, num_clusters)
+    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, 0.1, ratio_clustering, num_clusters)
     predictor.calculate_threshold(logits, labels, alpha)
 
     assert torch.equal(predictor.cluster_assignments, torch.tensor([-1, -1], dtype=torch.int32))
@@ -122,7 +125,7 @@ def test_clustering_calculate_threshold(mock_score_function, mock_model):
     fours = torch.full((n4,), 4, dtype=torch.long)
     labels = torch.cat([zeros, ones, twos, threes, fours])
 
-    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, ratio_clustering, num_clusters,
+    predictor = ClusteredPredictor(mock_score_function, mock_model, 1.0, 0.1, ratio_clustering, num_clusters,
                                    split="doubledip")
     predictor.calculate_threshold(logits, labels, alpha)
 
@@ -141,14 +144,6 @@ def test_clustering_calculate_threshold(mock_score_function, mock_model):
 
     result = predictor._ClusteredPredictor__compute_cluster_specific_qhats(cluster_assignments, scores, labels, alpha)
     assert torch.allclose(predictor.q_hat, result)
-
-
-@pytest.mark.parametrize("alpha", [0, 1, -0.1, 2])
-def test_invalid_calibrate_alpha(predictor, alpha):
-    logits = torch.randn(100, 3)
-    labels = torch.randint(0, 3, (100,))
-    with pytest.raises(ValueError, match="alpha should be a value"):
-        predictor.calculate_threshold(logits, labels, alpha)
 
 
 @pytest.mark.parametrize("split", ['proportional', 'doubledip', 'random'])

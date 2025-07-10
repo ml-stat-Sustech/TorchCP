@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+import torch
 import pytest
 
 from torchcp.regression.predictor import SplitPredictor
@@ -32,6 +33,12 @@ def split_predictor_nomodel(mock_score_function):
     return SplitPredictor(score_function=mock_score_function)
 
 
+def test_initialization_device(mock_score_function):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    predictor = SplitPredictor(mock_score_function, device=device)
+    assert predictor._device == device
+
+
 def test_workflow(mock_data, split_predictor, split_predictor_nomodel, mock_model):
     # Extract mock data
     train_dataloader, cal_dataloader, test_dataloader = mock_data
@@ -55,6 +62,8 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel, mock_mode
     split_predictor.calibrate(cal_dataloader, alpha=alpha)
     assert hasattr(split_predictor, "scores"), "SplitPredictor should have scores after calibration."
     assert hasattr(split_predictor, "q_hat"), "SplitPredictor should have q_hat after calibration."
+
+    split_predictor.calibrate(cal_dataloader, alpha=None)
 
     # Step 3: Evaluate the model
     eval_res = split_predictor.evaluate(test_dataloader)

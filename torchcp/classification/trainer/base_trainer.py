@@ -14,6 +14,7 @@ from typing import Optional
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from torchcp.utils.common import get_device
 
 
 class BaseTrainer(ABC):
@@ -36,11 +37,11 @@ class BaseTrainer(ABC):
     ):
         if model is None:
             raise ValueError("Model cannot be None")
-
-        if device is None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        if device is not None:
+            self.device = torch.device(device)
         else:
-            self.device = device
+            self.device = get_device(model)
 
         self.model = model.to(self.device)
         self.verbose = verbose

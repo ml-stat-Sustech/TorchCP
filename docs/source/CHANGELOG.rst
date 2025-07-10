@@ -1,6 +1,15 @@
 Changelog
 =========
 
+1.0.4 (2025-07-10)  
+------------------  
+* Refactored `__init__` of predictors to include `alpha` and `device` parameters for greater flexibility.  
+* Added EntmaxScore, SCPO and RC3P methods for classification tasks.  
+* Added the normalized residual score in regression task.
+* Added p-value computation and efficiency metrics from the paper "Criteria of Efficiency for Conformal Prediction".  
+
+
+
 1.0.2 (2025-02-17)
 ------------------
 * Refactored examples codebase for better organization and clarity
@@ -48,5 +57,5 @@ Changelog
 
 0.1.0 (2023-12-23)
 ------------------
-* Introduced CP algorithms for classification, including ConfTr, THR, APS, RAPS, SAPS, Classwise CP, Clustered CP and Weighted CP.
+* Introduced CP algorithms for classification, including ConfTr, LAC, APS, RAPS, SAPS, ClassConditional CP, Clustered CP and Weighted CP.
 * Introduced CP algorithms for regression, including ACI, ABS and CQR.

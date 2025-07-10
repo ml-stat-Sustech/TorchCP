@@ -6,6 +6,7 @@
 #
 
 from .abs import ABS
+from .norabs import NorABS
 from .cqr import CQR
 from .cqrfm import CQRFM
 from .cqrm import CQRM

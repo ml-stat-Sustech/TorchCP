@@ -9,7 +9,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.graph.score import DAPS
 from torchcp.graph.score.base import BaseScore
 
@@ -38,7 +38,7 @@ def graph_data():
 
 @pytest.fixture
 def base_score_function():
-    return THR(score_type="softmax")
+    return LAC(score_type="softmax")
 
 
 def test_base_graph_scores(graph_data, base_score_function):

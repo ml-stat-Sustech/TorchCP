@@ -33,6 +33,13 @@ class NAPSPredictor(SplitPredictor):
         score_function (callable): 
             Must be APS non-conformity scores function with score_type="softmax"
 
+        model (torch.nn.Module): 
+            A PyTorch model used for predictions on the graph. Defaults to `None`.
+
+        alpha (float, optional): The significance level. Default is 0.1.
+
+        device (torch.device, optional): The device on which the model is located. Default is None.
+
         cutoff (int): Minimum number of k-hop neighbors a node must have to be included in the test set.
             Default is 50. Nodes with fewer than this number of neighbors will be excluded.
 
@@ -46,7 +53,7 @@ class NAPSPredictor(SplitPredictor):
             Default is 'unif'.
     """
 
-    def __init__(self, graph_data, score_function=APS(score_type="softmax"), model=None, cutoff=50, k=2, scheme="unif"):
+    def __init__(self, graph_data, score_function=APS(score_type="softmax"), model=None, alpha=0.1, device=None, cutoff=50, k=2, scheme="unif"):
         if type(score_function) is not APS:
             raise ValueError(
                 f"Invalid score_function: {type(score_function).__name__}. Must be APS.")
@@ -54,7 +61,7 @@ class NAPSPredictor(SplitPredictor):
             raise ValueError(
                 f"Invalid score_type of APS: {score_function.score_type}. Must be softmax.")
 
-        super().__init__(graph_data, score_function, model)
+        super().__init__(graph_data, score_function, model, alpha, device)
 
         if scheme not in DEFAULT_SCHEMES:
             raise ValueError(
@@ -74,7 +81,7 @@ class NAPSPredictor(SplitPredictor):
 
     # The calibration process ########################################################
 
-    def calculate_threshold_for_node(self, node, logits, labels, alpha):
+    def calculate_threshold_for_node(self, node, logits, labels, alpha=None):
         """
         Calculate the conformal prediction threshold for a given node based on its neighborhood.
 
@@ -94,7 +101,7 @@ class NAPSPredictor(SplitPredictor):
 
             alpha (float): 
                 The significance level for the conformal prediction. This is used to determine the 
-                threshold for the prediction set.
+                threshold for the prediction set. Default is None.
 
         Returns:
             dict: 
@@ -102,6 +109,9 @@ class NAPSPredictor(SplitPredictor):
                 for the node. If the node doesn't have enough neighbors (i.e., fewer than `cutoff`), 
                 `None` is returned.
         """
+        if alpha is None:
+            alpha = self.alpha
+
         node_ids, weights = self._get_nbhd_weights(node)
 
         if self._cutoff <= node_ids.shape[0]:
@@ -216,7 +226,7 @@ class NAPSPredictor(SplitPredictor):
         return q
 
     # The prediction process ########################################################
-    def predict(self, eval_idx, alpha):
+    def predict(self, eval_idx, alpha=None):
         """
         Give evaluation predicted set.
 
@@ -229,7 +239,7 @@ class NAPSPredictor(SplitPredictor):
 
             alpha (float):
                 The pre-defined empirical marginal coverage level, where `1 - alpha` represents the confidence 
-                level of the prediction sets.
+                level of the prediction sets. Default is None.
 
         Returns:
             lcc_nodes (torch.Tensor):
@@ -240,6 +250,8 @@ class NAPSPredictor(SplitPredictor):
                 A list containing the precomputed prediction sets for each node in `lcc_nodes`. Each set is a 
                 list of predicted classes for that node.
         """
+        if alpha is None:
+            alpha = self.alpha
 
         self._model.eval()
         with torch.no_grad():
@@ -249,7 +261,7 @@ class NAPSPredictor(SplitPredictor):
         
         return lcc_nodes, prediction_sets
 
-    def predict_with_logits(self, logits, eval_idx, alpha):
+    def predict_with_logits(self, logits, eval_idx, alpha=None):
         """
         Predict the prediction sets for nodes in the graph.
 
@@ -266,7 +278,7 @@ class NAPSPredictor(SplitPredictor):
 
             alpha (float):
                 The pre-defined empirical marginal coverage level, where `1 - alpha` represents the confidence 
-                level of the prediction sets.
+                level of the prediction sets. Default is None.
 
         Returns:
             lcc_nodes (torch.Tensor):
@@ -277,6 +289,9 @@ class NAPSPredictor(SplitPredictor):
                 A list containing the precomputed prediction sets for each node in `lcc_nodes`. Each set is a 
                 list of predicted classes for that node.
         """
+        if alpha is None:
+            alpha = self.alpha
+
         logits = logits[eval_idx]
         labels = self._graph_data.y[eval_idx]
 
@@ -322,7 +337,7 @@ class NAPSPredictor(SplitPredictor):
 
         return prediction_sets
     
-    def evaluate(self, eval_idx, alpha):
+    def evaluate(self, eval_idx, alpha=None):
         """
         Evaluate the model's conformal prediction performance on a given evaluation set.
 
@@ -338,7 +353,7 @@ class NAPSPredictor(SplitPredictor):
 
             alpha (float):
                 The pre-defined empirical marginal coverage level, where `1 - alpha` represents the confidence 
-                level of the prediction sets.
+                level of the prediction sets. Default is None.
 
         Returns:
             dict:
@@ -349,6 +364,8 @@ class NAPSPredictor(SplitPredictor):
                 - "Singleton_hit_ratio": The ratio of singleton (i.e., single-class) prediction sets 
                 where the predicted class matches the true label.
         """
+        if alpha is None:
+            alpha = self.alpha
 
         self._model.eval()
         with torch.no_grad():

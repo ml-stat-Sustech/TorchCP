@@ -10,11 +10,11 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 
-from torchcp.classification.predictor.classwise import ClassWisePredictor
+from torchcp.classification.predictor.class_conditional import ClassConditionalPredictor
 from torchcp.utils.common import DimensionError
 
 
-class ClusteredPredictor(ClassWisePredictor):
+class ClusteredPredictor(ClassConditionalPredictor):
     """
     Method: Clutered Conforml Predictor 
     Paper: Class-Conditional Conformal Prediction with Many Classes (Ding et al., 2023)
@@ -26,10 +26,12 @@ class ClusteredPredictor(ClassWisePredictor):
     Args:
         score_function (callable): A non-conformity score function.
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
+        alpha (float, optional): The significance level. Default is 0.1.
         ratio_clustering (str or float, optional): The ratio of examples in the calibration dataset used to cluster classes. Default is "auto".
         num_clusters (str or int, optional): The number of clusters. If ratio_clustering is "auto", the number of clusters is automatically computed. Default is "auto".
         split (str, optional): The method to split the dataset into clustering dataset and calibration set. Options are 'proportional', 'doubledip', or 'random'. Default is 'random'.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
 
     Attributes:
         __ratio_clustering (str or float): The ratio of examples in the calibration dataset used to cluster classes.
@@ -37,10 +39,10 @@ class ClusteredPredictor(ClassWisePredictor):
         __split (str): The method to split the dataset into clustering dataset and calibration set.
     """
 
-    def __init__(self, score_function, model=None, temperature=1, ratio_clustering="auto", num_clusters="auto",
-                 split='random',
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, ratio_clustering="auto", num_clusters="auto",
+                 split='random', device=None
                  ):
-        super(ClusteredPredictor, self).__init__(score_function, model, temperature)
+        super(ClusteredPredictor, self).__init__(score_function, model, temperature, alpha, device)
 
         if ratio_clustering != "auto" and not (0 < ratio_clustering < 1):
             raise ValueError("ratio_clustering should be 'auto' or a value in (0, 1).")
@@ -55,18 +57,18 @@ class ClusteredPredictor(ClassWisePredictor):
         self.__num_clusters = num_clusters
         self.__split = split
 
-    def calculate_threshold(self, logits, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha=None):
         """
         Calculate the class-wise conformal prediction thresholds.
 
         Args:
             logits (torch.Tensor): The logits output from the model.
             labels (torch.Tensor): The ground truth labels.
-            alpha (float): The significance level.
+            alpha (float): The significance level. Default is None.
         """
 
-        if not (0 < alpha < 1):
-            raise ValueError("alpha should be a value in (0, 1).")
+        if alpha is None:
+            alpha = self.alpha
         
         cluster_assignments, cal_scores, cal_labels = self.preprocess_scores(logits, labels, alpha)
 

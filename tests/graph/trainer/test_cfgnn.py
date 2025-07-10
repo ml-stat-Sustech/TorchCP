@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
 
-from torchcp.classification.score import THR, APS
+from torchcp.classification.score import LAC, APS
 from torchcp.classification.loss import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer import CFGNNTrainer
@@ -60,12 +60,12 @@ def mock_model(device):
 
 
 @pytest.fixture
-def mock_cfgnn_model(mock_graph_data, mock_model):
-    return CFGNNTrainer(mock_graph_data, mock_model)
+def mock_cfgnn_model(mock_model, mock_graph_data):
+    return CFGNNTrainer(mock_model, mock_graph_data)
 
 
-def test_initialization(mock_graph_data, mock_model):
-    cf_trainer = CFGNNTrainer(mock_graph_data, mock_model)
+def test_initialization(mock_model, mock_graph_data):
+    cf_trainer = CFGNNTrainer(mock_model, mock_graph_data)
 
     assert cf_trainer.graph_data is mock_graph_data
     assert cf_trainer._device == mock_graph_data.x.device
@@ -87,7 +87,7 @@ def test_initialization(mock_graph_data, mock_model):
     assert cf_trainer.loss_fns[0] == F.cross_entropy
     assert isinstance(cf_trainer.loss_fns[1], ConfTrLoss)
     assert isinstance(cf_trainer.loss_fns[1].predictor, SplitPredictor)
-    assert isinstance(cf_trainer.loss_fns[1].predictor.score_function, THR)
+    assert isinstance(cf_trainer.loss_fns[1].predictor.score_function, LAC)
     assert cf_trainer.loss_fns[1].alpha == 0.1
     assert cf_trainer.loss_fns[1].fraction == 0.5
     assert cf_trainer.loss_fns[1].loss_type == "classification"
@@ -100,13 +100,17 @@ def test_initialization(mock_graph_data, mock_model):
     assert cf_trainer.predictor.score_function.score_type == "softmax"
     assert cf_trainer.alpha == 0.1
 
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    cf_trainer = CFGNNTrainer(mock_model, mock_graph_data, device=device)
+    assert cf_trainer._device == device
+
 
 def test_invalid_initialization(mock_graph_data, mock_model):
     with pytest.raises(ValueError, match="graph_data cannot be None"):
-        CFGNNTrainer(None, mock_model)
+        CFGNNTrainer(mock_model, None)
 
     with pytest.raises(ValueError, match="model cannot be None"):
-        CFGNNTrainer(mock_graph_data, None)
+        CFGNNTrainer(None, mock_graph_data)
 
 
 def test_train_each_epoch( mock_cfgnn_model):

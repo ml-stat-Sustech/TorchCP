@@ -26,7 +26,7 @@ def mock_score_function():
 @pytest.mark.parametrize("aggregation_function", ['mean', 'median', lambda x, dim: torch.max(x, dim=dim)[0]])
 def test_workflow(mock_data, mock_model, mock_score_function, aggregation_function):
     train_dataloader, cal_dataloader, test_dataloader = mock_data
-
+    
     # initialize EnsemblePredictor
     ensemble_predictor = EnsemblePredictor(
         score_function=mock_score_function,
@@ -41,10 +41,12 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
 
     # test predict method
     x_batch, y_batch = next(iter(test_dataloader))
-    prediction_intervals, aggr_pred = ensemble_predictor.predict(alpha=0.1, x_batch=x_batch)
+    prediction_intervals, aggr_pred = ensemble_predictor.predict(x_batch=x_batch, alpha=0.1)
     assert prediction_intervals is not None, "Prediction intervals should be generated."
     assert aggr_pred is not None, "Aggregated predictions should be generated."
     assert prediction_intervals.shape[0] == x_batch.shape[0], "Prediction intervals should match batch size."
+
+    ensemble_predictor.predict(x_batch=x_batch, alpha=None)
 
     # test calibrate method
     ensemble_predictor.calibrate(cal_dataloader, alpha=0.1)
@@ -62,12 +64,17 @@ def test_workflow(mock_data, mock_model, mock_score_function, aggregation_functi
     # Test evaluate method with verbose=True
     ensemble_predictor.evaluate(test_dataloader, alpha=0.1, verbose=True)
 
+    ensemble_predictor.evaluate(test_dataloader, alpha=None)
+
     with pytest.raises(ValueError):
         ensemble_predictor.train(train_dataloader, ensemble_num=0, subset_num=100)
 
     with pytest.raises(ValueError):
-        ensemble_predictor.predict(alpha=0.1, x_batch=x_batch, y_batch_last=torch.rand(10), aggr_pred_last=None)
+        ensemble_predictor.predict(x_batch=x_batch, alpha=0.1, y_batch_last=torch.rand(10), aggr_pred_last=None)
 
+def test_wrong_workflow(mock_data, mock_model, mock_score_function):
+    with pytest.raises(ValueError):
+        EnsemblePredictor(mock_score_function, mock_model, aggregation_function='error')
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_device_support(mock_data, mock_model, mock_score_function, device):
@@ -81,5 +88,5 @@ def test_device_support(mock_data, mock_model, mock_score_function, device):
     x_batch, _ = next(iter(test_dataloader))
     x_batch = x_batch.to(device)
 
-    prediction_intervals, _ = ensemble_predictor.predict(alpha=0.1, x_batch=x_batch)
+    prediction_intervals, _ = ensemble_predictor.predict(x_batch=x_batch, alpha=0.1)
     assert prediction_intervals.device.type == device, "Device should match the specified device."

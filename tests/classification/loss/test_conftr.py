@@ -10,12 +10,12 @@ import torch
 
 from torchcp.classification.loss.conftr import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor as Predictor
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 
 
 @pytest.fixture
 def conftr_instance():
-    predictor = Predictor(THR())
+    predictor = Predictor(LAC())
     alpha = 0.05
     fraction = 0.2
     loss_type = "valid"
@@ -38,27 +38,27 @@ def test_init(conftr_instance):
 
 def test_invalid_fraction():
     with pytest.raises(ValueError):
-        ConfTrLoss(Predictor(THR()), 0.05, 0)
+        ConfTrLoss(Predictor(LAC()), 0.05, 0)
 
 
 def test_invalid_loss_type():
     with pytest.raises(ValueError):
-        ConfTrLoss(Predictor(THR()), 0.05, 0.2, loss_type="invalid")
+        ConfTrLoss(Predictor(LAC()), 0.05, 0.2, loss_type="invalid")
 
 
 def test_invalid_target_size():
     with pytest.raises(ValueError):
-        ConfTrLoss(Predictor(THR()), 0.05, 0.2, target_size=2)
+        ConfTrLoss(Predictor(LAC()), 0.05, 0.2, target_size=2)
 
 
 def test_invalid_loss_transform():
     with pytest.raises(ValueError):
-        ConfTrLoss(Predictor(THR()), 0.05, 0.2, loss_transform="invalid")
+        ConfTrLoss(Predictor(LAC()), 0.05, 0.2, loss_transform="invalid")
 
 
 def test_invalid_epsilon():
     with pytest.raises(ValueError):
-        ConfTrLoss(Predictor(THR()), 0.05, 0.2, epsilon=0)
+        ConfTrLoss(Predictor(LAC()), 0.05, 0.2, epsilon=0)
 
 
 def test_compute_loss(conftr_instance):
@@ -103,15 +103,15 @@ def test_compute_classification_loss(conftr_instance):
 
 
 def test_loss_transform_square():
-    conftr = ConfTrLoss(Predictor(THR()), 0.05, 0.2, loss_transform="square")
+    conftr = ConfTrLoss(Predictor(LAC()), 0.05, 0.2, loss_transform="square")
     assert conftr.transform == torch.square
 
 
 def test_loss_transform_abs():
-    conftr = ConfTrLoss(Predictor(THR()), 0.05, 0.2, loss_transform="abs")
+    conftr = ConfTrLoss(Predictor(LAC()), 0.05, 0.2, loss_transform="abs")
     assert conftr.transform == torch.abs
 
 
 def test_loss_transform_log():
-    conftr = ConfTrLoss(Predictor(THR()), 0.05, 0.2, loss_transform="log")
+    conftr = ConfTrLoss(Predictor(LAC()), 0.05, 0.2, loss_transform="log")
     assert conftr.transform == torch.log

@@ -24,6 +24,8 @@ class BasePredictor(object):
         score_function (callable): Non-conformity score function.
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     
     Attributes:
         score_function (callable): Non-conformity score function.
@@ -43,7 +45,7 @@ class BasePredictor(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, score_function, model=None, temperature=1):
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, device=None):
 
         warnings.warn(
             "The 'temperature' parameter is deprecated and will be removed in a future version. "
@@ -58,18 +60,29 @@ class BasePredictor(object):
         self._model = model
         if self._model != None:
             self._model.eval()
-        self._device = get_device(model)
+
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        self.alpha = alpha
+            
+        if device is not None:
+            self._device = torch.device(device)
+        elif model is not None:
+            self._device = get_device(model)
+        else:
+            self._device = torch.device("cpu")
+            
         self._metric = Metrics()
         self._logits_transformation = ConfCalibrator.registry_ConfCalibrator("TS")(temperature).to(self._device)
 
     @abstractmethod
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
         """
         Virtual method to calibrate the calibration set.
 
         Args:
             cal_dataloader (torch.utils.data.DataLoader): A dataloader of the calibration set.
-            alpha (float): The significance level.
+            alpha (float): The significance level. Default is None.
         """
         raise NotImplementedError
 

@@ -64,8 +64,20 @@ class TestConformalLM:
             rejection=False
         )
         return conformal_llm
+    
+    @pytest.fixture
+    def mock_model(self):
+        class MockModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.param = torch.nn.Parameter(torch.tensor(1.0))
 
-    def test_initialization_invalid_params(self):
+            def forward(self, x):
+                return x
+
+        return MockModel()
+
+    def test_initialization_invalid_params(self, mock_model):
         # Test invalid scaling_type
         with pytest.raises(ValueError):
             ConformalLM(scaling_type="invalid")
@@ -73,6 +85,27 @@ class TestConformalLM:
         # Test invalid set_score_function_name
         with pytest.raises(ValueError):
             ConformalLM(set_score_function_name="invalid")
+
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=-1)
+
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=0)
+
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=1)
+
+        with pytest.raises(ValueError, match="alpha should be a value"):
+            ConformalLM(alpha=2)
+
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        mock_model.to(device)
+        conf_llm = ConformalLM(model=mock_model)
+        assert conf_llm._device == device
+
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        conf_llm = ConformalLM(device=device)
+        assert conf_llm._device == device
 
     def test_scaling(self, setup_basic_model, sample_data):
         setup_basic_model.scaling(
@@ -114,6 +147,13 @@ class TestConformalLM:
             sample_data['cal_similarities'],
             sample_data['cal_labels'],
             alpha=0.1
+        )
+
+        setup_basic_model.calibrate_configs(
+            sample_data['cal_scores'],
+            sample_data['cal_similarities'],
+            sample_data['cal_labels'],
+            alpha=None
         )
         assert hasattr(setup_basic_model, 'best_valid_configs')
 

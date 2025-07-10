@@ -7,8 +7,9 @@
 
 from abc import ABCMeta, abstractmethod
 
+import torch
 import torch.nn.functional as F
-
+from torchcp.utils.common import get_device
 from torchcp.classification.utils.metrics import Metrics
 
 
@@ -28,23 +29,37 @@ class BasePredictor(object):
             A user-defined function that computes the non-conformity score.
         model (torch.nn.Module): 
             A PyTorch model used for predictions on the graph. Defaults to `None`.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, graph_data, score_function, model=None):
+    def __init__(self, graph_data, score_function, model=None, alpha=0.1, device=None):
         self.score_function = score_function
         self._model = model
+
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        self.alpha = alpha
+
+        if device is not None:
+            self._device = torch.device(device)
+        elif model is not None:
+            self._device = get_device(model)
+        else:
+            self._device = graph_data.x.device
+
         if self._model != None:
             self._model.eval()
+            self._model.to(self._device)
 
-        self._graph_data = graph_data
+        self._graph_data = graph_data.to(self._device)
         self._label_mask = F.one_hot(graph_data.y).bool()
-        self._device = graph_data.x.device
         self._metric = Metrics()
 
     @abstractmethod
-    def calibrate(self, cal_idx, alpha):
+    def calibrate(self, cal_idx, alpha=None):
         """
         Abstract method to perform calibration on a given calibration set.
 
@@ -54,7 +69,7 @@ class BasePredictor(object):
                 the calibration set.
             alpha (float): 
                 The significance level, a value in the range (0, 1), representing the 
-                acceptable error rate for conformal prediction.
+                acceptable error rate for conformal prediction. Default is None.
         """
         raise NotImplementedError
 

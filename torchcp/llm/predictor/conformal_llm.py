@@ -14,6 +14,7 @@ import torch
 from scipy.stats import binom
 from transformers import set_seed, StoppingCriteria, StoppingCriteriaList
 
+from torchcp.utils.common import get_device
 from torchcp.llm.utils import Metrics, scoring, scaling, loss
 
 
@@ -73,10 +74,12 @@ class ConformalLM:
         set_score_function_name (str, optional): The name of the score function to use. Default is "none". Score function name, one of {geo, marginal, first_k, first_k_no_mask, max, sum, none}.
         rejection (bool, optional): Indicates whether to use rejection sampling. Default is False.
         seed (int, optional): The random seed. Default is 2024.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
     def __init__(self, tokenizer=None, model=None, epsilons=None, scaling_type="none", scale_kwargs=None,
-                 set_score_function_name="none", rejection=False, seed=2024) -> None:
+                 set_score_function_name="none", rejection=False, seed=2024, alpha=0.1, device=None) -> None:
         if scaling_type not in NAME_TO_SCALER:
             raise ValueError(f"Invalid scaling_type: {scaling_type}. Must be one of: {list(NAME_TO_SCALER.keys())}")
         if set_score_function_name not in NAME_TO_SCORE:
@@ -85,6 +88,17 @@ class ConformalLM:
 
         self.tokenizer = tokenizer
         self.model = model
+
+        if not (0 < alpha < 1):
+            raise ValueError("alpha should be a value in (0, 1).")
+        self.alpha = alpha
+
+        if device is not None:
+            self._device = torch.device(device)
+        elif model is not None:
+            self._device = get_device(model)
+        else:
+            self._device = torch.device("cpu")
 
         if epsilons is None:
             epsilons = DEFAULT_EPSILONS
@@ -116,15 +130,12 @@ class ConformalLM:
         num_return_sequences = 5
         stop_word_ids = [13, 1919, 2982, 869, 29889]
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(device)
-
         for sample in dataset:
             generations = []
             question = sample['question']
             answer = sample['answer']
             input_text = prompt_template.format(question)
-            input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids.to(device)
+            input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids.to(self._device)
             stopping_criteria = StoppingCriteriaList(
                 [StoppingCriteriaSub(stop_ids=stop_word_ids, input_length=input_ids.shape[1])])
             kwargs = {
@@ -163,7 +174,10 @@ class ConformalLM:
                         'decoded': self.tokenizer.decode(tokens)
                     })
 
-    def calibrate_configs(self, cal_scores, cal_similarities, cal_labels, alpha):
+    def calibrate_configs(self, cal_scores, cal_similarities, cal_labels, alpha=None):
+        if alpha is None:
+            alpha = self.alpha
+
         cal_scores = self.scaler.predict(cal_scores)
 
         self.best_valid_configs = torch.full((len(self.epsilons), 3), float('nan'))

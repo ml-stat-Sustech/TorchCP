@@ -26,3 +26,5 @@ docs/buildA
 .vscode
 .coverage
 torch_scae.egg-info
+*.so
+*.egg-info

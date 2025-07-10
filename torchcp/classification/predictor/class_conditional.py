@@ -10,9 +10,9 @@ import torch
 from torchcp.classification.predictor.split import SplitPredictor
 
 
-class ClassWisePredictor(SplitPredictor):
+class ClassConditionalPredictor(SplitPredictor):
     """
-    Method: Class-wise conformal prediction
+    Method: Class-conditional conformal prediction
     Paper: Conditional validity of inductive conformal predictors (Vovk et al., 2012)
     Link: https://proceedings.mlr.press/v25/vovk12.html
     
@@ -21,27 +21,29 @@ class ClassWisePredictor(SplitPredictor):
         score_function (callable): Non-conformity score function.
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
 
     Attributes:
         q_hat (torch.Tensor): The calibrated threshold for each class.
     """
 
-    def __init__(self, score_function, model=None, temperature=1):
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, device=None):
 
-        super(ClassWisePredictor, self).__init__(score_function, model, temperature)
+        super(ClassConditionalPredictor, self).__init__(score_function, model, temperature, alpha, device)
         self.q_hat = None
 
-    def calculate_threshold(self, logits, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha=None):
         """
         Calculate the class-wise conformal prediction thresholds.
 
         Args:
             logits (torch.Tensor): The logits output from the model.
             labels (torch.Tensor): The ground truth labels.
-            alpha (float): The significance level.
+            alpha (float): The significance level. Default is None.
         """
-        if not (0 < alpha < 1):
-            raise ValueError("alpha should be a value in (0, 1).")
+        if alpha is None:
+            alpha = self.alpha
 
         alpha = torch.tensor(alpha, device=self._device)
         logits = logits.to(self._device)

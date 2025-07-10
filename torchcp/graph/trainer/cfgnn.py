@@ -11,7 +11,8 @@ from tqdm import tqdm
 import torch
 import torch.nn.functional as F
 
-from torchcp.classification.score import THR, APS
+from torchcp.utils.common import get_device
+from torchcp.classification.score import LAC, APS
 from torchcp.classification.loss import ConfTrLoss
 from torchcp.classification.predictor import SplitPredictor
 from torchcp.graph.trainer.model import CFGNNModel
@@ -29,6 +30,7 @@ class CFGNNTrainer:
     for uncertainty quantification and model calibration.
 
     Args:
+        model (torch.nn.Module): backbone model.
         graph_data (from torch_geometric.data import Data): 
             x (tensor): features of nodes.
             edge_index (Tensor): The edge index, shape (2, num_edges).
@@ -36,7 +38,6 @@ class CFGNNTrainer:
             train_idx: The indices of the training nodes.
             val_idx: The indices of the validation nodes.
             calib_train_idx: The indices of the training nodes for CF-GNN.
-        model (torch.nn.Module): backbone model.
         hidden_channels (int): Number of hidden channels for the CF-GNN layers.
         alpha (float, optional): The significance level for conformal prediction. Default is 0.1.
         optimizer_class (torch.optim.Optimizer): Optimizer class for temperature parameter
@@ -47,21 +48,26 @@ class CFGNNTrainer:
 
     def __init__(
             self,
-            graph_data,
             model,
+            graph_data,
             hidden_channels=64,
             num_layers=2,
             alpha=0.1,
             optimizer_class: torch.optim.Optimizer = torch.optim.Adam,
-            optimizer_params: dict = {'weight_decay': 5e-4, 'lr': 0.001}):
+            optimizer_params: dict = {'weight_decay': 5e-4, 'lr': 0.001},
+            device=None):
 
         if graph_data is None:
             raise ValueError("graph_data cannot be None.")
         if model is None:
             raise ValueError("model cannot be None.")
+        
+        if device is not None:
+            self._device = torch.device(device)
+        else:
+            self._device = get_device(model)
 
-        self.graph_data = graph_data
-        self._device = self.graph_data.x.device
+        self.graph_data = graph_data.to(self._device)
 
         self.num_classes = graph_data.y.max().item() + 1
         self.model = CFGNNModel(model, self.num_classes, hidden_channels, num_layers).to(self._device)
@@ -72,7 +78,7 @@ class CFGNNTrainer:
         )
 
         self.loss_fns = [F.cross_entropy,
-                         ConfTrLoss(predictor=SplitPredictor(score_function=THR(score_type="softmax")),
+                         ConfTrLoss(predictor=SplitPredictor(score_function=LAC(score_type="softmax")),
                                 alpha=alpha,
                                 fraction=0.5,
                                 loss_type="classification",

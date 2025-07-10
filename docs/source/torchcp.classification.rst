@@ -12,16 +12,17 @@ score function
 ..  autosummary::
     :nosignatures:
 
-    THR
+    LAC
     APS
     RAPS
     SAPS
     Margin
     TOPK
     KNN
+    EntmaxScore
 
 
-.. autoclass:: THR
+.. autoclass:: LAC
    :members:
 
 .. autoclass:: APS
@@ -42,6 +43,10 @@ score function
 .. autoclass:: KNN
    :members:
 
+.. autoclass:: EntmaxScore
+   :members:
+
+
 .. automodule:: torchcp.classification.predictor
 
 predictor
@@ -51,21 +56,26 @@ predictor
     :nosignatures:
 
     SplitPredictor
-    ClassWisePredictor
+    ClassConditionalPredictor
     ClusteredPredictor
+    RC3PPredictor
     WeightedPredictor
 
 .. autoclass:: SplitPredictor
    :members:
 
-.. autoclass:: ClassWisePredictor
+.. autoclass:: ClassConditionalPredictor
    :members:
 
 .. autoclass:: ClusteredPredictor
    :members:
 
+.. autoclass:: RC3PPredictor
+   :members:
+
 .. autoclass:: WeightedPredictor
    :members:
+
 
 
 .. automodule:: torchcp.classification.loss
@@ -106,6 +116,8 @@ trainer
     TSTrainer
     OrdinalTrainer
     UncertaintyAwareTrainer
+    SCPOTrainer
+
 
 .. autoclass:: BaseTrainer
    :members:
@@ -121,6 +133,10 @@ trainer
 
 .. autoclass:: UncertaintyAwareTrainer
    :members:
+
+.. autoclass:: SCPOTrainer
+   :members:
+
 
 .. automodule:: torchcp.classification.utils.metrics
    
@@ -146,6 +162,20 @@ metrics
 .. autofunction:: SSCV
 .. autofunction:: WSC
 .. autofunction:: singleton_hit_ratio
+.. autofunction:: compute_p_values
+.. autofunction:: pvalue_criterion_S
+.. autofunction:: pvalue_criterion_N
+.. autofunction:: pvalue_criterion_U
+.. autofunction:: pvalue_criterion_F
+.. autofunction:: pvalue_criterion_M
+.. autofunction:: pvalue_criterion_E
+.. autofunction:: pvalue_criterion_OU
+.. autofunction:: pvalue_criterion_OF
+.. autofunction:: pvalue_criterion_OM
+.. autofunction:: pvalue_criterion_OE
+
+
+
 
 .. automodule:: torchcp.classification.utils
 

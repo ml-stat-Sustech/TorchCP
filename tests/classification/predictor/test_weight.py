@@ -92,16 +92,13 @@ def test_calibrate(simple_score_function, sample_data):
         model=model,
         image_encoder=encoder
     )
+    predictor.calibrate(sample_data, None)
 
     # Test calibration with valid alpha
     predictor.calibrate(sample_data, alpha=0.1)
     assert predictor.alpha == 0.1
     assert predictor.scores is not None
     assert predictor.source_image_features is not None
-
-    # Test calibration with invalid alpha
-    with pytest.raises(ValueError, match="alpha should be a value in"):
-        predictor.calibrate(sample_data, alpha=1.5)
 
 
 def test_calculate_threshold(simple_score_function):
@@ -122,10 +119,6 @@ def test_calculate_threshold(simple_score_function):
     assert predictor.scores is not None
     assert len(predictor.scores) == len(labels) + 1
     assert torch.isinf(predictor.scores[-1])
-
-    # Test invalid alpha
-    with pytest.raises(ValueError, match="alpha should be a value in"):
-        predictor.calculate_threshold(logits, labels, alpha=0)
 
 
 def test_evaluate_without_calibration(simple_score_function, sample_data):

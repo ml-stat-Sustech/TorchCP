@@ -23,18 +23,20 @@ class SplitPredictor(BasePredictor):
         score_function (callable): Non-conformity score function.
         model (torch.nn.Module, optional): A PyTorch model. Default is None.
         temperature (float, optional): The temperature of Temperature Scaling. Default is 1.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
-    def __init__(self, score_function, model=None, temperature=1):
-        super().__init__(score_function, model, temperature)
+    def __init__(self, score_function, model=None, temperature=1, alpha=0.1, device=None):
+        super().__init__(score_function, model, temperature, alpha, device)
 
     #############################
     # The calibration process
     ############################
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
 
-        if not (0 < alpha < 1):
-            raise ValueError("alpha should be a value in (0, 1).")
+        if alpha is None:
+            alpha = self.alpha
 
         if self._model is None:
             raise ValueError("Model is not defined. Please provide a valid model.")
@@ -52,7 +54,10 @@ class SplitPredictor(BasePredictor):
             labels = torch.cat(labels_list)
         self.calculate_threshold(logits, labels, alpha)
 
-    def calculate_threshold(self, logits, labels, alpha):
+    def calculate_threshold(self, logits, labels, alpha=None):
+        if alpha is None:
+            alpha = self.alpha
+
         logits = logits.to(self._device)
         labels = labels.to(self._device)
         scores = self.score_function(logits, labels)

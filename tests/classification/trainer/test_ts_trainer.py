@@ -35,7 +35,10 @@ def ece_loss():
 
 @pytest.fixture
 def ts_trainer(mock_model):
-    return TSTrainer(init_temperature=1.0, model=mock_model)
+    return TSTrainer(
+        model=mock_model,
+        init_temperature=1.0
+    )
 
 # Tests for _ECELoss
 class TestECELoss:
@@ -57,11 +60,17 @@ class TestECELoss:
 # Tests for TSTrainer
 class TestTSTrainer:
     def test_initialization(self, mock_model):
-        trainer = TSTrainer(init_temperature=1.5, model=mock_model)
+        trainer = TSTrainer(
+            model=mock_model,
+            init_temperature=1.5
+        )
         
     def test_invalid_temperature(self, mock_model):
         with pytest.raises(ValueError):
-            TSTrainer(init_temperature=-1.0, model=mock_model)
+            TSTrainer(
+                model=mock_model,
+                init_temperature=-1.0
+            )
         
     def test_training_process(self, ts_trainer, mock_data):
         # Train model
@@ -70,8 +79,8 @@ class TestTSTrainer:
     def test_gpu_training(self, mock_model, mock_data):
         if torch.cuda.is_available():
             trainer = TSTrainer(
-                init_temperature=1.0, 
                 model=mock_model,
+                init_temperature=1.0,
                 device=torch.device('cuda')
             )
             trainer.train(mock_data, num_epochs=2)

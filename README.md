@@ -17,10 +17,22 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[![Latest Tag][tag-shield]][tag-url]
+[![PyPI version](https://badge.fury.io/py/torchcp.svg)](https://badge.fury.io/py/torchcp)
+[![Forks](https://img.shields.io/github/forks/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/network/members)
+[![Stars](https://img.shields.io/github/stars/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/stargazers)
+[![Issues](https://img.shields.io/github/issues/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/pulls)
+[![Downloads](https://static.pepy.tech/badge/torchcp)](https://pepy.tech/project/torchcp)
+[![Documentation Status](https://readthedocs.org/projects/torchcp/badge/?version=latest)](https://torchcp.readthedocs.org)
+
+
+<!-- [![Latest Tag][tag-shield]][tag-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
+[![Downloads](https://static.pepy.tech/badge/torchcp)](https://pepy.tech/project/torchcp) -->
+
+
 <!-- 
 ***[![MIT License][license-shield]][license-url]
 -->
@@ -65,20 +77,23 @@ TorchCP has implemented the following methods:
 
 | Year | Title                                                                                                                                                                        | Venue                | Code Link                                                                         | Implementation                                      |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------|
-| 2025 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://openreview.net/forum?id=8Gqz2opok1)                                                         | ICLR'25                |                                                                                   | classification.loss.cd                         |
+| 2025 | [**Sparse Activations as Conformal Predictors**](https://arxiv.org/pdf/2502.14773)|  AISTATS'25 | [Link](https://github.com/deep-spin/sparse-activations-cp/tree/main) |classification.score.entmax| 
+| 2025 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://openreview.net/forum?id=8Gqz2opok1)                                                         |                |                                                                                   | classification.loss.cd                         |
+| 2024 | [**Conformal Prediction for Class-wise Coverage via Augmented Label Rank Calibration**](https://openreview.net/forum?id=T7dS1Ghwwu&referrer=%5Bthe%20profile%20of%20Taha%20Belkhouja%5D(%2Fprofile%3Fid%3D~Taha_Belkhouja1))                                                         | NeurIPS'24                |                                                                                 [Link](https://github.com/YuanjieSh/RC3P)  | classification.predictor.rc3p                         |
 | 2024 | [**Delving into temperature scaling for adaptive conformal prediction**](https://arxiv.org/abs/2402.04344)                                                                   | Arxiv                |                                                                                   | classification.loss.confts                          |
 | 2024 | [**Conformal Prediction for Deep Classifier via Label Ranking**](https://arxiv.org/abs/2310.06430)                                                                           | ICML'24              | [Link](https://github.com/ml-stat-Sustech/conformal_prediction_via_label_ranking) | classification.score.saps                           |
 | 2023 | [**Class-Conditional Conformal Prediction with Many Classes**](https://arxiv.org/abs/2306.09335)                                                                             | NeurIPS'23           | [Link](https://github.com/tiffanyding/class-conditional-conformal)                | classification.predictor.cluster                    |
 | 2023 | [**Conformal Prediction Sets for Ordinal Classification**](https://proceedings.neurips.cc/paper_files/paper/2023/file/029f699912bf3db747fe110948cc6169-Paper-Conference.pdf) | NeurIPS'23           |                                                                                   | classification.trainer.ordinal                      |
 | 2022 | [**Training Uncertainty-Aware Classifiers with Conformalized Deep Learning**](https://arxiv.org/abs/2205.05878)                                                              | NeurIPS'22           | [Link](https://github.com/bat-sheva/conformal-learning)                           | classification.loss.uncertainty_aware               |
 | 2022 | [**Learning Optimal Conformal Classifiers**](https://arxiv.org/abs/2110.09192)                                                                                               | ICLR'22              | [Link](https://github.com/google-deepmind/conformal_training/tree/main)           | classification.loss.conftr                          |       
+| 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255) | Arxiv   |           |           classification.loss.scpo                           |
 | 2021 | [**Uncertainty Sets for Image Classifiers using Conformal Prediction**](https://arxiv.org/abs/2009.14193       )                                                             | ICLR'21              | [Link](https://github.com/aangelopoulos/conformal_classification)                 | classification.score.raps classification.score.topk |
 | 2020 | [**Classification with Valid and Adaptive Coverage**](https://proceedings.neurips.cc/paper/2020/file/244edd7e85dc81602b7615cd705545f5-Paper.pdf)                             | NeurIPS'20           | [Link](https://github.com/msesia/arc)                                             | classification.score.aps                            |
 | 2019 | [**Conformal Prediction Under Covariate Shift**](https://arxiv.org/abs/1904.06019)                                                                                           | NeurIPS'19           | [Link](https://github.com/ryantibs/conformal/)                                    | classification.predictor.weight                     |
-| 2016 | [**Least Ambiguous Set-Valued Classifiers with Bounded Error Levels**](https://arxiv.org/abs/1609.00451)                                                                     | JASA                 |                                                                                   | classification.score.thr                            |
+| 2016 | [**Least Ambiguous Set-Valued Classifiers with Bounded Error Levels**](https://arxiv.org/abs/1609.00451)                                                                     | JASA                 |                                                                                   | classification.score.lac                            |
 | 2016 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                                  | The Computer Journal |                                                                                   | classification.score.knn                            |
 | 2015 | [**Bias reduction through conditional conformal prediction**](https://dl.acm.org/doi/abs/10.3233/IDA-150786)                                                                 | Intell. Data Anal.   |                                                                                   | classification.score.margin                         |
-| 2012 | [**Conditional Validity of Inductive Conformal Predictors**](https://proceedings.mlr.press/v25/vovk12.html)                                                                  | ACML'12              |                                                                                   | classification.predictor.classwise                  |
+| 2012 | [**Conditional Validity of Inductive Conformal Predictors**](https://proceedings.mlr.press/v25/vovk12.html)                                                                  | ACML'12              |                                                                                   | classification.predictor.class_conditional                  |
 | 2007 | [**Hedging Predictions in Machine Learning**](https://ieeexplore.ieee.org/document/8129828)                                                                                  | The Computer Journal |                                                                                   | classification.score.knn                            |
 
 ## Regression
@@ -86,12 +101,14 @@ TorchCP has implemented the following methods:
 | Year | Title                                                                                                                                           | Venue                | Code Link                                              | Implementation                             | Remark              |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------------------------------------------------------|--------------------------------------------|---------------------|
 | 2023 | [**Conformal Prediction via Regression-as-Classification**](http://etash.me/papers/Bayesian_Conformal_Prediction_through_Memory_Adaptation.pdf) | RegML @ NeurIPS 2023 | [link](https://github.com/EtashGuha/R2CCP/tree/master) | regression.score.r2ccp                     |                     |
+| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://proceedings.mlr.press/v162/zaffran22a.html) | ICML'22 | [link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) | regression.predictor.agaci                     | support time series |
 | 2021 | [**Adaptive Conformal Inference Under Distribution Shift**](https://arxiv.org/abs/2106.00170)                                                   | NeurIPS'21           | [Link](https://github.com/isgibbs/AdaptiveConformal)   | regression.predictor.aci                   | support time series |
 | 2020 | [**A comparison of some conformal quantile regression methods**](https://onlinelibrary.wiley.com/doi/epdf/10.1002/sta4.261)                     | Stat                 | [Link](https://github.com/soroushzargar/DAPS)          | regression.score.cqm regression.score.cqrr |                     |
 | 2020 | [**Conformal Prediction Interval for Dynamic Time-Series**](https://proceedings.mlr.press/v139/xu21h.html)                                      | ICML'21              | [Link](https://github.com/hamrel-cxu/EnbPI)            | regression.predictor.ensemble              | support time series |
 | 2019 | [**Adaptive, Distribution-Free Prediction Intervals for Deep Networks**](https://proceedings.mlr.press/v108/kivaranovic20a.html)                | AISTATS'19           | [Link](https://github.com/yromano/cqr)                 | regression.score.cqrfm                     |                     |
 | 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS'19           | [Link](https://github.com/yromano/cqr)                 | regression.score.cqr                       |                     |
 | 2017 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                   | JASA                 | [Link](https://github.com/ryantibs/conformal)          | regression.predictor.split                 |                     |
+| 2005 | [**Inductive Confidence Machines for Regression**](https://link.springer.com/chapter/10.1007/3-540-36755-1_29)                                                   | Springer                 |   | regression.score.abs regression.score.norabs                  |                     |
 
 ## Graph
 
@@ -112,11 +129,12 @@ TorchCP has implemented the following methods:
 
 TorchCP is still under active development. We will add the following features/items down the road:
 
-| Year | Title                                                                                                           | Venue   | Code                                                                       |
-|------|-----------------------------------------------------------------------------------------------------------------|---------|----------------------------------------------------------------------------|
-| 2022 | [**Adaptive Conformal Predictions for Time Series**](https://arxiv.org/abs/2202.07282)                          | ICML'22 | [Link](https://github.com/mzaffran/AdaptiveConformalPredictionsTimeSeries) |
-| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML'22 | [Link](https://github.com/ajfisch/conformal-fp)                            |
-| 2021 | [**Optimized conformal classification using gradient descent approximation**](https://arxiv.org/abs/2105.11255) | Arxiv   |                                                                            |
+| Year | Title                                                                                                           | Venue      | Code                                                                       |
+|------|-----------------------------------------------------------------------------------------------------------------|------------|----------------------------------------------------------------------------|
+| 2023 | [**Conformal Prediction for Time Series with Modern Hopfield Networks**](https://openreview.net/pdf?id=KTRwpWCMsC)                          | NeuIPS'23    | [Link](https://github.com/ml-jku/HopCPT) |
+| 2022 | [**Conformal Prediction Sets with Limited False Positives**](https://arxiv.org/abs/2202.07650)                  | ICML'22    | [Link](https://github.com/ajfisch/conformal-fp)                            |
+
+
 
 ## Installation
 
@@ -142,10 +160,10 @@ pytest --cov=torchcp tests
 
 ## Examples
 
-Here, we provide a simple example for a classification task, with THR score and SplitPredictor.
+Here, we provide a simple example for a classification task, with LAC score and SplitPredictor.
 
 ```python
-from torchcp.classification.score import THR
+from torchcp.classification.score import LAC
 from torchcp.classification.predictor import SplitPredictor
 
 # Preparing a calibration data and a test data.
@@ -156,9 +174,9 @@ model = ...
 
 model.eval()
 
-# Options of score function: THR, APS, SAPS, RAPS
-# Define a conformal prediction algorithm. Optional: SplitPredictor, ClusteredPredictor, ClassWisePredictor
-predictor = SplitPredictor(score_function=THR(), model=model)
+# Options of score function: LAC, APS, SAPS, RAPS
+# Define a conformal prediction algorithm. Optional: SplitPredictor, ClusteredPredictor, ClassConditionalPredictor
+predictor = SplitPredictor(score_function=LAC(), model=model)
 
 # Calibrating the predictor with significance level as 0.1
 predictor.calibrate(cal_dataloader, alpha=0.1)
@@ -257,3 +275,4 @@ We welcome you to cite the following works:
 [tag-shield]: https://img.shields.io/github/v/tag/ml-stat-Sustech/TorchCP?style=for-the-badge&label=version
 
 [tag-url]: https://github.com/ml-stat-Sustech/TorchCP/tags
+

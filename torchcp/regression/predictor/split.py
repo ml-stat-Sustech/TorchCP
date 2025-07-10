@@ -20,6 +20,8 @@ class SplitPredictor(BasePredictor):
     Args:
         score_function (torchcp.regression.scores): A class that implements the score function.
         model (torch.nn.Module): A pytorch regression model that can output predicted point.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
         
     Reference:
         Paper: Distribution-Free Predictive Inference For Regression (Lei et al., 2017)
@@ -27,8 +29,8 @@ class SplitPredictor(BasePredictor):
         Github: https://github.com/ryantibs/conformal
     """
 
-    def __init__(self, score_function, model=None):
-        super().__init__(score_function, model)
+    def __init__(self, score_function, model=None, alpha=0.1, device=None):
+        super().__init__(score_function, model, alpha, device)
 
     def train(self, train_dataloader, **kwargs):
         """
@@ -50,18 +52,20 @@ class SplitPredictor(BasePredictor):
             If the train function is not used, users should pass the trained model to the predictor at the beginning.
         """
         model = kwargs.pop('model', None)
+        device = kwargs.pop('device', self._device)
+        self._device = device
 
         if model is not None:
             self._model = self.score_function.train(
-                train_dataloader, model=model, device=self._device, **kwargs
+                train_dataloader, model=model, device=device, **kwargs
             )
         elif self._model is not None:
             self._model = self.score_function.train(
-                train_dataloader, model=self._model, device=self._device, **kwargs
+                train_dataloader, model=self._model, device=device, **kwargs
             )
         else:
             self._model = self.score_function.train(
-                train_dataloader, device=self._device, **kwargs
+                train_dataloader, device=device, **kwargs
             )
 
     def calculate_score(self, predicts, y_truth):
@@ -90,7 +94,10 @@ class SplitPredictor(BasePredictor):
         """
         return self.score_function.generate_intervals(predicts_batch, q_hat)
 
-    def calibrate(self, cal_dataloader, alpha):
+    def calibrate(self, cal_dataloader, alpha=None):
+        if alpha is None:
+            alpha = self.alpha
+
         self._model.eval()
         predicts_list, y_truth_list = [], []
         with torch.no_grad():

@@ -16,21 +16,34 @@ class SplitPredictor(BasePredictor):
     Method: Split Conformal Prediction (Vovk et a., 2005).
     Paper: Algorithmic Learning in a Random World
     Link: https://link.springer.com/book/10.1007/978-3-031-06649-8.
+
+    Args:
+        graph_data (torch_geometric.data.Data): 
+            The input graph data in PyG format.
+        score_function (callable): 
+            A user-defined function that computes the non-conformity score.
+        model (torch.nn.Module): 
+            A PyTorch model used for predictions on the graph. Defaults to `None`.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
     """
 
-    def __init__(self, graph_data, score_function, model=None):
-        super().__init__(graph_data, score_function, model)
+    def __init__(self, graph_data, score_function, model=None, alpha=0.1, device=None):
+        super().__init__(graph_data, score_function, model, alpha, device)
 
     # The calibration process ########################################################
 
-    def calibrate(self, cal_idx, alpha):
+    def calibrate(self, cal_idx, alpha=None):
+        if alpha is None:
+            alpha = self.alpha
+
         self._model.eval()
         with torch.no_grad():
             logits = self._model(self._graph_data.x,
                                  self._graph_data.edge_index)
         self.calculate_threshold(logits, cal_idx, self._label_mask, alpha)
 
-    def calculate_threshold(self, logits, cal_idx, label_mask, alpha):
+    def calculate_threshold(self, logits, cal_idx, label_mask, alpha=None):
         """
         Calculate the conformal prediction threshold for a given calibration set.
 
@@ -50,8 +63,11 @@ class SplitPredictor(BasePredictor):
                 sample and class. Shape: [num_samples, num_classes].
             alpha (float): 
                 The significance level, a value in the range (0, 1), representing 
-                the acceptable error rate.
+                the acceptable error rate. Default is None.
         """
+        if alpha is None:
+            alpha = self.alpha
+
         logits = logits.to(self._device)
         label_mask = label_mask.to(self._device)
 

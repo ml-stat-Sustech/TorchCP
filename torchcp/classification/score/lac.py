@@ -10,9 +10,9 @@ import torch
 from torchcp.classification.score.base import BaseScore
 
 
-class THR(BaseScore):
+class LAC(BaseScore):
     """
-    Threshold conformal predictors 
+    Least Ambiguous Classifiers (LAC)
     
     Args:
         score_type (Union[str, Callable], optional): Specifies how to transform logits.
@@ -24,14 +24,14 @@ class THR(BaseScore):
         transform (callable): The transformation function applied to logits.
         
     Examples::
-        >>> thr = THR(score_type="softmax")
+        >>> lac = LAC(score_type="softmax")
         >>> logits = torch.tensor([[2.0, 1.0, 0.1], [0.5, 2.5, 1.0]])
-        >>> scores_all = thr(logits)
+        >>> scores_all = lac(logits)
         
         >>> # Using custom function
         >>> custom_transform = lambda x: x.sigmoid()
-        >>> thr = THR(score_type=custom_transform)
-        >>> scores_custom = thr(logits)
+        >>> lac = LAC(score_type=custom_transform)
+        >>> scores_custom = lac(logits)
         
     References:
         Sadinle, M. et al., (2016). Least ambiguous set-valued classifiers with bounded error levels. Journal of the American Statistical Association, 111(515), 1648-1658.

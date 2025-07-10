@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
+
 import math
 import warnings
 
@@ -26,6 +27,8 @@ class ACIPredictor(SplitPredictor):
         model (torch.nn.Module): A PyTorch model capable of outputting quantile values. 
             The model should be an initialization model that has not been trained.
         gamma (float): Step size parameter for adaptive adjustment of alpha. Must be greater than 0.
+        alpha (float, optional): The significance level. Default is 0.1.
+        device (torch.device, optional): The device on which the model is located. Default is None.
         
     Reference:  
         Paper: Adaptive conformal inference Under Distribution Shift (Gibbs et al., 2021)
@@ -34,9 +37,9 @@ class ACIPredictor(SplitPredictor):
         
     """
 
-    def __init__(self, score_function, model, gamma):
-        super().__init__(score_function, model)
-        if gamma <= 0:
+    def __init__(self, score_function, model, gamma, alpha=0.1, device=None):
+        super().__init__(score_function, model, alpha, device)
+        if (gamma is not None) and (gamma <= 0):
             raise ValueError("gamma must be greater than 0.")
 
         self.gamma = gamma
@@ -44,7 +47,7 @@ class ACIPredictor(SplitPredictor):
         self.model_backbone = model
         self.train_indicate = False
 
-    def train(self, train_dataloader, alpha, **kwargs):
+    def train(self, train_dataloader, **kwargs):
         """
         Train and calibrate the predictor using the training data.
 
@@ -64,14 +67,13 @@ class ACIPredictor(SplitPredictor):
             We provide a default training method, and users can change the hyperparameters :attr:`kwargs` to modify the training process.
             If the user wants to fully control the training process, it can be achieved by rewriting the :func:`train` of the score function.
         """
-        super().train(train_dataloader, alpha=alpha, **kwargs)
-        super().calibrate(train_dataloader, alpha)
-        self.alpha = alpha
-        self.alpha_t = alpha
+        super().train(train_dataloader, alpha=self.alpha, **kwargs)
+        super().calibrate(train_dataloader, self.alpha)
+        self.alpha_t = self.alpha
         self.train_dataloader = train_dataloader
         self.train_indicate = True
 
-    def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last):
+    def calculate_err_rate(self, x_batch, y_batch_last, pred_interval_last, weight=True):
         """
         Calculate the error rate for the previous prediction intervals.
 
@@ -84,16 +86,18 @@ class ACIPredictor(SplitPredictor):
             float: Weighted error rate based on historical predictions.
         """
         steps_t = len(y_batch_last)
-        w_s = (steps_t - torch.arange(steps_t)).to(self._device)
-        w_s = torch.pow(0.95, w_s)
-        w_s = w_s / torch.sum(w_s)
         err = x_batch.new_zeros(steps_t, self.q_hat.shape[0])
         err = ((y_batch_last >= pred_interval_last[..., 0, 1]) | (y_batch_last <= pred_interval_last[..., 0, 0])).int()
+        if weight:
+            w_s = (steps_t - torch.arange(steps_t)).to(self._device)
+            w_s = torch.pow(0.95, w_s)
+            w_s = w_s / torch.sum(w_s)
+        else:
+            w_s = torch.ones(steps_t, device=self._device) / steps_t
         err_t = torch.sum(w_s * err)
         return err_t
-
-    def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False,
-                update_alpha=False):
+    
+    def predict(self, x_batch, x_lookback=None, y_lookback=None, pred_interval_lookback=None, train=False, update_alpha=True):
         """
         Generates conformal prediction intervals for a given batch of input data. 
         This function can also optionally retrain the model or update the conformal 
@@ -143,47 +147,57 @@ class ACIPredictor(SplitPredictor):
         if self.train_indicate is False:
             raise ValueError("The predict function must be called after the train function is called")
         self._model.eval()
-
+        
         if (x_lookback is None) != (y_lookback is None):
             raise ValueError("x_lookback, y_lookback must either be provided or be None.")
-
+        
         if x_lookback is not None:
             x_lookback = x_lookback.to(self._device)
         if y_lookback is not None:
             y_lookback = y_lookback.to(self._device)
-
+        
         if (x_lookback is not None) and (y_lookback is not None) and (pred_interval_lookback is None):
-            predicts_batch = self._model(x_batch.to(self._device)).float()
-            pred_interval_lookback = self.generate_intervals(predicts_batch, self.q_hat)
-
+            predicts_batch_lookback = self._model(x_lookback.to(self._device)).float()
+            pred_interval_lookback = self.generate_intervals(predicts_batch_lookback, self.q_hat)
+        
         if train == True:
             if (x_lookback is not None) and (y_lookback is not None):
                 back_dataset = torch.utils.data.TensorDataset(x_lookback, y_lookback)
-                back_dataloader = torch.utils.data.DataLoader(back_dataset,
-                                                              batch_size=min(self.train_dataloader.batch_size,
-                                                                             math.floor(len(x_lookback) / 2)),
-                                                              shuffle=False)
-                self._model = self.score_function.train(back_dataloader, model=self.model_backbone, alpha=self.alpha,
-                                                        device=self._device, verbose=False)
+                back_dataloader = torch.utils.data.DataLoader(back_dataset, batch_size=min(self.train_dataloader.batch_size, 
+                                                                    math.floor(len(x_lookback)/2)), shuffle=False)
+                self._model = self.score_function.train(back_dataloader, model=self.model_backbone, alpha= self.alpha, device=self._device, verbose=False)
             else:
-                warnings.warn(
-                    "Training is enabled but x_lookback and y_lookback are not provided. The model will not be retrained.",
-                    UserWarning)
+                warnings.warn("Training is enabled but x_lookback and y_lookback are not provided. The model will not be retrained.", UserWarning)
+        
+        with torch.no_grad():
+            predicts_batch = self._model(x_batch.to(self._device)).float()
+        
+        if (update_alpha == True) and (x_lookback is not None) and (y_lookback is not None):
+            return self.generate_aci_intervals(x_batch, x_lookback, y_lookback, pred_interval_lookback, predicts_batch)
 
-        if update_alpha == True:
-            if (x_lookback is not None) and (y_lookback is not None):
-                err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback)
-                self.scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
-            else:
-                err_t = self.alpha
-
-            self.alpha_t = max(1 / (self.scores.shape[0] + 1),
-                               min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
-            self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
-
-        predicts_batch = self._model(x_batch.to(self._device)).float()
         return self.generate_intervals(predicts_batch, self.q_hat)
+    
+    def generate_aci_intervals(self, x_batch, x_lookback, y_lookback, pred_interval_lookback, predicts_batch):
+        """
+        Generates Adaptive Conformal Inference (ACI) prediction intervals.
 
+        Args:
+            x_batch (Tensor): A batch of input features for which predictions and 
+                prediction intervals are to be generated.
+            x_lookback (Tensor): Historical input features used for updating model calibration.
+            y_lookback (Tensor): Historical target values corresponding to `x_lookback`.
+            pred_interval_lookback (Tensor): Previously generated prediction intervals.
+            predicts_batch (Tensor): Model predictions for the current input batch `x_batch`.
+
+        Returns:
+            prediction intervals (Tensor): The ACI prediction intervals for the input batch `x_batch`.
+        """
+        err_t = self.calculate_err_rate(x_batch, y_lookback, pred_interval_lookback, weight=True)
+        self.scores = self.calculate_score(self._model(x_lookback).float(), y_lookback)
+        self.alpha_t = max(1/(self.scores.shape[0]+1), min(0.9999, self.alpha_t + self.gamma * (self.alpha - err_t)))
+        self.q_hat = self._calculate_conformal_value(self.scores, self.alpha_t)
+        return self.generate_intervals(predicts_batch, self.q_hat)
+        
     def evaluate(self, data_loader, lookback=200, retrain_gap=1, update_alpha_gap=1):
         """
         Evaluate the model using a test dataset and compute performance metrics such as 
@@ -231,7 +245,7 @@ class ACIPredictor(SplitPredictor):
         train_dataset = self.train_dataloader.dataset
         if lookback > len(train_dataset):
             raise ValueError("lookback cannot be set above the length of train_dataloader")
-
+        
         ts_dataloader = torch.utils.data.DataLoader(data_loader.dataset, batch_size=1, shuffle=False, pin_memory=True)
         samples = [train_dataset[i] for i in range(len(train_dataset) - lookback, len(train_dataset))]
 
@@ -239,36 +253,36 @@ class ACIPredictor(SplitPredictor):
         y_lookback = torch.stack([sample[1] for sample in samples]).to(self._device)
         pred_interval_lookback = self.predict(x_lookback)
 
+
         y_list, predict_list = [], []
         for idx, (x, y) in enumerate(tqdm(ts_dataloader, desc="Processing Evaluation")):
             x = x.to(self._device)
             y = y.to(self._device)
-            if (retrain_gap != 0) and (idx % retrain_gap == 0) and (update_alpha_gap != 0) and (
-                    idx % update_alpha_gap == 0):
-                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback,
-                                             pred_interval_lookback=pred_interval_lookback,
+            if (retrain_gap != 0) and (idx % retrain_gap == 0) and (update_alpha_gap != 0) and (idx % update_alpha_gap == 0):
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
                                              train=True, update_alpha=True)
             elif (retrain_gap != 0) and (idx % retrain_gap == 0):
-                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback,
-                                             pred_interval_lookback=pred_interval_lookback,
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
                                              train=True, update_alpha=False)
             elif (update_alpha_gap != 0) and (idx % update_alpha_gap == 0):
-                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback,
-                                             pred_interval_lookback=pred_interval_lookback,
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
                                              train=False, update_alpha=True)
             else:
-                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback,
-                                             pred_interval_lookback=pred_interval_lookback,
+                pred_interval = self.predict(x_batch=x, x_lookback=x_lookback, y_lookback=y_lookback, 
+                                             pred_interval_lookback=pred_interval_lookback, 
                                              train=False, update_alpha=False)
             y_list.append(y)
             predict_list.append(pred_interval)
             pred_interval_lookback = torch.cat([pred_interval_lookback, pred_interval], dim=0)[-lookback:]
             x_lookback = torch.cat([x_lookback, x], dim=0)[-lookback:]
             y_lookback = torch.cat([y_lookback, y], dim=0)[-lookback:]
-
+            
         predicts = torch.cat(predict_list, dim=0).to(self._device)
         test_y = torch.cat(y_list).to(self._device)
-
+        
         res_dict = {
             "coverage_rate": self._metric('coverage_rate')(predicts, test_y),
             "average_size": self._metric('average_size')(predicts)
