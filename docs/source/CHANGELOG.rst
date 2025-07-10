@@ -1,14 +1,12 @@
 Changelog
 =========
 
-1.0.4 (2025-07-10)  
+1.0.3 (2025-07-10)  
 ------------------  
 * Refactored `__init__` of predictors to include `alpha` and `device` parameters for greater flexibility.  
 * Added EntmaxScore, SCPO and RC3P methods for classification tasks.  
 * Added the normalized residual score in regression task.
 * Added p-value computation and efficiency metrics from the paper "Criteria of Efficiency for Conformal Prediction".  
-
-
 
 1.0.2 (2025-02-17)
 ------------------
