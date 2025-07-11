@@ -59,7 +59,7 @@
 
 TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with
 strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods)
-for many tasks of conformal prediction, including: Classification, Regression, Graph Node Classification, and LLM. We
+for many tasks of conformal prediction, including: Classification, Regression, Graph Neural Networks, and LLM. We
 build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
