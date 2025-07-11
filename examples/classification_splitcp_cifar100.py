@@ -40,17 +40,17 @@ test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuff
 # Preparing a pytorch model
 #######################################
 model = torch.hub.load("chenyaofo/pytorch-cifar-models", "cifar100_resnet20", pretrained=True)
-model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-model.to(model_device)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model.to(device)
 model.eval()
 
 #######################################
 # A standard process of conformal prediction
 #######################################
 alpha = 0.1  # Significance level
-predictor = SplitPredictor(score_function=LAC(), model=model)
+predictor = SplitPredictor(score_function=LAC(), model=model, alpha=alpha, device=device)
 # predictor = ClassConditionalPredictor(score_function=LAC(), model=model)
-predictor.calibrate(cal_dataloader, alpha=0.1)
+predictor.calibrate(cal_dataloader)
 
 test_instances, test_labels = test_dataset[0]
 predict_sets = predictor.predict(test_instances.unsqueeze(0))

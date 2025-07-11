@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # CP
     alpha = 0.1  # confidence level
-    predictor = SplitPredictor(score_function=ABS(), model=None)
+    predictor = SplitPredictor(score_function=ABS(), model=None, alpha=alpha, device=device)
 
     # Step0 (optional): train regression model
     ## We've provided an auxiliary function here to help with model training, 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     test_dataset = test_loader.dataset
     for i in tqdm(range(len(test_dataset))):
         # calibration
-        predictor.calibrate(cal_loader, alpha=alpha)
+        predictor.calibrate(cal_loader)
         # prediction
         x, y = test_dataset[i]
         x_device = x.to(device)

@@ -63,7 +63,7 @@ trained_model = trainer.train(train_dataloader, num_epochs=10)
 # Conformal prediction
 ########################################
 
-predictor = SplitPredictor(score_function=LAC(), model=trained_model, alpha=0.1)
+predictor = SplitPredictor(score_function=LAC(), model=trained_model, alpha=0.1, device=device)
 predictor.calibrate(cal_dataloader)
 predict_set = predictor.predict(test_instance)
 

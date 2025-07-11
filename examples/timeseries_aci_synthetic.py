@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     # CP
     alpha = 0.1  # confidence level
-    predictor = ACIPredictor(score_function=CQR(), model=model, gamma=0.005)
+    predictor = ACIPredictor(score_function=CQR(), model=model, gamma=0.005, alpha=alpha, device=device)
 
     # Step1: train regression model
     ## The Train function is required here, and the user can customize the training parameters

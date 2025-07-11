@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     # CP
     alpha = 0.1  # confidence level
-    predictor = SplitPredictor(score_function=CQR(), model=model)
+    predictor = SplitPredictor(score_function=CQR(), model=model, alpha=alpha, device=device)
 
     # Step0 (optional): train regression model
     ## We've provided an auxiliary function here to help with model training, 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     predictor.train(train_loader, alpha=alpha, epochs=100, lr=0.01, verbose=True)
 
     # Step1: calibration
-    predictor.calibrate(cal_dataloader=cal_loader, alpha=alpha)
+    predictor.calibrate(cal_dataloader=cal_loader)
 
     # Step2: generate conformal prediction interval for x_batch
     x = next(iter(test_loader))[0].to(device)
