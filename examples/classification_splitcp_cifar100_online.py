@@ -57,7 +57,7 @@ test_labels = torch.tensor(test_labels)
 #######################################
 alpha = 0.1
 
-predictor = SplitPredictor(score_function=LAC(), model=model, device=device)
+predictor = SplitPredictor(score_function=LAC(), model=model, alpha=alpha, device=device)
 
 cover_count = 0
 total = 0

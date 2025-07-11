@@ -69,7 +69,7 @@ def train(model, optimizer, graph_data, train_idx):
 
 if __name__ == '__main__':
     set_seed(0)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     #######################################
     # Loading dataset and a model
@@ -120,10 +120,13 @@ if __name__ == '__main__':
     #######################################
     # A standard process of conformal prediction
     #######################################
+    alpha = 0.1
     predictor = SplitPredictor(graph_data,
                                APS(score_type="softmax"),
-                               model=model)
-    predictor.calibrate(eval_calib_idx, alpha=0.1)
+                               model=model,
+                               alpha=alpha,
+                               device=device)
+    predictor.calibrate(eval_calib_idx)
 
     predict_sets = predictor.predict(eval_test_idx)
     print(predict_sets)
