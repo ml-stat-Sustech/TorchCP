@@ -1,4 +1,4 @@
 Hongxin Wei <weihx@sustech.edu.cn>
-Jianguo Huang <huangjg@shanghaitech.com>
+Jianguo Huang <jianguo.huang@ntu.edu.sg>
 Xuanning Zhou <shinning_zhou@163.com>
 Jianqing Song <janqsong@gmail.com>
