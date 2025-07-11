@@ -105,9 +105,10 @@ if __name__ == '__main__':
 
     eval_idx = torch.where(graph_data.test_mask)[0]
 
-    predictor = NAPSPredictor(graph_data, model=model)
+    alpha = 0.1
+    predictor = NAPSPredictor(graph_data, model=model, alpha=alpha, device=device)
 
-    lcc_nodes, prediction_sets = predictor.predict(eval_idx, alpha=0.1)
+    lcc_nodes, prediction_sets = predictor.predict(eval_idx)
     print(lcc_nodes, prediction_sets)
 
     result_dict = predictor.evaluate(eval_idx, alpha=0.1)

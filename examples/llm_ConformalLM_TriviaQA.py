@@ -32,13 +32,15 @@ if __name__ == "__main__":
 
     N_train = 2000 if scaling_type is not None else 0
     training_idx, tuning_idx, cal_idx, val_idx = split_indices(len(labels), N_train, 0.3, 0.3)
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     conformal_llm = ConformalLM(
         epsilons=[0.2],
         scaling_type=scaling_type,
         scale_kwargs=scale_kwargs,
         set_score_function_name='geo',
-        rejection=True
+        rejection=True,
+        alpha=0.05,
+        device=device
     )
     if scaling_type is not None:
         conformal_llm.scaling(scores[training_idx], labels[training_idx])
@@ -47,7 +49,6 @@ if __name__ == "__main__":
         scores[cal_idx],
         diversity[cal_idx],
         labels[cal_idx],
-        alpha=0.05
     )
     results = conformal_llm.evaluate(
         scores[val_idx],

@@ -109,10 +109,13 @@ if __name__ == '__main__':
     #          base_score_function=APS(score_type="softmax"),
     #          xi=1 / 3, mu=1 / 3,
     #          features=graph_data.x, k=20)
+    alpha = 0.1
     predictor = SplitPredictor(graph_data=graph_data,
                                score_function=APS(score_type="softmax"),
-                               model=model)
-    predictor.calibrate(cal_idx, alpha=0.1)
+                               model=model,
+                               alpha=alpha,
+                               device=device)
+    predictor.calibrate(cal_idx)
 
     predict_sets = predictor.predict(eval_idx)
     print(predict_sets)
