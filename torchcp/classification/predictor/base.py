@@ -82,7 +82,7 @@ class BasePredictor(object):
 
         Args:
             cal_dataloader (torch.utils.data.DataLoader): A dataloader of the calibration set.
-            alpha (float): The significance level. Default is None.
+            alpha (float): The significance level. Default is None. If None, the alpha will be set to the value of the predictor.
         """
         raise NotImplementedError
 

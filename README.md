@@ -64,7 +64,7 @@ build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
-## Updates of New Version (1.0.3)
+## Updates of New Version (1.1.0)
 
 This release features a comprehensive refactoring of predictor modules, along with the addition of RC3P, EntmaxScore, and the SCPO trainer.
 Detailed changelog can be found in the [Documentation](https://torchcp.readthedocs.io/en/latest/CHANGELOG.html).
@@ -78,9 +78,9 @@ TorchCP has implemented the following methods:
 | Year | Title                                                                                                                                                                        | Venue                | Code Link                                                                         | Implementation                                      |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------|
 | 2025 | [**Sparse Activations as Conformal Predictors**](https://arxiv.org/pdf/2502.14773)|  AISTATS'25 | [Link](https://github.com/deep-spin/sparse-activations-cp/tree/main) |classification.score.entmax| 
-| 2025 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://openreview.net/forum?id=8Gqz2opok1)                                                         |                |                                                                                   | classification.loss.cd                         |
+| 2025 | [**C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets**](https://openreview.net/forum?id=8Gqz2opok1)                                                         |   ECAI'25             |                                                                                   | classification.loss.cd                         |
 | 2024 | [**Conformal Prediction for Class-wise Coverage via Augmented Label Rank Calibration**](https://openreview.net/forum?id=T7dS1Ghwwu&referrer=%5Bthe%20profile%20of%20Taha%20Belkhouja%5D(%2Fprofile%3Fid%3D~Taha_Belkhouja1))                                                         | NeurIPS'24                |                                                                                 [Link](https://github.com/YuanjieSh/RC3P)  | classification.predictor.rc3p                         |
-| 2024 | [**Delving into temperature scaling for adaptive conformal prediction**](https://arxiv.org/abs/2402.04344)                                                                   | Arxiv                |                                                                                   | classification.loss.confts                          |
+| 2024 | [**Does confidence calibration improve conformal prediction?**](https://arxiv.org/abs/2402.04344)                                                                   | Arxiv                |                                                                                   | classification.loss.confts                          |
 | 2024 | [**Conformal Prediction for Deep Classifier via Label Ranking**](https://arxiv.org/abs/2310.06430)                                                                           | ICML'24              | [Link](https://github.com/ml-stat-Sustech/conformal_prediction_via_label_ranking) | classification.score.saps                           |
 | 2023 | [**Class-Conditional Conformal Prediction with Many Classes**](https://arxiv.org/abs/2306.09335)                                                                             | NeurIPS'23           | [Link](https://github.com/tiffanyding/class-conditional-conformal)                | classification.predictor.cluster                    |
 | 2023 | [**Conformal Prediction Sets for Ordinal Classification**](https://proceedings.neurips.cc/paper_files/paper/2023/file/029f699912bf3db747fe110948cc6169-Paper-Conference.pdf) | NeurIPS'23           |                                                                                   | classification.trainer.ordinal                      |
@@ -189,8 +189,8 @@ predictor = SplitPredictor(score_function=LAC(), model=model, alpha=0.1, device 
 
 # Calibrating the predictor 
 # You can also call `calibrate()` again to update the alpha value if needed
+#predictor.calibrate(cal_dataloader, alpha=0.1)
 predictor.calibrate(cal_dataloader)
-predictor.calibrate(cal_dataloader, alpha=0.1)
 
 #########################################
 # Predicting for test instances
@@ -242,7 +242,7 @@ We welcome you to cite the following works:
 @article{xi2024does,
   title={Does Confidence Calibration Help Conformal Prediction?},
   author={Xi, Huajun and Huang, Jianguo and Feng, Lei and Wei, Hongxin},
-  journal={arXiv preprint arXiv:2402.04344},
+  journal={TMLR},
   year={2024}
 }
 
@@ -250,9 +250,8 @@ We welcome you to cite the following works:
   liu2025cadapter,
   title={C-Adapter: Adapting Deep Classifiers for Efficient Conformal Prediction Sets},
   author={Kangdao Liu and Hao Zeng and Jianguo Huang and Huiping Zhuang and Chi Man VONG and Hongxin Wei},
-  booktitle={The Thirteenth International Conference on Learning Representations},
+  booktitle={The 28th European Conference on Artificial Intelligence},
   year={2025},
-  url={https://openreview.net/forum?id=8Gqz2opok1}
 }
 ```
 
