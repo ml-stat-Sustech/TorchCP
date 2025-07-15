@@ -60,12 +60,14 @@
 TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with
 strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods)
 for many tasks of conformal prediction, including: Classification, Regression, Graph Neural Networks, and LLM. We
+for many tasks of conformal prediction, including: Classification, Regression, Graph Neural Networks, and LLM. We
 build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
 ## Updates of New Version (1.1.0)
 
+This release features a comprehensive refactoring of predictor modules, along with the addition of RC3P, EntmaxScore, and the SCPO trainer.
 This release features a comprehensive refactoring of predictor modules, along with the addition of RC3P, EntmaxScore, and the SCPO trainer.
 Detailed changelog can be found in the [Documentation](https://torchcp.readthedocs.io/en/latest/CHANGELOG.html).
 
@@ -148,6 +150,13 @@ To install from TestPyPI server, run
 
 ```
 pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
+```
+
+If you encounter errors while installing Torchsort, you can try the following steps to resolve them:
+```
+git clone https://github.com/teddykoker/torchsort.git
+cd torchsort
+pip install .
 ```
 
 If you encounter errors while installing Torchsort, you can try the following steps to resolve them:
