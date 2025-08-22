@@ -13,23 +13,43 @@ from torchcp.regression.score.abs import ABS
 from torchcp.regression.utils import build_regression_model
 
 
-import torch
-
 class TorchMinMaxScaler:
+    """
+    A PyTorch implementation of Min-Max normalization with optional clipping.
+    Used to normalize difficulty estimates or residuals into [0, 1].
+    """
     def __init__(self, clip=True):
         self.min_ = None
         self.scale_ = None
         self.clip = clip
 
     def fit(self, data):
+        """
+        Fits the scaler by computing per-feature minimum and maximum.
+
+        Args:
+            data (Tensor): Input tensor to normalize.
+
+        Returns:
+            TorchMinMaxScaler: The fitted scaler instance.
+        """
         self.min_ = torch.min(data, dim=0)[0]
         max_ = torch.max(data, dim=0)[0]
         self.scale_ = max_ - self.min_
-        # Handle cases where max == min to avoid division by zero
+        # Avoid division by zero in case of constant features
         self.scale_[self.scale_ == 0] = 1.0
         return self
 
     def transform(self, data):
+        """
+        Applies the fitted transformation to new data.
+
+        Args:
+            data (Tensor): Input tensor to normalize.
+
+        Returns:
+            Tensor: Normalized tensor in [0, 1] (if clipping enabled).
+        """
         if self.min_ is None or self.scale_ is None:
             raise RuntimeError("Scaler has not been fitted yet.")
         
@@ -42,30 +62,34 @@ class TorchMinMaxScaler:
         return normalized_data
 
     def fit_transform(self, data):
+        """Fits the scaler on data and applies the normalization in one step."""
         self.fit(data)
         return self.transform(data)
 
 
 class DifficultyEstimator:
     """
-    Estimates prediction difficulty. It is configured at initialization and
-    calibrated with a trained model before application. All internal tensors
-    are handled on a specified device.
+    Module for estimating sample-specific difficulty scores in conformal regression.
+
+    The estimator can use several strategies (variance-based, k-NN based, 
+    residual-based, or a custom function). It requires calibration with a 
+    trained regression model before being applied to unseen samples.
     """
     def __init__(self, cal_loader, estimator_type='knn_distance',
                  k=10, scalar=True, beta=0.01, custom_function=None, device=None):
         """
-        Initializes the configuration for the difficulty estimator.
+        Initializes the difficulty estimator.
 
         Args:
-            cal_loader (DataLoader): DataLoader for the calibration dataset.
-            estimator_type (str): Method for difficulty estimation.
-            k (int): Number of neighbors for k-NN methods.
-            scalar (bool): If True, applies min-max scaling.
-            beta (float): Small constant for numerical stability.
-            custom_function (callable): Custom function for 'function' mode.
-            device (torch.device, optional): The device to store tensors on and run
-                                             computations. If None, defaults to CPU.
+            cal_loader (DataLoader): Calibration dataset.
+            estimator_type (str): Strategy for difficulty estimation.
+                                  Options: 'variance', 'knn_distance', 
+                                           'knn_label', 'knn_residual', 'function'.
+            k (int): Number of neighbors for k-NN based methods.
+            scalar (bool): If True, normalizes raw difficulty scores with min-max scaling.
+            beta (float): Additive constant for numerical stability.
+            custom_function (callable): User-defined function for 'function' mode.
+            device (torch.device, optional): Target device. Defaults to CPU.
         """
         self.cal_loader = cal_loader
         self.estimator_type = estimator_type
@@ -86,13 +110,13 @@ class DifficultyEstimator:
 
     def calibrate(self, model):
         """
-        Calibrates the estimator using a trained model.
+        Calibrates the estimator using predictions from a trained regression model.
 
-        This method extracts calibration data, moves it to the specified device,
-        computes necessary statistics, and fits the internal scaler if enabled.
+        Extracts calibration data, computes required statistics, 
+        and initializes the internal scaling mechanism if enabled.
 
         Args:
-            model (torch.nn.Module): The trained regression model.
+            model (nn.Module): Trained regression model.
         """
         if self.is_calibrated:
             return
@@ -100,7 +124,7 @@ class DifficultyEstimator:
         model.eval()
         model.to(self.device)
 
-        # 1. Extract all data and get predictions on the correct device
+        # 1. Gather calibration data and predictions
         X_cal_list, y_cal_list, predicts_cal_list = [], [], []
         with torch.no_grad():
             for x, y in self.cal_loader:
@@ -109,7 +133,7 @@ class DifficultyEstimator:
                 y_cal_list.append(y.to(self.device))
                 predicts_cal_list.append(model(x_dev))
         
-        # 2. Store all necessary tensors directly on the target device
+        # 2. Store tensors on the target device
         self.X_cal = torch.cat(X_cal_list, dim=0)
         self.y_cal = torch.cat(y_cal_list, dim=0).squeeze()
         predicts_cal = torch.cat(predicts_cal_list, dim=0)
@@ -119,7 +143,7 @@ class DifficultyEstimator:
                 residuals_cal = self.y_cal - predicts_cal[:, 0].squeeze()
                 self.residuals_cal = residuals_cal.to(torch.float32)
 
-        # 3. Fit the scaler if enabled. All computations happen on the target device.
+        # 3. Fit normalization scaler if required
         if self.scalar:
             if self.estimator_type == 'variance':
                 raw_cal_scores = predicts_cal[:, 1]
@@ -135,17 +159,22 @@ class DifficultyEstimator:
         self.is_calibrated = True
 
     def _compute_difficulty(self, x_batch, predicts_batch=None):
-        """Internal helper to compute raw difficulty scores on the target device."""
+        """
+        Internal helper to compute raw difficulty scores on the device.
+
+        Depending on the estimator type, different metrics are computed.
+        """
         if self.estimator_type == 'variance':
             if predicts_batch is None or predicts_batch.ndim != 2 or predicts_batch.shape[-1] != 2:
                 raise ValueError("For 'variance' mode, `predicts_batch` must have shape (batch_size, 2).")
             return predicts_batch[:, 1]
         elif self.estimator_type == 'function':
-            if (x_batch is None) or (predicts_batch is None): raise ValueError("`x_batch` and `predicts_batch` is required for 'function' mode.")
+            if (x_batch is None) or (predicts_batch is None): 
+                raise ValueError("Both `x_batch` and `predicts_batch` are required for 'function' mode.")
             return self.custom_function(x_batch, predicts_batch)
         else:
-            if x_batch is None: raise ValueError(f"`x_batch` is required for '{self.estimator_type}' mode.")
-            # All tensors are already on self.device, so this is efficient.
+            if x_batch is None: 
+                raise ValueError(f"`x_batch` is required for '{self.estimator_type}' mode.")
             dists = torch.cdist(x_batch, self.X_cal)
             knn_dists, knn_indices = torch.topk(dists, self.k, dim=1, largest=False)
             if self.estimator_type == 'knn_distance':
@@ -157,17 +186,21 @@ class DifficultyEstimator:
 
     def apply(self, x_batch, predicts_batch=None):
         """
-        Computes difficulty scores for a new batch. Assumes inputs are on the correct device.
+        Applies the calibrated estimator to compute difficulty scores for new data.
+
+        Args:
+            x_batch (Tensor): Input features.
+            predicts_batch (Tensor, optional): Model predictions.
+
+        Returns:
+            Tensor: Difficulty estimates for the batch.
         """
         if not self.is_calibrated:
-            raise RuntimeError("DifficultyEstimator has not been calibrated. Call `calibrate(model)` first.")
+            raise RuntimeError("DifficultyEstimator must be calibrated via `calibrate(model)` before use.")
 
-        # The calling function (e.g., SplitPredictor) is responsible for moving
-        # x_batch and predicts_batch to the correct device.
         diff_estimate = self._compute_difficulty(x_batch, predicts_batch)
 
         if self.scalar and self._scaler:
-            # `transform` no longer needs to move tensors, as they are already on the same device.
             diff_estimate = self._scaler.transform(diff_estimate.unsqueeze(1)).squeeze(1)
 
         return diff_estimate + self.beta
@@ -175,47 +208,65 @@ class DifficultyEstimator:
     
 class NorABS(ABS):
     """
-    Normalized Absolute Score (NorABS) for conformal regression.
+    NorABS: Normalized Absolute Score for conformal regression.
 
-    This score function computes the absolute difference between the prediction
-    and the true value, normalized by a difficulty estimate provided by a
-    `DifficultyEstimator`.
+    This score computes absolute prediction errors normalized by 
+    a calibrated difficulty estimate. It provides adaptive conformity 
+    scores that account for local data complexity.
     """
 
-    def __init__(self, difficulty_estimator):
+    def __init__(self, data_loader, estimate_type='variance', k=20, scalar=True, beta=0.01, device=None, custom_function=None):
         """
-        Initializes the NorABS score function.
+        Initializes the NorABS score function with its associated DifficultyEstimator.
 
         Args:
-            difficulty_estimator (DifficultyEstimator): A pre-configured and fitted
-                instance of the DifficultyEstimator class.
+            data_loader (DataLoader): Calibration dataset.
+            estimate_type (str): Difficulty estimation strategy.
+            k (int): Number of neighbors for k-NN methods.
+            scalar (bool): Whether to normalize difficulty estimates.
+            beta (float): Stability constant.
+            device (torch.device, optional): Target device.
+            custom_function (callable, optional): Custom difficulty function.
         """
         super().__init__()
-        if not isinstance(difficulty_estimator, DifficultyEstimator):
-            raise TypeError("`difficulty_estimator` must be an instance of DifficultyEstimator.")
-
-        self.difficulty_estimator = difficulty_estimator
+        self.difficulty_estimator = DifficultyEstimator(
+            cal_loader=data_loader,
+            estimator_type=estimate_type,
+            k=k,
+            scalar=scalar,
+            beta=beta,
+            device=device,
+            custom_function=custom_function
+        )
+        
+    def calibrate(self, model):
+        """Calibrates the internal DifficultyEstimator with a trained model."""
+        self.difficulty_estimator.calibrate(model=model)
+        
 
     def __call__(self, predicts, y_truth, x_batch=None, model=None, device=None):
         """
-        Computes the normalized non-conformity score for each sample.
+        Computes normalized nonconformity scores for conformal prediction.
 
-        This method also triggers the one-time calibration of the internal
-        DifficultyEstimator when it is first called within the main
-        calibration process.
-        
         Args:
-            (Same as before, with model and device added for calibration)
+            predicts (Tensor): Model predictions (mean, std).
+            y_truth (Tensor): Ground truth labels.
+            x_batch (Tensor, optional): Input features for difficulty estimation.
+            model (nn.Module, optional): Regression model (needed for first-time calibration).
+            device (torch.device, optional): Target device for calibration.
+
+        Returns:
+            Tensor: Normalized nonconformity scores, shape (batch_size, 1).
         """
         if not self.difficulty_estimator.is_calibrated:
             if model is None:
                 raise ValueError("A `model` must be provided to calibrate the DifficultyEstimator.")
             self.difficulty_estimator.calibrate(model, device)
 
-        if y_truth.ndim > 1: y_truth = y_truth.squeeze()
+        if y_truth.ndim > 1: 
+            y_truth = y_truth.squeeze()
         
         mu = predicts[:, 0] 
-
         diff_estimate = self.difficulty_estimator.apply(x_batch, predicts)
         
         scores = torch.abs(mu - y_truth) / diff_estimate
@@ -223,22 +274,16 @@ class NorABS(ABS):
 
     def generate_intervals(self, predicts_batch, q_hat, x_batch):
         """
-        Generates prediction intervals using predicted means and standard deviations, 
-        scaled by the calibrated threshold :attr:`q_hat`.
+        Generates prediction intervals based on calibrated conformity scores.
 
         Args:
-            predicts_batch (torch.Tensor): Tensor of predicted (mean, std), shape (batch_size, 2).
-            q_hat (torch.Tensor): Calibrated threshold values, shape (num_thresholds,).
+            predicts_batch (Tensor): Predicted (mean, std), shape (batch_size, 2).
+            q_hat (Tensor): Quantile thresholds, shape (num_thresholds,).
+            x_batch (Tensor): Input features for difficulty estimation.
 
         Returns:
-            torch.Tensor: Prediction intervals, shape (batch_size, num_thresholds, 2),
-                        where the last dimension contains lower and upper bounds.
+            Tensor: Prediction intervals of shape (batch_size, num_thresholds, 2).
         """
-        # breakpoint()
-        # if len(predicts_batch.shape) == 2:
-        #     predicts_batch = predicts_batch.unsqueeze(1)
-        
-        # breakpoint()
         diff_estimate = self.difficulty_estimator.apply(x_batch, predicts_batch).unsqueeze(1)
             
         prediction_intervals = predicts_batch.new_zeros((predicts_batch.shape[0], q_hat.shape[0], 2))
@@ -248,26 +293,28 @@ class NorABS(ABS):
 
     def train(self, train_dataloader, **kwargs):
         """
-        Trains the probabilistic regression model to predict both mean and variance.
+        Trains a probabilistic regression model to predict both mean and variance.
 
         Args:
-            train_dataloader (DataLoader): DataLoader for the training data.
-            **kwargs: Additional keyword arguments for training configuration.
-                - model (nn.Module, optional): Custom regression model. If None, defaults to
-                                            GaussianRegressionModel.
-                - epochs (int, optional): Number of training epochs. Defaults to 100.
-                - criterion (nn.Module, optional): Loss function. Defaults to GaussianNLLLoss.
-                - lr (float, optional): Learning rate. Defaults to 0.01.
-                - optimizer (torch.optim.Optimizer, optional): Optimizer. Defaults to Adam.
-                - verbose (bool, optional): Whether to print training progress. Defaults to True.
+            train_dataloader (DataLoader): Training dataset.
+            **kwargs: Training configuration, including:
+                - model (nn.Module, optional): Custom regression model. Defaults to GaussianRegressionModel.
+                - epochs (int): Training epochs. Default = 100.
+                - criterion (nn.Module): Loss function. Default = GaussianNLLLoss.
+                - lr (float): Learning rate. Default = 0.01.
+                - optimizer (torch.optim.Optimizer): Optimizer. Default = Adam.
+                - verbose (bool): Whether to log progress. Default = True.
 
         Returns:
             nn.Module: The trained regression model.
         """
         device = kwargs.get('device', None)
-        model = kwargs.get('model',
-                           build_regression_model("GaussianRegressionModel")(next(iter(train_dataloader))[0].shape[1], 64,
-                                                                              0.5).to(device))
+        model = kwargs.get(
+            'model',
+            build_regression_model("GaussianRegressionModel")(
+                next(iter(train_dataloader))[0].shape[1], 64, 0.5
+            ).to(device)
+        )
         epochs = kwargs.get('epochs', 100)
         criterion = kwargs.get('criterion', nn.GaussianNLLLoss())
         lr = kwargs.get('lr', 0.01)

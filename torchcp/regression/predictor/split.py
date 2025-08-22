@@ -67,6 +67,9 @@ class SplitPredictor(BasePredictor):
             self._model = self.score_function.train(
                 train_dataloader, device=device, **kwargs
             )
+            
+        if self.score_function.__class__.__name__ == 'NorABS':
+            self.score_function.calibrate(self._model)
 
     def calculate_score(self, predicts, y_truth, x_batch=None):
         """
@@ -85,7 +88,7 @@ class SplitPredictor(BasePredictor):
             torch.Tensor: The computed nonconformity score for each sample.
         """
         if self.score_function.__class__.__name__ == 'NorABS':
-            return self.score_function(predicts, y_truth, x_batch, self._model, self._device)
+            return self.score_function(predicts, y_truth, x_batch)
         else:
             return self.score_function(predicts, y_truth)
 
