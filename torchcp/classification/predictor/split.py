@@ -60,8 +60,8 @@ class SplitPredictor(BasePredictor):
 
         logits = logits.to(self._device)
         labels = labels.to(self._device)
-        scores = self.score_function(logits, labels)
-        self.q_hat = self._calculate_conformal_value(scores, alpha)
+        self.cal_scores = self.score_function(logits, labels)
+        self.q_hat = self._calculate_conformal_value(self.cal_scores, alpha)
 
     def _calculate_conformal_value(self, scores, alpha):
         return calculate_conformal_value(scores, alpha)
@@ -156,3 +156,44 @@ class SplitPredictor(BasePredictor):
         }
 
         return metrics
+
+    def predict_p(self, x_batch, y_batch=None, smooth=False):
+        """
+        Compute p-values for conformal prediction.
+        Args:
+            x_batch (torch.Tensor): A batch of instances.
+            y_batch (torch.Tensor): A batch of labels for instances. Default is None.
+            smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
+
+        Returns:
+            Tensor: p-values for each test sample and class, shape (n_test, k)
+        """
+
+        if self._model is None:
+            raise ValueError("Model is not defined. Please provide a valid model.")
+
+        self._model.eval()
+        x_batch = self._model(x_batch.to(self._device)).float()
+        x_batch = self._logits_transformation(x_batch).detach()
+
+        test_scores = self.score_function(x_batch).to(self._device)
+
+        n_cal = self.cal_scores.size(0)
+        n_test, k = test_scores.size()
+
+        cal_scores_expanded = self.cal_scores.view(1, n_cal, 1)
+        test_scores_expanded = test_scores.view(n_test, 1, k)
+
+        greater = (cal_scores_expanded > test_scores_expanded).sum(dim=1)
+        equal = (cal_scores_expanded == test_scores_expanded).sum(dim=1)
+
+        if smooth:
+            tau = torch.rand_like(equal, dtype=torch.float)
+            p_values = (greater + tau * (equal + 1)) / (n_cal + 1)
+        else:
+            p_values = (greater + (equal + 1)) / (n_cal + 1)
+
+        if y_batch is not None:
+            return p_values[torch.arange(p_values.shape[0]), y_batch]
+        else:
+            return p_values
