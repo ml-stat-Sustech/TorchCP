@@ -114,7 +114,7 @@ class SplitPredictor(BasePredictor):
 
     def predict(self, x_batch):
         self._model.eval()
-        x_batch.to(self._device)
+        x_batch = x_batch.to(self._device)
         with torch.no_grad():
             predicts_batch = self._model(x_batch)
             return self.generate_intervals(predicts_batch, self.q_hat)
@@ -136,3 +136,42 @@ class SplitPredictor(BasePredictor):
             "average_size": self._metric('average_size')(predicts)
         }
         return res_dict
+
+    def predict_p(self, x_batch, y_batch, smooth=False):
+        """
+        Compute p-values for conformal prediction.
+        Args:
+            x_batch (torch.Tensor): A batch of instances.
+            y_batch (torch.Tensor): A batch of labels for instances.
+            smooth (bool): Whether to apply randomized smoothing when calibration scores equal test scores.
+
+        Returns:
+            Tensor: p-values for each test sample and class, shape (n_test, k)
+        """
+
+        if self._model is None:
+            raise ValueError("Model is not defined. Please provide a valid model.")
+
+        self._model.eval()
+        with torch.no_grad():
+            x_batch = self._model(x_batch.to(self._device))
+            test_scores = self.calculate_score(x_batch, y_batch)
+        
+        cal_scores = self.scores
+
+        n_cal = cal_scores.size(0)
+        n_test = test_scores.size(0)
+
+        cal_scores_expanded = cal_scores.view(1, n_cal)
+        test_scores_expanded = test_scores.view(n_test, 1)
+
+        greater = (cal_scores_expanded > test_scores_expanded).sum(dim=1)
+        equal = (cal_scores_expanded == test_scores_expanded).sum(dim=1)
+
+        if smooth:
+            tau = torch.rand_like(equal, dtype=torch.float)
+            p_values = (greater + tau * (equal + 1)) / (n_cal + 1)
+        else:
+            p_values = (greater + (equal + 1)) / (n_cal + 1)
+
+        return p_values
