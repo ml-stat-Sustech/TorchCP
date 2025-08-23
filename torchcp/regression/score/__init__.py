@@ -12,3 +12,4 @@ from .cqrfm import CQRFM
 from .cqrm import CQRM
 from .cqrr import CQRR
 from .r2ccp import R2CCP
+from .sign import Sign
