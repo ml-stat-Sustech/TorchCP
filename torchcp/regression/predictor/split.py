@@ -136,3 +136,23 @@ class SplitPredictor(BasePredictor):
             "average_size": self._metric('average_size')(predicts)
         }
         return res_dict
+
+    def predict_cpds(self, x_batch):
+        """
+        Obtain conformal predictive distributions from conformal predictive
+        Args:
+            x_batch (torch.Tensor): A batch of instances.
+
+        Returns:
+            Tensor: conformal predictive distributions., shape (n_test, n_calib)
+        """
+
+        if self._model is None:
+            raise ValueError("Model is not defined. Please provide a valid model.")
+
+        self._model.eval()
+        x_batch = self._model(x_batch.to(self._device)).float()
+        x_batch = self._logits_transformation(x_batch).detach()
+
+        cpds = x_batch.unsqueeze(1) + self.scores.unsqueeze(0)
+        return cpds
