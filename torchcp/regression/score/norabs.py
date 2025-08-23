@@ -118,8 +118,6 @@ class DifficultyEstimator:
         Args:
             model (nn.Module): Trained regression model.
         """
-        if self.is_calibrated:
-            return
 
         model.eval()
         model.to(self.device)
@@ -173,8 +171,6 @@ class DifficultyEstimator:
                 raise ValueError("Both `x_batch` and `predicts_batch` are required for 'function' mode.")
             return self.custom_function(x_batch, predicts_batch)
         else:
-            if x_batch is None: 
-                raise ValueError(f"`x_batch` is required for '{self.estimator_type}' mode.")
             dists = torch.cdist(x_batch, self.X_cal)
             knn_dists, knn_indices = torch.topk(dists, self.k, dim=1, largest=False)
             if self.estimator_type == 'knn_distance':
@@ -261,10 +257,7 @@ class NorABS(ABS):
         if not self.difficulty_estimator.is_calibrated:
             if model is None:
                 raise ValueError("A `model` must be provided to calibrate the DifficultyEstimator.")
-            self.difficulty_estimator.calibrate(model, device)
-
-        if y_truth.ndim > 1: 
-            y_truth = y_truth.squeeze()
+            self.difficulty_estimator.calibrate(model)
         
         mu = predicts[:, 0] 
         diff_estimate = self.difficulty_estimator.apply(x_batch, predicts)

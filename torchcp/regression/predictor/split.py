@@ -92,7 +92,7 @@ class SplitPredictor(BasePredictor):
         else:
             return self.score_function(predicts, y_truth)
 
-    def generate_intervals(self, predicts_batch, q_hat, x_batch):
+    def generate_intervals(self, predicts_batch, q_hat, x_batch=None):
         """
         Generate prediction intervals based on the model's predictions and the conformal value.
 
