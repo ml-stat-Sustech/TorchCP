@@ -24,7 +24,7 @@ class Sign(BaseScore):
         of the true values from the predicted intervals.
 
         Args:
-            predicts (torch.Tensor): Tensor of predicted quantile intervals, shape (batch_size, 2).
+            predicts (torch.Tensor): Tensor of predicted quantile intervals, shape (batch_size, ).
             y_truth (torch.Tensor): Tensor of true target values, shape (batch_size,).
 
         Returns:

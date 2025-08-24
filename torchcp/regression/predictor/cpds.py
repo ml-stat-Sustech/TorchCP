@@ -11,7 +11,7 @@ from torchcp.regression.score import Sign
 from torchcp.regression.predictor.base import BasePredictor
 
 
-class ConformalPredictiveDistributions(BasePredictor):
+class ConformalPredictiveDistribution(BasePredictor):
     """
     Obtain conformal predictive distributions from conformal predictive system.
         
@@ -45,10 +45,7 @@ class ConformalPredictiveDistributions(BasePredictor):
         """
         return self.score_function(predicts, y_truth)
 
-    def calibrate(self, cal_dataloader, alpha=None):
-        if alpha is None:
-            alpha = self.alpha
-
+    def calibrate(self, cal_dataloader):
         self._model.eval()
         predicts_list, y_truth_list = [], []
         with torch.no_grad():
@@ -61,7 +58,6 @@ class ConformalPredictiveDistributions(BasePredictor):
         predicts = torch.cat(predicts_list).float().to(self._device)
         y_truth = torch.cat(y_truth_list).to(self._device)
         self.scores = self.calculate_score(predicts, y_truth)
-        self.q_hat = self._calculate_conformal_value(self.scores, alpha)
 
     def predict(self, x_batch):
         """
