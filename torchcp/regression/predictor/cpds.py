@@ -74,7 +74,6 @@ class ConformalPredictiveDistribution(BasePredictor):
 
         self._model.eval()
         x_batch = self._model(x_batch.to(self._device)).float()
-        x_batch = self._logits_transformation(x_batch).detach()
 
         cpds = x_batch.unsqueeze(1) + self.scores.unsqueeze(0)
         return cpds
