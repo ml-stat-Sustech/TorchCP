@@ -72,3 +72,29 @@ def test_workflow(mock_data, split_predictor, split_predictor_nomodel, mock_mode
     assert abs(
         eval_res['coverage_rate'] - 0.9) < 5e-2, f"Coverage rate {eval_res['coverage_rate']} should be close to 0.9"
     assert eval_res["average_size"] > 0, "Average size should be greater than 0."
+
+
+def test_predict_p(split_predictor, mock_score_function, mock_data):
+    train_dataloader, cal_dataloader, test_dataloader = mock_data
+
+    test_x = []
+    test_y = []
+
+    for x_batch, y_batch in test_dataloader:
+        test_x.append(x_batch)
+        test_y.append(y_batch)
+
+    test_x = torch.cat(test_x, dim=0)
+    test_y = torch.cat(test_y, dim=0)
+
+    with pytest.raises(ValueError):
+        tmp_predictor = SplitPredictor(mock_score_function)
+        tmp_predictor.predict_p(test_x, test_y)
+
+    split_predictor.calibrate(cal_dataloader)
+    p_values = split_predictor.predict_p(test_x, test_y)
+    
+    assert p_values.shape == (test_x.shape[0], )
+
+    p_values = split_predictor.predict_p(test_x, test_y, True)
+    assert p_values.shape == (test_x.shape[0], )

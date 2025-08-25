@@ -166,3 +166,23 @@ def test_evaluate(predictor, mock_score_function, mock_model, mock_dataset, q_ha
     assert len(results) == 2
     assert results['coverage_rate'] == metrics('coverage_rate')(excepted_sets, mock_dataset.labels)
     assert results['average_size'] == metrics('average_size')(excepted_sets)
+
+
+def test_predict_p(predictor, mock_score_function, mock_model, mock_dataset):
+    with pytest.raises(ValueError):
+        tmp_predictor = SplitPredictor(mock_score_function)
+        tmp_predictor.predict_p(mock_dataset.x)
+
+    logits = mock_model(mock_dataset.x)
+    logits = predictor._logits_transformation(logits)
+
+    predictor.calculate_threshold(logits, mock_dataset.labels)
+    p_values = predictor.predict_p(mock_dataset.x)
+    
+    assert p_values.shape == (mock_dataset.x.shape[0], logits.shape[1])
+    
+    p_values = predictor.predict_p(mock_dataset.x, mock_dataset.labels)
+    assert p_values.shape == (mock_dataset.x.shape[0], )
+
+    p_values = predictor.predict_p(mock_dataset.x, mock_dataset.labels, True)
+    assert p_values.shape == (mock_dataset.x.shape[0], )
