@@ -67,21 +67,32 @@ class SplitPredictor(BasePredictor):
             self._model = self.score_function.train(
                 train_dataloader, device=device, **kwargs
             )
+            
+        if self.score_function.__class__.__name__ == 'NorABS':
+            self.score_function.calibrate(self._model)
 
-    def calculate_score(self, predicts, y_truth):
+    def calculate_score(self, predicts, y_truth, x_batch=None):
         """
-        Calculate the nonconformity scores based on the model's predictions and true values.
+        Calculate the nonconformity scores based on predictions and true values.
+
+        The exact score calculation is determined by the configured score_function.
 
         Args:
             predicts (torch.Tensor): Model predictions.
             y_truth (torch.Tensor): Ground truth values.
+            x_batch (torch.Tensor, optional): The corresponding batch of input features.
+                This is only required by normalized score functions (e.g., 'NorABS')
+                to compute adaptive nonconformity scores. Defaults to None.
 
         Returns:
-            torch.Tensor: Computed scores for each prediction.
+            torch.Tensor: The computed nonconformity score for each sample.
         """
-        return self.score_function(predicts, y_truth)
+        if self.score_function.__class__.__name__ == 'NorABS':
+            return self.score_function(predicts, y_truth, x_batch)
+        else:
+            return self.score_function(predicts, y_truth)
 
-    def generate_intervals(self, predicts_batch, q_hat):
+    def generate_intervals(self, predicts_batch, q_hat, x_batch=None):
         """
         Generate prediction intervals based on the model's predictions and the conformal value.
 
@@ -92,24 +103,33 @@ class SplitPredictor(BasePredictor):
         Returns:
             torch.Tensor: Prediction intervals.
         """
-        return self.score_function.generate_intervals(predicts_batch, q_hat)
+        
+        if self.score_function.__class__.__name__ == 'NorABS':
+            return self.score_function.generate_intervals(predicts_batch, q_hat, x_batch)
+        else:
+            return self.score_function.generate_intervals(predicts_batch, q_hat)
 
     def calibrate(self, cal_dataloader, alpha=None):
         if alpha is None:
             alpha = self.alpha
 
         self._model.eval()
-        predicts_list, y_truth_list = [], []
+        x_list, predicts_list, y_truth_list = [], [], []
         with torch.no_grad():
             for tmp_x, tmp_labels in cal_dataloader:
                 tmp_x, tmp_labels = tmp_x.to(self._device), tmp_labels.to(self._device)
                 tmp_predicts = self._model(tmp_x).detach()
+                x_list.append(tmp_x)
                 predicts_list.append(tmp_predicts)
                 y_truth_list.append(tmp_labels)
 
         predicts = torch.cat(predicts_list).float().to(self._device)
         y_truth = torch.cat(y_truth_list).to(self._device)
-        self.scores = self.calculate_score(predicts, y_truth)
+        x_batch = torch.cat(x_list).float().to(self._device)
+        if self.score_function.__class__.__name__ == 'NorABS':
+            self.scores = self.calculate_score(predicts, y_truth, x_batch)
+        else:
+            self.scores = self.calculate_score(predicts, y_truth)
         self.q_hat = self._calculate_conformal_value(self.scores, alpha)
 
     def predict(self, x_batch):
@@ -117,7 +137,7 @@ class SplitPredictor(BasePredictor):
         x_batch = x_batch.to(self._device)
         with torch.no_grad():
             predicts_batch = self._model(x_batch)
-            return self.generate_intervals(predicts_batch, self.q_hat)
+            return self.generate_intervals(predicts_batch, self.q_hat, x_batch)
 
     def evaluate(self, data_loader):
         y_list, predict_list = [], []
@@ -135,6 +155,7 @@ class SplitPredictor(BasePredictor):
             "coverage_rate": self._metric('coverage_rate')(predicts, test_y),
             "average_size": self._metric('average_size')(predicts)
         }
+
         return res_dict
 
     def predict_p(self, x_batch, y_batch, smooth=False):
