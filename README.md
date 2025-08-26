@@ -65,10 +65,9 @@ build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
-## Updates of New Version (1.1.0)
+## Updates of New Version (1.2.0)
 
-This release features a comprehensive refactoring of predictor modules, along with the addition of RC3P, EntmaxScore, and the SCPO trainer.
-This release features a comprehensive refactoring of predictor modules, along with the addition of RC3P, EntmaxScore, and the SCPO trainer.
+This release enhances functionality by introducing p-value computation, conformal predictive distributions, and expanding the NORABS score function with additional difficulty estimation methods.
 Detailed changelog can be found in the [Documentation](https://torchcp.readthedocs.io/en/latest/CHANGELOG.html).
 
 # Overview
