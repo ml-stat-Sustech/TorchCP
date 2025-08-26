@@ -160,6 +160,7 @@ class SplitPredictor(BasePredictor):
     def predict_p(self, x_batch, y_batch=None, smooth=False):
         """
         Compute p-values for conformal prediction.
+        
         Args:
             x_batch (torch.Tensor): A batch of instances.
             y_batch (torch.Tensor): A batch of labels for instances. Default is None.

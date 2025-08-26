@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.2.0 (2025-08-26)  
+------------------  
+* Added Conformal Predictive Distribution in regression task.  
+* Added p-value computation in classification predictors and regression predictors.  
+* Added more tyeps of difficulty estimation in the NORABS score function.
+
 1.1.0 (2025-07-15)  
 ------------------  
 * Refactored `__init__` of predictors to include `alpha` and `device` parameters for greater flexibility.  

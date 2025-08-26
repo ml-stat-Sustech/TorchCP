@@ -62,6 +62,7 @@ class ConformalPredictiveDistribution(BasePredictor):
     def predict(self, x_batch):
         """
         Obtain conformal predictive distributions from conformal predictive
+        
         Args:
             x_batch (torch.Tensor): A batch of instances.
 

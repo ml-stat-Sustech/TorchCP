@@ -15,6 +15,7 @@ score function
     CQRM
     CQRR
     R2CCP
+    Sign
 
 .. autoclass:: ABS
    :members:
@@ -34,6 +35,9 @@ score function
 .. autoclass:: R2CCP
    :members:
 
+.. autoclass:: Sign
+   :members:
+
 
 .. automodule:: torchcp.regression.predictor
 
@@ -46,6 +50,7 @@ predictor
     SplitPredictor
     EnsemblePredictor
     ACIPredictor
+    ConformalPredictiveDistribution
 
 .. autoclass:: SplitPredictor
    :members:
@@ -54,6 +59,9 @@ predictor
    :members:
 
 .. autoclass:: ACIPredictor
+   :members:
+
+.. autoclass:: ConformalPredictiveDistribution
    :members:
 
 .. automodule:: torchcp.regression.loss
