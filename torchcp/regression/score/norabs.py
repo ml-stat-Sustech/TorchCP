@@ -209,6 +209,11 @@ class NorABS(ABS):
     This score computes absolute prediction errors normalized by 
     a calibrated difficulty estimate. It provides adaptive conformity 
     scores that account for local data complexity.
+    
+    Reference:
+    - Inductive Confidence Machines for Regression
+    - Reliable prediction intervals with regression neural networks
+    - Guaranteed coverage prediction intervals with Gaussian process regression
     """
 
     def __init__(self, data_loader, estimate_type='variance', k=20, scalar=True, beta=0.01, device=None, custom_function=None):

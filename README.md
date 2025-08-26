@@ -109,7 +109,7 @@ TorchCP has implemented the following methods:
 | 2019 | [**Adaptive, Distribution-Free Prediction Intervals for Deep Networks**](https://proceedings.mlr.press/v108/kivaranovic20a.html)                | AISTATS'19           | [Link](https://github.com/yromano/cqr)                 | regression.score.cqrfm                     |                     |
 | 2019 | [**Conformalized Quantile Regression**](https://proceedings.neurips.cc/paper_files/paper/2019/file/5103c3584b063c431bd1268e9b5e76fb-Paper.pdf)  | NeurIPS'19           | [Link](https://github.com/yromano/cqr)                 | regression.score.cqr                       |                     |
 | 2017 | [**Distribution-Free Predictive Inference For Regression**](https://arxiv.org/abs/1604.04173)                                                   | JASA                 | [Link](https://github.com/ryantibs/conformal)          | regression.predictor.split                 |                     |
-| 2005 | [**Inductive Confidence Machines for Regression**](https://link.springer.com/chapter/10.1007/3-540-36755-1_29)                                                   | Springer                 |   | regression.score.abs regression.score.norabs                  |                     |
+| 2005 | [**Inductive Confidence Machines for Regression**](https://link.springer.com/chapter/10.1007/3-540-36755-1_29) <br>[**Guaranteed Coverage Prediction Intervals with Gaussian Process Regression**](https://arxiv.org/abs/2310.15641)<br>[**Reliable Prediction Intervals with Regression Neural Networks**](https://arxiv.org/abs/2312.09606)                                              |                  |   | regression.score.abs regression.score.norabs                  |                     |
 
 ## Graph
 
