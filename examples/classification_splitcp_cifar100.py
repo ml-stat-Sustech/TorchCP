@@ -62,3 +62,13 @@ print(predict_sets)
 result_dict = predictor.evaluate(test_dataloader)
 print(f"Coverage Rate: {result_dict['coverage_rate']:.4f}")
 print(f"Average Set Size: {result_dict['average_size']:.4f}")
+
+#########################################
+# Predict the p-value
+#########################################
+
+p_values = predictor.predict_p(test_instances.unsqueeze(0))
+print("p_values: ", p_values)
+
+
+
