@@ -10,3 +10,4 @@ from .ensemble import EnsemblePredictor
 from .split import SplitPredictor
 from .agaci import AgACIPredictor
 from .cpd import ConformalPredictiveDistribution
+from .selection import Selector

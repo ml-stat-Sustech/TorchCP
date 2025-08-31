@@ -71,6 +71,20 @@ def average_size(prediction_intervals):
     return average_size
 
 
+@METRICS_REGISTRY_REGRESSION.register()
+def false_discovery_proportion(y_truth, thresholds, indices):
+    false_positives = torch.sum(y_truth[indices] <= thresholds[indices])
+    fdp = false_positives / indices.shape[-1] if indices.shape[-1] > 0 else torch.tensor(0.)
+    return fdp.item()
+
+
+@METRICS_REGISTRY_REGRESSION.register()
+def power(y_truth, thresholds, indices):
+    true_positives = torch.sum(y_truth[indices] > thresholds[indices])
+    power = true_positives / torch.sum(y_truth > thresholds)
+    return power.item()
+
+
 class Metrics:
     def __call__(self, metric) -> Any:
         if metric not in METRICS_REGISTRY_REGRESSION.registered_names():
