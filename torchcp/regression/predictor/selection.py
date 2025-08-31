@@ -13,7 +13,7 @@ from torchcp.regression.utils.metrics import Metrics
 from torchcp.utils.common import get_device
 
 
-class Selector(SplitPredictor):
+class ConformalSelector(SplitPredictor):
     """
     Conformal Selection.
 
@@ -52,6 +52,24 @@ class Selector(SplitPredictor):
 
 
     def evaluate(self, data_loader, thresholds):
+        """
+        Evaluate the performance of conformal selection on a test dataset by calculating false discovery proportion
+        (FDP) and power of the selection set.
+
+        Args:
+            data_loader (DataLoader): The DataLoader providing the test data batches.
+            thresholds (torch.Tensor): A tensor of user-defined thresholds.
+
+        Returns:
+            dict: A dictionary containing:
+                - "False discovery proportion": The FDP of the selection set.
+                - "Power": The power of the selection set.
+
+        Example::
+
+            >>> eval_results = selector.evaluate(test_loader, thresholds)
+            >>> print(eval_results)
+        """
         self._model.eval()
         y_truth_list = []
         predicts_list = []
@@ -83,9 +101,6 @@ class Selector(SplitPredictor):
 
         # Get indices where p_values <= threshold
         indices = torch.nonzero(p_values <= threshold, as_tuple=False).squeeze()
-
-        if indices.dim() == 0:
-            indices = indices.unsqueeze(0)
 
         # Evaluation
         res_dict = {"false_discovery_proportion": self._metric("false_discovery_proportion")(y_truth, thresholds,
