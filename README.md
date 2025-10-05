@@ -158,13 +158,6 @@ cd torchsort
 pip install .
 ```
 
-If you encounter errors while installing Torchsort, you can try the following steps to resolve them:
-```
-git clone https://github.com/teddykoker/torchsort.git
-cd torchsort
-pip install .
-```
-
 ## Unit Test
 
 TorchCP achieves 100% unit test coverage. You can use the following command to test the code implementation:
