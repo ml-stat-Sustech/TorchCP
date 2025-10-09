@@ -139,17 +139,29 @@ TorchCP is still under active development. We will add the following features/it
 
 ## Installation
 
-TorchCP is developed with Python 3.9 and PyTorch 2.0.1. To install TorchCP, simply run
+### Step 1: Installing TorchCP
+
+TorchCP is developed with Python 3.9 and fully compatible with the latest versions of PyTorch. To install TorchCP, simply run
 
 ```
 pip install torchcp
 ```
 
-To install from TestPyPI server, run
+### Step 2: Install Required Dependencies
+Before running TorchCP, make sure PyTorch and related packages are installed.
+For example, to install PyTorch 2.7.0 with CUDA 12.6, run:
+```
+pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
+```
+If you prefer a different version, please refer to the [official PyTorch installation guide](https://pytorch.org/get-started/previous-versions/) to match your CUDA and system configuration.
 
+Once PyTorch is ready, install all additional dependencies by running:
 ```
-pip install --index-url https://test.pypi.org/simple/ --no-deps torchcp
+pip install -r requirements.txt 
 ```
+
+
+### Common Installation Issues
 
 If you encounter errors while installing Torchsort, you can try the following steps to resolve them:
 ```

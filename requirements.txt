@@ -1,11 +1,10 @@
-torch==2.1.0 --extra-index-url https://download.pytorch.org/whl/cu121
-torchvision==0.16.0 --extra-index-url https://download.pytorch.org/whl/cu121
-torch-geometric~=2.6.1
-transformers~=4.47.1
-numpy~=1.26.0
-setuptools>=70.0.0
-tqdm>=4.66.6
+transformers
+numpy
+setuptools
+tqdm
 scikit-learn>=1.5.0
 pandas>=2.1.4
 Pillow>=10.3.0
-pytest==8.3.4
+pytest
+torch_geometric
+torchsort
