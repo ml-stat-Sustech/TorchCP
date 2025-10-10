@@ -141,7 +141,7 @@ TorchCP is still under active development. We will add the following features/it
 
 ### Step 1: Installing TorchCP
 
-TorchCP is developed with Python 3.9 and fully compatible with the latest versions of PyTorch. To install TorchCP, simply run
+TorchCP is developed with Python 3.10 and fully compatible with the latest versions of PyTorch. To install TorchCP, simply run
 
 ```
 pip install torchcp
