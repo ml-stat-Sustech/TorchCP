@@ -139,21 +139,11 @@ TorchCP is still under active development. We will add the following features/it
 
 ## Installation
 
-### Installing TorchCP
-
 TorchCP is developed with Python 3.10 and fully compatible with the latest versions of PyTorch. Thus, users should first install PyTorch before installing TorchCP (please refer to the official PyTorch installation guide). Then, run the folllowing command to install TorchCP:
 ```
 pip install torchcp
 ```
 
-### Common Installation Issues
-
-If you encounter errors while installing Torchsort, you can install TorchSort via their code:
-```
-git clone https://github.com/teddykoker/torchsort.git
-cd torchsort
-pip install .
-```
 
 ## Unit Test
 
