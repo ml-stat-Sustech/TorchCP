@@ -65,7 +65,7 @@ build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
-## Updates of New Version (1.2.0)
+## Updates of New Version (1.2.x)
 
 This release enhances functionality by introducing p-value computation, conformal predictive distributions, and expanding the NORABS score function with additional difficulty estimation methods.
 Detailed changelog can be found in the [Documentation](https://torchcp.readthedocs.io/en/latest/CHANGELOG.html).
@@ -139,7 +139,7 @@ TorchCP is still under active development. We will add the following features/it
 
 ## Installation
 
-### Step 1: Installing TorchCP
+### Installing TorchCP
 
 TorchCP is developed with Python 3.10 and fully compatible with the latest versions of PyTorch. To install TorchCP and the dependencies, simply run
 

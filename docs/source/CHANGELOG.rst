@@ -1,5 +1,9 @@
 Changelog
 =========
+1.2.1 (2025-10-13)  
+------------------  
+* Updated the automatic dependency installation of TorchCP.
+
 
 1.2.0 (2025-08-26)  
 ------------------  
