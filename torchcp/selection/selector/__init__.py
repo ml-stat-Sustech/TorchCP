@@ -5,4 +5,4 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-from .selection import ConformalSelector
+from .conformal_selector import ConformalSelector

@@ -9,7 +9,7 @@
 import torch
 
 from torchcp.regression.predictor.split import SplitPredictor
-from torchcp.regression.utils.metrics import Metrics
+from torchcp.selection.utils.metrics import Metrics
 
 
 class ConformalSelector(SplitPredictor):
