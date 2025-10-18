@@ -71,49 +71,6 @@ def average_size(prediction_intervals):
     return average_size
 
 
-@METRICS_REGISTRY_REGRESSION.register()
-def false_discovery_proportion(y_truth, thresholds, indices):
-    """
-    Conpute the false discovery proportion (the proportion of false discovery among all selected points) of the
-    selection set.
-
-    Args:
-        y_truth (torch.Tensor): A tensor of ground truth values.
-        thresholds (torch.Tensor): Tensor of user-defined thresholds.
-        indices (torch.Tensor): A tensor containing the indices of selected points.
-
-    Returns:
-        torch.Tensor: The false discovery proportion of the selection set.
-    """
-    if indices.dim() == 0:
-        indices = indices.unsqueeze(0)
-
-    false_positives = torch.sum(y_truth[indices] <= thresholds[indices])
-    fdp = false_positives / indices.shape[-1] if indices.shape[-1] > 0 else torch.tensor(0.)
-    return fdp.item()
-
-
-@METRICS_REGISTRY_REGRESSION.register()
-def power(y_truth, thresholds, indices):
-    """
-        Conpute the power (the proportion of desirable points that are correctly selected) of the selection set.
-
-        Args:
-            y_truth (torch.Tensor): A tensor of ground truth values.
-            thresholds (torch.Tensor): Tensor of user-defined thresholds.
-            indices (torch.Tensor): A tensor containing the indices of selected points.
-
-        Returns:
-            torch.Tensor: The power of the selection set.
-        """
-    if indices.dim() == 0:
-        indices = indices.unsqueeze(0)
-
-    true_positives = torch.sum(y_truth[indices] > thresholds[indices])
-    power = true_positives / torch.sum(y_truth > thresholds)
-    return power.item()
-
-
 class Metrics:
     def __call__(self, metric) -> Any:
         if metric not in METRICS_REGISTRY_REGRESSION.registered_names():
