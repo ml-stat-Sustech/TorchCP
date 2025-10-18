@@ -6,18 +6,15 @@
 #
 
 
-import numpy as np
 import torch
-from sklearn.preprocessing import StandardScaler
-from torch.utils.data import TensorDataset
-from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
 
 from examples.regression_cqr_synthetic import prepare_dataset
-from torchcp.regression.predictor import ConformalSelector
-from torchcp.regression.score import Sign
 from torchcp.regression.utils import build_regression_model
+from torchcp.selection.score import RES
+from torchcp.selection.selector import ConformalSelector
+from torchcp.selection.testing_correction import BH_procedure
 
 
 # get dataloader
@@ -42,6 +39,6 @@ for tmp_x, tmp_y in train_loader:
 # Conformal Selection
 thresholds = torch.ones(len(test_loader.dataset)) * 5
 
-selector = ConformalSelector(score_function=Sign(), model=model)
+selector = ConformalSelector(score_function=RES(), testing_correction=BH_procedure(), model=model)
 selector.calibrate(cal_loader)
-print(selector.evaluate(test_loader, thresholds))
+print(selector.select(test_loader, thresholds))
