@@ -10,14 +10,12 @@ import torch
 
 from torchcp.regression.predictor.split import SplitPredictor
 from torchcp.regression.utils.metrics import Metrics
-from torchcp.utils.common import get_device
 
 
 class ConformalSelector(SplitPredictor):
     """
-    Conformal Selection.
-
-    a screening procedure that aims to select candidates whose unobserved outcomes exceed user-specified value.
+    Conformal Selection:
+        a screening procedure that aims to select candidates whose unobserved outcomes exceed user-specified value.
 
     Args:
         score_function (torchcp.regression.scores): A class that implements the score function.
@@ -32,9 +30,11 @@ class ConformalSelector(SplitPredictor):
         Github: https://github.com/ying531/conformal-selection
     """
 
-    def __init__(self, score_function, model, alpha=0.1, device=None):
+    def __init__(self, score_function, testing_correction, model, alpha=0.1, device=None):
         super().__init__(score_function, model, alpha, device)
+        self.testing_correction = testing_correction
         self._metric = Metrics()
+
 
     def calibrate(self, cal_dataloader):
         self._model.eval()
@@ -51,7 +51,7 @@ class ConformalSelector(SplitPredictor):
         self.cal_scores = self.score_function(predicts, y_truth)
 
 
-    def evaluate(self, data_loader, thresholds):
+    def select(self, data_loader, thresholds):
         """
         Evaluate the performance of conformal selection on a test dataset by calculating false discovery proportion
         (FDP) and power of the selection set.
@@ -90,17 +90,8 @@ class ConformalSelector(SplitPredictor):
         count_less = (self.cal_scores.view(1, n_cal) < scores.view(n_test, 1)).sum(dim=1)
         count_tie = (self.cal_scores.view(1, n_cal) == scores.view(n_test, 1)).sum(dim=1) + 1
         p_values = (count_less + count_tie * u) / (n_cal + 1)
-        p_values= torch.sort(p_values)[0]
 
-        # Conduct BH procedure
-        k_range = torch.arange(1, n_test + 1, device=p_values.device)
-        thresholds = k_range * self.alpha / n_test
-        mask = p_values <= thresholds
-        k_star = torch.max(torch.where(mask, k_range, torch.zeros_like(k_range))) if mask.any() else 0
-        threshold = (k_star * self.alpha / n_test) if k_star > 0 else 0
-
-        # Get indices where p_values <= threshold
-        indices = torch.nonzero(p_values <= threshold, as_tuple=False).squeeze()
+        indices = self.testing_correction(p_values, self.alpha)
 
         # Evaluation
         res_dict = {"false_discovery_proportion": self._metric("false_discovery_proportion")(y_truth, thresholds,
