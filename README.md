@@ -65,7 +65,7 @@ build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/
 codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
-### 🎉🎊 TorchCP has been accepted by **Journal of Machine Learning Research (JMLR)**. 
+🎉🎉🎉 *TorchCP has been accepted by the JMLR*!
 
 ## Updates of New Version (1.2.x)
 
