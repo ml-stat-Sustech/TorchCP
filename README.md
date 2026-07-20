@@ -6,10 +6,12 @@
 [![Downloads](https://static.pepy.tech/badge/torchcp)](https://pepy.tech/project/torchcp)
 [![Documentation Status](https://readthedocs.org/projects/torchcp/badge/?version=latest)](https://torchcp.readthedocs.org)
 
+<div align="center">
 <img src="https://raw.githubusercontent.com/ml-stat-Sustech/TorchCP/master/logo.png" width="300px" />
 
 **TorchCP**: A Python toolbox for Conformal Prediction in Deep Learning.   
 [Technical Report](https://arxiv.org/abs/2402.12683) · [Documentation](https://torchcp.readthedocs.io/en/latest/)
+</div>
 
 TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with
 strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods)
