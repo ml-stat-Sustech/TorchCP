@@ -1,25 +1,12 @@
+[![PyPI version](https://badge.fury.io/py/torchcp.svg)](https://badge.fury.io/py/torchcp)
+[![Forks](https://img.shields.io/github/forks/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/network/members)
+[![Stars](https://img.shields.io/github/stars/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/stargazers)
+[![Issues](https://img.shields.io/github/issues/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/ml-stat-Sustech/torchcp)](https://github.com/ml-stat-Sustech/torchcp/pulls)
+[![Downloads](https://static.pepy.tech/badge/torchcp)](https://pepy.tech/project/torchcp)
+[![Documentation Status](https://readthedocs.org/projects/torchcp/badge/?version=latest)](https://torchcp.readthedocs.org)
 
-
-
-
-
-
-[PyPI version](https://badge.fury.io/py/torchcp)
-[Forks](https://github.com/ml-stat-Sustech/torchcp/network/members)
-[Stars](https://github.com/ml-stat-Sustech/torchcp/stargazers)
-[Issues](https://github.com/ml-stat-Sustech/torchcp/issues)
-[Pull Requests](https://github.com/ml-stat-Sustech/torchcp/pulls)
-[Downloads](https://pepy.tech/project/torchcp)
-[Documentation Status](https://torchcp.readthedocs.org)
-
-
-
-
-
-
-
-  
-
+<img src="https://raw.githubusercontent.com/ml-stat-Sustech/TorchCP/master/logo.png" width="300px" />
 
 **TorchCP**: A Python toolbox for Conformal Prediction in Deep Learning.   
 [Technical Report](https://arxiv.org/abs/2402.12683) · [Documentation](https://torchcp.readthedocs.io/en/latest/)
@@ -27,9 +14,8 @@
 TorchCP is a Python toolbox for conformal prediction research on deep learning models, built on the PyTorch Library with
 strong GPU acceleration. In the toolbox, we implement representative methods (including posthoc and training methods)
 for many tasks of conformal prediction, including: Classification, Regression, Graph Neural Networks, and LLM. We
-for many tasks of conformal prediction, including: Classification, Regression, Graph Neural Networks, and LLM. We
-build the basic framework of TorchCP based on `[AdverTorch](https://github.com/BorealisAI/advertorch/tree/master)`. This
-codebase is still under construction and maintained by `[Hongxin Wei](https://hongxin001.github.io/)`'s research group
+build the basic framework of TorchCP based on [`AdverTorch`](https://github.com/BorealisAI/advertorch/tree/master). This
+codebase is still under construction and maintained by [`Hongxin Wei`](https://hongxin001.github.io/)'s research group
 at SUSTech. Comments, issues, contributions, and collaborations are all welcomed!
 
 🎉🎉🎉 *TorchCP has been accepted by the JMLR*!
