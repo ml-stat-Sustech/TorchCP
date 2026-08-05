@@ -43,13 +43,11 @@ def calculate_conformal_value(scores, alpha):
 
     This function computes the threshold value (quantile) used to construct prediction sets based on the given
     non-conformity scores and significance level alpha. If the scores are empty or the quantile value exceeds 1,
-    it returns the default_q_hat value.
+    it warns and returns torch.inf.
 
     Args:
         scores (torch.Tensor): Non-conformity scores.
         alpha (float): Significance level, must be between 0 and 1.
-        default_q_hat (torch.Tensor or str, optional): Default threshold value to use if scores are empty or invalid.
-            If set to "max", it uses the maximum value of scores. Default is torch.inf.
 
     Returns:
         torch.Tensor: The threshold value used to construct prediction sets.
@@ -59,7 +57,7 @@ def calculate_conformal_value(scores, alpha):
     """
 
     if alpha >= 1 or alpha <= 0:
-        raise ValueError("Significance level 'alpha' must be in [0,1].")
+        raise ValueError("Significance level 'alpha' must be in (0,1).")
     if len(scores) == 0:
         warnings.warn(
             f"The number of scores is 0, which is a invalid scores. To avoid program crash, the threshold is set as {torch.inf}.")
