@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-__all__ = ["ConfTS"]
+__all__ = ["ConfTSLoss"]
 
 import torch
 from torch import Tensor
