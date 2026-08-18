@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-__all__ = ["ConfTr"]
+__all__ = ["ConfTrLoss"]
 
 import torch
 import torch.nn.functional as F
