@@ -190,7 +190,15 @@ class ConformalLM:
             avg_losses = self.metrics("average_set_loss")(prediction_sets, loss.set_losses_from_labels(cal_labels))
             for j, epsilon in enumerate(self.epsilons):
                 n = len(cal_labels)
-                p_value = binom.cdf(n * avg_losses, n, epsilon)
+                # The Learn-then-Test p-value counts an exceedance over n calibration
+                # points, so its first argument is an integer: LTT Eq. (2) writes
+                # ceil(n * R_hat). `avg_losses` arrives as a float32 mean, so `n * avg_losses`
+                # can land just under that integer -- 22.999999523162842 where the count is 23 --
+                # and `binom.cdf` silently floors a non-integer first argument. The p-value is
+                # then evaluated one step low, which understates it. Because rejecting H_j is
+                # what declares the risk controlled, an understated p-value selects a
+                # configuration more readily than the bound licenses.
+                p_value = binom.cdf(math.ceil(n * avg_losses), n, epsilon)
                 if p_value <= alpha and not is_stopped[j]:
                     self.best_valid_configs[j] = config
                 else:
