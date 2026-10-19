@@ -1,4 +1,5 @@
-# Copyright (c) 2023-present, SUSTech-ML.
+# Copyright (c) 2023-present, SUSTech-ML and other authors.
+# See the AUTHORS.txt file for a list of contributors.
 # All rights reserved.
 #
 # This source code is licensed under the license found in the
@@ -92,7 +93,8 @@ class WeightedPredictor(SplitPredictor):
         self.scores = torch.zeros(logits.shape[0] + 1).to(self._device)
         self.scores[:logits.shape[0]] = self.score_function(logits, labels)
         self.scores[logits.shape[0]] = torch.tensor(torch.inf).to(self._device)
-        self.scores_sorted = self.scores.sort()[0]
+        self.scores_sorted, self._score_order = self.scores[:-1].sort()
+        self.scores_sorted = torch.cat((self.scores_sorted, self.scores[-1:]))
 
     def predict(self, x_batch):
         """
@@ -167,7 +169,7 @@ class WeightedPredictor(SplitPredictor):
         # Compute importance weights
         self.IW = IW(self.domain_classifier).to(self._device)
         weights_cal = self.IW(self.source_image_features.to(self._device))
-        self.w_sorted = torch.sort(weights_cal, descending=False)[0]
+        self.w_sorted = weights_cal[self._score_order]
 
         # Generate predictions
         predictions_list: List[torch.Tensor] = []
