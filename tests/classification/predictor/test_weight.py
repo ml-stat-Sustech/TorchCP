@@ -1,4 +1,5 @@
-# Copyright (c) 2023-present, SUSTech-ML.
+# Copyright (c) 2023-present, SUSTech-ML and other authors.
+# See the AUTHORS.txt file for a list of contributors.
 # All rights reserved.
 #
 # This source code is licensed under the license found in the
@@ -163,3 +164,67 @@ def test_evaluate(simple_score_function, sample_data):
     assert "average_size" in metrics
     assert 0 <= metrics["coverage_rate"] <= 1
     assert metrics["average_size"] >= 0
+
+
+@pytest.mark.parametrize("batch_size", [1, 2])
+@pytest.mark.parametrize("cal_scores, cal_weights", [
+    ([0.1, 0.9], [9., 1.]),
+    ([0.9, 0.1], [1., 9.]),
+    ([0.1, 0.9], [1., 9.]),
+    ([0.1, 0.9], [1., 1.]),
+    ([0.1, 0.1], [9., 1.]),
+    ([0.1, float("inf")], [9., 1.]),
+    ([0.1] + [float("inf")] * 20, [100.] + [1.] * 20),
+])
+def test_weighted_quantile_score_weight_pairs(
+    cal_scores, cal_weights, batch_size
+):
+    """Keep calibration weights paired with their own nonconformity scores."""
+
+    class WeightFeature(nn.Module):
+        def forward(self, x):
+            return x[:, -1:]
+
+    def scores(logits, labels=None):
+        values = logits.reshape(-1, 4)[:, :3]
+        if labels is None:
+            return values
+        return values[torch.arange(len(labels)), labels]
+
+    X = torch.zeros(len(cal_scores), 4)
+    X[:, 0] = torch.tensor(cal_scores)
+    X[:, -1] = torch.tensor(cal_weights).log()
+    y = torch.zeros(len(cal_scores), dtype=torch.long)
+    classifier = nn.Sequential(nn.Linear(1, 2, bias=False), nn.Softmax(dim=1))
+    with torch.no_grad():
+        classifier[0].weight.copy_(torch.tensor([[0.], [1.]]))
+    predictor = WeightedPredictor(
+        scores, nn.Identity(), image_encoder=WeightFeature(),
+        domain_classifier=classifier, device="cpu"
+    )
+    predictor.calibrate(
+        DataLoader(TensorDataset(X, y), batch_size=batch_size), alpha=0.2
+    )
+    test = torch.tensor([[.05, .5, .95, 0.], [.05, .5, .95, 9.]])
+    test[:, -1] = torch.tensor([1., 9.]).log()
+    test_labels = torch.zeros(2, dtype=torch.long)
+    metrics = predictor.evaluate(DataLoader(
+        TensorDataset(test, test_labels), batch_size=batch_size
+    ))
+
+    # Compute each quantile directly from the score-weight pairs plus the
+    # test point's probability mass at infinity.
+    expected = []
+    for test_weight in [1., 9.]:
+        total = sum(cal_weights) + test_weight
+        accumulated = 0.
+        threshold = float("inf")
+        for score, weight in sorted(zip(cal_scores, cal_weights)):
+            accumulated += weight
+            if accumulated / total >= 0.8:
+                threshold = score
+                break
+        expected.append([int(s <= threshold) for s in [.05, .5, .95]])
+    expected = torch.tensor(expected, dtype=torch.int)
+    torch.testing.assert_close(predictor.predict(test), expected)
+    assert metrics["average_size"] == expected.sum(1).float().mean().item()
