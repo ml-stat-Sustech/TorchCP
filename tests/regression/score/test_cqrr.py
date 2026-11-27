@@ -9,6 +9,7 @@ import pytest
 import torch
 
 from torchcp.regression.score import CQRR
+from torchcp.utils.common import calculate_conformal_value
 
 
 @pytest.fixture
@@ -39,8 +40,23 @@ def test_generate_intervals(cqrr_instance):
     q_hat = torch.tensor([0.1])
 
     intervals = cqrr_instance.generate_intervals(predicts_batch, q_hat)
-    expected_intervals = torch.tensor([[[0.2, 0.7]], [[0.3, 0.8]]])
+    expected_intervals = torch.tensor([[[0.15, 0.75]], [[0.25, 0.85]]])
     assert torch.allclose(intervals, expected_intervals), "The generate_intervals method is not working as expected."
+
+
+def test_generate_intervals_restores_coverage(cqrr_instance):
+    """
+    Test that CQRR intervals invert the rescaled nonconformity score and achieve target coverage.
+    """
+    y = torch.linspace(-2.0, 3.0, 200)
+    predicts = torch.stack([torch.zeros_like(y), torch.ones_like(y)], dim=1)
+
+    scores = cqrr_instance(predicts, y)
+    q_hat = calculate_conformal_value(scores, alpha=0.1)
+    intervals = cqrr_instance.generate_intervals(predicts, q_hat)
+
+    covered = (y >= intervals[:, 0, 0]) & (y <= intervals[:, 0, 1])
+    assert covered.sum().item() / len(y) >= 0.90
 
 
 def test_fit(cqrr_instance, dummy_data):

@@ -36,7 +36,7 @@ class CQRR(CQR):
         prediction_intervals = predicts_batch.new_zeros((predicts_batch.shape[0], q_hat.shape[0], 2))
 
         eps = 1e-6
-        scaling_factor = prediction_intervals[..., 1] - prediction_intervals[..., 0] + eps
+        scaling_factor = predicts_batch[..., 1] - predicts_batch[..., 0] + eps
         prediction_intervals[..., 0] = predicts_batch[..., 0] - q_hat.view(1, q_hat.shape[0], 1) * scaling_factor
         prediction_intervals[..., 1] = predicts_batch[..., 1] + q_hat.view(1, q_hat.shape[0], 1) * scaling_factor
         return prediction_intervals
